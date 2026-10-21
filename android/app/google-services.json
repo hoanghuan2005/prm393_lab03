@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "21478927288",
+    "project_id": "prm393-34056",
+    "storage_bucket": "prm393-34056.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:21478927288:android:a8c127d696dae7469dbd4d",
+        "android_client_info": {
+          "package_name": "com.group07.whyibuy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "21478927288-7q6s191bs2on10gkp6eslgmek8jbfnou.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.group07.whyibuy",
+            "certificate_hash": "ecd5e35cb1570a27eb2cac2e14d0e46c5082d766"
+          }
+        },
+        {
+          "client_id": "21478927288-qivdr7sf7pju091ohu41iaae6d3n8uk8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKeULrLl8RsPBXEzCzazojp4h8ksag-8Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "21478927288-qivdr7sf7pju091ohu41iaae6d3n8uk8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

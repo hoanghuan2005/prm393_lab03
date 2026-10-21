@@ -1,0 +1,6 @@
+{
+  "cooling_off_days": 3,
+  "enable_ai_insight": true,
+  "max_wishlist_items_shown": 20,
+  "sale_reminder_enabled": true
+}

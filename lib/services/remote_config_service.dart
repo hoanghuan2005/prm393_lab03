@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 
 /// Service abstraction for Firebase Remote Config
 class RemoteConfigService {
-  final FirebaseRemoteConfig _remoteConfig;
+  /// Provided via constructor for testing, otherwise assigned lazily in [initialize].
+  final FirebaseRemoteConfig? _injectedConfig;
+  FirebaseRemoteConfig get _remoteConfig => _injectedConfig ?? FirebaseRemoteConfig.instance;
 
   RemoteConfigService({FirebaseRemoteConfig? remoteConfig})
-      : _remoteConfig = remoteConfig ?? FirebaseRemoteConfig.instance;
+      : _injectedConfig = remoteConfig;
 
   /// Keys matching firebase/remote-config-defaults.json
   static const String keyCoolingOffDays = 'cooling_off_days';

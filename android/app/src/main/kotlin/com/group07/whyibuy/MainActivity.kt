@@ -1,4 +1,4 @@
-package com.example.prm393_lab03
+package com.group07.whyibuy
 
 import io.flutter.embedding.android.FlutterActivity
 

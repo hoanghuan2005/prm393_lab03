@@ -13,30 +13,36 @@ import 'services/storage_service.dart';
 import 'services/wishlist_service.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
+import 'viewmodels/purchase_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/wishlist_viewmodel.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'widgets/states/loading_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('vi_VN', null);
 
-  // Instantiate services (Injected down the hierarchy, mockable in tests)
+  // ⚠️ FIX: Initialize Firebase FIRST, before creating any service
+  // that depends on Firebase*.instance
   final crashlyticsService = CrashlyticsService();
   final remoteConfigService = RemoteConfigService();
   final notificationService = NotificationService();
-  final authService = AuthService();
-  final wishlistService = WishlistService();
-  final storageService = StorageService();
-  final analyticsService = AppAnalyticsService();
-  final reportService = ReportService();
 
-  // Initialize Firebase and background services
   await FirebaseSetup.initialize(
     crashlyticsService: crashlyticsService,
     remoteConfigService: remoteConfigService,
     notificationService: notificationService,
   );
+
+  // Now Firebase is initialized — safe to create services that access
+  // FirebaseAuth.instance, FirebaseFirestore.instance, etc.
+  final authService = AuthService();
+  final wishlistService = WishlistService();
+  final storageService = StorageService();
+  final analyticsService = AppAnalyticsService();
+  final reportService = ReportService();
 
   runApp(
     MultiProvider(
@@ -77,6 +83,11 @@ void main() async {
           create: (_) => ReportViewModel(
             reportService: reportService,
             storageService: storageService,
+            analyticsService: analyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PurchaseViewModel(
             analyticsService: analyticsService,
           ),
         ),

@@ -3,10 +3,13 @@ import 'package:flutter/foundation.dart';
 
 /// Service abstraction for Firebase Crashlytics
 class CrashlyticsService {
-  final FirebaseCrashlytics _crashlytics;
+  final FirebaseCrashlytics? _providedCrashlytics;
 
   CrashlyticsService({FirebaseCrashlytics? crashlytics})
-      : _crashlytics = crashlytics ?? FirebaseCrashlytics.instance;
+      : _providedCrashlytics = crashlytics;
+
+  FirebaseCrashlytics get _crashlytics =>
+      _providedCrashlytics ?? FirebaseCrashlytics.instance;
 
   /// Initialize Crashlytics handlers
   void initCrashlyticsHandlers() {

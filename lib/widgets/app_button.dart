@@ -61,7 +61,6 @@ class AppButton extends StatelessWidget {
         ),
         child: SizedBox(
           width: width,
-          height: AppDimens.minTouchTarget,
           child: ElevatedButton(
             onPressed: isInteractive ? onPressed : null,
             style: ElevatedButton.styleFrom(
@@ -74,7 +73,10 @@ class AppButton extends StatelessWidget {
                 side: side,
               ),
               elevation: AppDimens.elevationNone,
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space20),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space12,
+                vertical: AppDimens.space8,
+              ),
             ),
             child: isLoading
                 ? SizedBox(
@@ -93,9 +95,14 @@ class AppButton extends StatelessWidget {
                         Icon(icon, size: 20, color: fgColor),
                         const SizedBox(width: AppDimens.space8),
                       ],
-                      Text(
-                        title,
-                        style: AppTextStyles.labelLarge.copyWith(color: fgColor),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: AppTextStyles.labelLarge.copyWith(color: fgColor),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                   ),

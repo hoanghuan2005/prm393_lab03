@@ -6,6 +6,7 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
+import 'onboarding_screen.dart';
 
 /// Screen Profile & Firebase Demo Area (Section 6)
 class ProfileScreen extends StatelessWidget {
@@ -64,6 +65,19 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: AppDimens.space12),
+
+            // Button to preview 01 Onboarding screen
+            OutlinedButton.icon(
+              icon: const Icon(Icons.school_outlined, size: 20),
+              label: const Text('Xem màn hình giới thiệu (01 Onboarding)'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                );
+              },
+            ),
+
             const SizedBox(height: AppDimens.space24),
 
             // Firebase Demo Area Header
@@ -91,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
                 _buildKeyValueRow('Nhắc nhở đợt sale (sale_reminder_enabled):', settingsVm.saleReminderEnabled ? 'Bật (True)' : 'Tắt (False)'),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
-                  title: 'Cập nhật Remote Config trực tiếp (Live Fetch)',
+                  title: 'Cập nhật Remote Config (Live Fetch)',
                   variant: AppButtonVariant.secondary,
                   isLoading: settingsVm.isRefreshingConfig,
                   onPressed: () async {
@@ -118,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
-                  title: 'Bắn lỗi có xử lý (Non-Fatal Error)',
+                  title: 'Bắn lỗi có xử lý (Non-Fatal)',
                   variant: AppButtonVariant.secondary,
                   icon: Icons.warning_amber_rounded,
                   onPressed: () async {
@@ -135,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
-                  title: 'Kích hoạt thử nghiệm Crash thật (Forced Crash)',
+                  title: 'Kích hoạt thử nghiệm Crash thật',
                   variant: AppButtonVariant.danger,
                   icon: Icons.dangerous_outlined,
                   onPressed: () {
@@ -239,6 +253,7 @@ class ProfileScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(child: Text(key, style: AppTextStyles.bodyMedium)),
+          const SizedBox(width: AppDimens.space8),
           Text(value, style: AppTextStyles.labelLarge),
         ],
       ),

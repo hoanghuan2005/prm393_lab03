@@ -5,6 +5,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
+import 'onboarding_screen.dart';
 
 /// Screen for Authentication (Google Sign-In & Guest Mode)
 class LoginScreen extends StatelessWidget {
@@ -119,7 +120,26 @@ class LoginScreen extends StatelessWidget {
                   await authVm.signInAnonymously();
                 },
               ),
-              const SizedBox(height: AppDimens.space24),
+              const SizedBox(height: AppDimens.space12),
+
+              // Directly explore Figma screens
+              TextButton.icon(
+                icon: const Icon(Icons.explore_outlined, size: 18, color: AppColors.onPrimary),
+                label: const Text(
+                  'Xem màn hình Onboarding & Trang chủ Figma',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: AppDimens.space16),
             ],
           ),
         ),

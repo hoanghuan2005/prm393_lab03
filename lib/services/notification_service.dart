@@ -27,13 +27,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 /// Service abstraction for Firebase Cloud Messaging (FCM)
 class NotificationService {
-  final FirebaseMessaging _fcm;
+  /// Injected for testing; otherwise resolved lazily via getter.
+  final FirebaseMessaging? _injectedFcm;
+  FirebaseMessaging get _fcm => _injectedFcm ?? FirebaseMessaging.instance;
+
   final List<AppNotificationItem> _receivedNotifications = [];
   final _notificationsStreamController =
       StreamController<List<AppNotificationItem>>.broadcast();
 
   NotificationService({FirebaseMessaging? fcm})
-      : _fcm = fcm ?? FirebaseMessaging.instance;
+      : _injectedFcm = fcm;
 
   List<AppNotificationItem> get receivedNotifications =>
       List.unmodifiable(_receivedNotifications);

@@ -65,6 +65,26 @@ class AppAnalyticsService {
     }
   }
 
+  /// Event: record_purchase
+  Future<void> logPurchaseRecorded({
+    required String itemId,
+    required String motive,
+    required double price,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'record_purchase',
+        parameters: {
+          'item_id': itemId,
+          'motive': motive,
+          'item_price': price,
+        },
+      );
+    } catch (e) {
+      debugPrint('Analytics logPurchaseRecorded error: $e');
+    }
+  }
+
   /// Event 4: view_item_detail
   Future<void> logViewItemDetail({
     required String itemId,

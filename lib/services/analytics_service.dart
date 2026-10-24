@@ -85,6 +85,24 @@ class AppAnalyticsService {
     }
   }
 
+  /// Event: set_budget
+  Future<void> logBudgetSet({
+    required double amount,
+    required String month,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'set_budget',
+        parameters: {
+          'budget_amount': amount,
+          'month': month,
+        },
+      );
+    } catch (e) {
+      debugPrint('Analytics logBudgetSet error: $e');
+    }
+  }
+
   /// Event 4: view_item_detail
   Future<void> logViewItemDetail({
     required String itemId,

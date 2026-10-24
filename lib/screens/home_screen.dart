@@ -7,6 +7,8 @@ import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/why_i_buy_logo.dart';
+import 'budget_screen.dart';
+import 'purchase_detail_screen.dart';
 import 'record_purchase_screen.dart';
 import 'wishlist_screen.dart';
 
@@ -356,7 +358,11 @@ class HomeScreen extends StatelessWidget {
 
           // Monthly Budget Quick View
           InkWell(
-            onTap: () => BudgetSettingSheet.show(context),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BudgetScreen()),
+              );
+            },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
@@ -534,7 +540,7 @@ class HomeScreen extends StatelessWidget {
               final isLast = index == recentList.length - 1;
               return Column(
                 children: [
-                  _buildPurchaseRow(item),
+                  _buildPurchaseRow(context, item),
                   if (!isLast) const Divider(height: 1, color: Color(0xFFF3F4F6)),
                 ],
               );
@@ -545,93 +551,100 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPurchaseRow(PurchaseItem item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          // Circular Motive Icon
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildPurchaseRow(BuildContext context, PurchaseItem item) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PurchaseDetailScreen(purchase: item)),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            // Circular Motive Icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.motive.icon,
+                size: 20,
+                color: const Color(0xFF47667B),
+              ),
             ),
-            child: Icon(
-              item.motive.icon,
-              size: 20,
-              color: const Color(0xFF47667B),
-            ),
-          ),
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          // Content: Title + Chip + Date
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+            // Content: Title + Chip + Date
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    // Motive Tag
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: item.motive.backgroundColor,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(item.motive.icon, size: 11, color: item.motive.color),
-                          const SizedBox(width: 3),
-                          Text(
-                            item.motive.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: item.motive.color,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      // Motive Tag
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: item.motive.backgroundColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(item.motive.icon, size: 11, color: item.motive.color),
+                            const SizedBox(width: 3),
+                            Text(
+                              item.motive.label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: item.motive.color,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Timestamp
-                    Text(
-                      item.formattedTime,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                      const SizedBox(width: 8),
+                      // Timestamp
+                      Text(
+                        item.formattedTime,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Trailing Amount: e.g. 40.000 ₫
-          Text(
-            '${_formatCurrency(item.amount)} ₫',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF47667B),
+            // Trailing Amount: e.g. 40.000 ₫
+            Text(
+              '${_formatCurrency(item.amount)} ₫',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF47667B),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

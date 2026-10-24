@@ -55,6 +55,8 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
     });
   }
 
+  bool _isSaving = false;
+
   @override
   Widget build(BuildContext context) {
     final purchaseVm = context.watch<PurchaseViewModel>();
@@ -235,21 +237,38 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                onPressed: () {
-                  purchaseVm.setMonthlyBudget(_amount);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã cập nhật ngân sách tháng thành ${_currencyFormat.format(_amount).trim()}!'),
-                      backgroundColor: const Color(0xFF10B981),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Lưu ngân sách',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
+                onPressed: _isSaving
+                    ? null
+                    : () async {
+                        setState(() => _isSaving = true);
+                        await purchaseVm.setMonthlyBudget(_amount);
+                        if (!mounted) return;
+                        setState(() => _isSaving = false);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text('Đã lưu ngân sách: ${_currencyFormat.format(_amount).trim()} lên Firebase!'),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF10B981),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.onPrimary),
+                      )
+                    : const Text(
+                        'Lưu ngân sách',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
               ),
             ),
           ],

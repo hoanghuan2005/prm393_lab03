@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
@@ -30,6 +31,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final authVm = context.read<AuthViewModel>();
       if (authVm.userId != null) {
         context.read<WishlistViewModel>().setUserId(authVm.userId!);
+        context.read<PurchaseViewModel>().setUserId(authVm.userId!);
       }
     });
   }

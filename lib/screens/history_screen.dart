@@ -8,6 +8,8 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/why_i_buy_logo.dart';
+import 'budget_screen.dart';
+import 'purchase_detail_screen.dart';
 import 'record_purchase_screen.dart';
 
 /// Screen 06: Lịch sử from Figma "Why I Buy ver2"
@@ -309,17 +311,21 @@ class HistoryScreen extends StatelessWidget {
               const Spacer(),
               // Edit button
               InkWell(
-                onTap: () => BudgetSettingSheet.show(context),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BudgetScreen()),
+                  );
+                },
                 borderRadius: BorderRadius.circular(6),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.edit_outlined, size: 14, color: Color(0xFF47667B)),
+                      Icon(Icons.tune_rounded, size: 14, color: Color(0xFF47667B)),
                       SizedBox(width: 4),
                       Text(
-                        'Cài đặt',
+                        'Chi tiết',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -428,6 +434,11 @@ class HistoryScreen extends StatelessWidget {
   Widget _buildHistoryRow(BuildContext context, PurchaseItem item, PurchaseViewModel vm) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PurchaseDetailScreen(purchase: item)),
+        );
+      },
       leading: Container(
         width: 38,
         height: 38,

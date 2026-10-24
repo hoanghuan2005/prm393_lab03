@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/buying_motive.dart';
+import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import 'purchase_detail_screen.dart';
 
 /// Screen 03 & 04: Ghi khoản mua (Bước 1/2 và Bước 2/2) from Figma "Why I Buy ver2"
 class RecordPurchaseScreen extends StatefulWidget {
   final double? initialAmount;
   final String? initialTitle;
+  final PurchaseItem? existingPurchase;
 
   const RecordPurchaseScreen({
     super.key,
     this.initialAmount,
     this.initialTitle,
+    this.existingPurchase,
   });
 
   @override
@@ -27,7 +31,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   final _amountController = TextEditingController();
   final _titleController = TextEditingController();
   DateTime _selectedDateTime = DateTime.now();
-  double _rawAmount = 45000;
+  double _rawAmount = 0;
 
   // Step 2 State
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
@@ -39,10 +43,22 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   @override
   void initState() {
     super.initState();
-    _rawAmount = widget.initialAmount ?? 45000;
-    _amountController.text = _currencyFormat.format(_rawAmount).trim();
-    _titleController.text = widget.initialTitle ?? 'Trà sữa nướng';
-    _noteController.text = 'Buồn vì công việc nên muốn uống gì ngọt...';
+    if (widget.existingPurchase != null) {
+      final p = widget.existingPurchase!;
+      _rawAmount = p.amount;
+      _amountController.text = _currencyFormat.format(_rawAmount).trim();
+      _titleController.text = p.title;
+      _selectedDateTime = p.dateTime;
+      _selectedMotive = p.motive;
+      _noteController.text = p.note ?? '';
+    } else {
+      _rawAmount = widget.initialAmount ?? 0;
+      if (_rawAmount > 0) {
+        _amountController.text = _currencyFormat.format(_rawAmount).trim();
+      }
+      _titleController.text = widget.initialTitle ?? '';
+      _noteController.text = '';
+    }
   }
 
   @override
@@ -154,34 +170,69 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     setState(() => _isSaving = true);
 
     final purchaseVm = context.read<PurchaseViewModel>();
-    purchaseVm.addPurchase(
-      title: _titleController.text.trim(),
-      amount: _rawAmount,
-      motive: _selectedMotive,
-      dateTime: _selectedDateTime,
-      note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
-    );
+    final title = _titleController.text.trim();
+    final note = _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null;
 
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
+    if (widget.existingPurchase != null) {
+      await purchaseVm.updatePurchase(
+        id: widget.existingPurchase!.id,
+        title: title,
+        amount: _rawAmount,
+        motive: _selectedMotive,
+        dateTime: _selectedDateTime,
+        note: note,
+      );
 
-    setState(() => _isSaving = false);
+      if (!mounted) return;
+      setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('Đã lưu khoản mua: ${_titleController.text.trim()}!'),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('Đã cập nhật khoản mua: $title!'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
 
-    Navigator.of(context).pop();
+      Navigator.of(context).pop();
+    } else {
+      final savedItem = await purchaseVm.addPurchase(
+        title: title,
+        amount: _rawAmount,
+        motive: _selectedMotive,
+        dateTime: _selectedDateTime,
+        note: note,
+      );
+
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('Đã lưu khoản mua: $title!'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      Navigator.of(context).pop();
+      // Flow 8: Navigate to detail review screen
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PurchaseDetailScreen(purchase: savedItem)),
+      );
+    }
   }
 
   @override
@@ -201,9 +252,9 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             }
           },
         ),
-        title: const Text(
-          'Ghi khoản mua',
-          style: TextStyle(
+        title: Text(
+          widget.existingPurchase != null ? 'Chỉnh sửa khoản mua' : 'Ghi khoản mua',
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: AppColors.onPrimary,
@@ -732,7 +783,9 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _currentStep == 1 ? 'Tiếp tục' : 'Lưu khoản mua',
+                          _currentStep == 1
+                              ? 'Tiếp tục'
+                              : (widget.existingPurchase != null ? 'Cập nhật khoản mua' : 'Lưu khoản mua'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,

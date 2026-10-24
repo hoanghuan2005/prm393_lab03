@@ -6,6 +6,7 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
+import 'budget_screen.dart';
 import 'onboarding_screen.dart';
 
 /// Screen Profile & Firebase Demo Area (Section 6)
@@ -91,6 +92,30 @@ class ProfileScreen extends StatelessWidget {
                 'FIREBASE DEMO AREA (Section 6)',
                 style: AppTextStyles.labelMedium.copyWith(color: AppColors.onPrimary, fontWeight: FontWeight.w700),
               ),
+            ),
+            const SizedBox(height: AppDimens.space16),
+
+            // Budget Management Section
+            _buildSectionCard(
+              title: 'Ngân sách chi tiêu (Figma 31)',
+              icon: Icons.account_balance_wallet_outlined,
+              children: [
+                const Text(
+                  'Thiết lập ngân sách tham chiếu theo tháng và theo nhóm hàng, tự động đồng bộ Firestore:',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6D6E73)),
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  title: 'Quản lý ngân sách theo nhóm',
+                  variant: AppButtonVariant.primary,
+                  icon: Icons.bar_chart_rounded,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const BudgetScreen()),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: AppDimens.space16),
 

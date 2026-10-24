@@ -7,6 +7,7 @@ import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/crashlytics_service.dart';
 import 'services/notification_service.dart';
+import 'services/purchase_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/report_service.dart';
 import 'services/storage_service.dart';
@@ -40,6 +41,7 @@ void main() async {
   // FirebaseAuth.instance, FirebaseFirestore.instance, etc.
   final authService = AuthService();
   final wishlistService = WishlistService();
+  final purchaseService = PurchaseService();
   final storageService = StorageService();
   final analyticsService = AppAnalyticsService();
   final reportService = ReportService();
@@ -50,6 +52,7 @@ void main() async {
         // Services Injection
         Provider<AuthService>.value(value: authService),
         Provider<WishlistService>.value(value: wishlistService),
+        Provider<PurchaseService>.value(value: purchaseService),
         Provider<StorageService>.value(value: storageService),
         Provider<AppAnalyticsService>.value(value: analyticsService),
         Provider<CrashlyticsService>.value(value: crashlyticsService),
@@ -88,6 +91,7 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => PurchaseViewModel(
+            purchaseService: purchaseService,
             analyticsService: analyticsService,
           ),
         ),

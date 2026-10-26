@@ -1,5 +1,6 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Crashlytics
 class CrashlyticsService {
@@ -13,6 +14,8 @@ class CrashlyticsService {
 
   /// Initialize Crashlytics handlers
   void initCrashlyticsHandlers() {
+    // Crashlytics is mobile-only; accessing it on web/Windows throws and aborts main().
+    if (!PlatformSupport.isMobile) return;
     FlutterError.onError = _crashlytics.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
       _crashlytics.recordError(error, stack, fatal: true);
@@ -22,6 +25,7 @@ class CrashlyticsService {
 
   /// Set User ID for crash reporting
   Future<void> setUserId(String userId) async {
+    if (!PlatformSupport.isMobile) return;
     try {
       await _crashlytics.setUserIdentifier(userId);
     } catch (e) {
@@ -31,6 +35,7 @@ class CrashlyticsService {
 
   /// Attach a custom key-value pair to crash reports
   Future<void> setCustomKey(String key, Object value) async {
+    if (!PlatformSupport.isMobile) return;
     try {
       await _crashlytics.setCustomKey(key, value);
     } catch (e) {
@@ -45,6 +50,10 @@ class CrashlyticsService {
     String? reason,
     Map<String, Object>? customKeys,
   }) async {
+    if (!PlatformSupport.isMobile) {
+      debugPrint('Handled error (Crashlytics unavailable on this platform): $error');
+      return;
+    }
     try {
       if (customKeys != null) {
         for (final entry in customKeys.entries) {
@@ -65,6 +74,10 @@ class CrashlyticsService {
 
   /// Trigger a test crash for verification per Lab 3 requirement
   void forceCrashForTesting() {
+    if (!PlatformSupport.isMobile) {
+      debugPrint('forceCrashForTesting skipped: Crashlytics is only available on Android/iOS');
+      return;
+    }
     _crashlytics.setCustomKey('test_scenario', 'lab3_verification_forced_crash');
     _crashlytics.crash();
   }

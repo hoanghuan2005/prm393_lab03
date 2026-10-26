@@ -220,7 +220,11 @@ class HistoryScreen extends StatelessWidget {
                               final isLast = i == dayItems.length - 1;
                               return Column(
                                 children: [
-                                  _buildHistoryRow(context, item, purchaseVm),
+                                  // Own Material so ink splashes paint above the white card
+                                  Material(
+                                    type: MaterialType.transparency,
+                                    child: _buildHistoryRow(context, item, purchaseVm),
+                                  ),
                                   if (!isLast) const Divider(height: 1, color: Color(0xFFF3F4F6)),
                                 ],
                               );

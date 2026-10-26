@@ -68,6 +68,11 @@ class AuthViewModel extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
+    } on UnsupportedError {
+      _status = AuthStatus.error;
+      _errorMessage = 'Đăng nhập Google chưa hỗ trợ trên Windows. Hãy dùng chế độ Khách.';
+      notifyListeners();
+      return false;
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';

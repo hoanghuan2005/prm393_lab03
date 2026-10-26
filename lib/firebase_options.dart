@@ -22,6 +22,9 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
+      case TargetPlatform.windows:
+        // Desktop uses the same web-style config (Firebase C++ SDK)
+        return web;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -42,6 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:21478927288:web:a8c127d696dae7469dbd4d',
     messagingSenderId: '21478927288',
     projectId: 'prm393-34056',
+    authDomain: 'prm393-34056.firebaseapp.com',
     storageBucket: 'prm393-34056.firebasestorage.app',
   );
 }

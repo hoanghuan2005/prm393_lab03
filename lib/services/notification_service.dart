@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import '../firebase/platform_support.dart';
 
 /// App notification model to keep an in-app list of received messages
 class AppNotificationItem {
@@ -48,6 +49,10 @@ class NotificationService {
   Future<void> initialize({
     Function(RemoteMessage message)? onNotificationOpened,
   }) async {
+    if (!PlatformSupport.isMobile) {
+      debugPrint('NotificationService: FCM skipped (only available on Android/iOS)');
+      return;
+    }
     try {
       // 1. Request notification permission (Crucial for Android 13+)
       final settings = await _fcm.requestPermission(

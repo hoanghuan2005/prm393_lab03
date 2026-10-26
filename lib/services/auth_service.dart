@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../firebase/platform_support.dart';
 
 /// Service abstraction for Authentication
 class AuthService {
@@ -26,8 +27,16 @@ class AuthService {
   String get displayName => _auth.currentUser?.displayName ?? _auth.currentUser?.email ?? 'Người dùng';
 
   /// Sign in with Google
+  /// Mobile: native google_sign_in. Web: Firebase popup. Windows: unsupported.
   Future<UserCredential?> signInWithGoogle() async {
+    if (!PlatformSupport.supportsGoogleSignIn) {
+      throw UnsupportedError('Google Sign-In is not available on this platform');
+    }
     try {
+      if (kIsWeb) {
+        return await _auth.signInWithPopup(GoogleAuthProvider());
+      }
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // The user cancelled the sign-in flow
@@ -59,7 +68,7 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await Future.wait([
-        _googleSignIn.signOut(),
+        if (PlatformSupport.isMobile) _googleSignIn.signOut(),
         _auth.signOut(),
       ]);
     } catch (e) {

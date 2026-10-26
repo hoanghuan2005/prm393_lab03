@@ -112,7 +112,7 @@ class WhyIBuyApp extends StatelessWidget {
       title: 'Why I Buy',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      navigatorObservers: [analyticsService.analyticsObserver],
+      navigatorObservers: analyticsService.navigatorObservers,
       home: const AuthGate(),
     );
   }

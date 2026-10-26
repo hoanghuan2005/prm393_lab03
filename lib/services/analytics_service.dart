@@ -1,21 +1,25 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Analytics
 /// Strictly adheres to the Analytics Plan in docs/analytics-plan.md (No PII)
+/// On web/Windows analytics is disabled ([_analytics] is null) and events are no-ops.
 class AppAnalyticsService {
-  final FirebaseAnalytics _analytics;
+  final FirebaseAnalytics? _analytics;
 
   AppAnalyticsService({FirebaseAnalytics? analytics})
-      : _analytics = analytics ?? FirebaseAnalytics.instance;
+      : _analytics = analytics ??
+            (PlatformSupport.isMobile ? FirebaseAnalytics.instance : null);
 
-  FirebaseAnalyticsObserver get analyticsObserver =>
-      FirebaseAnalyticsObserver(analytics: _analytics);
+  List<NavigatorObserver> get navigatorObservers => [
+        if (_analytics != null) FirebaseAnalyticsObserver(analytics: _analytics),
+      ];
 
   /// Set user ID upon sign-in
   Future<void> setUserId(String? userId) async {
     try {
-      await _analytics.setUserId(id: userId);
+      await _analytics?.setUserId(id: userId);
     } catch (e) {
       debugPrint('Analytics setUserId error: $e');
     }
@@ -24,7 +28,7 @@ class AppAnalyticsService {
   /// Event 1: login
   Future<void> logLogin({String method = 'google'}) async {
     try {
-      await _analytics.logLogin(loginMethod: method);
+      await _analytics?.logLogin(loginMethod: method);
     } catch (e) {
       debugPrint('Analytics logLogin error: $e');
     }
@@ -36,7 +40,7 @@ class AppAnalyticsService {
     required int resultCount,
   }) async {
     try {
-      await _analytics.logSearch(
+      await _analytics?.logSearch(
         searchTerm: searchTerm,
         parameters: {'result_count': resultCount},
       );
@@ -52,7 +56,7 @@ class AppAnalyticsService {
     required bool hasSaleDate,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'add_to_wishlist',
         parameters: {
           'motive': motive,
@@ -72,7 +76,7 @@ class AppAnalyticsService {
     required double price,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'record_purchase',
         parameters: {
           'item_id': itemId,
@@ -91,7 +95,7 @@ class AppAnalyticsService {
     required String month,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'set_budget',
         parameters: {
           'budget_amount': amount,
@@ -110,7 +114,7 @@ class AppAnalyticsService {
     required int daysInCooldown,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'view_item_detail',
         parameters: {
           'item_id': itemId,
@@ -130,7 +134,7 @@ class AppAnalyticsService {
     required double savedAmount,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'make_decision',
         parameters: {
           'action': action,
@@ -150,7 +154,7 @@ class AppAnalyticsService {
     required int itemCount,
   }) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'export_report',
         parameters: {
           'file_format': fileFormat,
@@ -170,7 +174,7 @@ class AppAnalyticsService {
       if (sessionDurationSec != null) {
         params['session_duration_sec'] = sessionDurationSec;
       }
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'logout',
         parameters: params.isNotEmpty ? params : null,
       );
@@ -182,7 +186,7 @@ class AppAnalyticsService {
   /// Event 8: click_sale_reminder
   Future<void> logClickSaleReminder(String saleType) async {
     try {
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: 'click_sale_reminder',
         parameters: {'sale_type': saleType},
       );

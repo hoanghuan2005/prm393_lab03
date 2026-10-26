@@ -24,7 +24,7 @@ class PurchaseService {
       final items = snapshot.docs
           .map((doc) => PurchaseItem.fromFirestore(doc))
           .toList();
-      items.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      items.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
       return items;
     });
   }
@@ -33,46 +33,43 @@ class PurchaseService {
   Future<PurchaseItem> addPurchase({
     required String userId,
     required String title,
-    required double amount,
+    required int amountVnd,
     required BuyingMotive motive,
-    required DateTime dateTime,
+    required DateTime occurredAt,
     String? note,
   }) async {
+    final item = PurchaseItem(
+      id: '',
+      title: title,
+      amountVnd: amountVnd,
+      motive: motive,
+      occurredAt: occurredAt,
+      note: note,
+    );
+    // TODO(B6): move to users/{uid}/purchases; userId stays only for the current top-level query
     final docRef = await _purchasesRef.add({
+      ...item.toMap(),
       'userId': userId,
-      'title': title,
-      'amount': amount,
-      'motive': motive.key,
-      'dateTime': Timestamp.fromDate(dateTime),
-      'note': note,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    return PurchaseItem(
-      id: docRef.id,
-      userId: userId,
-      title: title,
-      amount: amount,
-      motive: motive,
-      dateTime: dateTime,
-      note: note,
-    );
+    return item.copyWith(id: docRef.id);
   }
 
   /// Update an existing purchase in Firestore
   Future<void> updatePurchase({
     required String purchaseId,
     required String title,
-    required double amount,
+    required int amountVnd,
     required BuyingMotive motive,
-    required DateTime dateTime,
+    required DateTime occurredAt,
     String? note,
   }) async {
     await _purchasesRef.doc(purchaseId).update({
       'title': title,
-      'amount': amount,
+      'amountVnd': amountVnd,
       'motive': motive.key,
-      'dateTime': Timestamp.fromDate(dateTime),
+      'occurredAt': Timestamp.fromDate(occurredAt),
       'note': note,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -103,8 +100,8 @@ class PurchaseService {
   Future<void> saveMonthlyBudget({
     required String userId,
     required String month,
-    required double monthlyLimit,
-    Map<String, double>? categoryBudgets,
+    required int monthlyLimit,
+    Map<String, int>? categoryBudgets,
   }) async {
     final docId = '${userId}_$month';
     await _budgetsRef.doc(docId).set({

@@ -26,10 +26,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
     final allPurchases = purchaseVm.allPurchases;
 
     // Calculate motive counts and sums
-    final Map<BuyingMotive, double> motiveSums = {};
+    final Map<BuyingMotive, int> motiveSums = {};
     final Map<BuyingMotive, int> motiveCounts = {};
     for (final p in allPurchases) {
-      motiveSums[p.motive] = (motiveSums[p.motive] ?? 0) + p.amount;
+      motiveSums[p.motive] = (motiveSums[p.motive] ?? 0) + p.amountVnd;
       motiveCounts[p.motive] = (motiveCounts[p.motive] ?? 0) + 1;
     }
 
@@ -174,7 +174,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        formatVnd(totalSpent.round()),
+                        formatVnd(totalSpent),
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
@@ -276,7 +276,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                         ),
                                       ),
                                       Text(
-                                        formatVnd(sum.round()),
+                                        formatVnd(sum),
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,

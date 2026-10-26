@@ -2,19 +2,18 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/formatters/money_format.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
-import 'package:prm393_lab03/models/item_status.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
 import 'package:prm393_lab03/models/spending_insight.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
+import 'package:prm393_lab03/models/wishlist_status.dart';
 import 'package:prm393_lab03/services/ai_insight_service.dart';
 
-PurchaseItem _purchase(String title, double amount, BuyingMotive motive, DateTime at) => PurchaseItem(
+PurchaseItem _purchase(String title, int amount, BuyingMotive motive, DateTime at) => PurchaseItem(
       id: title,
-      userId: 'u1',
       title: title,
-      amount: amount,
+      amountVnd: amount,
       motive: motive,
-      dateTime: at,
+      occurredAt: at,
     );
 
 class _FakeGenerator implements InsightTextGenerator {
@@ -48,11 +47,10 @@ void main() {
   final wishlist = [
     WishlistItem(
       id: 'w1',
-      userId: 'u1',
       title: 'Đồng hồ',
-      price: 600000,
+      latestPriceVnd: 600000,
       motive: BuyingMotive.social,
-      status: ItemStatus.dropped,
+      status: WishlistStatus.skipped,
       createdAt: DateTime(2026, 10, 1),
       decidedAt: DateTime(2026, 10, 5),
     ),

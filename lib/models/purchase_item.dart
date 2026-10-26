@@ -2,73 +2,132 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import 'budget_group.dart';
 import 'buying_motive.dart';
+import 'firestore_fields.dart';
 
-/// Purchase Item Data Model for Why I Buy
+/// users/{uid}/purchases/{purchaseId}
 class PurchaseItem {
   final String id;
-  final String userId;
   final String title;
-  final double amount;
+  final int amountVnd;
   final BuyingMotive motive;
-  final DateTime dateTime;
+  final DateTime occurredAt;
   final String? note;
+  final String budgetGroupId;
+  final String? wishlistItemId;
+  final bool usedDiscountCode;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const PurchaseItem({
     required this.id,
-    required this.userId,
     required this.title,
-    required this.amount,
+    required this.amountVnd,
     required this.motive,
-    required this.dateTime,
+    required this.occurredAt,
     this.note,
+    this.budgetGroupId = BudgetGroup.otherId,
+    this.wishlistItemId,
+    this.usedDiscountCode = false,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  String get formattedAmount => formatVnd(amount.round());
+  String get formattedAmount => formatVnd(amountVnd);
 
-  String get formattedTime => formatRelativeDateTime(dateTime);
+  String get formattedTime => formatRelativeDateTime(occurredAt);
+
+  /// Legacy documents used `amount` (double) and `dateTime`
+  factory PurchaseItem.fromFirestore(DocumentSnapshot doc) {
+    final data = docData(doc);
+    return PurchaseItem(
+      id: doc.id,
+      title: readText(data['title']) ?? 'Khoản chi không tên',
+      amountVnd: readInt(data['amountVnd'] ?? data['amount']) ?? 0,
+      motive: BuyingMotive.fromKey(readString(data['motive'])),
+      occurredAt:
+          readDate(data['occurredAt'] ?? data['dateTime']) ?? DateTime.now(),
+      note: readText(data['note']),
+      budgetGroupId: readText(data['budgetGroupId']) ?? BudgetGroup.otherId,
+      wishlistItemId: readText(data['wishlistItemId']),
+      usedDiscountCode: data['usedDiscountCode'] == true,
+      createdAt: readDate(data['createdAt']),
+      updatedAt: readDate(data['updatedAt']),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
       'title': title,
-      'amount': amount,
+      'amountVnd': amountVnd,
       'motive': motive.key,
-      'dateTime': Timestamp.fromDate(dateTime),
+      'occurredAt': Timestamp.fromDate(occurredAt),
       'note': note,
+      'budgetGroupId': budgetGroupId,
+      'wishlistItemId': wishlistItemId,
+      'usedDiscountCode': usedDiscountCode,
+      if (createdAt != null) 'createdAt': toTimestamp(createdAt),
+      if (updatedAt != null) 'updatedAt': toTimestamp(updatedAt),
     };
-  }
-
-  factory PurchaseItem.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-    return PurchaseItem(
-      id: doc.id,
-      userId: data['userId'] as String? ?? '',
-      title: data['title'] as String? ?? 'Khoản chi không tên',
-      amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
-      motive: BuyingMotive.fromKey(data['motive'] as String?),
-      dateTime: (data['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      note: data['note'] as String?,
-    );
   }
 
   PurchaseItem copyWith({
     String? id,
-    String? userId,
     String? title,
-    double? amount,
+    int? amountVnd,
     BuyingMotive? motive,
-    DateTime? dateTime,
+    DateTime? occurredAt,
     String? note,
+    String? budgetGroupId,
+    String? wishlistItemId,
+    bool? usedDiscountCode,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return PurchaseItem(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       title: title ?? this.title,
-      amount: amount ?? this.amount,
+      amountVnd: amountVnd ?? this.amountVnd,
       motive: motive ?? this.motive,
-      dateTime: dateTime ?? this.dateTime,
+      occurredAt: occurredAt ?? this.occurredAt,
       note: note ?? this.note,
+      budgetGroupId: budgetGroupId ?? this.budgetGroupId,
+      wishlistItemId: wishlistItemId ?? this.wishlistItemId,
+      usedDiscountCode: usedDiscountCode ?? this.usedDiscountCode,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PurchaseItem &&
+          other.id == id &&
+          other.title == title &&
+          other.amountVnd == amountVnd &&
+          other.motive == motive &&
+          other.occurredAt == occurredAt &&
+          other.note == note &&
+          other.budgetGroupId == budgetGroupId &&
+          other.wishlistItemId == wishlistItemId &&
+          other.usedDiscountCode == usedDiscountCode &&
+          other.createdAt == createdAt &&
+          other.updatedAt == updatedAt;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    amountVnd,
+    motive,
+    occurredAt,
+    note,
+    budgetGroupId,
+    wishlistItemId,
+    usedDiscountCode,
+    createdAt,
+    updatedAt,
+  );
 }

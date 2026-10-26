@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../models/buying_motive.dart';
-import '../models/item_status.dart';
 import '../models/ui_state.dart';
+import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -115,7 +115,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   onTap: () => wishlistVm.setStatusFilter(null),
                 ),
                 const SizedBox(width: AppDimens.space8),
-                ...ItemStatus.values.map((status) {
+                ...WishlistStatus.values.map((status) {
                   return Padding(
                     padding: const EdgeInsets.only(right: AppDimens.space8),
                     child: _buildStatusFilterChip(

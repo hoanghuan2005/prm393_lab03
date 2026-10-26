@@ -282,12 +282,12 @@ Quy tắc bắt buộc:
         );
       case InsightKind.largestPurchase:
         final p = stats.largestPurchase!;
-        final time = formatTime(p.dateTime);
+        final time = formatTime(p.occurredAt);
         return InsightCard(
           kind: kind,
           title: 'Khoản lớn nhất tháng',
           body:
-              '${p.title}: ${vnd(p.amount.round())}, bạn ghi động cơ ${p.motive.label}, lúc $time.',
+              '${p.title}: ${vnd(p.amountVnd)}, bạn ghi động cơ ${p.motive.label}, lúc $time.',
           fromAi: false,
         );
       case InsightKind.skippedItems:

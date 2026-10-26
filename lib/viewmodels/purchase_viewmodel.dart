@@ -19,8 +19,8 @@ class PurchaseViewModel extends ChangeNotifier {
   String _currentUserId = '';
   BuyingMotive? _selectedMotiveFilter;
   DateTime _selectedMonth = DateTime(2026, 10, 1);
-  double _monthlyBudget = 2000000; // Default: 2.000.000 ₫
-  Map<String, double> _categoryBudgets = {
+  int _monthlyBudget = 2000000; // Default: 2.000.000 ₫
+  Map<String, int> _categoryBudgets = {
     'Ăn uống': 500000,
     'Thời trang': 600000,
     'Công nghệ': 1000000,
@@ -40,76 +40,68 @@ class PurchaseViewModel extends ChangeNotifier {
       // Tháng 10/2026 (5 khoản - 817.000 ₫)
       PurchaseItem(
         id: 'seed-1',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Cơm tấm',
-        amount: 40000,
+        amountVnd: 40000,
         motive: BuyingMotive.convenience,
-        dateTime: DateTime(2026, 10, 11, 12, 15),
+        occurredAt: DateTime(2026, 10, 11, 12, 15),
         note: 'Trưa bận việc công ty nên ăn nhanh gần văn phòng',
       ),
       PurchaseItem(
         id: 'seed-2',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Tai nghe Bluetooth',
-        amount: 389000,
+        amountVnd: 389000,
         motive: BuyingMotive.sale,
-        dateTime: DateTime(2026, 10, 10, 23, 40),
+        occurredAt: DateTime(2026, 10, 10, 23, 40),
         note: 'Săn sale lúc nửa đêm đợt flash sale giảm 35%',
       ),
       PurchaseItem(
         id: 'seed-3',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Trà sữa nướng',
-        amount: 45000,
+        amountVnd: 45000,
         motive: BuyingMotive.emotion,
-        dateTime: DateTime(2026, 10, 10, 15, 30),
+        occurredAt: DateTime(2026, 10, 10, 15, 30),
         note: 'Buồn vì công việc nên muốn uống gì ngọt',
       ),
       PurchaseItem(
         id: 'seed-4',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Sách Tâm lý học về tiền',
-        amount: 143000,
+        amountVnd: 143000,
         motive: BuyingMotive.want,
-        dateTime: DateTime(2026, 10, 9, 9, 20),
+        occurredAt: DateTime(2026, 10, 9, 9, 20),
         note: 'Thấy review hay trên diễn đàn đọc sách',
       ),
       PurchaseItem(
         id: 'seed-5',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Áo khoác gió Uniqlo',
-        amount: 200000,
+        amountVnd: 200000,
         motive: BuyingMotive.sale,
-        dateTime: DateTime(2026, 10, 8, 19, 45),
+        occurredAt: DateTime(2026, 10, 8, 19, 45),
         note: 'Cửa hàng đang giảm giá cuối mùa',
       ),
 
       // Tháng 9/2026 (Figma 06/07 tháng 9/2026)
       PurchaseItem(
         id: 'seed-sep-1',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Giày chạy bộ thể thao',
-        amount: 1250000,
+        amountVnd: 1250000,
         motive: BuyingMotive.need,
-        dateTime: DateTime(2026, 9, 28, 16, 20),
+        occurredAt: DateTime(2026, 9, 28, 16, 20),
         note: 'Đổi giày mới để tập thể dục chuẩn bị giải chạy',
       ),
       PurchaseItem(
         id: 'seed-sep-2',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Bàn phím cơ văn phòng',
-        amount: 450000,
+        amountVnd: 450000,
         motive: BuyingMotive.want,
-        dateTime: DateTime(2026, 9, 15, 10, 0),
+        occurredAt: DateTime(2026, 9, 15, 10, 0),
         note: 'Gõ êm tay hơn khi làm việc buổi tối',
       ),
       PurchaseItem(
         id: 'seed-sep-3',
-        userId: _currentUserId.isNotEmpty ? _currentUserId : 'demo-user',
         title: 'Cà phê & Bánh ngọt',
-        amount: 85000,
+        amountVnd: 85000,
         motive: BuyingMotive.emotion,
-        dateTime: DateTime(2026, 9, 5, 14, 30),
+        occurredAt: DateTime(2026, 9, 5, 14, 30),
         note: 'Hẹn bạn bè tâm sự cuối tuần',
       ),
     ];
@@ -164,12 +156,12 @@ class PurchaseViewModel extends ChangeNotifier {
           (data) {
             if (data != null) {
               if (data['monthlyLimit'] != null) {
-                _monthlyBudget = (data['monthlyLimit'] as num).toDouble();
+                _monthlyBudget = (data['monthlyLimit'] as num).toInt();
               }
               if (data['categoryBudgets'] != null) {
                 final catData = data['categoryBudgets'] as Map<String, dynamic>;
                 _categoryBudgets = catData.map(
-                  (k, v) => MapEntry(k, (v as num).toDouble()),
+                  (k, v) => MapEntry(k, (v as num).toInt()),
                 );
               }
               notifyListeners();
@@ -191,8 +183,8 @@ class PurchaseViewModel extends ChangeNotifier {
   /// Purchases belonging to currently selected month
   List<PurchaseItem> get monthPurchases {
     return _purchases.where((item) {
-      return item.dateTime.year == _selectedMonth.year &&
-          item.dateTime.month == _selectedMonth.month;
+      return item.occurredAt.year == _selectedMonth.year &&
+          item.occurredAt.month == _selectedMonth.month;
     }).toList();
   }
 
@@ -200,8 +192,8 @@ class PurchaseViewModel extends ChangeNotifier {
   List<PurchaseItem> get filteredPurchases {
     return _purchases.where((item) {
       final matchesMonth =
-          item.dateTime.year == _selectedMonth.year &&
-          item.dateTime.month == _selectedMonth.month;
+          item.occurredAt.year == _selectedMonth.year &&
+          item.occurredAt.month == _selectedMonth.month;
       if (!matchesMonth) return false;
       if (_selectedMotiveFilter != null &&
           item.motive != _selectedMotiveFilter) {
@@ -212,28 +204,28 @@ class PurchaseViewModel extends ChangeNotifier {
   }
 
   /// Monthly total spent
-  double get weeklyTotal {
-    return monthPurchases.fold(0.0, (sum, item) => sum + item.amount);
+  int get weeklyTotal {
+    return monthPurchases.fold(0, (sum, item) => sum + item.amountVnd);
   }
 
   /// Monthly count
   int get weeklyCount => monthPurchases.length;
 
   /// Monthly budget settings & calculations
-  double get monthlyBudget => _monthlyBudget;
-  double get monthlySpent => weeklyTotal;
+  int get monthlyBudget => _monthlyBudget;
+  int get monthlySpent => weeklyTotal;
   double get budgetProgress => _monthlyBudget > 0
       ? (monthlySpent / _monthlyBudget).clamp(0.0, 1.0)
       : 0.0;
   bool get isBudgetExceeded =>
       monthlySpent > _monthlyBudget && _monthlyBudget > 0;
-  double get budgetRemaining => _monthlyBudget - monthlySpent;
+  int get budgetRemaining => _monthlyBudget - monthlySpent;
 
-  Map<String, double> get categoryBudgets => Map.unmodifiable(_categoryBudgets);
+  Map<String, int> get categoryBudgets => Map.unmodifiable(_categoryBudgets);
 
   /// Calculate spending per category based on item names/motives for Figma 31
-  Map<String, double> get categorySpent {
-    final map = <String, double>{
+  Map<String, int> get categorySpent {
+    final map = <String, int>{
       'Ăn uống': 0,
       'Thời trang': 0,
       'Công nghệ': 0,
@@ -248,14 +240,14 @@ class PurchaseViewModel extends ChangeNotifier {
           lower.contains('ăn') ||
           lower.contains('uống') ||
           lower.contains('nước')) {
-        map['Ăn uống'] = (map['Ăn uống'] ?? 0) + p.amount;
+        map['Ăn uống'] = (map['Ăn uống'] ?? 0) + p.amountVnd;
       } else if (lower.contains('áo') ||
           lower.contains('quần') ||
           lower.contains('giày') ||
           lower.contains('dép') ||
           lower.contains('uniqlo') ||
           lower.contains('túi')) {
-        map['Thời trang'] = (map['Thời trang'] ?? 0) + p.amount;
+        map['Thời trang'] = (map['Thời trang'] ?? 0) + p.amountVnd;
       } else if (lower.contains('tai nghe') ||
           lower.contains('bàn phím') ||
           lower.contains('chuột') ||
@@ -263,9 +255,9 @@ class PurchaseViewModel extends ChangeNotifier {
           lower.contains('điện thoại') ||
           lower.contains('laptop') ||
           lower.contains('loa')) {
-        map['Công nghệ'] = (map['Công nghệ'] ?? 0) + p.amount;
+        map['Công nghệ'] = (map['Công nghệ'] ?? 0) + p.amountVnd;
       } else {
-        map['Khác'] = (map['Khác'] ?? 0) + p.amount;
+        map['Khác'] = (map['Khác'] ?? 0) + p.amountVnd;
       }
     }
     return map;
@@ -273,8 +265,8 @@ class PurchaseViewModel extends ChangeNotifier {
 
   /// Set and persist monthly budget + category budgets to Firestore
   Future<void> setMonthlyBudget(
-    double amount, {
-    Map<String, double>? categoryBudgets,
+    int amount, {
+    Map<String, int>? categoryBudgets,
   }) async {
     _monthlyBudget = amount;
     if (categoryBudgets != null) {
@@ -380,7 +372,7 @@ class PurchaseViewModel extends ChangeNotifier {
   /// Add new purchase (Saves to Cloud Firestore + Local Cache + Analytics)
   Future<PurchaseItem> addPurchase({
     required String title,
-    required double amount,
+    required int amount,
     required BuyingMotive motive,
     DateTime? dateTime,
     String? note,
@@ -397,31 +389,29 @@ class PurchaseViewModel extends ChangeNotifier {
         newItem = await purchaseService!.addPurchase(
           userId: effectiveUserId,
           title: title,
-          amount: amount,
+          amountVnd: amount,
           motive: motive,
-          dateTime: effectiveTime,
+          occurredAt: effectiveTime,
           note: note,
         );
       } catch (e) {
         debugPrint('Firestore addPurchase error, fallback to local: $e');
         newItem = PurchaseItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          userId: effectiveUserId,
           title: title,
-          amount: amount,
+          amountVnd: amount,
           motive: motive,
-          dateTime: effectiveTime,
+          occurredAt: effectiveTime,
           note: note,
         );
       }
     } else {
       newItem = PurchaseItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: effectiveUserId,
         title: title,
-        amount: amount,
+        amountVnd: amount,
         motive: motive,
-        dateTime: effectiveTime,
+        occurredAt: effectiveTime,
         note: note,
       );
     }
@@ -432,7 +422,7 @@ class PurchaseViewModel extends ChangeNotifier {
     unawaited(
       analyticsService?.logPurchaseRecorded(
             itemId: newItem.id,
-            price: newItem.amount,
+            price: newItem.amountVnd,
             motive: newItem.motive.key,
           ) ??
           Future<void>.value(),
@@ -445,7 +435,7 @@ class PurchaseViewModel extends ChangeNotifier {
   Future<void> updatePurchase({
     required String id,
     required String title,
-    required double amount,
+    required int amount,
     required BuyingMotive motive,
     required DateTime dateTime,
     String? note,
@@ -454,9 +444,9 @@ class PurchaseViewModel extends ChangeNotifier {
     if (index != -1) {
       _purchases[index] = _purchases[index].copyWith(
         title: title,
-        amount: amount,
+        amountVnd: amount,
         motive: motive,
-        dateTime: dateTime,
+        occurredAt: dateTime,
         note: note,
       );
       notifyListeners();
@@ -469,9 +459,9 @@ class PurchaseViewModel extends ChangeNotifier {
         await purchaseService!.updatePurchase(
           purchaseId: id,
           title: title,
-          amount: amount,
+          amountVnd: amount,
           motive: motive,
-          dateTime: dateTime,
+          occurredAt: dateTime,
           note: note,
         );
       } catch (e) {

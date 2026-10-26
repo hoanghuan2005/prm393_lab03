@@ -25,7 +25,7 @@ class HistoryScreen extends StatelessWidget {
     // Group purchases by day
     final Map<String, List<PurchaseItem>> grouped = {};
     for (final p in purchases) {
-      final key = formatDate(p.dateTime);
+      final key = formatDate(p.occurredAt);
       grouped.putIfAbsent(key, () => []).add(p);
     }
 
@@ -205,8 +205,8 @@ class HistoryScreen extends StatelessWidget {
                   ...grouped.keys.map((dateKey) {
                     final dayItems = grouped[dateKey]!;
                     final dayTotal = dayItems.fold(
-                      0.0,
-                      (sum, i) => sum + i.amount,
+                      0,
+                      (sum, i) => sum + i.amountVnd,
                     );
 
                     return Column(
@@ -230,7 +230,7 @@ class HistoryScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                formatVnd(dayTotal.round()),
+                                formatVnd(dayTotal),
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -403,7 +403,7 @@ class HistoryScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                formatVnd(spent.round()),
+                formatVnd(spent),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -411,7 +411,7 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                'Mục tiêu: ${formatVnd(budget.round())}',
+                'Mục tiêu: ${formatVnd(budget)}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -439,8 +439,8 @@ class HistoryScreen extends StatelessWidget {
           // Explanatory note
           Text(
             isExceeded
-                ? 'Đã vượt ${formatVnd((spent - budget).round())} so với mốc bạn đặt. Ứng dụng không chặn mua.'
-                : 'Còn lại ${formatVnd((budget - spent).round())} trong ngân sách dự kiến tháng này.',
+                ? 'Đã vượt ${formatVnd(spent - budget)} so với mốc bạn đặt. Ứng dụng không chặn mua.'
+                : 'Còn lại ${formatVnd(budget - spent)} trong ngân sách dự kiến tháng này.',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
@@ -528,7 +528,7 @@ class HistoryScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 2),
           Text(
-            '${item.motive.label} • ${formatTime(item.dateTime)}',
+            '${item.motive.label} • ${formatTime(item.occurredAt)}',
             style: const TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
           if (item.note != null && item.note!.isNotEmpty) ...[
@@ -545,7 +545,7 @@ class HistoryScreen extends StatelessWidget {
         ],
       ),
       trailing: Text(
-        formatVnd(item.amount.round()),
+        formatVnd(item.amountVnd),
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w700,

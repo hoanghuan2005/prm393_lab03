@@ -39,7 +39,7 @@ class PurchaseDetailArgs {
 
 /// Arguments for [AppRoutes.recordPurchase]; all optional (new purchase when empty)
 class RecordPurchaseArgs {
-  final double? initialAmount;
+  final int? initialAmount;
   final String? initialTitle;
   final PurchaseItem? existingPurchase;
 

@@ -3,30 +3,26 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
+import '../models/wishlist_status.dart';
 
 /// Service responsible solely for rendering PDF documents (Single Responsibility per CR-02)
 class ReportService {
   Future<Uint8List> generateMonthlyReportPdf({
     required String userName,
     required List<WishlistItem> items,
-    required double totalSaved,
+    required int totalSaved,
   }) async {
     final pdf = pw.Document();
 
     final boughtItems = items
-        .where((i) => i.status == ItemStatus.bought)
+        .where((i) => i.status == WishlistStatus.purchased)
         .toList();
     final droppedItems = items
-        .where((i) => i.status == ItemStatus.dropped)
+        .where((i) => i.status == WishlistStatus.skipped)
         .toList();
     final waitingItems = items
-        .where(
-          (i) =>
-              i.status == ItemStatus.considering ||
-              i.status == ItemStatus.waiting,
-        )
+        .where((i) => i.status == WishlistStatus.considering)
         .toList();
 
     pdf.addPage(
@@ -122,8 +118,8 @@ class ReportService {
                 data: items.take(10).map((item) {
                   return [
                     item.title,
-                    item.price.toStringAsFixed(0),
-                    item.motive.label,
+                    item.latestPriceVnd?.toString() ?? '',
+                    item.displayMotive.label,
                     item.status.label,
                   ];
                 }).toList(),

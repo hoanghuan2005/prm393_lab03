@@ -24,14 +24,14 @@ class BudgetSettingSheet extends StatefulWidget {
 
 class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   late TextEditingController _controller;
-  late double _amount;
+  late int _amount;
 
   @override
   void initState() {
     super.initState();
     final purchaseVm = context.read<PurchaseViewModel>();
     _amount = purchaseVm.monthlyBudget;
-    _controller = TextEditingController(text: formatVnd(_amount.round()));
+    _controller = TextEditingController(text: formatVnd(_amount));
   }
 
   @override
@@ -41,16 +41,16 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   }
 
   void _onAmountChanged(String val) {
-    final parsed = (parseVnd(val) ?? 0).toDouble();
+    final parsed = parseVnd(val) ?? 0;
     setState(() {
       _amount = parsed;
     });
   }
 
-  void _setPredefinedAmount(double val) {
+  void _setPredefinedAmount(int val) {
     setState(() {
       _amount = val;
-      _controller.text = formatVnd(_amount.round());
+      _controller.text = formatVnd(_amount);
     });
   }
 
@@ -203,7 +203,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        formatVnd(spent.round()),
+                        formatVnd(spent),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -228,7 +228,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        formatVnd(remaining.abs().round()),
+                        formatVnd(remaining.abs()),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -278,7 +278,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Đã lưu ngân sách: ${formatVnd(_amount.round())} lên Firebase!',
+                                  'Đã lưu ngân sách: ${formatVnd(_amount)} lên Firebase!',
                                 ),
                               ],
                             ),
@@ -311,7 +311,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
     );
   }
 
-  Widget _buildQuickChip(String label, double val) {
+  Widget _buildQuickChip(String label, int val) {
     final isSelected = _amount == val;
     return InkWell(
       onTap: () => _setPredefinedAmount(val),

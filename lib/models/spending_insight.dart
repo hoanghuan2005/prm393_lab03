@@ -6,9 +6,9 @@ import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import 'buying_motive.dart';
-import 'item_status.dart';
 import 'purchase_item.dart';
 import 'wishlist_item.dart';
+import 'wishlist_status.dart';
 
 /// Minimum purchases in a month before AI is asked to comment (spec 7.7: say when data is missing)
 const int kMinPurchasesForAi = 3;
@@ -105,11 +105,11 @@ class MonthlySpendingStats {
     bool inMonth(DateTime d, int y, int m) => d.year == y && d.month == m;
 
     final monthPurchases = purchases
-        .where((p) => inMonth(p.dateTime, month.year, month.month))
+        .where((p) => inMonth(p.occurredAt, month.year, month.month))
         .toList();
     final previous = DateTime(month.year, month.month - 1, 1);
     final previousPurchases = purchases.where(
-      (p) => inMonth(p.dateTime, previous.year, previous.month),
+      (p) => inMonth(p.occurredAt, previous.year, previous.month),
     );
 
     final counts = <BuyingMotive, int>{};
@@ -120,15 +120,15 @@ class MonthlySpendingStats {
     PurchaseItem? largest;
 
     for (final p in monthPurchases) {
-      final amount = p.amount.round();
+      final amount = p.amountVnd;
       total += amount;
       counts[p.motive] = (counts[p.motive] ?? 0) + 1;
       sums[p.motive] = (sums[p.motive] ?? 0) + amount;
-      if (isLateNight(p.dateTime)) {
+      if (isLateNight(p.occurredAt)) {
         lateCount++;
         lateAmount += amount;
       }
-      if (largest == null || p.amount > largest.amount) largest = p;
+      if (largest == null || p.amountVnd > largest.amountVnd) largest = p;
     }
 
     final motives =
@@ -149,12 +149,12 @@ class MonthlySpendingStats {
 
     final previousTotal = previousPurchases.fold<int>(
       0,
-      (sum, p) => sum + p.amount.round(),
+      (sum, p) => sum + p.amountVnd,
     );
 
     final skipped = wishlistItems.where(
       (i) =>
-          i.status == ItemStatus.dropped &&
+          i.status == WishlistStatus.skipped &&
           i.decidedAt != null &&
           inMonth(i.decidedAt!, month.year, month.month),
     );
@@ -170,7 +170,10 @@ class MonthlySpendingStats {
       largestPurchase: largest,
       previousMonthTotal: previousPurchases.isEmpty ? null : previousTotal,
       skippedCount: skipped.length,
-      skippedValue: skipped.fold<int>(0, (sum, i) => sum + i.price.round()),
+      skippedValue: skipped.fold<int>(
+        0,
+        (sum, i) => sum + (i.latestPriceVnd ?? 0),
+      ),
     );
   }
 
@@ -237,10 +240,10 @@ class MonthlySpendingStats {
       if (largest != null)
         'khoanLonNhat': {
           'ten': largest.title,
-          'soTien': largest.amount.round(),
-          'soTienText': formatVnd(largest.amount.round()),
+          'soTien': largest.amountVnd,
+          'soTienText': formatVnd(largest.amountVnd),
           'dongCo': largest.motive.label,
-          'gio': formatTime(largest.dateTime),
+          'gio': formatTime(largest.occurredAt),
         },
       'monDaQuyetDinhKhongMua': {
         'soMon': skippedCount,
@@ -277,9 +280,9 @@ class MonthlySpendingStats {
     final largest = largestPurchase;
     if (largest != null) {
       numbers.addAll([
-        largest.amount.round(),
-        largest.dateTime.hour,
-        largest.dateTime.minute,
+        largest.amountVnd,
+        largest.occurredAt.hour,
+        largest.occurredAt.minute,
       ]);
       numbers.addAll(extractNumbers(largest.title));
     }

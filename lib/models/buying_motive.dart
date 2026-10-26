@@ -30,9 +30,8 @@ enum BuyingMotive {
     );
   }
 
-  /// Whether this motive triggers the 3-day psychological cooldown period
-  bool get triggersCooldown =>
-      this == BuyingMotive.emotion || this == BuyingMotive.social;
+  /// "Nhu cầu" items skip the cooling-off period; every other motive waits
+  bool get skipsCooldown => this == BuyingMotive.need;
 
   /// Whether this motive relates to periodic shopping sale dates
   bool get relatesToSales => this == BuyingMotive.sale;

@@ -19,7 +19,7 @@ class WishlistCard extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          'Món ${item.title}, giá ${formatVnd(item.price.round())}, động cơ ${item.motive.label}',
+          'Món ${item.title}, giá ${formatVnd(item.latestPriceVnd)}, động cơ ${item.displayMotive.label}',
       child: Card(
         margin: const EdgeInsets.only(bottom: AppDimens.space12),
         elevation: 0,
@@ -48,7 +48,7 @@ class WishlistCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppDimens.space12),
                     Text(
-                      formatVnd(item.price.round()),
+                      formatVnd(item.latestPriceVnd),
                       style: AppTextStyles.titleMedium.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.w700,
@@ -59,7 +59,7 @@ class WishlistCard extends StatelessWidget {
                 const SizedBox(height: AppDimens.space12),
                 Row(
                   children: [
-                    MotiveChip(motive: item.motive, isCompact: true),
+                    MotiveChip(motive: item.displayMotive, isCompact: true),
                     const Spacer(),
                     _buildStatusBadge(),
                   ],

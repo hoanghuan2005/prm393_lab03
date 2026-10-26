@@ -34,7 +34,7 @@ class ReportViewModel extends ChangeNotifier {
     required String userId,
     required String userName,
     required List<WishlistItem> items,
-    required double totalSaved,
+    required int totalSaved,
   }) async {
     _status = ReportStatus.generating;
     _uploadProgress = 0.0;

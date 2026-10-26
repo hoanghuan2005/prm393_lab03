@@ -270,7 +270,7 @@ class HomeScreen extends StatelessWidget {
 
           // Big Amount: 817.000 ₫
           Text(
-            formatVnd(purchaseVm.weeklyTotal.round()),
+            formatVnd(purchaseVm.weeklyTotal),
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -283,7 +283,7 @@ class HomeScreen extends StatelessWidget {
 
           // Subtitle: Tuần này: 5 khoản · 817.000 ₫
           Text(
-            'Tuần này: ${purchaseVm.weeklyCount} khoản · ${formatVnd(purchaseVm.weeklyTotal.round())}',
+            'Tuần này: ${purchaseVm.weeklyCount} khoản · ${formatVnd(purchaseVm.weeklyTotal)}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -406,7 +406,7 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           TextSpan(
                             text:
-                                '${formatVnd(purchaseVm.monthlySpent.round())} / ${formatVnd(purchaseVm.monthlyBudget.round())}',
+                                '${formatVnd(purchaseVm.monthlySpent)} / ${formatVnd(purchaseVm.monthlyBudget)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.onPrimary,
@@ -705,7 +705,7 @@ class HomeScreen extends StatelessWidget {
 
             // Trailing Amount: e.g. 40.000 ₫
             Text(
-              formatVnd(item.amount.round()),
+              formatVnd(item.amountVnd),
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,

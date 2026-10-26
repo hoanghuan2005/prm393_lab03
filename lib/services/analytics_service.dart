@@ -54,7 +54,7 @@ class AppAnalyticsService {
   /// Event 3: add_to_wishlist
   Future<void> logAddToWishlist({
     required String motive,
-    required double price,
+    required int? price,
     required bool hasSaleDate,
   }) async {
     try {
@@ -62,7 +62,7 @@ class AppAnalyticsService {
         name: 'add_to_wishlist',
         parameters: {
           'motive': motive,
-          'item_price': price,
+          'item_price': ?price,
           'has_sale_date': hasSaleDate ? 1 : 0,
         },
       );
@@ -75,7 +75,7 @@ class AppAnalyticsService {
   Future<void> logPurchaseRecorded({
     required String itemId,
     required String motive,
-    required double price,
+    required int price,
   }) async {
     try {
       await _analytics?.logEvent(
@@ -89,7 +89,7 @@ class AppAnalyticsService {
 
   /// Event: set_budget
   Future<void> logBudgetSet({
-    required double amount,
+    required int amount,
     required String month,
   }) async {
     try {
@@ -126,7 +126,7 @@ class AppAnalyticsService {
   Future<void> logMakeDecision({
     required String action,
     required String motive,
-    required double savedAmount,
+    required int savedAmount,
   }) async {
     try {
       await _analytics?.logEvent(

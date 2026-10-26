@@ -344,7 +344,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      formatRelativeDateTime(item.dateTime),
+                      formatRelativeDateTime(item.occurredAt),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -353,7 +353,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      formatWeekdayDate(item.dateTime),
+                      formatWeekdayDate(item.occurredAt),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,

@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
-import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
+import '../models/wishlist_status.dart';
 import '../services/analytics_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -37,30 +37,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           .inDays;
       analytics.logViewItemDetail(
         itemId: widget.item.id,
-        motive: widget.item.motive.key,
+        motive: widget.item.displayMotive.key,
         daysInCooldown: daysInCooldown,
       );
     });
   }
 
-  Future<void> _handleDecision(ItemStatus newStatus) async {
+  Future<void> _handleDecision(WishlistStatus newStatus) async {
     setState(() => _isProcessing = true);
     final wishlistVm = context.read<WishlistViewModel>();
 
     final success = await wishlistVm.updateDecision(
       itemId: widget.item.id,
       status: newStatus,
-      motive: widget.item.motive,
-      price: widget.item.price,
+      motive: widget.item.displayMotive,
+      price: widget.item.latestPriceVnd,
     );
 
     if (mounted) {
       setState(() => _isProcessing = false);
       if (success) {
         String msg = '';
-        if (newStatus == ItemStatus.dropped) {
+        if (newStatus == WishlistStatus.skipped) {
           msg = 'Tuyệt vời! Bạn vừa tránh được khoản chi lãng phí và tiết kiệm thành công.';
-        } else if (newStatus == ItemStatus.bought) {
+        } else if (newStatus == WishlistStatus.purchased) {
           msg = 'Đã đánh dấu mua thành công sau khi cân nhắc kỹ!';
         } else {
           msg = 'Đã chuyển sang danh sách Chờ sale định kỳ!';
@@ -100,7 +100,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   Text(item.title, style: AppTextStyles.headlineMedium),
                   const SizedBox(height: AppDimens.space12),
                   Text(
-                    formatVnd(item.price.round()),
+                    formatVnd(item.latestPriceVnd),
                     style: AppTextStyles.displayMedium.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.w700,
@@ -109,7 +109,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   const SizedBox(height: AppDimens.space16),
                   Row(
                     children: [
-                      MotiveChip(motive: item.motive),
+                      MotiveChip(motive: item.displayMotive),
                       const Spacer(),
                       Text(
                         'Lưu ngày: ${formatDate(item.createdAt)}',
@@ -181,7 +181,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               title: 'Bỏ qua (Tiết kiệm tiền)',
               icon: Icons.savings_outlined,
               isLoading: _isProcessing,
-              onPressed: () => _handleDecision(ItemStatus.dropped),
+              onPressed: () => _handleDecision(WishlistStatus.skipped),
             ),
             const SizedBox(height: AppDimens.space12),
 
@@ -191,7 +191,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               variant: AppButtonVariant.secondary,
               icon: Icons.schedule,
               isLoading: _isProcessing,
-              onPressed: () => _handleDecision(ItemStatus.waiting),
+              onPressed: () => _handleDecision(WishlistStatus.considering),
             ),
             const SizedBox(height: AppDimens.space12),
 
@@ -201,7 +201,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               variant: AppButtonVariant.secondary,
               icon: Icons.shopping_bag_outlined,
               isLoading: _isProcessing,
-              onPressed: () => _handleDecision(ItemStatus.bought),
+              onPressed: () => _handleDecision(WishlistStatus.purchased),
             ),
           ],
         ),

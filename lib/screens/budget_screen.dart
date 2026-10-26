@@ -63,20 +63,20 @@ class BudgetScreen extends StatelessWidget {
       {
         'name': 'Công nghệ',
         'icon': Icons.devices_rounded,
-        'spent': categorySpent['Công nghệ'] ?? 0.0,
-        'budget': categoryBudgets['Công nghệ'] ?? 1000000.0,
+        'spent': categorySpent['Công nghệ'] ?? 0,
+        'budget': categoryBudgets['Công nghệ'] ?? 1000000,
       },
       {
         'name': 'Thời trang',
         'icon': Icons.checkroom_rounded,
-        'spent': categorySpent['Thời trang'] ?? 0.0,
-        'budget': categoryBudgets['Thời trang'] ?? 600000.0,
+        'spent': categorySpent['Thời trang'] ?? 0,
+        'budget': categoryBudgets['Thời trang'] ?? 600000,
       },
       {
         'name': 'Ăn uống',
         'icon': Icons.restaurant_rounded,
-        'spent': categorySpent['Ăn uống'] ?? 0.0,
-        'budget': categoryBudgets['Ăn uống'] ?? 500000.0,
+        'spent': categorySpent['Ăn uống'] ?? 0,
+        'budget': categoryBudgets['Ăn uống'] ?? 500000,
       },
     ];
 
@@ -153,8 +153,8 @@ class BudgetScreen extends StatelessWidget {
                   return _buildCategoryCard(
                     name: cat['name'] as String,
                     icon: cat['icon'] as IconData,
-                    spent: cat['spent'] as double,
-                    catBudget: cat['budget'] as double,
+                    spent: cat['spent'] as int,
+                    catBudget: cat['budget'] as int,
                   );
                 }),
 
@@ -354,8 +354,8 @@ class BudgetScreen extends StatelessWidget {
 
   Widget _buildOverallBudgetCard(
     BuildContext context,
-    double spent,
-    double budget,
+    int spent,
+    int budget,
     double progress,
     bool isExceeded,
   ) {
@@ -416,7 +416,7 @@ class BudgetScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                formatVnd(spent.round()),
+                formatVnd(spent),
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -424,7 +424,7 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '/ ${formatVnd(budget.round())}',
+                '/ ${formatVnd(budget)}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -449,8 +449,8 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             isExceeded
-                ? 'Đã vượt ${formatVnd((spent - budget).round())} so với mốc bạn đặt. App không chặn mua.'
-                : 'Còn lại ${formatVnd((budget - spent).round())} trong ngân sách dự kiến tháng này.',
+                ? 'Đã vượt ${formatVnd(spent - budget)} so với mốc bạn đặt. App không chặn mua.'
+                : 'Còn lại ${formatVnd(budget - spent)} trong ngân sách dự kiến tháng này.',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
@@ -465,8 +465,8 @@ class BudgetScreen extends StatelessWidget {
   Widget _buildCategoryCard({
     required String name,
     required IconData icon,
-    required double spent,
-    required double catBudget,
+    required int spent,
+    required int catBudget,
   }) {
     final progress = catBudget > 0 ? (spent / catBudget).clamp(0.0, 1.0) : 0.0;
     final isExceeded = spent > catBudget && catBudget > 0;
@@ -505,7 +505,7 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '${formatVnd(spent.round())} / ${formatVnd(catBudget.round())}',
+                '${formatVnd(spent)} / ${formatVnd(catBudget)}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -530,8 +530,8 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             isExceeded
-                ? 'Đã vượt ${formatVnd((spent - catBudget).round())} so với mốc nhóm. App không chặn mua.'
-                : 'Còn lại ${formatVnd((catBudget - spent).round())} trong nhóm này.',
+                ? 'Đã vượt ${formatVnd(spent - catBudget)} so với mốc nhóm. App không chặn mua.'
+                : 'Còn lại ${formatVnd(catBudget - spent)} trong nhóm này.',
             style: const TextStyle(
               fontSize: 11.5,
               color: AppColors.textSecondary,

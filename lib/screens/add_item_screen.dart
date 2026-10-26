@@ -42,7 +42,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
 
-    final price = (parseVnd(_priceController.text) ?? 0).toDouble();
+    final price = parseVnd(_priceController.text);
     final success = await wishlistVm.addItem(
       title: _titleController.text.trim(),
       price: price,
@@ -58,7 +58,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _selectedMotive.triggersCooldown
+              !_selectedMotive.skipsCooldown
                   ? 'Đã lưu vào danh sách cân nhắc. Bắt đầu hoãn tâm lý 3 ngày!'
                   : 'Đã lưu vào danh sách cân nhắc!',
             ),
@@ -150,7 +150,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               const SizedBox(height: AppDimens.space20),
 
               // Cooldown Hint if Emotion/Social is selected
-              if (_selectedMotive.triggersCooldown)
+              if (!_selectedMotive.skipsCooldown)
                 Container(
                   padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(

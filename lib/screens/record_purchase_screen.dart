@@ -11,7 +11,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 
 /// Screen 03 & 04: Ghi khoản mua (Bước 1/2 và Bước 2/2) from Figma "Why I Buy ver2"
 class RecordPurchaseScreen extends StatefulWidget {
-  final double? initialAmount;
+  final int? initialAmount;
   final String? initialTitle;
   final PurchaseItem? existingPurchase;
 
@@ -33,7 +33,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   final _amountController = TextEditingController();
   final _titleController = TextEditingController();
   DateTime _selectedDateTime = DateTime.now();
-  double _rawAmount = 0;
+  int _rawAmount = 0;
 
   // Step 2 State
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
@@ -45,16 +45,16 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     super.initState();
     if (widget.existingPurchase != null) {
       final p = widget.existingPurchase!;
-      _rawAmount = p.amount;
-      _amountController.text = formatVnd(_rawAmount.round());
+      _rawAmount = p.amountVnd;
+      _amountController.text = formatVnd(_rawAmount);
       _titleController.text = p.title;
-      _selectedDateTime = p.dateTime;
+      _selectedDateTime = p.occurredAt;
       _selectedMotive = p.motive;
       _noteController.text = p.note ?? '';
     } else {
       _rawAmount = widget.initialAmount ?? 0;
       if (_rawAmount > 0) {
-        _amountController.text = formatVnd(_rawAmount.round());
+        _amountController.text = formatVnd(_rawAmount);
       }
       _titleController.text = widget.initialTitle ?? '';
       _noteController.text = '';
@@ -70,16 +70,16 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   }
 
   void _onAmountChanged(String val) {
-    final parsed = (parseVnd(val) ?? 0).toDouble();
+    final parsed = parseVnd(val) ?? 0;
     setState(() {
       _rawAmount = parsed;
     });
   }
 
-  void _addQuickAmount(double amount) {
+  void _addQuickAmount(int amount) {
     setState(() {
       _rawAmount += amount;
-      _amountController.text = formatVnd(_rawAmount.round());
+      _amountController.text = formatVnd(_rawAmount);
     });
   }
 
@@ -539,7 +539,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     );
   }
 
-  Widget _buildQuickChip(String label, double amount) {
+  Widget _buildQuickChip(String label, int amount) {
     return InkWell(
       onTap: () => _addQuickAmount(amount),
       borderRadius: BorderRadius.circular(20),
@@ -605,7 +605,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      formatVnd(_rawAmount.round()),
+                      formatVnd(_rawAmount),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

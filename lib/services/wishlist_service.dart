@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/buying_motive.dart';
-import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
+import '../models/wishlist_status.dart';
 
 /// Service abstraction for Wishlist & Decisions using Cloud Firestore
 class WishlistService {
@@ -34,53 +34,34 @@ class WishlistService {
   Future<WishlistItem> addItem({
     required String userId,
     required String title,
-    required double price,
+    required int? priceVnd,
     required BuyingMotive motive,
-    String? productUrl,
-    String? imageUrl,
+    String? url,
     int coolingOffDays = 3,
   }) async {
     final now = DateTime.now();
-    DateTime? coolingOffUntil;
-    if (motive.triggersCooldown) {
-      coolingOffUntil = now.add(Duration(days: coolingOffDays));
-    }
-
-    final data = {
-      'userId': userId,
-      'title': title,
-      'price': price,
-      'motive': motive.key,
-      'status': ItemStatus.considering.key,
-      'productUrl': productUrl,
-      'imageUrl': imageUrl,
-      'createdAt': Timestamp.fromDate(now),
-      'coolingOffUntil': coolingOffUntil != null
-          ? Timestamp.fromDate(coolingOffUntil)
-          : null,
-      'note': null,
-      'decidedAt': null,
-    };
-
-    final docRef = await _wishlistRef.add(data);
-    return WishlistItem(
-      id: docRef.id,
-      userId: userId,
+    final item = WishlistItem(
+      id: '',
       title: title,
-      price: price,
+      url: url,
       motive: motive,
-      status: ItemStatus.considering,
-      productUrl: productUrl,
-      imageUrl: imageUrl,
+      cooldownUntil: motive.skipsCooldown
+          ? null
+          : now.add(Duration(days: coolingOffDays)),
+      latestPriceVnd: priceVnd,
+      latestPriceAt: priceVnd == null ? null : now,
       createdAt: now,
-      coolingOffUntil: coolingOffUntil,
     );
+
+    // TODO(B6): move to users/{uid}/wishlistItems; userId stays only for the current top-level query
+    final docRef = await _wishlistRef.add({...item.toMap(), 'userId': userId});
+    return item.copyWith(id: docRef.id);
   }
 
   /// Update item status (Decide: Buy / Wait / Drop)
   Future<void> updateItemStatus({
     required String itemId,
-    required ItemStatus newStatus,
+    required WishlistStatus newStatus,
     String? note,
   }) async {
     await _wishlistRef.doc(itemId).update({

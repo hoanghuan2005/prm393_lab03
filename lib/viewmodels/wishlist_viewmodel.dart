@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/buying_motive.dart';
-import '../models/item_status.dart';
 import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
+import '../models/wishlist_status.dart';
 import '../services/analytics_service.dart';
 import '../services/remote_config_service.dart';
 import '../services/wishlist_service.dart';
@@ -21,7 +21,7 @@ class WishlistViewModel extends ChangeNotifier {
   UiState<List<WishlistItem>> _state = const UiInitial();
 
   BuyingMotive? _selectedMotiveFilter;
-  ItemStatus? _selectedStatusFilter;
+  WishlistStatus? _selectedStatusFilter;
   String _searchQuery = '';
   String _currentUserId = '';
 
@@ -33,7 +33,7 @@ class WishlistViewModel extends ChangeNotifier {
 
   UiState<List<WishlistItem>> get state => _state;
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
-  ItemStatus? get selectedStatusFilter => _selectedStatusFilter;
+  WishlistStatus? get selectedStatusFilter => _selectedStatusFilter;
   String get searchQuery => _searchQuery;
   List<WishlistItem> get allItems => List.unmodifiable(_allItems);
 
@@ -51,7 +51,9 @@ class WishlistViewModel extends ChangeNotifier {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = item.title.toLowerCase().contains(query);
-        final matchesMotive = item.motive.label.toLowerCase().contains(query);
+        final matchesMotive = item.displayMotive.label.toLowerCase().contains(
+          query,
+        );
         return matchesTitle || matchesMotive;
       }
       return true;
@@ -59,10 +61,10 @@ class WishlistViewModel extends ChangeNotifier {
   }
 
   /// Total money saved by dropping impulse purchases
-  double get totalSavedAmount {
+  int get totalSavedAmount {
     return _allItems
-        .where((item) => item.status == ItemStatus.dropped)
-        .fold(0.0, (sum, item) => sum + item.price);
+        .where((item) => item.status == WishlistStatus.skipped)
+        .fold(0, (sum, item) => sum + (item.latestPriceVnd ?? 0));
   }
 
   /// Total items currently in psychological cooldown
@@ -125,7 +127,7 @@ class WishlistViewModel extends ChangeNotifier {
   }
 
   /// Toggle status filter
-  void setStatusFilter(ItemStatus? status) {
+  void setStatusFilter(WishlistStatus? status) {
     _selectedStatusFilter = (_selectedStatusFilter == status) ? null : status;
     _updateFilteredState();
   }
@@ -133,20 +135,18 @@ class WishlistViewModel extends ChangeNotifier {
   /// Add new item
   Future<bool> addItem({
     required String title,
-    required double price,
+    required int? price,
     required BuyingMotive motive,
     String? productUrl,
-    String? imageUrl,
   }) async {
     try {
       final coolingDays = remoteConfigService.coolingOffDays;
       await wishlistService.addItem(
         userId: _currentUserId,
         title: title,
-        price: price,
+        priceVnd: price,
         motive: motive,
-        productUrl: productUrl,
-        imageUrl: imageUrl,
+        url: productUrl,
         coolingOffDays: coolingDays,
       );
 
@@ -165,9 +165,9 @@ class WishlistViewModel extends ChangeNotifier {
   /// Update decision (Buy / Wait / Drop)
   Future<bool> updateDecision({
     required String itemId,
-    required ItemStatus status,
+    required WishlistStatus status,
     required BuyingMotive motive,
-    required double price,
+    required int? price,
     String? note,
   }) async {
     try {
@@ -177,7 +177,7 @@ class WishlistViewModel extends ChangeNotifier {
         note: note,
       );
 
-      final savedAmount = status == ItemStatus.dropped ? price : 0.0;
+      final savedAmount = status == WishlistStatus.skipped ? (price ?? 0) : 0;
       await analyticsService.logMakeDecision(
         action: status.key,
         motive: motive.key,

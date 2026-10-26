@@ -102,8 +102,10 @@ class ControlledPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<void> delete(String uid, String purchaseId) =>
-      delegate.delete(uid, purchaseId);
+  Future<void> delete(String uid, String purchaseId) async {
+    await _beforeWrite();
+    return delegate.delete(uid, purchaseId);
+  }
 }
 
 class PurchaseHarness {

@@ -23,6 +23,13 @@ abstract interface class BudgetService {
     String groupId,
     int? limit,
   );
+
+  /// Several groups in one write; a null (or ≤ 0) value removes that group's limit
+  Future<void> setGroupLimits(
+    String uid,
+    String monthKey,
+    Map<String, int?> limits,
+  );
 }
 
 class FirestoreBudgetService implements BudgetService {
@@ -70,10 +77,18 @@ class FirestoreBudgetService implements BudgetService {
     String monthKey,
     String groupId,
     int? limit,
+  ) => setGroupLimits(uid, monthKey, {groupId: limit});
+
+  @override
+  Future<void> setGroupLimits(
+    String uid,
+    String monthKey,
+    Map<String, int?> limits,
   ) => guard(
     () => _paths.budget(uid, monthKey).set({
       'limits': {
-        groupId: limit != null && limit > 0 ? limit : FieldValue.delete(),
+        for (final e in limits.entries)
+          e.key: e.value != null && e.value! > 0 ? e.value : FieldValue.delete(),
       },
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true)),

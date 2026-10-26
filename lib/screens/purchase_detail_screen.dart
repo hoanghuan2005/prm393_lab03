@@ -31,29 +31,53 @@ class PurchaseDetailScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
+    final linked = purchase.wishlistItemId != null;
     final confirmed = await ConfirmDialog.show(
       context,
       title: 'Xoá khoản mua này?',
       message:
-          'Bạn có chắc chắn muốn xoá "${purchase.title}" không? Khoản tiền này sẽ được khấu trừ khỏi tổng chi tiêu tháng.',
+          'Xoá "${purchase.title}"? Khoản này sẽ không còn được tính vào đã chi của tháng.'
+          '${linked ? '\n\nMón tương ứng trong danh sách mong muốn sẽ trở về "Đang cân nhắc".' : ''}',
       confirmLabel: 'Xoá',
       isDanger: true,
     );
     if (!confirmed || !context.mounted) return;
+    await _delete(context);
+  }
 
+  /// Leaves the screen only after the delete succeeded; a failure offers "Thử lại"
+  Future<void> _delete(BuildContext context) async {
     final purchaseVm = context.read<PurchaseViewModel>();
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    await purchaseVm.deletePurchase(purchase.id);
-
+    final ok = await purchaseVm.deletePurchase(purchase.id);
+    messenger.hideCurrentSnackBar();
+    if (!ok) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            purchaseVm.actionError ?? 'Chưa xoá được khoản mua.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          action: context.mounted
+              ? SnackBarAction(
+                  label: 'Thử lại',
+                  onPressed: () {
+                    if (context.mounted) _delete(context);
+                  },
+                )
+              : null,
+        ),
+      );
+      return;
+    }
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Đã xoá khoản mua "${purchase.title}"'),
-        backgroundColor: AppColors.onPrimary,
+        content: Text('Đã xoá khoản mua "${purchase.title}".'),
         behavior: SnackBarBehavior.floating,
       ),
     );
-    navigator.pop(); // pop back to list
+    if (context.mounted) navigator.pop();
   }
 
   @override

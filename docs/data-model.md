@@ -67,6 +67,10 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 
 Id document phải khớp `^[0-9]{4}-[0-9]{2}$` (rules). Trường: `limits` (map `groupId → int`, chỉ giá trị > 0), `updatedAt`.
 
+Không lưu tổng riêng: **tổng ngân sách tháng = tổng `limits`**, nên không thể thấp hơn tổng các nhóm. Sheet ngân sách lưu mọi nhóm thay đổi trong một lần ghi (`BudgetService.setGroupLimits`).
+
+Phần khả dụng cho danh sách mong muốn (`AvailableBudget`, đặc tả 7.1): `max(0, hạn mức − đã chi − dự phòng) × 90%`; dự phòng = chi trung bình mỗi ngày của nhóm trong tối đa 90 ngày gần nhất (không tính khoản mua từ danh sách mong muốn) × số ngày còn lại của tháng; bằng 0 khi người dùng có dưới 30 ngày dữ liệu. Có dưới 90 ngày dữ liệu thì chia cho số ngày thực có.
+
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 
 Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`.
@@ -85,8 +89,9 @@ Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems`
 
 1. **Món mong muốn ≠ khoản mua.** `wishlistItems` là món đang cân nhắc; chỉ `purchases` được tính vào "đã chi" và ngân sách.
 2. **Mua từ danh sách mong muốn là một batch** (`PurchaseService.buyFromWishlist`): tạo purchase có `wishlistItemId`, đổi món sang `purchased` + `purchaseId` + `decidedAt` (xoá `reviewAt`), thêm decision `buy` – thành công hoặc thất bại cùng nhau.
-3. **"Chờ" chỉ đặt `reviewAt`** (+ decision `wait`); trạng thái vẫn là `considering`.
-4. **"Bỏ qua"** đổi trạng thái sang `skipped` + decision `skip`; hoàn tác ghi decision `undo`.
+3. **"Chờ" chỉ đặt `reviewAt`** (+ decision `wait`); trạng thái vẫn là `considering`. Người dùng chọn ngày (sau N ngày cân nhắc, sau 7 ngày hoặc tự chọn); giờ xem lại cố định 09:00 để ngoài khung 22:00–08:00.
+4. **"Bỏ qua"** đổi trạng thái sang `skipped` + decision `skip`; hoàn tác (5 giây) hoặc "Cân nhắc lại" về sau đều đưa về `considering` + decision `undo`.
+4a. **Xoá khoản mua liên kết món** (`PurchaseService.delete`): cùng một batch xoá purchase, đưa món về `considering` (xoá `purchaseId`, `decidedAt`), xoá decision `buy_{itemId}` (khoá chống mua trùng của `buyFromWishlist`, để món mua lại được) và thêm decision `undo`. Chỉ áp dụng khi món vẫn trỏ đúng purchase đó.
 5. **Giá chưa biết là `null`, không bao giờ lưu `0`.** Có giá thì mỗi lần ghi giá thêm một `priceSnapshot` và cập nhật `latestPriceVnd` / `latestPriceAt`.
 6. **Cooldown:** khi thêm món, `cooldownUntil = createdAt + coolingOffDays` trừ khi động cơ là Nhu cầu.
 7. **Lịch sử chỉ thêm:** `priceSnapshots` và `decisions` không sửa được (rules `update: false`).

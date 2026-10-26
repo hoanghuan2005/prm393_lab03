@@ -385,15 +385,21 @@ class PurchaseViewModel extends ChangeNotifier
     if (error != null) throw AppException('invalid-purchase', error);
   }
 
-  /// Delete a purchase
-  Future<void> deletePurchase(String id) async {
+  /// Delete a purchase (a linked wishlist item goes back to "Đang cân nhắc").
+  /// false = not deleted, see [actionError].
+  Future<bool> deletePurchase(String id) async {
     final uid = _uid;
-    if (uid == null) return;
+    if (uid == null) {
+      _actionError = 'Vui lòng đăng nhập trước khi xoá khoản mua.';
+      return false;
+    }
     try {
       await purchaseService.delete(uid, id);
       _actionError = null;
+      return true;
     } catch (e, stack) {
       _actionError = messageFor(e, stack, reason: 'deletePurchase');
+      return false;
     }
   }
 

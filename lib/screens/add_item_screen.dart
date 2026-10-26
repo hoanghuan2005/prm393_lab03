@@ -38,7 +38,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Also reached from the SnackBar retry, possibly after leaving the screen
+    if (!mounted || _isSaving) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
@@ -68,12 +70,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
         );
         Navigator.of(context).pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể lưu món. Vui lòng thử lại.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        // The form stays open with everything the user typed
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                wishlistVm.actionError ?? 'Chưa lưu được món. Vui lòng thử lại.',
+              ),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(label: 'Thử lại', onPressed: _handleSave),
+            ),
+          );
       }
     }
   }

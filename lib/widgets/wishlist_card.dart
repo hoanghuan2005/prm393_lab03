@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
@@ -109,24 +110,45 @@ class WishlistCard extends StatelessWidget {
       );
     }
 
+    // "Chờ" keeps the status "Đang cân nhắc"; the review date is what the user needs to see
+    if (item.isWaiting || item.isReviewDue) {
+      return _badge(
+        icon: item.isReviewDue
+            ? Icons.notifications_active_outlined
+            : Icons.event,
+        text: item.isReviewDue
+            ? 'Đến hẹn xem lại'
+            : 'Xem lại ${formatDayMonth(item.reviewAt!)}',
+      );
+    }
+
+    return _badge(
+      icon: item.status.icon,
+      text: item.status.label,
+      color: item.status.color,
+    );
+  }
+
+  Widget _badge({
+    required IconData icon,
+    required String text,
+    Color color = AppColors.accentNeutral,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.space8,
         vertical: AppDimens.space4,
       ),
       decoration: BoxDecoration(
-        color: item.status.color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: AppDimens.borderPill,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.status.icon, size: 14, color: item.status.color),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: AppDimens.space4),
-          Text(
-            item.status.label,
-            style: AppTextStyles.labelMedium.copyWith(color: item.status.color),
-          ),
+          Text(text, style: AppTextStyles.labelMedium.copyWith(color: color)),
         ],
       ),
     );

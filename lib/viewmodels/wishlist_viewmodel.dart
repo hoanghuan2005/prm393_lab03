@@ -190,46 +190,58 @@ class WishlistViewModel extends ChangeNotifier
     }
   }
 
-  /// Update decision (Buy / Wait / Drop)
-  Future<bool> updateDecision({
-    required String itemId,
-    required WishlistStatus status,
-    required BuyingMotive motive,
-    required int? price,
-    String? note,
+  // "Mua" is not here on purpose: an item only becomes purchased through
+  // PurchaseViewModel.addPurchase(fromWishlist:), which also records the expense.
+
+  /// "Chờ": keeps the item in "Đang cân nhắc" and schedules a review on [reviewAt]
+  Future<bool> wait(WishlistItem item, DateTime reviewAt) => _decide(
+    item,
+    (uid) => wishlistService.setReview(uid, item.id, reviewAt),
+    analyticsDecision: AnalyticsDecisions.wait,
+    reason: 'wait',
+  );
+
+  /// "Bỏ qua"; the screen offers [reconsider] as a 5-second undo
+  Future<bool> skip(WishlistItem item) => _decide(
+    item,
+    (uid) => wishlistService.skip(uid, item.id),
+    analyticsDecision: AnalyticsDecisions.skip,
+    reason: 'skip',
+  );
+
+  /// Undo of "Bỏ qua" and "Cân nhắc lại" later on: back to "Đang cân nhắc"
+  Future<bool> reconsider(WishlistItem item) => _decide(
+    item,
+    (uid) => wishlistService.undoSkip(uid, item.id),
+    reason: 'reconsider',
+  );
+
+  Future<bool> _decide(
+    WishlistItem item,
+    Future<void> Function(String uid) write, {
+    String? analyticsDecision,
+    required String reason,
   }) async {
     final uid = _uid;
-    if (uid == null) return false;
+    if (uid == null) {
+      _actionError = 'Vui lòng đăng nhập để lưu quyết định.';
+      return false;
+    }
     try {
-      switch (status) {
-        case WishlistStatus.skipped:
-          await wishlistService.skip(uid, itemId);
-        case WishlistStatus.considering:
-          await wishlistService.setReview(
-            uid,
-            itemId,
-            DateTime.now().add(Duration(days: _coolingOffDays)),
-          );
-        case WishlistStatus.purchased:
-          _actionError = 'Vui lòng ghi giá thực trả để hoàn tất khoản mua.';
-          return false;
+      await write(uid);
+      if (analyticsDecision != null) {
+        unawaited(
+          analyticsService.logMakeDecision(
+            decision: analyticsDecision,
+            motive: item.displayMotive.key,
+            priceVnd: item.latestPriceVnd,
+          ),
+        );
       }
-
-      unawaited(
-        analyticsService.logMakeDecision(
-          decision: switch (status) {
-            WishlistStatus.purchased => AnalyticsDecisions.buy,
-            WishlistStatus.considering => AnalyticsDecisions.wait,
-            WishlistStatus.skipped => AnalyticsDecisions.skip,
-          },
-          motive: motive.key,
-          priceVnd: price,
-        ),
-      );
       _actionError = null;
       return true;
     } catch (e, stack) {
-      _actionError = messageFor(e, stack, reason: 'updateDecision');
+      _actionError = messageFor(e, stack, reason: reason);
       return false;
     }
   }

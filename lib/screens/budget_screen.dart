@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/available_budget.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -67,10 +68,8 @@ class BudgetScreen extends StatelessWidget {
     final budget = budgetVm.totalLimit;
     final progress = budgetVm.progress;
     final isExceeded = budgetVm.isExceeded;
-    // Only groups that have a limit this month get a card
-    final groupsWithLimit = budgetVm.groups
-        .where((g) => budgetVm.limitFor(g.id) != null)
-        .toList();
+    // Groups with a limit, plus groups without one that already have spending this month
+    final visibleGroups = budgetVm.visibleGroups;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -116,7 +115,7 @@ class BudgetScreen extends StatelessWidget {
 
               if (budget <= 0)
                 _buildEmptyState(context)
-              else ...[
+              else
                 // Overall Budget Card (Figma 31a/31b)
                 _buildOverallBudgetCard(
                   context,
@@ -126,6 +125,7 @@ class BudgetScreen extends StatelessWidget {
                   isExceeded,
                 ),
 
+              if (visibleGroups.isNotEmpty) ...[
                 const SizedBox(height: 24),
 
                 // Category Budgets Header
@@ -141,16 +141,18 @@ class BudgetScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Category Cards
-                ...groupsWithLimit.map((group) {
+                ...visibleGroups.map((group) {
                   return _buildCategoryCard(
+                    context,
                     name: group.name,
                     icon: _groupIcons[group.id] ?? Icons.more_horiz_rounded,
                     spent: budgetVm.spentFor(group.id),
-                    catBudget: budgetVm.limitFor(group.id)!,
-                    available: budgetVm.available(group.id),
+                    breakdown: budgetVm.availableBreakdown(group.id),
                   );
                 }),
+              ],
 
+              if (budget > 0) ...[
                 const SizedBox(height: 16),
 
                 // Note at bottom (Figma 31)
@@ -455,13 +457,70 @@ class BudgetScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard({
+  /// "Vì sao con số này?" for one group: spec 7.1 with the user's own numbers
+  void _showAvailableExplanation(
+    BuildContext context,
+    String groupName,
+    AvailableBudget b,
+  ) {
+    final lines = <String>[
+      'Hạn mức nhóm: ${formatVnd(b.limit)}',
+      '− Đã chi tháng này: ${formatVnd(b.spent)}',
+      '= Còn lại: ${formatVnd(b.remaining)}',
+      '',
+      if (b.hasEnoughHistory) ...[
+        '− Dự phòng chi thường ngày: ${formatVnd(b.dailyAverage)}/ngày × '
+            '${b.daysLeft} ngày còn lại = ${formatVnd(b.buffer)}',
+        '  (trung bình ${b.windowDays} ngày gần nhất của nhóm, '
+            'không tính khoản mua từ danh sách mong muốn)',
+      ] else
+        '− Dự phòng chi thường ngày: 0 ₫ (chưa đủ '
+            '${AvailableBudget.historyDaysRequired} ngày dữ liệu chi tiêu, '
+            'con số có thể cao hơn thực tế)',
+      '× ${100 - AvailableBudget.safetyMarginPercent}% '
+          '(chừa ${AvailableBudget.safetyMarginPercent}% biên độ an toàn)',
+      '',
+      '= Khả dụng cho danh sách mong muốn: ${formatVnd(b.available)}',
+    ];
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Vì sao con số này? · $groupName'),
+        content: SingleChildScrollView(
+          child: Text(
+            lines.join('\n'),
+            style: const TextStyle(
+              fontSize: 13.5,
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              'Đã hiểu',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(
+    BuildContext context, {
     required String name,
     required IconData icon,
     required int spent,
-    required int catBudget,
-    int? available,
+    required AvailableBudget? breakdown,
   }) {
+    if (breakdown == null) {
+      return _buildUnlimitedGroupCard(name: name, icon: icon, spent: spent);
+    }
+    final catBudget = breakdown.limit;
     final progress = catBudget > 0 ? (spent / catBudget).clamp(0.0, 1.0) : 0.0;
     final isExceeded = spent > catBudget && catBudget > 0;
 
@@ -525,11 +584,84 @@ class BudgetScreen extends StatelessWidget {
           Text(
             isExceeded
                 ? 'Đã vượt ${formatVnd(spent - catBudget)} so với mốc nhóm. App không chặn mua.'
-                : 'Còn lại ${formatVnd(catBudget - spent)}'
-                      '${available == null ? '' : ' · khả dụng cho danh sách chờ ${formatVnd(available)}'}.',
+                : 'Còn lại ${formatVnd(catBudget - spent)} · '
+                      'khả dụng cho danh sách mong muốn ${formatVnd(breakdown.available)}.',
             style: const TextStyle(
               fontSize: 11.5,
               color: AppColors.textSecondary,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 48),
+                foregroundColor: AppColors.accentNeutral,
+              ),
+              onPressed: () =>
+                  _showAvailableExplanation(context, name, breakdown),
+              icon: const Icon(Icons.help_outline_rounded, size: 16),
+              label: const Text('Vì sao con số này?'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Group with spending but no limit this month: shown so every purchase is accounted for
+  Widget _buildUnlimitedGroupCard({
+    required String name,
+    required IconData icon,
+    required int spent,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.accentNeutral),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nhóm $name',
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Chưa đặt hạn mức tháng này',
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'Đã chi ${formatVnd(spent)}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accentNeutral,
             ),
           ),
         ],

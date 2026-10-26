@@ -13,6 +13,8 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/review_date_sheet.dart';
+import '../widgets/undo_snack_bar.dart';
 
 /// Screen 03: Item Detail & Decision Card from Figma "Why I Buy"
 class ItemDetailScreen extends StatefulWidget {
@@ -36,44 +38,113 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     });
   }
 
-  Future<void> _handleDecision(WishlistStatus newStatus) async {
-    if (_isProcessing) return;
+  /// Runs one decision write; success and failure are only reported after the write returns
+  Future<bool> _run(Future<bool> Function(WishlistViewModel vm) action) async {
+    if (_isProcessing) return false;
     setState(() => _isProcessing = true);
-    final wishlistVm = context.read<WishlistViewModel>();
-    final item = _currentItem(wishlistVm);
-
-    final success = await wishlistVm.updateDecision(
-      itemId: item.id,
-      status: newStatus,
-      motive: item.displayMotive,
-      price: item.latestPriceVnd,
-    );
-
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      if (success) {
-        String msg = '';
-        if (newStatus == WishlistStatus.skipped) {
-          msg = 'Đã chuyển món sang Bỏ qua.';
-        } else {
-          msg = 'Đã đặt ngày xem lại món.';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: AppColors.success),
-        );
-        Navigator.of(context).pop();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              wishlistVm.actionError ??
-                  'Chưa lưu được quyết định. Vui lòng thử lại.',
-            ),
-          ),
-        );
-      }
+    final vm = context.read<WishlistViewModel>();
+    final ok = await action(vm);
+    if (!mounted) return ok;
+    setState(() => _isProcessing = false);
+    if (!ok) {
+      _showRetry(
+        ScaffoldMessenger.of(context),
+        vm.actionError ?? 'Chưa lưu được quyết định.',
+        () => _run(action),
+      );
     }
+    return ok;
+  }
+
+  static void _showRetry(
+    ScaffoldMessengerState messenger,
+    String message,
+    VoidCallback onRetry,
+  ) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(label: 'Thử lại', onPressed: onRetry),
+        ),
+      );
+  }
+
+  /// "Chờ": pick a review date, stay on the screen so the chosen date is visible
+  Future<void> _wait(WishlistItem item) async {
+    if (_isProcessing) return;
+    final vm = context.read<WishlistViewModel>();
+    final reviewAt = await ReviewDateSheet.show(
+      context,
+      defaultDays: vm.coolingOffDays,
+      current: item.reviewAt,
+    );
+    if (reviewAt == null || !mounted) return;
+    final ok = await _run((vm) => vm.wait(item, reviewAt));
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Đã hẹn xem lại vào ${formatWeekdayDate(reviewAt)}.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  /// "Bỏ qua": back to the list with a 5-second "Hoàn tác"
+  Future<void> _skip(WishlistItem item) async {
+    final ok = await _run((vm) => vm.skip(item));
+    if (!ok || !mounted) return;
+    final vm = context.read<WishlistViewModel>();
+    final messenger = ScaffoldMessenger.of(context);
+    // The messenger outlives this route, so the undo stays available after pop
+    showUndoSnackBar(context, 'Đã bỏ qua "${item.title}".', () {
+      _undoSkip(vm, messenger, item);
+    });
+    Navigator.of(context).pop();
+  }
+
+  static Future<void> _undoSkip(
+    WishlistViewModel vm,
+    ScaffoldMessengerState messenger,
+    WishlistItem item,
+  ) async {
+    final ok = await vm.reconsider(item);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Đã đưa "${item.title}" về Đang cân nhắc.'
+                : vm.actionError ?? 'Chưa hoàn tác được.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          action: ok
+              ? null
+              : SnackBarAction(
+                  label: 'Thử lại',
+                  onPressed: () => _undoSkip(vm, messenger, item),
+                ),
+        ),
+      );
+  }
+
+  /// A skipped item can be considered again later
+  Future<void> _reconsider(WishlistItem item) async {
+    final ok = await _run((vm) => vm.reconsider(item));
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Món đã về Đang cân nhắc.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   WishlistItem _currentItem(WishlistViewModel vm) => vm.allItems.firstWhere(
@@ -213,6 +284,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
               const SizedBox(height: AppDimens.space12),
             ],
+            if (canDecide && item.reviewAt != null) ...[
+              _ReviewInfo(item: item),
+              const SizedBox(height: AppDimens.space16),
+            ],
+            // Mua · Chờ · Bỏ qua: same variant and size, none is highlighted (spec 7.4)
             if (canDecide || needsPurchase) ...[
               AppButton(
                 title: needsPurchase ? 'Bổ sung khoản mua' : 'Mua',
@@ -224,27 +300,71 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ],
             if (canDecide) ...[
               const SizedBox(height: AppDimens.space12),
-
               AppButton(
                 title: 'Chờ',
                 variant: AppButtonVariant.secondary,
                 icon: Icons.schedule,
                 isLoading: _isProcessing,
-                onPressed: () => _handleDecision(WishlistStatus.considering),
+                onPressed: () => _wait(item),
               ),
               const SizedBox(height: AppDimens.space12),
-
               AppButton(
                 title: 'Bỏ qua',
                 variant: AppButtonVariant.secondary,
                 icon: Icons.do_not_disturb_on_outlined,
                 isLoading: _isProcessing,
-                onPressed: () => _handleDecision(WishlistStatus.skipped),
+                onPressed: () => _skip(item),
+              ),
+            ] else if (item.status == WishlistStatus.skipped) ...[
+              Text(
+                'Bạn đã quyết định không mua món này'
+                '${item.decidedAt == null ? '' : ' ngày ${formatDate(item.decidedAt!)}'}.',
+                style: AppTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: AppDimens.space12),
+              AppButton(
+                title: 'Cân nhắc lại',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.replay_rounded,
+                isLoading: _isProcessing,
+                onPressed: () => _reconsider(item),
               ),
             ] else if (!needsPurchase)
               Text(item.status.label, style: AppTextStyles.titleMedium),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Review date chosen with "Chờ"; tells the user when it has arrived
+class _ReviewInfo extends StatelessWidget {
+  final WishlistItem item;
+
+  const _ReviewInfo({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final reviewAt = item.reviewAt!;
+    final text = item.isReviewDue
+        ? 'Đã đến ngày xem lại (${formatDate(reviewAt)}). Bạn muốn quyết định thế nào?'
+        : 'Bạn hẹn xem lại vào ${formatWeekdayDate(reviewAt)}. Bấm Chờ để đổi ngày.';
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: AppDimens.borderMedium,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            item.isReviewDue ? Icons.notifications_active_outlined : Icons.event,
+            color: AppColors.accentNeutral,
+          ),
+          const SizedBox(width: AppDimens.space12),
+          Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
+        ],
       ),
     );
   }

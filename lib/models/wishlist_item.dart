@@ -83,6 +83,12 @@ class WishlistItem {
       reviewAt != null &&
       reviewAt!.isAfter(DateTime.now());
 
+  /// The review date chosen with "Chờ" has arrived and the item is still undecided
+  bool get isReviewDue =>
+      status == WishlistStatus.considering &&
+      reviewAt != null &&
+      !reviewAt!.isAfter(DateTime.now());
+
   int get daysSinceCreated => DateTime.now().difference(createdAt).inDays;
 
   /// Whole days left until [reviewAt] (0 when due), null when no review is scheduled

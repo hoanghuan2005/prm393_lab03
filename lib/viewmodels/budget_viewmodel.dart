@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/utils/month_key.dart';
+import '../models/available_budget.dart';
 import '../models/budget_group.dart';
 import '../models/monthly_budget.dart';
 import '../models/purchase_item.dart';
@@ -17,16 +18,13 @@ import 'error_reporting.dart';
 /// uid comes from AuthViewModel; purchases and the selected month come from PurchaseViewModel.
 class BudgetViewModel extends ChangeNotifier
     with DeferredNotify, ErrorReporting {
-  /// Safety margin of handoff 9.4 (bienDo)
-  static const int safetyMarginPercent = 10;
-
-  /// Below this much purchase history the daily-spending buffer is 0
-  static const int historyDaysRequired = 30;
-
   final BudgetService budgetService;
   final AppAnalyticsService? analyticsService;
   @override
   final CrashlyticsService? crashlyticsService;
+
+  /// Injectable for tests of the available-amount formula
+  final DateTime Function() _now;
 
   StreamSubscription<List<BudgetGroup>>? _groupsSubscription;
   StreamSubscription<MonthlyBudget>? _budgetSubscription;
@@ -42,7 +40,8 @@ class BudgetViewModel extends ChangeNotifier
     required this.budgetService,
     this.analyticsService,
     this.crashlyticsService,
-  });
+    DateTime Function()? clock,
+  }) : _now = clock ?? DateTime.now;
 
   UiState<List<BudgetGroup>> get state => _state;
 
@@ -173,63 +172,54 @@ class BudgetViewModel extends ChangeNotifier
   bool get isExceeded => totalLimit > 0 && totalSpent > totalLimit;
   int get remaining => totalLimit - totalSpent;
 
-  /// At least [historyDaysRequired] days between the first recorded purchase and today
-  bool get hasEnoughHistory {
-    if (_purchases.isEmpty) return false;
-    final first = _purchases
-        .map((p) => p.occurredAt)
-        .reduce((a, b) => a.isBefore(b) ? a : b);
-    return DateTime.now().difference(first).inDays >= historyDaysRequired;
-  }
-
-  /// Days after today in the selected month (0 for past months, full month for future ones)
-  int get daysLeftInMonth {
-    final now = DateTime.now();
-    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
-    if (_month.year == now.year && _month.month == now.month) {
-      return daysInMonth - now.day;
-    }
-    return _month.isAfter(now) ? daysInMonth : 0;
-  }
-
-  /// Average daily spending of the group over the last [historyDaysRequired] days
-  int dailyAverageFor(String groupId) {
-    final now = DateTime.now();
-    final since = now.subtract(const Duration(days: historyDaysRequired));
-    final total = _purchases
-        .where(
-          (p) =>
-              _groupOf(p) == groupId &&
-              p.occurredAt.isAfter(since) &&
-              !p.occurredAt.isAfter(now),
-        )
-        .fold(0, (sum, p) => sum + p.amountVnd);
-    return total ~/ historyDaysRequired;
-  }
-
-  /// "Dự phòng chi thường ngày": 0 while history is shorter than 30 days
-  int bufferFor(String groupId) =>
-      hasEnoughHistory ? dailyAverageFor(groupId) * daysLeftInMonth : 0;
-
-  /// Handoff 9.4: floor(max(0, limit − spent − buffer) × 0.9); null when the group has no limit
-  int? available(String groupId) {
+  /// Spec 7.1 "phần khả dụng cho Wishlist" with every step of the calculation;
+  /// null when the group has no limit this month
+  AvailableBudget? availableBreakdown(String groupId) {
     final limit = limitFor(groupId);
     if (limit == null) return null;
-    final left = limit - spentFor(groupId) - bufferFor(groupId);
-    if (left <= 0) return 0;
-    return left * (100 - safetyMarginPercent) ~/ 100;
+    DateTime? first;
+    for (final p in _purchases) {
+      if (first == null || p.occurredAt.isBefore(first)) first = p.occurredAt;
+    }
+    return AvailableBudget.compute(
+      limit: limit,
+      month: _month,
+      groupPurchases: _purchases.where((p) => _groupOf(p) == groupId).toList(),
+      firstPurchaseAt: first,
+      now: _now(),
+    );
   }
 
+  int? available(String groupId) => availableBreakdown(groupId)?.available;
+
+  /// Groups shown on the budget screen: those with a limit or with spending this month
+  List<BudgetGroup> get visibleGroups => groups
+      .where((g) => limitFor(g.id) != null || spentFor(g.id) > 0)
+      .toList();
+
   /// [limit] null removes the group's limit for the selected month
-  Future<bool> setGroupLimit(String groupId, int? limit) async {
+  Future<bool> setGroupLimit(String groupId, int? limit) =>
+      setGroupLimits({groupId: limit});
+
+  /// Saves several group limits for the selected month in one write.
+  /// The month total is always the sum of the group limits, so it can never be
+  /// lower than the groups it contains.
+  Future<bool> setGroupLimits(Map<String, int?> changes) async {
     final uid = _uid;
-    if (uid == null) return false;
+    if (uid == null) {
+      _actionError = 'Vui lòng đăng nhập để lưu ngân sách.';
+      return false;
+    }
+    if (changes.isEmpty) return true;
     try {
-      await budgetService.setGroupLimit(uid, monthKeyValue, groupId, limit);
-      if (limit != null && limit > 0) {
+      await budgetService.setGroupLimits(uid, monthKeyValue, changes);
+      _actionError = null;
+      for (final e in changes.entries) {
+        final limit = e.value;
+        if (limit == null || limit <= 0) continue;
         unawaited(
           analyticsService?.logBudgetSet(
-                budgetGroupId: groupId,
+                budgetGroupId: e.key,
                 amountVnd: limit,
                 month: monthKeyValue,
               ) ??
@@ -238,18 +228,9 @@ class BudgetViewModel extends ChangeNotifier
       }
       return true;
     } catch (e, stack) {
-      _actionError = messageFor(e, stack, reason: 'setGroupLimit');
+      _actionError = messageFor(e, stack, reason: 'setGroupLimits');
       return false;
     }
-  }
-
-  /// TODO(budget screen): the current sheet edits one overall amount. It is stored as the
-  /// limit of group "other" = amount − limits of the other groups, so totalLimit == amount.
-  Future<bool> setOverallLimit(int amount) {
-    final others = limits.entries
-        .where((e) => e.key != BudgetGroup.otherId)
-        .fold(0, (sum, e) => sum + e.value);
-    return setGroupLimit(BudgetGroup.otherId, amount - others);
   }
 
   @override

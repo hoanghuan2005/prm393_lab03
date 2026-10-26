@@ -225,23 +225,21 @@ void main() {
     },
   );
 
-  test('legacy decision API cannot mark a wishlist item as purchased without an expense', () async {
-    expect(
-      await h.wishlist.updateDecision(
-        itemId: 'headphones',
-        status: WishlistStatus.purchased,
-        motive: BuyingMotive.sale,
-        price: 420000,
-      ),
-      isFalse,
-    );
-    expect(
-      (await h.db
-              .doc('users/${PurchaseHarness.uid}/wishlistItems/headphones')
-              .get())
-          .data()!['status'],
-      'considering',
-    );
+  test('wishlist decisions (Chờ, Bỏ qua, Cân nhắc lại) never mark an item as purchased', () async {
+    final item = sampleWishlist();
+    expect(await h.wishlist.wait(item, DateTime.now().add(const Duration(days: 3))), isTrue);
+    expect(await h.wishlist.skip(item), isTrue);
+    expect(await h.wishlist.reconsider(item), isTrue);
+    final data = (await h.db
+            .doc('users/${PurchaseHarness.uid}/wishlistItems/headphones')
+            .get())
+        .data()!;
+    expect(data['status'], WishlistStatus.considering.key);
+    expect(data['purchaseId'], isNull);
     expect(h.analytics.buyDecisions, 0);
+    expect(
+      (await h.db.collection('users/${PurchaseHarness.uid}/purchases').get()).docs,
+      isEmpty,
+    );
   });
 }

@@ -25,6 +25,8 @@ abstract interface class PurchaseService {
 
   Future<void> update(String uid, PurchaseItem purchase);
 
+  /// A purchase linked to a wishlist item also returns that item to "Đang cân nhắc"
+  /// (same batch, decision "undo"), so the item can be bought again later.
   Future<void> delete(String uid, String purchaseId);
 
   /// One batch: new purchase linked to [item], item marked purchased, decision "buy".
@@ -93,8 +95,43 @@ class FirestorePurchaseService implements PurchaseService {
   });
 
   @override
-  Future<void> delete(String uid, String purchaseId) =>
-      guard(() => _paths.purchase(uid, purchaseId).delete());
+  Future<void> delete(String uid, String purchaseId) => guard(() async {
+    final purchaseRef = _paths.purchase(uid, purchaseId);
+    final snapshot = await purchaseRef.get();
+    final itemId = snapshot.exists
+        ? PurchaseItem.fromFirestore(snapshot).wishlistItemId
+        : null;
+    final batch = _paths.db.batch()..delete(purchaseRef);
+
+    if (itemId != null) {
+      final itemRef = _paths.wishlistItem(uid, itemId);
+      final itemSnapshot = await itemRef.get();
+      // Only unlink when the item still points at this purchase (it may be deleted or re-bought)
+      if (itemSnapshot.exists &&
+          WishlistItem.fromFirestore(itemSnapshot).purchaseId == purchaseId) {
+        batch
+          ..update(itemRef, {
+            'status': WishlistStatus.considering.key,
+            'purchaseId': null,
+            'decidedAt': null,
+            'updatedAt': FieldValue.serverTimestamp(),
+          })
+          // buy_{itemId} is the create-only lock of buyFromWishlist; removing it lets the
+          // item be bought again. The undo decision keeps the reversal in the history.
+          ..delete(_paths.decisions(uid).doc('buy_$itemId'))
+          ..set(_paths.decisions(uid).doc(), {
+            ...Decision(
+              id: '',
+              itemId: itemId,
+              choice: DecisionChoice.undo,
+              at: DateTime.now(),
+            ).toMap(),
+            'at': FieldValue.serverTimestamp(),
+          });
+      }
+    }
+    await batch.commit();
+  });
 
   @override
   Future<PurchaseItem> buyFromWishlist(

@@ -55,9 +55,7 @@ class PurchaseDetailScreen extends StatelessWidget {
     if (!ok) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            purchaseVm.actionError ?? 'Chưa xoá được khoản mua.',
-          ),
+          content: Text(purchaseVm.actionError ?? 'Chưa xoá được khoản mua.'),
           behavior: SnackBarBehavior.floating,
           action: context.mounted
               ? SnackBarAction(

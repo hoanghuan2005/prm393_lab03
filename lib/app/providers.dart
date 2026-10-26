@@ -15,6 +15,7 @@ import '../services/reflection_service.dart';
 import '../services/remote_config_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
+import '../services/review_reminder_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -35,6 +36,7 @@ class AppProviders extends StatelessWidget {
   final CrashlyticsService crashlyticsService;
   final RemoteConfigService remoteConfigService;
   final NotificationService notificationService;
+  final ReviewReminderService reviewReminderService;
   final Widget child;
 
   const AppProviders({
@@ -42,6 +44,7 @@ class AppProviders extends StatelessWidget {
     required this.crashlyticsService,
     required this.remoteConfigService,
     required this.notificationService,
+    required this.reviewReminderService,
     required this.child,
   });
 
@@ -68,6 +71,7 @@ class AppProviders extends StatelessWidget {
         Provider<CrashlyticsService>.value(value: crashlyticsService),
         Provider<RemoteConfigService>.value(value: remoteConfigService),
         Provider<NotificationService>.value(value: notificationService),
+        Provider<ReviewReminderService>.value(value: reviewReminderService),
         Provider<ReportService>(create: (_) => ReportService()),
         Provider<ReportShareService>(
           create: (_) => PrintingReportShareService(),
@@ -103,6 +107,7 @@ class AppProviders extends StatelessWidget {
             wishlistService: context.read<WishlistService>(),
             crashlyticsService: crashlyticsService,
             analyticsService: context.read<AppAnalyticsService>(),
+            reminderService: reviewReminderService,
           ),
           update: (_, auth, settings, vm) => vm!
             ..updateUid(auth.userId)

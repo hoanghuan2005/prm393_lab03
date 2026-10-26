@@ -9,9 +9,13 @@ import '../models/wishlist_status.dart';
 import '../services/analytics_events.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/review_reminder_service.dart';
 import '../services/wishlist_service.dart';
 import 'deferred_notify.dart';
 import 'error_reporting.dart';
+
+/// Result of asking for notification permission after "Chờ"
+enum ReminderPermission { granted, denied, unsupported }
 
 /// ViewModel managing Wishlist items, motive filtering, search, and decisions
 class WishlistViewModel extends ChangeNotifier
@@ -21,14 +25,22 @@ class WishlistViewModel extends ChangeNotifier
   @override
   final CrashlyticsService? crashlyticsService;
 
+  /// Local "Đến hẹn xem lại" notifications; null in tests that do not need them
+  final ReviewReminderService? reminderService;
+
   StreamSubscription<List<WishlistItem>>? _itemsSubscription;
   List<WishlistItem> _allItems = [];
   UiState<List<WishlistItem>> _state = const UiInitial();
 
   BuyingMotive? _selectedMotiveFilter;
   WishlistStatus? _selectedStatusFilter;
+  bool _reviewDueOnly = false;
   String _searchQuery = '';
   String? _uid;
+
+  /// itemId → review date currently scheduled as a notification
+  final Map<String, DateTime> _scheduledReminders = {};
+  bool _remindersSynced = false;
 
   /// From SettingsViewModel: user setting, else Remote Config
   int _coolingOffDays = 3;
@@ -40,6 +52,7 @@ class WishlistViewModel extends ChangeNotifier
     required this.wishlistService,
     required this.analyticsService,
     this.crashlyticsService,
+    this.reminderService,
   });
 
   String? get actionError => _actionError;
@@ -54,9 +67,17 @@ class WishlistViewModel extends ChangeNotifier
   String get searchQuery => _searchQuery;
   List<WishlistItem> get allItems => List.unmodifiable(_allItems);
 
+  /// "Cần xem lại": the review date chosen with "Chờ" has arrived (also the fallback
+  /// when notifications are off or unsupported)
+  List<WishlistItem> get reviewDueItems =>
+      _allItems.where((i) => i.isReviewDue).toList();
+  int get reviewDueCount => reviewDueItems.length;
+  bool get reviewDueOnly => _reviewDueOnly;
+
   /// Filtered items based on active motive, status, and search query
   List<WishlistItem> get filteredItems {
     return _allItems.where((item) {
+      if (_reviewDueOnly && !item.isReviewDue) return false;
       if (_selectedMotiveFilter != null &&
           item.motive != _selectedMotiveFilter) {
         return false;
@@ -102,7 +123,12 @@ class WishlistViewModel extends ChangeNotifier
     _allItems = [];
     _selectedMotiveFilter = null;
     _selectedStatusFilter = null;
+    _reviewDueOnly = false;
     _searchQuery = '';
+    // Reminders belong to the previous account
+    _scheduledReminders.clear();
+    _remindersSynced = false;
+    unawaited(reminderService?.cancelAll() ?? Future<void>.value());
 
     if (uid == null) {
       _state = const UiInitial();
@@ -118,6 +144,7 @@ class WishlistViewModel extends ChangeNotifier
         .listen(
           (items) {
             _allItems = items;
+            unawaited(_syncReminders(items));
             _updateFilteredState();
           },
           onError: (Object error, StackTrace stack) {
@@ -154,6 +181,54 @@ class WishlistViewModel extends ChangeNotifier
     _updateFilteredState();
   }
 
+  /// Show only items whose review date has arrived
+  void setReviewDueFilter(bool enabled) {
+    _reviewDueOnly = enabled;
+    _updateFilteredState();
+  }
+
+  /// Keeps one notification per waiting item, whatever changed the item (this screen,
+  /// a purchase, a delete, another device): schedule new dates, cancel the rest.
+  Future<void> _syncReminders(List<WishlistItem> items) async {
+    final reminders = reminderService;
+    if (reminders == null || !reminders.isSupported) return;
+    if (!_remindersSynced) {
+      // Drop notifications left over from items deleted while the app was closed
+      _remindersSynced = true;
+      await reminders.cancelAll();
+    }
+    final waiting = {
+      for (final item in items)
+        if (item.isWaiting) item.id: item,
+    };
+    for (final id in _scheduledReminders.keys.toList()) {
+      if (!waiting.containsKey(id)) {
+        _scheduledReminders.remove(id);
+        await reminders.cancel(id);
+      }
+    }
+    for (final item in waiting.values) {
+      if (_scheduledReminders[item.id] == item.reviewAt) continue;
+      _scheduledReminders[item.id] = item.reviewAt!;
+      await reminders.schedule(
+        itemId: item.id,
+        title: item.title,
+        at: item.reviewAt!,
+      );
+    }
+  }
+
+  /// Asked right after the user chose "Chờ", never on app start
+  Future<ReminderPermission> requestReminderPermission() async {
+    final reminders = reminderService;
+    if (reminders == null || !reminders.isSupported) {
+      return ReminderPermission.unsupported;
+    }
+    return await reminders.requestPermission()
+        ? ReminderPermission.granted
+        : ReminderPermission.denied;
+  }
+
   /// Toggle status filter
   void setStatusFilter(WishlistStatus? status) {
     _selectedStatusFilter = (_selectedStatusFilter == status) ? null : status;
@@ -166,16 +241,21 @@ class WishlistViewModel extends ChangeNotifier
     required int? price,
     required BuyingMotive motive,
     String? productUrl,
+    String? budgetGroupId,
   }) async {
     try {
       final uid = _uid;
-      if (uid == null) return false;
+      if (uid == null) {
+        _actionError = 'Vui lòng đăng nhập để lưu món.';
+        return false;
+      }
       await wishlistService.add(
         uid,
         title: title,
         priceVnd: price,
         motive: motive,
         url: productUrl,
+        budgetGroupId: budgetGroupId,
         coolingOffDays: _coolingOffDays,
       );
 
@@ -194,7 +274,7 @@ class WishlistViewModel extends ChangeNotifier
   // PurchaseViewModel.addPurchase(fromWishlist:), which also records the expense.
 
   /// "Chờ": keeps the item in "Đang cân nhắc" and schedules a review on [reviewAt]
-  Future<bool> wait(WishlistItem item, DateTime reviewAt) => _decide(
+  Future<bool> wait(WishlistItem item, DateTime reviewAt) => _writeItem(
     item,
     (uid) => wishlistService.setReview(uid, item.id, reviewAt),
     analyticsDecision: AnalyticsDecisions.wait,
@@ -202,7 +282,7 @@ class WishlistViewModel extends ChangeNotifier
   );
 
   /// "Bỏ qua"; the screen offers [reconsider] as a 5-second undo
-  Future<bool> skip(WishlistItem item) => _decide(
+  Future<bool> skip(WishlistItem item) => _writeItem(
     item,
     (uid) => wishlistService.skip(uid, item.id),
     analyticsDecision: AnalyticsDecisions.skip,
@@ -210,13 +290,63 @@ class WishlistViewModel extends ChangeNotifier
   );
 
   /// Undo of "Bỏ qua" and "Cân nhắc lại" later on: back to "Đang cân nhắc"
-  Future<bool> reconsider(WishlistItem item) => _decide(
+  Future<bool> reconsider(WishlistItem item) => _writeItem(
     item,
     (uid) => wishlistService.undoSkip(uid, item.id),
     reason: 'reconsider',
   );
 
-  Future<bool> _decide(
+  /// Title, link, motive and budget group. The price is changed with [updatePrice]
+  /// so every price keeps its own snapshot and date.
+  Future<bool> updateDetails(
+    WishlistItem item, {
+    required String title,
+    String? url,
+    BuyingMotive? motive,
+    String? budgetGroupId,
+  }) {
+    // Built field by field: copyWith cannot clear an optional value such as the link
+    final updated = WishlistItem(
+      id: item.id,
+      title: title.trim(),
+      url: url == null || url.trim().isEmpty ? null : url.trim(),
+      motive: motive,
+      priority: item.priority,
+      status: item.status,
+      cooldownUntil: item.cooldownUntil,
+      reviewAt: item.reviewAt,
+      budgetGroupId: budgetGroupId,
+      latestPriceVnd: item.latestPriceVnd,
+      latestPriceAt: item.latestPriceAt,
+      saveChannel: item.saveChannel,
+      purchaseId: item.purchaseId,
+      note: item.note,
+      createdAt: item.createdAt,
+      decidedAt: item.decidedAt,
+    );
+    return _writeItem(
+      item,
+      (uid) => wishlistService.update(uid, updated),
+      reason: 'updateDetails',
+    );
+  }
+
+  /// New price snapshot dated now (also fills in a price that was unknown)
+  Future<bool> updatePrice(WishlistItem item, int amountVnd) => _writeItem(
+    item,
+    (uid) => wishlistService.addPrice(uid, item.id, amountVnd),
+    reason: 'updatePrice',
+  );
+
+  /// Removes the item and its price history; a purchase made from it stays in Lịch sử
+  Future<bool> deleteItem(WishlistItem item) => _writeItem(
+    item,
+    (uid) => wishlistService.delete(uid, item.id),
+    reason: 'deleteItem',
+  );
+
+  /// One write on [item]; [actionError] explains a failure
+  Future<bool> _writeItem(
     WishlistItem item,
     Future<void> Function(String uid) write, {
     String? analyticsDecision,
@@ -224,7 +354,7 @@ class WishlistViewModel extends ChangeNotifier
   }) async {
     final uid = _uid;
     if (uid == null) {
-      _actionError = 'Vui lòng đăng nhập để lưu quyết định.';
+      _actionError = 'Vui lòng đăng nhập để lưu thay đổi.';
       return false;
     }
     try {
@@ -265,8 +395,10 @@ class WishlistViewModel extends ChangeNotifier
           actionTitle: 'Thêm món đầu tiên',
         );
       } else {
-        _state = const UiEmpty(
-          message: 'Không tìm thấy món nào phù hợp với bộ lọc hiện tại',
+        _state = UiEmpty(
+          message: _reviewDueOnly
+              ? 'Chưa có món nào đến ngày xem lại'
+              : 'Không tìm thấy món nào phù hợp với bộ lọc hiện tại',
         );
       }
     } else {

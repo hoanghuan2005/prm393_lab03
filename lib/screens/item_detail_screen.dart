@@ -12,7 +12,9 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/price_update_sheet.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/undo_snack_bar.dart';
 
@@ -84,13 +86,22 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     if (reviewAt == null || !mounted) return;
     final ok = await _run((vm) => vm.wait(item, reviewAt));
     if (!ok || !mounted) return;
+    // Permission is asked here, right after the user chose to be reminded (spec 4.1 A-09)
+    final permission = await vm.requestReminderPermission();
+    if (!mounted) return;
+    final date = formatWeekdayDate(reviewAt);
+    final message = switch (permission) {
+      ReminderPermission.granted =>
+        'Đã hẹn xem lại vào $date. App sẽ nhắc bạn hôm đó.',
+      ReminderPermission.denied =>
+        'Đã hẹn xem lại vào $date. Thông báo đang tắt nên món sẽ hiện trong mục "Cần xem lại".',
+      ReminderPermission.unsupported =>
+        'Đã hẹn xem lại vào $date. Hôm đó món sẽ hiện trong mục "Cần xem lại".',
+    };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text('Đã hẹn xem lại vào ${formatWeekdayDate(reviewAt)}.'),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
   }
 
@@ -147,6 +158,62 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       );
   }
 
+  /// Spec 6.5: a price older than 7 days is shown as old and should be confirmed again
+  static const int _stalePriceDays = 7;
+
+  static String _priceNote(WishlistItem item) {
+    final at = item.latestPriceAt;
+    if (!item.hasPrice) return 'Bạn chưa ghi giá cho món này.';
+    if (at == null) return 'Giá bạn đã ghi.';
+    final days = DateTime.now().difference(at).inDays;
+    return 'Giá ghi ngày ${formatDate(at)}'
+        '${days > _stalePriceDays ? ' · đã $days ngày, giá hiện tại có thể khác' : ''}';
+  }
+
+  Future<void> _updatePrice(WishlistItem item) async {
+    final amount = await PriceUpdateSheet.show(
+      context,
+      currentPrice: item.latestPriceVnd,
+      currentPriceAt: item.latestPriceAt,
+    );
+    if (amount == null || !mounted) return;
+    final ok = await _run((vm) => vm.updatePrice(item, amount));
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Đã lưu giá ${formatVnd(amount)}.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  Future<void> _confirmDelete(WishlistItem item) async {
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: 'Xoá món này?',
+      message:
+          'Xoá "${item.title}" và lịch sử giá đã ghi khỏi danh sách mong muốn.'
+          '${item.purchaseId != null ? '\n\nKhoản mua đã ghi từ món này vẫn được giữ trong Lịch sử.' : ''}',
+      confirmLabel: 'Xoá',
+      isDanger: true,
+    );
+    if (!confirmed || !mounted) return;
+    final ok = await _run((vm) => vm.deleteItem(item));
+    if (!ok || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Đã xoá "${item.title}".'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   WishlistItem _currentItem(WishlistViewModel vm) => vm.allItems.firstWhere(
     (item) => item.id == widget.item.id,
     orElse: () => widget.item,
@@ -179,7 +246,27 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         item.status == WishlistStatus.purchased && item.purchaseId == null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết & Quyết định')),
+      appBar: AppBar(
+        title: const Text('Chi tiết & Quyết định'),
+        actions: [
+          IconButton(
+            tooltip: 'Sửa thông tin món',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _isProcessing
+                ? null
+                : () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.wishlistEdit,
+                    arguments: ItemDetailArgs(item),
+                  ),
+          ),
+          IconButton(
+            tooltip: 'Xoá món',
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: _isProcessing ? null : () => _confirmDelete(item),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Column(
@@ -201,12 +288,31 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(item.latestPriceVnd),
-                    style: AppTextStyles.displayMedium.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: item.hasPrice
+                        ? AppTextStyles.displayMedium.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.w700,
+                          )
+                        : AppTextStyles.titleLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                   ),
-                  const SizedBox(height: AppDimens.space16),
+                  const SizedBox(height: AppDimens.space4),
+                  Text(_priceNote(item), style: AppTextStyles.labelMedium),
+                  if (item.status != WishlistStatus.purchased)
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, AppDimens.minTouchTarget),
+                        foregroundColor: AppColors.accentNeutral,
+                      ),
+                      onPressed: _isProcessing
+                          ? null
+                          : () => _updatePrice(item),
+                      icon: const Icon(Icons.price_change_outlined, size: 18),
+                      label: Text(item.hasPrice ? 'Cập nhật giá' : 'Nhập giá'),
+                    ),
+                  const SizedBox(height: AppDimens.space8),
                   Wrap(
                     spacing: AppDimens.space12,
                     runSpacing: AppDimens.space8,
@@ -359,7 +465,9 @@ class _ReviewInfo extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            item.isReviewDue ? Icons.notifications_active_outlined : Icons.event,
+            item.isReviewDue
+                ? Icons.notifications_active_outlined
+                : Icons.event,
             color: AppColors.accentNeutral,
           ),
           const SizedBox(width: AppDimens.space12),

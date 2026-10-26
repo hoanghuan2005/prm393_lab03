@@ -127,8 +127,8 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Card 1: TỔNG QUAN TUẦN
-            _buildWeeklySummaryCard(context, purchaseVm),
+            // Card 1: TỔNG QUAN THÁNG (selected month)
+            _buildMonthSummaryCard(context, purchaseVm),
 
             const SizedBox(height: 16),
 
@@ -197,7 +197,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ==================== TỔNG QUAN TUẦN CARD ====================
-  Widget _buildWeeklySummaryCard(
+  Widget _buildMonthSummaryCard(
     BuildContext context,
     PurchaseViewModel purchaseVm,
   ) {
@@ -236,7 +236,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   SizedBox(width: 6),
                   Text(
-                    'TỔNG QUAN TUẦN',
+                    'TỔNG QUAN THÁNG',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -305,9 +305,10 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // Subtitle: Tuần này: 5 khoản · 817.000 ₫
+          // Same period as the big amount; "Tuần này" only while viewing the current month
           Text(
-            'Tuần này: ${purchaseVm.weekCount} khoản · ${formatVnd(purchaseVm.weekTotal)}',
+            '${purchaseVm.monthCount} khoản trong tháng'
+            '${purchaseVm.isCurrentMonthSelected ? ' · Tuần này: ${purchaseVm.weekCount} khoản (${formatVnd(purchaseVm.weekTotal)})' : ''}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -494,7 +495,8 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${wishlistVm.consideringCount} món đang cân nhắc',
+                    '${wishlistVm.consideringCount} món đang cân nhắc'
+                    '${wishlistVm.reviewDueCount > 0 ? ' · ${wishlistVm.reviewDueCount} cần xem lại' : ''}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textSecondary,

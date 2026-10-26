@@ -63,6 +63,7 @@ class AppRoutes {
   static const onboarding = '/onboarding';
   static const wishlist = '/wishlist';
   static const wishlistAdd = '/wishlist/add';
+  static const wishlistEdit = '/wishlist/edit';
   static const itemDetail = '/wishlist/detail';
   static const recordPurchase = '/purchase/record';
   static const purchaseDetail = '/purchase/detail';
@@ -85,6 +86,9 @@ class AppRoutes {
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
       wishlistAdd => const AddItemScreen(),
+      wishlistEdit when args is ItemDetailArgs => AddItemScreen(
+        existing: args.item,
+      ),
       itemDetail when args is ItemDetailArgs => ItemDetailScreen(
         item: args.item,
       ),

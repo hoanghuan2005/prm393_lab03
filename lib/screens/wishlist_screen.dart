@@ -111,8 +111,22 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 _buildStatusFilterChip(
                   context,
                   label: 'Tất cả',
-                  isSelected: wishlistVm.selectedStatusFilter == null,
-                  onTap: () => wishlistVm.setStatusFilter(null),
+                  isSelected:
+                      wishlistVm.selectedStatusFilter == null &&
+                      !wishlistVm.reviewDueOnly,
+                  onTap: () {
+                    wishlistVm.setReviewDueFilter(false);
+                    wishlistVm.setStatusFilter(null);
+                  },
+                ),
+                const SizedBox(width: AppDimens.space8),
+                // "Cần xem lại": also the fallback when reminders are off or unsupported
+                _buildStatusFilterChip(
+                  context,
+                  label: 'Cần xem lại (${wishlistVm.reviewDueCount})',
+                  isSelected: wishlistVm.reviewDueOnly,
+                  onTap: () =>
+                      wishlistVm.setReviewDueFilter(!wishlistVm.reviewDueOnly),
                 ),
                 const SizedBox(width: AppDimens.space8),
                 ...WishlistStatus.values.map((status) {

@@ -651,7 +651,10 @@ class BudgetScreen extends StatelessWidget {
                 const SizedBox(height: 2),
                 const Text(
                   'Chưa đặt hạn mức tháng này',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),

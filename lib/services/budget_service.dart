@@ -88,7 +88,9 @@ class FirestoreBudgetService implements BudgetService {
     () => _paths.budget(uid, monthKey).set({
       'limits': {
         for (final e in limits.entries)
-          e.key: e.value != null && e.value! > 0 ? e.value : FieldValue.delete(),
+          e.key: e.value != null && e.value! > 0
+              ? e.value
+              : FieldValue.delete(),
       },
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true)),

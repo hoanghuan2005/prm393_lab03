@@ -20,13 +20,74 @@ import '../services/purchase_service.dart';
 import 'deferred_notify.dart';
 import 'error_reporting.dart';
 
-/// Count and total of the selected month's purchases in one part of the day
+/// Count and total of one period's purchases in one part of the day
 class TimeSlotStat {
   final TimeSlot slot;
   final int count;
   final int totalVnd;
 
   const TimeSlotStat(this.slot, this.count, this.totalVnd);
+}
+
+/// Count and total of one period's purchases with one motive
+class MotiveTotal {
+  final BuyingMotive motive;
+  final int count;
+  final int totalVnd;
+
+  const MotiveTotal(this.motive, this.count, this.totalVnd);
+}
+
+/// Tuần / Tháng on the Mô hình screen
+enum StatsPeriod { week, month }
+
+/// Every number shown for one period, computed from the same purchases so totals,
+/// counts, motives and shares can never disagree about the time range.
+class PeriodStats {
+  /// Inclusive start, exclusive end
+  final DateTime from;
+  final DateTime to;
+  final List<PurchaseItem> purchases;
+
+  PeriodStats(this.from, this.to, Iterable<PurchaseItem> all)
+    : purchases = all
+          .where(
+            (p) => !p.occurredAt.isBefore(from) && p.occurredAt.isBefore(to),
+          )
+          .toList();
+
+  late final int total = purchases.fold(0, (sum, p) => sum + p.amountVnd);
+  int get count => purchases.length;
+
+  /// Motives that occur in the period, largest amount first
+  late final List<MotiveTotal> motives = () {
+    final counts = <BuyingMotive, int>{};
+    final totals = <BuyingMotive, int>{};
+    for (final p in purchases) {
+      counts[p.motive] = (counts[p.motive] ?? 0) + 1;
+      totals[p.motive] = (totals[p.motive] ?? 0) + p.amountVnd;
+    }
+    return [for (final m in counts.keys) MotiveTotal(m, counts[m]!, totals[m]!)]
+      ..sort((a, b) => b.totalVnd.compareTo(a.totalVnd));
+  }();
+
+  /// Every part of the day, in TimeSlot order (zero rows included)
+  late final List<TimeSlotStat> timeSlots = () {
+    final counts = <TimeSlot, int>{};
+    final totals = <TimeSlot, int>{};
+    for (final p in purchases) {
+      final slot = TimeSlot.fromDateTime(p.occurredAt);
+      counts[slot] = (counts[slot] ?? 0) + 1;
+      totals[slot] = (totals[slot] ?? 0) + p.amountVnd;
+    }
+    return [
+      for (final slot in TimeSlot.values)
+        TimeSlotStat(slot, counts[slot] ?? 0, totals[slot] ?? 0),
+    ];
+  }();
+
+  /// Share of this period's total amount, 0..1
+  double shareOf(int amountVnd) => total > 0 ? amountVnd / total : 0;
 }
 
 /// ViewModel managing Purchases with real-time Firebase Cloud Firestore sync.
@@ -136,43 +197,42 @@ class PurchaseViewModel extends ChangeNotifier
     }).toList();
   }
 
+  /// Monday 00:00 of the week containing [day]
+  static DateTime weekStartOf(DateTime day) =>
+      DateTime(day.year, day.month, day.day - (day.weekday - 1));
+
+  /// Purchases with occurredAt in [from, to)
+  PeriodStats statsBetween(DateTime from, DateTime to) =>
+      PeriodStats(from, to, _purchases);
+
   /// Selected month
-  int get monthTotal =>
-      monthPurchases.fold(0, (sum, item) => sum + item.amountVnd);
-  int get monthCount => monthPurchases.length;
+  PeriodStats get monthStats => statsBetween(
+    _selectedMonth,
+    DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1),
+  );
+
+  /// Week starting on [monday]
+  PeriodStats weekStats(DateTime monday) =>
+      statsBetween(monday, DateTime(monday.year, monday.month, monday.day + 7));
+
+  int get monthTotal => monthStats.total;
+  int get monthCount => monthStats.count;
 
   /// Selected month split by part of the day, in TimeSlot order
-  List<TimeSlotStat> get timeSlotStats {
-    final counts = <TimeSlot, int>{};
-    final totals = <TimeSlot, int>{};
-    for (final p in monthPurchases) {
-      final slot = TimeSlot.fromDateTime(p.occurredAt);
-      counts[slot] = (counts[slot] ?? 0) + 1;
-      totals[slot] = (totals[slot] ?? 0) + p.amountVnd;
-    }
-    return [
-      for (final slot in TimeSlot.values)
-        TimeSlotStat(slot, counts[slot] ?? 0, totals[slot] ?? 0),
-    ];
-  }
+  List<TimeSlotStat> get timeSlotStats => monthStats.timeSlots;
 
   /// Current calendar week, Monday 00:00 to Sunday 23:59 (independent of the selected month)
-  List<PurchaseItem> get weekPurchases {
-    final now = DateTime.now();
-    final monday = DateTime(now.year, now.month, now.day - (now.weekday - 1));
-    final nextMonday = DateTime(monday.year, monday.month, monday.day + 7);
-    return _purchases
-        .where(
-          (p) =>
-              !p.occurredAt.isBefore(monday) &&
-              p.occurredAt.isBefore(nextMonday),
-        )
-        .toList();
-  }
+  PeriodStats get currentWeekStats => weekStats(weekStartOf(DateTime.now()));
 
-  int get weekTotal =>
-      weekPurchases.fold(0, (sum, item) => sum + item.amountVnd);
-  int get weekCount => weekPurchases.length;
+  List<PurchaseItem> get weekPurchases => currentWeekStats.purchases;
+  int get weekTotal => currentWeekStats.total;
+  int get weekCount => currentWeekStats.count;
+
+  /// The selected month is the current calendar month ("Tuần này" only makes sense then)
+  bool get isCurrentMonthSelected {
+    final now = DateTime.now();
+    return _selectedMonth.year == now.year && _selectedMonth.month == now.month;
+  }
 
   /// Month navigation
   void previousMonth() {

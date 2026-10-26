@@ -33,22 +33,50 @@ class _PatternsScreenState extends State<PatternsScreen> {
     TimeSlot.evening: AppColors.slotNight,
   };
 
-  int _selectedPeriod = 0; // 0 = Tuần, 1 = Tháng
+  StatsPeriod _period = StatsPeriod.week;
+
+  /// Monday of the week shown in "Tuần" mode; the month comes from PurchaseViewModel
+  DateTime _weekStart = PurchaseViewModel.weekStartOf(DateTime.now());
+
+  void _shiftWeek(int weeks) => setState(
+    () => _weekStart = DateTime(
+      _weekStart.year,
+      _weekStart.month,
+      _weekStart.day + 7 * weeks,
+    ),
+  );
+
+  Future<void> _pickWeek() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _weekStart,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+      helpText: 'Chọn một ngày trong tuần',
+    );
+    if (picked != null) {
+      setState(() => _weekStart = PurchaseViewModel.weekStartOf(picked));
+    }
+  }
+
+  String get _weekLabel {
+    final sunday = DateTime(
+      _weekStart.year,
+      _weekStart.month,
+      _weekStart.day + 6,
+    );
+    return '${formatDayMonth(_weekStart)} – ${formatDate(sunday)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final purchaseVm = context.watch<PurchaseViewModel>();
-    final allPurchases = purchaseVm.allPurchases;
-
-    // Calculate motive counts and sums
-    final Map<BuyingMotive, int> motiveSums = {};
-    final Map<BuyingMotive, int> motiveCounts = {};
-    for (final p in allPurchases) {
-      motiveSums[p.motive] = (motiveSums[p.motive] ?? 0) + p.amountVnd;
-      motiveCounts[p.motive] = (motiveCounts[p.motive] ?? 0) + 1;
-    }
-
-    final totalSpent = purchaseVm.monthTotal;
+    final isWeek = _period == StatsPeriod.week;
+    // Total, count, motives and time slots all come from this one period
+    final stats = isWeek
+        ? purchaseVm.weekStats(_weekStart)
+        : purchaseVm.monthStats;
+    final totalSpent = stats.total;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -85,8 +113,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _buildSegmentOption('Tuần', 0)),
-                  Expanded(child: _buildSegmentOption('Tháng', 1)),
+                  Expanded(
+                    child: _buildSegmentOption('Tuần', StatsPeriod.week),
+                  ),
+                  Expanded(
+                    child: _buildSegmentOption('Tháng', StatsPeriod.month),
+                  ),
                 ],
               ),
             ),
@@ -109,47 +141,61 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       Icons.chevron_left_rounded,
                       color: AppColors.accentNeutral,
                     ),
-                    onPressed: () => purchaseVm.previousMonth(),
+                    tooltip: isWeek ? 'Tuần trước' : 'Tháng trước',
+                    onPressed: isWeek
+                        ? () => _shiftWeek(-1)
+                        : purchaseVm.previousMonth,
                   ),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await MonthPickerSheet.show(
-                        context,
-                        purchaseVm.selectedMonth,
-                      );
-                      if (picked != null) {
-                        purchaseVm.setSelectedMonth(picked);
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_month_outlined,
-                            size: 16,
-                            color: AppColors.onPrimary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            formatMonthLabel(purchaseVm.selectedMonth),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: InkWell(
+                      onTap: () async {
+                        if (isWeek) return _pickWeek();
+                        final picked = await MonthPickerSheet.show(
+                          context,
+                          purchaseVm.selectedMonth,
+                        );
+                        if (picked != null) {
+                          purchaseVm.setSelectedMonth(picked);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_outlined,
+                              size: 16,
                               color: AppColors.onPrimary,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.arrow_drop_down_rounded,
-                            size: 20,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                isWeek
+                                    ? _weekLabel
+                                    : formatMonthLabel(
+                                        purchaseVm.selectedMonth,
+                                      ),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.onPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_drop_down_rounded,
+                              size: 20,
+                              color: AppColors.textSecondary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -158,7 +204,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       Icons.chevron_right_rounded,
                       color: AppColors.accentNeutral,
                     ),
-                    onPressed: () => purchaseVm.nextMonth(),
+                    tooltip: isWeek ? 'Tuần sau' : 'Tháng sau',
+                    onPressed: isWeek
+                        ? () => _shiftWeek(1)
+                        : purchaseVm.nextMonth,
                   ),
                 ],
               ),
@@ -180,9 +229,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Tổng chi tiêu trong kỳ',
-                        style: TextStyle(
+                      Text(
+                        isWeek
+                            ? 'Tổng chi tiêu trong tuần'
+                            : 'Tổng chi tiêu trong tháng',
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -198,7 +249,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${purchaseVm.monthCount} khoản đã ghi nhận',
+                        '${stats.count} khoản đã ghi nhận',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textHint,
@@ -245,105 +296,118 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
-                children: BuyingMotive.values.map((motive) {
-                  final sum = motiveSums[motive] ?? 0;
-                  final count = motiveCounts[motive] ?? 0;
-                  final percent = totalSpent > 0 ? (sum / totalSpent) : 0.0;
-                  if (count == 0) return const SizedBox.shrink();
+                children: [
+                  if (stats.motives.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Chưa có khoản mua nào trong kỳ này.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ...stats.motives.map((m) {
+                    final motive = m.motive;
+                    final sum = m.totalVnd;
+                    final count = m.count;
+                    final percent = stats.shareOf(sum);
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: motive.backgroundColor,
-                                borderRadius: BorderRadius.circular(8),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: motive.backgroundColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  motive.icon,
+                                  size: 16,
+                                  color: motive.color,
+                                ),
                               ),
-                              child: Icon(
-                                motive.icon,
-                                size: 16,
-                                color: motive.color,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          motive.label,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.onPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          formatVnd(sum),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.accentNeutral,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '$count khoản chi',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textHint,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${(percent * 100).toStringAsFixed(0)}%',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        motive.label,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.onPrimary,
-                                        ),
-                                      ),
-                                      Text(
-                                        formatVnd(sum),
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.accentNeutral,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '$count khoản chi',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.textHint,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${(percent * 100).toStringAsFixed(0)}%',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Track
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: percent,
-                            minHeight: 6,
-                            backgroundColor: AppColors.surfaceVariant,
-                            color: motive == BuyingMotive.sale
-                                ? AppColors.primary
-                                : motive.color,
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                          const SizedBox(height: 8),
+                          // Track
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: percent,
+                              minHeight: 6,
+                              backgroundColor: AppColors.surfaceVariant,
+                              color: motive == BuyingMotive.sale
+                                  ? AppColors.primary
+                                  : motive.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
 
@@ -369,7 +433,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
               ),
               child: Column(
                 children: [
-                  for (final stat in purchaseVm.timeSlotStats) ...[
+                  for (final stat in stats.timeSlots) ...[
                     if (stat.slot != TimeSlot.values.first)
                       const Divider(height: 20),
                     _buildTimeSlotRow(
@@ -377,7 +441,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       '${stat.count} khoản (${formatVnd(stat.totalVnd)})',
                       _slotIcons[stat.slot]!,
                       _slotColors[stat.slot]!,
-                      totalSpent > 0 ? stat.totalVnd / totalSpent : 0,
+                      stats.shareOf(stat.totalVnd),
                     ),
                   ],
                 ],
@@ -389,10 +453,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
     );
   }
 
-  Widget _buildSegmentOption(String label, int index) {
-    final isSelected = _selectedPeriod == index;
+  Widget _buildSegmentOption(String label, StatsPeriod period) {
+    final isSelected = _period == period;
     return InkWell(
-      onTap: () => setState(() => _selectedPeriod = index),
+      onTap: () => setState(() => _period = period),
       borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),

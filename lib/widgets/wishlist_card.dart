@@ -50,10 +50,14 @@ class WishlistCard extends StatelessWidget {
                     const SizedBox(width: AppDimens.space12),
                     Text(
                       formatVnd(item.latestPriceVnd),
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: item.hasPrice
+                          ? AppTextStyles.titleMedium.copyWith(
+                              color: AppColors.onPrimary,
+                              fontWeight: FontWeight.w700,
+                            )
+                          : AppTextStyles.labelMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                     ),
                   ],
                 ),

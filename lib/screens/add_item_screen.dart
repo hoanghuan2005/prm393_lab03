@@ -4,17 +4,22 @@ import 'package:provider/provider.dart';
 import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
+import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/motive_chip.dart';
 
-/// Screen 04: Add Item Screen from Figma "Why I Buy"
+/// Screen 04: Add Item Screen from Figma "Why I Buy".
+/// With [existing] it edits that item; the price is then changed with "Cập nhật giá" instead.
 class AddItemScreen extends StatefulWidget {
-  const AddItemScreen({super.key});
+  final WishlistItem? existing;
+
+  const AddItemScreen({super.key, this.existing});
 
   @override
   State<AddItemScreen> createState() => _AddItemScreenState();
@@ -27,7 +32,22 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _urlController = TextEditingController();
 
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
+  String? _budgetGroupId;
   bool _isSaving = false;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.existing;
+    if (item != null) {
+      _titleController.text = item.title;
+      _urlController.text = item.url ?? '';
+      _selectedMotive = item.displayMotive;
+      _budgetGroupId = item.budgetGroupId;
+    }
+  }
 
   @override
   void dispose() {
@@ -45,15 +65,23 @@ class _AddItemScreenState extends State<AddItemScreen> {
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
 
-    final price = parseVnd(_priceController.text);
-    final success = await wishlistVm.addItem(
-      title: _titleController.text.trim(),
-      price: price,
-      motive: _selectedMotive,
-      productUrl: _urlController.text.trim().isNotEmpty
-          ? _urlController.text.trim()
-          : null,
-    );
+    final url = _urlController.text.trim();
+    final existing = widget.existing;
+    final success = existing != null
+        ? await wishlistVm.updateDetails(
+            existing,
+            title: _titleController.text,
+            url: url,
+            motive: _selectedMotive,
+            budgetGroupId: _budgetGroupId,
+          )
+        : await wishlistVm.addItem(
+            title: _titleController.text.trim(),
+            price: parseVnd(_priceController.text),
+            motive: _selectedMotive,
+            productUrl: url.isNotEmpty ? url : null,
+            budgetGroupId: _budgetGroupId,
+          );
 
     if (mounted) {
       setState(() => _isSaving = false);
@@ -61,11 +89,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              !_selectedMotive.skipsCooldown
+              _isEdit
+                  ? 'Đã lưu thay đổi.'
+                  : !_selectedMotive.skipsCooldown
                   ? 'Đã lưu vào danh sách cân nhắc. Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
                   : 'Đã lưu vào danh sách cân nhắc.',
             ),
-            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.of(context).pop();
@@ -76,7 +106,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           ..showSnackBar(
             SnackBar(
               content: Text(
-                wishlistVm.actionError ?? 'Chưa lưu được món. Vui lòng thử lại.',
+                wishlistVm.actionError ??
+                    'Chưa lưu được món. Vui lòng thử lại.',
               ),
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(label: 'Thử lại', onPressed: _handleSave),
@@ -89,8 +120,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
   @override
   Widget build(BuildContext context) {
     final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
+    final groups = context.watch<BudgetViewModel>().groups;
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm món cân nhắc')),
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Sửa thông tin món' : 'Thêm món cân nhắc'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Form(
@@ -107,16 +141,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: AppDimens.space16),
 
-              // Price Input
-              AppTextField(
-                label: 'Giá dự kiến (VND)',
-                hint: 'Ví dụ: 350000',
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.attach_money,
-                validator: Validators.validateOptionalAmount,
-              ),
-              const SizedBox(height: AppDimens.space16),
+              // Price Input (new items only; an edit changes the price via "Cập nhật giá")
+              if (!_isEdit) ...[
+                AppTextField(
+                  label: 'Giá dự kiến (VND, không bắt buộc)',
+                  hint: 'Để trống nếu chưa biết giá',
+                  controller: _priceController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.attach_money,
+                  validator: Validators.validateOptionalAmount,
+                ),
+                const SizedBox(height: AppDimens.space16),
+              ],
 
               // Product URL Input
               AppTextField(
@@ -125,6 +161,33 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 controller: _urlController,
                 keyboardType: TextInputType.url,
                 prefixIcon: Icons.link,
+              ),
+              const SizedBox(height: AppDimens.space16),
+
+              // Budget group: prefilled when the item is bought later
+              DropdownButtonFormField<String?>(
+                key: const ValueKey('wishlist-budget-group'),
+                initialValue: groups.any((g) => g.id == _budgetGroupId)
+                    ? _budgetGroupId
+                    : null,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Nhóm ngân sách (không bắt buộc)',
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Chưa chọn'),
+                  ),
+                  for (final group in groups)
+                    DropdownMenuItem<String?>(
+                      value: group.id,
+                      child: Text(group.name),
+                    ),
+                ],
+                onChanged: _isSaving
+                    ? null
+                    : (value) => setState(() => _budgetGroupId = value),
               ),
               const SizedBox(height: AppDimens.space24),
 
@@ -156,7 +219,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               const SizedBox(height: AppDimens.space20),
 
               // Cooldown Hint if Emotion/Social is selected
-              if (!_selectedMotive.skipsCooldown)
+              if (!_isEdit && !_selectedMotive.skipsCooldown)
                 Container(
                   padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(
@@ -189,7 +252,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
               // Save Button
               AppButton(
-                title: 'Lưu vào Wishlist',
+                title: _isEdit ? 'Lưu thay đổi' : 'Lưu vào Wishlist',
                 icon: Icons.check,
                 isLoading: _isSaving,
                 onPressed: _handleSave,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/app.dart';
+import '../services/review_reminder_service.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import 'history_screen.dart';
@@ -30,6 +32,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       context.read<InsightsViewModel>().setVisible(
         _currentIndex == _insightsTabIndex,
       );
+      // App was started by tapping a review reminder
+      if (context.read<ReviewReminderService>().consumeLaunchedFromReminder()) {
+        openReviewDueList();
+      }
     });
   }
 

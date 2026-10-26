@@ -51,6 +51,11 @@ dependencies:
   shared_preferences: ^2.5.6
   firebase_app_check: ^0.5.1
   printing: ^5.15.1
+  # Pinned: 18.0.1 is the last version without a Windows plugin (19+ needs Visual Studio ATL to
+  # build on Windows). Reminders run on Android/iOS only, see ReviewReminderService.
+  flutter_local_notifications: 18.0.1
+  timezone: 0.10.1
+  flutter_timezone: ^5.1.1
 
 dev_dependencies:
   flutter_test:

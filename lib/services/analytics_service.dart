@@ -2,9 +2,11 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
 
 import '../firebase/platform_support.dart';
+import 'analytics_events.dart';
 
 /// Service abstraction for Firebase Analytics
-/// Strictly adheres to the Analytics Plan in docs/analytics-plan.md (No PII)
+/// Strictly adheres to the Analytics Plan in docs/analytics-plan.md (No PII).
+/// Every event name and parameter comes from analytics_events.dart.
 /// On web/Windows analytics is disabled ([_analytics] is null) and events are no-ops.
 class AppAnalyticsService {
   final FirebaseAnalytics? _analytics;
@@ -18,7 +20,7 @@ class AppAnalyticsService {
     if (_analytics != null) FirebaseAnalyticsObserver(analytics: _analytics),
   ];
 
-  /// Set user ID upon sign-in
+  /// uid on sign-in, null on sign-out (never email)
   Future<void> setUserId(String? userId) async {
     try {
       await _analytics?.setUserId(id: userId);
@@ -27,166 +29,97 @@ class AppAnalyticsService {
     }
   }
 
-  /// Event 1: login
-  Future<void> logLogin({String method = 'google'}) async {
+  Future<void> _log(String event, [Map<String, Object>? parameters]) async {
     try {
-      await _analytics?.logLogin(loginMethod: method);
-    } catch (e) {
-      debugPrint('Analytics logLogin error: $e');
-    }
-  }
-
-  /// Event 2: search
-  Future<void> logSearch({
-    required String searchTerm,
-    required int resultCount,
-  }) async {
-    try {
-      await _analytics?.logSearch(
-        searchTerm: searchTerm,
-        parameters: {'result_count': resultCount},
+      await _analytics?.logEvent(
+        name: event,
+        parameters: parameters == null || parameters.isEmpty
+            ? null
+            : parameters,
       );
     } catch (e) {
-      debugPrint('Analytics logSearch error: $e');
+      debugPrint('Analytics $event error: $e');
     }
   }
 
-  /// Event 3: add_to_wishlist
+  Future<void> logLogin({required String method}) =>
+      _log(AnalyticsEvents.login, {AnalyticsParams.method: method});
+
+  Future<void> logLogout({int? sessionDurationSec}) => _log(
+    AnalyticsEvents.logout,
+    {AnalyticsParams.sessionDurationSec: ?sessionDurationSec},
+  );
+
+  /// Only the query length is sent; the text itself may contain item names
+  Future<void> logSearch({
+    required int queryLength,
+    required int resultCount,
+  }) => _log(AnalyticsEvents.search, {
+    AnalyticsParams.queryLength: queryLength,
+    AnalyticsParams.resultCount: resultCount,
+  });
+
   Future<void> logAddToWishlist({
     required String motive,
-    required int? price,
-    required bool hasSaleDate,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'add_to_wishlist',
-        parameters: {
-          'motive': motive,
-          'item_price': ?price,
-          'has_sale_date': hasSaleDate ? 1 : 0,
-        },
-      );
-    } catch (e) {
-      debugPrint('Analytics logAddToWishlist error: $e');
-    }
-  }
+    required int? priceVnd,
+  }) => _log(AnalyticsEvents.addToWishlist, {
+    AnalyticsParams.motive: motive,
+    AnalyticsParams.hasPrice: priceVnd == null ? 0 : 1,
+    if (priceVnd != null)
+      AnalyticsParams.amountBucket: AmountBucket.of(priceVnd).value,
+  });
 
-  /// Event: record_purchase
-  Future<void> logPurchaseRecorded({
-    required String itemId,
-    required String motive,
-    required int price,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'record_purchase',
-        parameters: {'item_id': itemId, 'motive': motive, 'item_price': price},
-      );
-    } catch (e) {
-      debugPrint('Analytics logPurchaseRecorded error: $e');
-    }
-  }
-
-  /// Event: set_budget
-  Future<void> logBudgetSet({
-    required int amount,
-    required String month,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'set_budget',
-        parameters: {'budget_amount': amount, 'month': month},
-      );
-    } catch (e) {
-      debugPrint('Analytics logBudgetSet error: $e');
-    }
-  }
-
-  /// Event 4: view_item_detail
   Future<void> logViewItemDetail({
-    required String itemId,
     required String motive,
     required int daysInCooldown,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'view_item_detail',
-        parameters: {
-          'item_id': itemId,
-          'motive': motive,
-          'days_in_cooldown': daysInCooldown,
-        },
-      );
-    } catch (e) {
-      debugPrint('Analytics logViewItemDetail error: $e');
-    }
-  }
+  }) => _log(AnalyticsEvents.viewItemDetail, {
+    AnalyticsParams.motive: motive,
+    AnalyticsParams.daysInCooldown: daysInCooldown,
+  });
 
-  /// Event 5: make_decision
+  /// [decision] is one of [AnalyticsDecisions]
   Future<void> logMakeDecision({
-    required String action,
+    required String decision,
     required String motive,
-    required int savedAmount,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'make_decision',
-        parameters: {
-          'action': action,
-          'motive': motive,
-          'saved_amount': savedAmount,
-        },
-      );
-    } catch (e) {
-      debugPrint('Analytics logMakeDecision error: $e');
-    }
-  }
+    required int? priceVnd,
+  }) => _log(AnalyticsEvents.makeDecision, {
+    AnalyticsParams.decision: decision,
+    AnalyticsParams.motive: motive,
+    AnalyticsParams.hasPrice: priceVnd == null ? 0 : 1,
+    if (priceVnd != null)
+      AnalyticsParams.amountBucket: AmountBucket.of(priceVnd).value,
+  });
 
-  /// Event 6: export_report
+  Future<void> logPurchaseRecorded({
+    required String motive,
+    required int amountVnd,
+    required String budgetGroupId,
+  }) => _log(AnalyticsEvents.purchaseRecorded, {
+    AnalyticsParams.motive: motive,
+    AnalyticsParams.amountBucket: AmountBucket.of(amountVnd).value,
+    AnalyticsParams.budgetGroup: budgetGroupId,
+  });
+
+  Future<void> logBudgetSet({
+    required String budgetGroupId,
+    required int amountVnd,
+    required String month,
+  }) => _log(AnalyticsEvents.budgetSet, {
+    AnalyticsParams.budgetGroup: budgetGroupId,
+    AnalyticsParams.amountBucket: AmountBucket.of(amountVnd).value,
+    AnalyticsParams.month: month,
+  });
+
   Future<void> logExportReport({
     required String fileFormat,
-    int? fileSizeKb,
     required int itemCount,
-  }) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'export_report',
-        parameters: {
-          'file_format': fileFormat,
-          'file_size_kb': ?fileSizeKb,
-          'item_count': itemCount,
-        },
-      );
-    } catch (e) {
-      debugPrint('Analytics logExportReport error: $e');
-    }
-  }
+  }) => _log(AnalyticsEvents.exportReport, {
+    AnalyticsParams.fileFormat: fileFormat,
+    AnalyticsParams.itemCount: itemCount,
+  });
 
-  /// Event 7: logout
-  Future<void> logLogout({int? sessionDurationSec}) async {
-    try {
-      final params = <String, Object>{};
-      if (sessionDurationSec != null) {
-        params['session_duration_sec'] = sessionDurationSec;
-      }
-      await _analytics?.logEvent(
-        name: 'logout',
-        parameters: params.isNotEmpty ? params : null,
-      );
-    } catch (e) {
-      debugPrint('Analytics logLogout error: $e');
-    }
-  }
-
-  /// Event 8: click_sale_reminder
-  Future<void> logClickSaleReminder(String saleType) async {
-    try {
-      await _analytics?.logEvent(
-        name: 'click_sale_reminder',
-        parameters: {'sale_type': saleType},
-      );
-    } catch (e) {
-      debugPrint('Analytics logClickSaleReminder error: $e');
-    }
-  }
+  Future<void> logClickSaleReminder(String saleType) => _log(
+    AnalyticsEvents.clickSaleReminder,
+    {AnalyticsParams.saleType: saleType},
+  );
 }

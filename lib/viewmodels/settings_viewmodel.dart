@@ -9,10 +9,13 @@ import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
 import '../services/user_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 /// ViewModel managing Firebase Demo Area (Crashlytics, Remote Config, FCM notifications)
-class SettingsViewModel extends ChangeNotifier with DeferredNotify {
+class SettingsViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   final RemoteConfigService remoteConfigService;
+  @override
   final CrashlyticsService crashlyticsService;
   final NotificationService notificationService;
   final UserService userService;
@@ -70,10 +73,14 @@ class SettingsViewModel extends ChangeNotifier with DeferredNotify {
     _settings = const UserSettings();
     notifyLater();
     if (uid == null) return;
-    _settingsSubscription = userService.watchSettings(uid).listen((settings) {
-      _settings = settings;
-      notifyListeners();
-    }, onError: (Object e) => debugPrint('watchSettings error: $e'));
+    _settingsSubscription = userService.watchSettings(uid).listen(
+      (settings) {
+        _settings = settings;
+        notifyListeners();
+      },
+      onError: (Object e, StackTrace s) =>
+          messageFor(e, s, reason: 'watchSettings'),
+    );
   }
 
   Future<bool> updateSettings(UserSettings settings) async {
@@ -82,8 +89,8 @@ class SettingsViewModel extends ChangeNotifier with DeferredNotify {
     try {
       await userService.updateSettings(uid, settings);
       return true;
-    } catch (e) {
-      debugPrint('updateSettings error: $e');
+    } catch (e, stack) {
+      messageFor(e, stack, reason: 'updateSettings');
       return false;
     }
   }

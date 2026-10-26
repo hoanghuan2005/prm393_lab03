@@ -57,6 +57,8 @@ class AuthViewModel extends ChangeNotifier {
     _currentUser = user;
 
     if (user == null) {
+      unawaited(analyticsService.setUserId(null));
+      unawaited(crashlyticsService.setUserId(''));
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       return;

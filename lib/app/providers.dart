@@ -101,6 +101,7 @@ class AppProviders extends StatelessWidget {
         >(
           create: (context) => WishlistViewModel(
             wishlistService: context.read<WishlistService>(),
+            crashlyticsService: crashlyticsService,
             analyticsService: context.read<AppAnalyticsService>(),
           ),
           update: (_, auth, settings, vm) => vm!
@@ -110,6 +111,7 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthViewModel, PurchaseViewModel>(
           create: (context) => PurchaseViewModel(
             purchaseService: context.read<PurchaseService>(),
+            crashlyticsService: crashlyticsService,
             analyticsService: context.read<AppAnalyticsService>(),
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
@@ -121,6 +123,7 @@ class AppProviders extends StatelessWidget {
         >(
           create: (context) => BudgetViewModel(
             budgetService: context.read<BudgetService>(),
+            crashlyticsService: crashlyticsService,
             analyticsService: context.read<AppAnalyticsService>(),
           ),
           update: (_, auth, purchaseVm, vm) => vm!
@@ -137,6 +140,7 @@ class AppProviders extends StatelessWidget {
         >(
           create: (context) => ReflectionViewModel(
             reflectionService: context.read<ReflectionService>(),
+            crashlyticsService: crashlyticsService,
           ),
           update: (_, auth, purchaseVm, vm) => vm!
             ..updateUid(auth.userId)
@@ -150,6 +154,7 @@ class AppProviders extends StatelessWidget {
         >(
           create: (context) => ReportViewModel(
             reportService: context.read<ReportService>(),
+            crashlyticsService: crashlyticsService,
             shareService: context.read<ReportShareService>(),
             analyticsService: context.read<AppAnalyticsService>(),
           ),

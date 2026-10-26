@@ -1,26 +1,53 @@
 # Analytics Event Plan (Kế hoạch sự kiện Analytics)
-**Dự án**: Why I Buy – The Psychology of Money  
-**Môn học**: PRM393 – Mobile Programming (Lab 3)  
-**Tác giả**: Nhóm phát triển Why I Buy  
+**Dự án**: Why I Buy – The Psychology of Money
+**Môn học**: PRM393 – Mobile Programming (Lab 3)
+**Tác giả**: Nhóm phát triển Why I Buy
 
 ---
 
-## 1. Nguyên tắc thiết kế sự kiện Analytics
-1. **Tuân thủ sự kiện tiêu chuẩn của Firebase**: Sử dụng các sự kiện khuyến nghị (`login`, `search`, `select_content`) và đặt tên dạng `snake_case` cho các sự kiện tùy chỉnh.
-2. **Tuyệt đối không gửi thông tin định danh cá nhân (No PII)**: Không truyền email, tên thật, số điện thoại hoặc mật khẩu vào parameters.
-3. **Mỗi sự kiện trả lời một câu hỏi sản phẩm (Product Question)**: Đảm bảo số liệu ghi nhận có giá trị phân tích hành vi người dùng và đo lường tỷ lệ chuyển đổi.
+## 1. Nguyên tắc
+
+1. **Một nguồn tên duy nhất.** Tên event và tên tham số là hằng trong `lib/services/analytics_events.dart` (`AnalyticsEvents`, `AnalyticsParams`). `AppAnalyticsService` chỉ gửi các hằng này; không viết chuỗi tên event ở nơi khác.
+2. **Chỉ ViewModel gọi analytics.** Screen và widget không gọi `AppAnalyticsService` hay `CrashlyticsService` trực tiếp.
+3. **Không gửi thông tin định danh (No PII).** Không gửi email, tên hiển thị, tên món, nội dung tìm kiếm, ghi chú, link sản phẩm. User ID của Analytics và Crashlytics là Firebase `uid`; xoá khi đăng xuất.
+4. **Không gửi số tiền chính xác.** Tiền được gửi dưới dạng `amount_bucket`: `lt_100k` (< 100.000 ₫) · `100k_500k` (100.000–500.000 ₫) · `gt_500k` (> 500.000 ₫). Món chưa có giá: `has_price = 0`, không có `amount_bucket`.
+5. **Mỗi event trả lời một câu hỏi sản phẩm.** Câu hỏi được viết trung tính (không coi "Bỏ qua" là thành công, không nói "tiết kiệm").
+6. Màn hình (`screen_view`) được ghi tự động bởi `FirebaseAnalyticsObserver` theo tên route trong `AppRoutes`.
 
 ---
 
-## 2. Bảng kế hoạch chi tiết (Analytics Events Matrix)
+## 2. Bảng event
 
-| STT | Event Name | Trigger | Parameters (type) | Question It Answers (Câu hỏi sản phẩm) |
-|:---:|:---|:---|:---|:---|
-| 1 | `login` | Đăng nhập Google thành công | `method` (string) | Có bao nhiêu người dùng hoạt động và quay trở lại ứng dụng mỗi tuần? |
-| 2 | `search` | Người dùng tìm kiếm món trong Wishlist | `search_term` (string), `result_count` (int) | Người dùng tìm kiếm những sản phẩm nào nhiều nhất, và từ khóa nào không ra kết quả? |
-| 3 | `add_to_wishlist` | Lưu thành công một món đồ mới | `motive` (string), `item_price` (double), `has_sale_date` (bool) | Động cơ mua hàng nào (Cảm xúc, Nhu cầu, Khuyến mãi) chiếm tỷ lệ cao nhất khi lưu món? |
-| 4 | `view_item_detail` | Mở màn hình chi tiết món & Thẻ quyết định | `item_id` (string), `motive` (string), `days_in_cooldown` (int) | Các món đồ thuộc động cơ nào được người dùng mở lại xem nhiều nhất trong thời gian hoãn? |
-| 5 | `make_decision` | Người dùng bấm chốt quyết định (Mua / Chờ / Bỏ qua) | `action` (string: "buy", "wait", "drop"), `motive` (string), `saved_amount` (double) | Tỷ lệ người dùng quyết định "Bỏ qua" (tiết kiệm tiền thành công) sau thời gian hoãn 3 ngày là bao nhiêu? |
-| 6 | `export_report` | Tạo và upload báo cáo PDF lên Cloud Storage | `file_format` (string), `file_size_kb` (int), `item_count` (int) | Có bao nhiêu người dùng theo dõi và xuất báo cáo chiêm nghiệm tâm lý mua sắm cuối tháng? |
-| 7 | `logout` | Người dùng chủ động đăng xuất | `session_duration_sec` (int) | Thời lượng trung bình một phiên hoạt động của người dùng là bao lâu trước khi đăng xuất? |
-| 8 | `click_sale_reminder` | Người dùng nhấn vào thông báo đợt Siêu Sale | `sale_type` (string: "double_day", "mid_month", "payday") | Đợt sale định kỳ nào nhận được sự quan tâm và tương tác nhiều nhất từ người dùng? |
+| # | Event | Tham số (kiểu) | ViewModel gọi (khi nào) | Câu hỏi sản phẩm |
+|:-:|:---|:---|:---|:---|
+| 1 | `login` | `method` (string: `google` · `guest`) | `AuthViewModel.signInWithGoogle` / `signInAnonymously` – đăng nhập thành công | Người dùng chọn cách đăng nhập nào, bao nhiêu người quay lại mỗi tuần? |
+| 2 | `logout` | `session_duration_sec` (int, tuỳ chọn – hiện chưa gửi) | `AuthViewModel.signOut` | Người dùng có chủ động đăng xuất không, và sau bao lâu? |
+| 3 | `search` | `query_length` (int), `result_count` (int) | `WishlistViewModel.setSearchQuery` – mỗi lần ô tìm kiếm khác rỗng | Người dùng có dùng tìm kiếm trong danh sách mong muốn không, và có hay gặp kết quả rỗng không? |
+| 4 | `add_to_wishlist` | `motive` (string, key động cơ), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.addItem` – lưu món thành công | Món được lưu thường gắn với động cơ nào, ở khoảng giá nào, và bao nhiêu món được lưu khi chưa biết giá? |
+| 5 | `view_item_detail` | `motive` (string), `days_in_cooldown` (int, số ngày từ lúc lưu) | `WishlistViewModel.onItemViewed` – mở Chi tiết món | Người dùng mở lại món sau bao nhiêu ngày, với động cơ nào? |
+| 6 | `make_decision` | `decision` (string: `buy` · `wait` · `skip`), `motive` (string), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.updateDecision` – bấm Mua / Chờ / Bỏ qua thành công | Mua · Chờ · Bỏ qua phân bố thế nào theo động cơ và khoảng giá? |
+| 7 | `purchase_recorded` | `motive` (string), `amount_bucket` (string), `budget_group` (string, id nhóm) | `PurchaseViewModel.addPurchase` – ghi khoản mua thành công | Khoản mua được ghi thuộc động cơ và nhóm ngân sách nào, ở khoảng tiền nào? |
+| 8 | `budget_set` | `budget_group` (string, id nhóm), `amount_bucket` (string), `month` (string `yyyy-MM`) | `BudgetViewModel.setGroupLimit` – đặt hạn mức > 0 thành công | Người dùng đặt hạn mức cho nhóm nào, ở mức nào? |
+| 9 | `export_report` | `file_format` (string: `pdf`), `item_count` (int: khoản mua + món đã quyết định trong tháng) | `ReportViewModel.generateAndShare` – chia sẻ PDF thành công | Có bao nhiêu người xuất và chia sẻ báo cáo tháng, báo cáo thường có bao nhiêu mục? |
+| 10 | `click_sale_reminder` | `sale_type` (string: `double_day` · `mid_month` · `payday`) | Chưa có ViewModel gọi – dành cho luồng mở thông báo nhắc sale (FCM) | Nhắc nhở đợt sale nào được mở nhiều nhất? |
+
+---
+
+## 3. Crashlytics
+
+| Mục | Quy ước |
+|:---|:---|
+| User identifier | Firebase `uid` khi đăng nhập (`AuthViewModel`), chuỗi rỗng khi đăng xuất. Không dùng email. |
+| Custom key `screen` | Tên route hiện tại (`AppRoutes`), cập nhật bởi `CrashlyticsService.screenObserver` trong `MaterialApp.navigatorObservers`. Dialog / bottom sheet không đổi key. Các tab trong màn chính không phải route nên không đổi key. |
+| Lỗi đã xử lý | Service đổi lỗi Firebase thành `AppException` (`mapFirebaseError`). ViewModel: `AppException` → hiện `messageVi` (UiError có "Thử lại" với stream); lỗi khác → `CrashlyticsService.recordHandledError` + câu chung "Đã có lỗi, vui lòng thử lại." (mixin `ErrorReporting`). Screen không gọi `mapFirebaseError`. |
+
+---
+
+## 4. Thay đổi so với bản trước (B9)
+
+- `record_purchase` → `purchase_recorded`; `set_budget` → `budget_set` (theo tên trong đặc tả).
+- Bỏ `search_term` (có thể chứa tên món) → `query_length`.
+- Bỏ số tiền chính xác (`item_price`, `budget_amount`, `saved_amount`) → `amount_bucket`.
+- Bỏ `item_id` khỏi `view_item_detail` và `purchase_recorded`; bỏ `has_sale_date` (trùng với `motive = sale`); bỏ `file_size_kb`.
+- `make_decision.action` (`drop`) → `decision` (`skip`).
+- `export_report` không còn liên quan Cloud Storage (D7): PDF tạo trên máy và chia sẻ bằng `printing`.

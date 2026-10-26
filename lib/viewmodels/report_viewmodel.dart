@@ -4,18 +4,23 @@ import '../core/utils/month_key.dart';
 import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
+import '../services/crashlytics_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 enum ReportStatus { idle, generating, ready, shared, error }
 
 /// Monthly PDF report: generated on the device and shared through the system share sheet
 /// (decision D7: no Cloud Storage). uid, user name and data come from the ProxyProvider.
-class ReportViewModel extends ChangeNotifier with DeferredNotify {
+class ReportViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   final ReportService reportService;
   final ReportShareService shareService;
   final AppAnalyticsService analyticsService;
+  @override
+  final CrashlyticsService? crashlyticsService;
 
   ReportStatus _status = ReportStatus.idle;
   String? _errorMessage;
@@ -33,6 +38,7 @@ class ReportViewModel extends ChangeNotifier with DeferredNotify {
     required this.reportService,
     required this.shareService,
     required this.analyticsService,
+    this.crashlyticsService,
   });
 
   ReportStatus get status => _status;
@@ -109,9 +115,8 @@ class ReportViewModel extends ChangeNotifier with DeferredNotify {
       _status = ReportStatus.ready;
       notifyListeners();
       return bytes;
-    } catch (e) {
-      debugPrint('Report generate error: $e');
-      _fail('Chưa tạo được báo cáo PDF. Bấm "Thử lại".');
+    } catch (e, stack) {
+      _fail(messageFor(e, stack, reason: 'generateReportPdf'));
       return null;
     }
   }
@@ -134,9 +139,8 @@ class ReportViewModel extends ChangeNotifier with DeferredNotify {
         itemCount: _itemCount,
       );
       return true;
-    } catch (e) {
-      debugPrint('Report share error: $e');
-      _fail('Chưa chia sẻ được báo cáo. Bấm "Thử lại".');
+    } catch (e, stack) {
+      _fail(messageFor(e, stack, reason: 'shareReportPdf'));
       return false;
     }
   }
@@ -148,9 +152,8 @@ class ReportViewModel extends ChangeNotifier with DeferredNotify {
     if (bytes == null) return;
     try {
       await shareService.previewPdf(bytes);
-    } catch (e) {
-      debugPrint('Report preview error: $e');
-      _fail('Chưa mở được bản xem trước. Bấm "Thử lại".');
+    } catch (e, stack) {
+      _fail(messageFor(e, stack, reason: 'previewReportPdf'));
     }
   }
 

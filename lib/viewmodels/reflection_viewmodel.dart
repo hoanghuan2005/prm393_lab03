@@ -6,13 +6,18 @@ import '../core/constants/app_constants.dart';
 import '../core/utils/month_key.dart';
 import '../models/reflection.dart';
 import '../models/ui_state.dart';
+import '../services/crashlytics_service.dart';
 import '../services/reflection_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 /// Chiêm nghiệm tháng: satisfaction rating 1–5 and a goal for next month.
 /// uid comes from AuthViewModel; the month follows PurchaseViewModel's selected month.
-class ReflectionViewModel extends ChangeNotifier with DeferredNotify {
+class ReflectionViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   final ReflectionService reflectionService;
+  @override
+  final CrashlyticsService? crashlyticsService;
 
   StreamSubscription<Reflection?>? _subscription;
   String? _uid;
@@ -21,8 +26,15 @@ class ReflectionViewModel extends ChangeNotifier with DeferredNotify {
   Reflection? _saved;
   int? _rating;
   bool _isSaving = false;
+  String? _actionError;
 
-  ReflectionViewModel({required this.reflectionService});
+  ReflectionViewModel({
+    required this.reflectionService,
+    this.crashlyticsService,
+  });
+
+  /// Message of the last failed save, for a SnackBar
+  String? get actionError => _actionError;
 
   UiState<Reflection?> get state => _state;
   DateTime get month => _month;
@@ -71,8 +83,11 @@ class ReflectionViewModel extends ChangeNotifier with DeferredNotify {
             _state = UiSuccess(reflection);
             notifyListeners();
           },
-          onError: (Object error) {
-            _state = UiError(message: '$error', onRetry: _subscribe);
+          onError: (Object error, StackTrace stack) {
+            _state = UiError(
+              message: messageFor(error, stack, reason: 'watchReflection'),
+              onRetry: _subscribe,
+            );
             notifyListeners();
           },
         );
@@ -105,9 +120,10 @@ class ReflectionViewModel extends ChangeNotifier with DeferredNotify {
                 ),
         ),
       );
+      _actionError = null;
       return true;
-    } catch (e) {
-      debugPrint('Reflection save error: $e');
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'saveReflection');
       return false;
     } finally {
       _isSaving = false;

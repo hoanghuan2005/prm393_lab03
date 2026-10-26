@@ -5,7 +5,6 @@ import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
-import '../services/analytics_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -29,17 +28,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Log view_item_detail analytics event on enter
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final analytics = context.read<AppAnalyticsService>();
-      final daysInCooldown = DateTime.now()
-          .difference(widget.item.createdAt)
-          .inDays;
-      analytics.logViewItemDetail(
-        itemId: widget.item.id,
-        motive: widget.item.displayMotive.key,
-        daysInCooldown: daysInCooldown,
-      );
+      context.read<WishlistViewModel>().onItemViewed(widget.item);
     });
   }
 

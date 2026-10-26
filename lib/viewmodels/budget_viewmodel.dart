@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../core/errors/app_exception.dart';
 import '../core/utils/month_key.dart';
 import '../models/budget_group.dart';
 import '../models/monthly_budget.dart';
@@ -10,11 +9,14 @@ import '../models/purchase_item.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
 import '../services/budget_service.dart';
+import '../services/crashlytics_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 /// Budget groups, this month's limits and what has been spent per group.
 /// uid comes from AuthViewModel; purchases and the selected month come from PurchaseViewModel.
-class BudgetViewModel extends ChangeNotifier with DeferredNotify {
+class BudgetViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   /// Safety margin of handoff 9.4 (bienDo)
   static const int safetyMarginPercent = 10;
 
@@ -23,19 +25,29 @@ class BudgetViewModel extends ChangeNotifier with DeferredNotify {
 
   final BudgetService budgetService;
   final AppAnalyticsService? analyticsService;
+  @override
+  final CrashlyticsService? crashlyticsService;
 
   StreamSubscription<List<BudgetGroup>>? _groupsSubscription;
   StreamSubscription<MonthlyBudget>? _budgetSubscription;
   String? _uid;
   List<BudgetGroup> _groups = [];
   MonthlyBudget? _budget;
+  String? _actionError;
   UiState<List<BudgetGroup>> _state = const UiInitial();
   List<PurchaseItem> _purchases = const [];
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
 
-  BudgetViewModel({required this.budgetService, this.analyticsService});
+  BudgetViewModel({
+    required this.budgetService,
+    this.analyticsService,
+    this.crashlyticsService,
+  });
 
   UiState<List<BudgetGroup>> get state => _state;
+
+  /// Message of the last failed save, for a SnackBar
+  String? get actionError => _actionError;
   DateTime get month => _month;
   String get monthKeyValue => monthKey(_month);
 
@@ -74,9 +86,9 @@ class BudgetViewModel extends ChangeNotifier with DeferredNotify {
             _state = UiSuccess(this.groups);
             notifyListeners();
           },
-          onError: (Object error) {
+          onError: (Object error, StackTrace stack) {
             _state = UiError(
-              message: _message(error),
+              message: messageFor(error, stack, reason: 'watchGroups'),
               onRetry: () => _retry(uid),
             );
             notifyListeners();
@@ -110,8 +122,13 @@ class BudgetViewModel extends ChangeNotifier with DeferredNotify {
             _budget = budget;
             notifyListeners();
           },
-          onError: (Object error) =>
-              debugPrint('watchMonthlyBudget error: $error'),
+          onError: (Object error, StackTrace stack) {
+            _state = UiError(
+              message: messageFor(error, stack, reason: 'watchMonthlyBudget'),
+              onRetry: _subscribeBudget,
+            );
+            notifyListeners();
+          },
         );
   }
 
@@ -119,9 +136,6 @@ class BudgetViewModel extends ChangeNotifier with DeferredNotify {
     _uid = null;
     updateUid(uid);
   }
-
-  String _message(Object error) =>
-      error is AppException ? error.messageVi : AppException.unknown.messageVi;
 
   List<PurchaseItem> get _monthPurchases => _purchases
       .where(
@@ -212,15 +226,19 @@ class BudgetViewModel extends ChangeNotifier with DeferredNotify {
     if (uid == null) return false;
     try {
       await budgetService.setGroupLimit(uid, monthKeyValue, groupId, limit);
-      if (limit != null) {
+      if (limit != null && limit > 0) {
         unawaited(
-          analyticsService?.logBudgetSet(amount: limit, month: monthKeyValue) ??
+          analyticsService?.logBudgetSet(
+                budgetGroupId: groupId,
+                amountVnd: limit,
+                month: monthKeyValue,
+              ) ??
               Future<void>.value(),
         );
       }
       return true;
-    } catch (e) {
-      debugPrint('setGroupLimit error: $e');
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'setGroupLimit');
       return false;
     }
   }

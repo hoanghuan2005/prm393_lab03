@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../core/errors/app_exception.dart';
 import '../core/utils/month_key.dart';
 import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
+import '../services/crashlytics_service.dart';
 import '../services/purchase_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 /// Count and total of the selected month's purchases in one part of the day
 class TimeSlotStat {
@@ -23,9 +24,15 @@ class TimeSlotStat {
 
 /// ViewModel managing Purchases with real-time Firebase Cloud Firestore sync.
 /// The uid comes from AuthViewModel through ChangeNotifierProxyProvider ([updateUid]).
-class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
+class PurchaseViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   final PurchaseService purchaseService;
   final AppAnalyticsService? analyticsService;
+  @override
+  final CrashlyticsService? crashlyticsService;
+
+  /// Message of the last failed add / update / delete, for a SnackBar
+  String? _actionError;
 
   StreamSubscription<List<PurchaseItem>>? _purchasesSubscription;
   String? _uid;
@@ -34,7 +41,13 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
   BuyingMotive? _selectedMotiveFilter;
   DateTime _selectedMonth = _firstOfMonth(DateTime.now());
 
-  PurchaseViewModel({required this.purchaseService, this.analyticsService});
+  PurchaseViewModel({
+    required this.purchaseService,
+    this.analyticsService,
+    this.crashlyticsService,
+  });
+
+  String? get actionError => _actionError;
 
   static DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
 
@@ -70,11 +83,9 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
                 : UiSuccess(items);
             notifyListeners();
           },
-          onError: (Object error) {
+          onError: (Object error, StackTrace stack) {
             _state = UiError(
-              message: error is AppException
-                  ? error.messageVi
-                  : AppException.unknown.messageVi,
+              message: messageFor(error, stack, reason: 'watchPurchases'),
               onRetry: () => _retry(uid),
             );
             notifyListeners();
@@ -241,15 +252,16 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
       );
       unawaited(
         analyticsService?.logPurchaseRecorded(
-              itemId: saved.id,
-              price: saved.amountVnd,
               motive: saved.motive.key,
+              amountVnd: saved.amountVnd,
+              budgetGroupId: saved.budgetGroupId,
             ) ??
             Future<void>.value(),
       );
+      _actionError = null;
       return saved;
-    } catch (e) {
-      debugPrint('addPurchase error: $e');
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'addPurchase');
       return null;
     }
   }
@@ -286,8 +298,9 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
           note: note,
         ),
       );
-    } catch (e) {
-      debugPrint('updatePurchase error: $e');
+      _actionError = null;
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'updatePurchase');
     }
   }
 
@@ -297,8 +310,9 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
     if (uid == null) return;
     try {
       await purchaseService.delete(uid, id);
-    } catch (e) {
-      debugPrint('deletePurchase error: $e');
+      _actionError = null;
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'deletePurchase');
     }
   }
 

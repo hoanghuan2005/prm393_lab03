@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_navigation_screen.dart';
 import '../services/analytics_service.dart';
+import '../services/crashlytics_service.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
@@ -15,12 +16,16 @@ class WhyIBuyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final analyticsService = context.read<AppAnalyticsService>();
+    final crashlyticsService = context.read<CrashlyticsService>();
 
     return MaterialApp(
       title: 'Why I Buy',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      navigatorObservers: analyticsService.navigatorObservers,
+      navigatorObservers: [
+        ...analyticsService.navigatorObservers,
+        crashlyticsService.screenObserver,
+      ],
       home: const AuthGate(),
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );

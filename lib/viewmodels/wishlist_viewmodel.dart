@@ -6,14 +6,20 @@ import '../models/buying_motive.dart';
 import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
+import '../services/analytics_events.dart';
 import '../services/analytics_service.dart';
+import '../services/crashlytics_service.dart';
 import '../services/wishlist_service.dart';
 import 'deferred_notify.dart';
+import 'error_reporting.dart';
 
 /// ViewModel managing Wishlist items, motive filtering, search, and decisions
-class WishlistViewModel extends ChangeNotifier with DeferredNotify {
+class WishlistViewModel extends ChangeNotifier
+    with DeferredNotify, ErrorReporting {
   final WishlistService wishlistService;
   final AppAnalyticsService analyticsService;
+  @override
+  final CrashlyticsService? crashlyticsService;
 
   StreamSubscription<List<WishlistItem>>? _itemsSubscription;
   List<WishlistItem> _allItems = [];
@@ -27,10 +33,16 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
   /// From SettingsViewModel: user setting, else Remote Config
   int _coolingOffDays = 3;
 
+  /// Message of the last failed add / decision, for a SnackBar
+  String? _actionError;
+
   WishlistViewModel({
     required this.wishlistService,
     required this.analyticsService,
+    this.crashlyticsService,
   });
+
+  String? get actionError => _actionError;
 
   int get coolingOffDays => _coolingOffDays;
 
@@ -108,9 +120,9 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
             _allItems = items;
             _updateFilteredState();
           },
-          onError: (error) {
+          onError: (Object error, StackTrace stack) {
             _state = UiError(
-              message: 'Không thể tải dữ liệu: $error',
+              message: messageFor(error, stack, reason: 'watchItems'),
               onRetry: () {
                 _uid = null;
                 updateUid(uid);
@@ -127,9 +139,11 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
     _updateFilteredState();
 
     if (query.trim().isNotEmpty) {
-      analyticsService.logSearch(
-        searchTerm: query,
-        resultCount: filteredItems.length,
+      unawaited(
+        analyticsService.logSearch(
+          queryLength: query.trim().length,
+          resultCount: filteredItems.length,
+        ),
       );
     }
   }
@@ -165,14 +179,13 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
         coolingOffDays: _coolingOffDays,
       );
 
-      await analyticsService.logAddToWishlist(
-        motive: motive.key,
-        price: price,
-        hasSaleDate: motive.relatesToSales,
+      unawaited(
+        analyticsService.logAddToWishlist(motive: motive.key, priceVnd: price),
       );
+      _actionError = null;
       return true;
-    } catch (e) {
-      debugPrint('WishlistViewModel addItem error: $e');
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'addItem');
       return false;
     }
   }
@@ -211,17 +224,33 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
           );
       }
 
-      final savedAmount = status == WishlistStatus.skipped ? (price ?? 0) : 0;
-      await analyticsService.logMakeDecision(
-        action: status.key,
-        motive: motive.key,
-        savedAmount: savedAmount,
+      unawaited(
+        analyticsService.logMakeDecision(
+          decision: switch (status) {
+            WishlistStatus.purchased => AnalyticsDecisions.buy,
+            WishlistStatus.considering => AnalyticsDecisions.wait,
+            WishlistStatus.skipped => AnalyticsDecisions.skip,
+          },
+          motive: motive.key,
+          priceVnd: price,
+        ),
       );
+      _actionError = null;
       return true;
-    } catch (e) {
-      debugPrint('WishlistViewModel updateDecision error: $e');
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'updateDecision');
       return false;
     }
+  }
+
+  /// Called once when an item's detail screen opens (view_item_detail)
+  void onItemViewed(WishlistItem item) {
+    unawaited(
+      analyticsService.logViewItemDetail(
+        motive: item.displayMotive.key,
+        daysInCooldown: item.daysSinceCreated,
+      ),
+    );
   }
 
   void _updateFilteredState() {

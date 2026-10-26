@@ -7,7 +7,7 @@ class AppException implements Exception {
 
   static const unknown = AppException(
     'unknown',
-    'Đã có lỗi xảy ra. Thử lại sau ít phút.',
+    'Đã có lỗi, vui lòng thử lại.',
   );
 
   @override

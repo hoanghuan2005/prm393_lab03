@@ -36,7 +36,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
     final totalSpent = purchaseVm.weeklyTotal;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -65,7 +65,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: AppColors.divider,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -84,7 +84,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -92,7 +92,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   IconButton(
                     icon: const Icon(
                       Icons.chevron_left_rounded,
-                      color: Color(0xFF47667B),
+                      color: AppColors.accentNeutral,
                     ),
                     onPressed: () => purchaseVm.previousMonth(),
                   ),
@@ -132,7 +132,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                           const Icon(
                             Icons.arrow_drop_down_rounded,
                             size: 20,
-                            color: Color(0xFF6D6E73),
+                            color: AppColors.textSecondary,
                           ),
                         ],
                       ),
@@ -141,7 +141,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   IconButton(
                     icon: const Icon(
                       Icons.chevron_right_rounded,
-                      color: Color(0xFF47667B),
+                      color: AppColors.accentNeutral,
                     ),
                     onPressed: () => purchaseVm.nextMonth(),
                   ),
@@ -157,7 +157,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,7 +169,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         'Tổng chi tiêu trong kỳ',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6D6E73),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -178,7 +178,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF47667B),
+                          color: AppColors.accentNeutral,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -186,7 +186,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         '${purchaseVm.weeklyCount} khoản đã ghi nhận',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textHint,
                         ),
                       ),
                     ],
@@ -195,7 +195,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     width: 48,
                     height: 48,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFFFCE6),
+                      color: AppColors.primaryContainer,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -227,7 +227,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 children: BuyingMotive.values.map((motive) {
@@ -280,7 +280,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF47667B),
+                                          color: AppColors.accentNeutral,
                                         ),
                                       ),
                                     ],
@@ -294,7 +294,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                         '$count khoản chi',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: Color(0xFF9CA3AF),
+                                          color: AppColors.textHint,
                                         ),
                                       ),
                                       Text(
@@ -302,7 +302,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF6D6E73),
+                                          color: AppColors.textSecondary,
                                         ),
                                       ),
                                     ],
@@ -319,7 +319,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                           child: LinearProgressIndicator(
                             value: percent,
                             minHeight: 6,
-                            backgroundColor: const Color(0xFFF3F4F6),
+                            backgroundColor: AppColors.surfaceVariant,
                             color: motive == BuyingMotive.sale
                                 ? AppColors.primary
                                 : motive.color,
@@ -350,7 +350,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 children: [
@@ -358,7 +358,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     'Đêm (22:00 - 05:00)',
                     '1 khoản (389.000 ₫)',
                     Icons.nightlight_round,
-                    const Color(0xFF6366F1),
+                    AppColors.slotNight,
                     0.48,
                   ),
                   const Divider(height: 20),
@@ -366,7 +366,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     'Chiều & Tối (14:00 - 22:00)',
                     '2 khoản (245.000 ₫)',
                     Icons.wb_twilight_rounded,
-                    const Color(0xFFF59E0B),
+                    AppColors.slotEvening,
                     0.30,
                   ),
                   const Divider(height: 20),
@@ -374,7 +374,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     'Trưa (11:00 - 14:00)',
                     '1 khoản (40.000 ₫)',
                     Icons.wb_sunny_rounded,
-                    const Color(0xFF10B981),
+                    AppColors.slotNoon,
                     0.05,
                   ),
                   const Divider(height: 20),
@@ -382,7 +382,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     'Sáng (05:00 - 11:00)',
                     '1 khoản (143.000 ₫)',
                     Icons.wb_sunny_outlined,
-                    const Color(0xFF3B82F6),
+                    AppColors.slotMorning,
                     0.17,
                   ),
                 ],
@@ -420,7 +420,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? AppColors.onPrimary : const Color(0xFF6D6E73),
+            color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -452,7 +452,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
             const Spacer(),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -462,7 +465,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,
-            backgroundColor: const Color(0xFFF3F4F6),
+            backgroundColor: AppColors.surfaceVariant,
             color: color,
           ),
         ),

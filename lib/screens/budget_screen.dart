@@ -31,7 +31,7 @@ class BudgetScreen extends StatelessWidget {
             '• Khi vượt mốc, ứng dụng chỉ đưa ra thông tin trung tính để bạn tự quan sát tâm lý tiêu dùng của chính mình.',
             style: TextStyle(
               fontSize: 13.5,
-              color: Color(0xFF6D6E73),
+              color: AppColors.textSecondary,
               height: 1.45,
             ),
           ),
@@ -81,7 +81,7 @@ class BudgetScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -104,7 +104,7 @@ class BudgetScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(
               Icons.help_outline_rounded,
-              color: Color(0xFF6D6E73),
+              color: AppColors.textSecondary,
             ),
             tooltip: 'Giải thích ngân sách',
             onPressed: () => _showHelpDialog(context),
@@ -143,7 +143,7 @@ class BudgetScreen extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: Color(0xFF6D6E73),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -167,7 +167,7 @@ class BudgetScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: AppColors.textHint,
                       height: 1.35,
                     ),
                   ),
@@ -222,7 +222,7 @@ class BudgetScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -252,7 +252,7 @@ class BudgetScreen extends StatelessWidget {
                   const Icon(
                     Icons.calendar_today_rounded,
                     size: 16,
-                    color: Color(0xFF47667B),
+                    color: AppColors.accentNeutral,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -266,7 +266,7 @@ class BudgetScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.arrow_drop_down_rounded,
-                    color: Color(0xFF6D6E73),
+                    color: AppColors.textSecondary,
                   ),
                 ],
               ),
@@ -291,7 +291,7 @@ class BudgetScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -299,7 +299,7 @@ class BudgetScreen extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: const BoxDecoration(
-              color: Color(0xFFFFFCE6),
+              color: AppColors.primaryContainer,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -323,7 +323,7 @@ class BudgetScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF6D6E73),
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
@@ -364,7 +364,7 @@ class BudgetScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -394,8 +394,8 @@ class BudgetScreen extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isExceeded
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFECFDF5),
+                      ? AppColors.surfaceVariant
+                      : AppColors.successContainer,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -404,8 +404,8 @@ class BudgetScreen extends StatelessWidget {
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: isExceeded
-                        ? const Color(0xFFDC2626)
-                        : const Color(0xFF059669),
+                        ? AppColors.accentNeutral
+                        : AppColors.onSuccessContainer,
                   ),
                 ),
               ),
@@ -420,7 +420,7 @@ class BudgetScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF47667B),
+                  color: AppColors.accentNeutral,
                 ),
               ),
               Text(
@@ -428,7 +428,7 @@ class BudgetScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -440,9 +440,9 @@ class BudgetScreen extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFE5E7EB),
+              backgroundColor: AppColors.divider,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isExceeded ? const Color(0xFF47667B) : AppColors.primary,
+                isExceeded ? AppColors.accentNeutral : AppColors.primary,
               ),
             ),
           ),
@@ -453,7 +453,7 @@ class BudgetScreen extends StatelessWidget {
                 : 'Còn lại ${formatVnd((budget - spent).round())} trong ngân sách dự kiến tháng này.',
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF6D6E73),
+              color: AppColors.textSecondary,
               height: 1.35,
             ),
           ),
@@ -477,7 +477,7 @@ class BudgetScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,10 +488,10 @@ class BudgetScreen extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 18, color: const Color(0xFF47667B)),
+                child: Icon(icon, size: 18, color: AppColors.accentNeutral),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -509,7 +509,7 @@ class BudgetScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF47667B),
+                  color: AppColors.accentNeutral,
                 ),
               ),
             ],
@@ -521,9 +521,9 @@ class BudgetScreen extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: const Color(0xFFE5E7EB),
+              backgroundColor: AppColors.divider,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isExceeded ? const Color(0xFF47667B) : const Color(0xFF9CA3AF),
+                isExceeded ? AppColors.accentNeutral : AppColors.textHint,
               ),
             ),
           ),
@@ -532,7 +532,10 @@ class BudgetScreen extends StatelessWidget {
             isExceeded
                 ? 'Đã vượt ${formatVnd((spent - catBudget).round())} so với mốc nhóm. App không chặn mua.'
                 : 'Còn lại ${formatVnd((catBudget - spent).round())} trong nhóm này.',
-            style: const TextStyle(fontSize: 11.5, color: Color(0xFF6D6E73)),
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

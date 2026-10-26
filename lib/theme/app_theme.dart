@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_dimens.dart';
 import 'app_text_styles.dart';
+import 'motive_colors.dart';
 
 /// Centralized ThemeData for Why I Buy
 class AppTheme {
@@ -17,12 +18,23 @@ class AppTheme {
       onPrimaryContainer: AppColors.onPrimary,
       secondary: AppColors.onPrimary,
       onSecondary: AppColors.textOnDark,
+      secondaryContainer: AppColors.primaryContainer,
+      onSecondaryContainer: AppColors.onPrimary,
+      tertiary: AppColors.accentNeutral,
+      onTertiary: AppColors.textOnDark,
       error: AppColors.error,
       onError: AppColors.textOnDark,
+      errorContainer: AppColors.errorContainer,
+      onErrorContainer: AppColors.onErrorContainer,
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.textSecondary,
       surfaceContainerHighest: AppColors.surfaceVariant,
       outline: AppColors.outline,
+      outlineVariant: AppColors.divider,
+      inverseSurface: AppColors.onPrimary,
+      onInverseSurface: AppColors.textOnDark,
+      inversePrimary: AppColors.primary,
     );
 
     return ThemeData(
@@ -30,6 +42,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: 'Be Vietnam Pro',
+      extensions: const [MotiveColors.light],
 
       // Text Theme
       textTheme: TextTheme(
@@ -71,6 +84,34 @@ class AppTheme {
             vertical: AppDimens.space12,
           ),
         ),
+      ),
+
+      // Text Button Theme: primary (yellow) text on white fails WCAG AA, use onPrimary
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.onPrimary,
+          textStyle: AppTextStyles.labelLarge,
+        ),
+      ),
+
+      // Loaders / progress bars on white: navy indicator, grey track
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.onPrimary,
+        linearTrackColor: AppColors.surfaceVariant,
+        circularTrackColor: Colors.transparent,
+      ),
+
+      // Text cursor & selection handles (default would be yellow on white)
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.onPrimary,
+        selectionHandleColor: AppColors.onPrimary,
+        selectionColor: AppColors.primary.withValues(alpha: 0.4),
+      ),
+
+      // Floating Action Button
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
 
       // Outlined Button Theme

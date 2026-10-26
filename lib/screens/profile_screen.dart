@@ -111,7 +111,10 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 const Text(
                   'Thiết lập ngân sách tham chiếu theo tháng và theo nhóm hàng, tự động đồng bộ Firestore:',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6D6E73)),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 AppButton(

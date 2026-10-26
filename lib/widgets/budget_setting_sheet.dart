@@ -83,7 +83,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
+                  color: AppColors.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -116,7 +116,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                   icon: const Icon(
                     Icons.close_rounded,
                     size: 20,
-                    color: Color(0xFF6D6E73),
+                    color: AppColors.textSecondary,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -129,7 +129,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
               'Thiết lập mốc ngân sách để tự quan sát thói quen. Ứng dụng không chặn mua sắm, chỉ gửi thông tin trung tính.',
               style: TextStyle(
                 fontSize: 13,
-                color: Color(0xFF6D6E73),
+                color: AppColors.textSecondary,
                 height: 1.35,
               ),
             ),
@@ -140,7 +140,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primary, width: 2),
               ),
@@ -155,7 +155,10 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   labelText: 'Mức ngân sách tháng',
-                  labelStyle: TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                   isDense: true,
                 ),
                 onChanged: _onAmountChanged,
@@ -182,7 +185,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -195,7 +198,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         'Đã chi tháng này',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6D6E73),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -204,16 +207,12 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF47667B),
+                          color: AppColors.accentNeutral,
                         ),
                       ),
                     ],
                   ),
-                  Container(
-                    height: 28,
-                    width: 1,
-                    color: const Color(0xFFD1D5DB),
-                  ),
+                  Container(height: 28, width: 1, color: AppColors.outline),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -222,8 +221,8 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         style: TextStyle(
                           fontSize: 12,
                           color: isExceeded
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF10B981),
+                              ? AppColors.accentNeutral
+                              : AppColors.success,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -234,8 +233,8 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: isExceeded
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF10B981),
+                              ? AppColors.accentNeutral
+                              : AppColors.success,
                         ),
                       ),
                     ],
@@ -283,7 +282,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                                 ),
                               ],
                             ),
-                            backgroundColor: const Color(0xFF10B981),
+                            backgroundColor: AppColors.success,
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -323,7 +322,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
           color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.onPrimary : const Color(0xFFE5E7EB),
+            color: isSelected ? AppColors.onPrimary : AppColors.border,
           ),
         ),
         child: Text(

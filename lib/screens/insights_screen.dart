@@ -25,7 +25,7 @@ class InsightsScreen extends StatelessWidget {
     final report = insightsVm.report;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -46,6 +46,7 @@ class InsightsScreen extends StatelessWidget {
         ),
       ),
       body: RefreshIndicator(
+        color: AppColors.onPrimary,
         onRefresh: () => insightsVm.refresh(force: true),
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -76,7 +77,7 @@ class InsightsScreen extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.onPrimary,
                   minimumSize: const Size.fromHeight(48),
-                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                  side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
                   ),
@@ -98,7 +99,7 @@ class InsightsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -106,7 +107,7 @@ class InsightsScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(
               Icons.chevron_left_rounded,
-              color: Color(0xFF47667B),
+              color: AppColors.accentNeutral,
             ),
             tooltip: 'Tháng trước',
             onPressed: purchaseVm.previousMonth,
@@ -154,7 +155,7 @@ class InsightsScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF47667B),
+              color: AppColors.accentNeutral,
             ),
             tooltip: 'Tháng sau',
             onPressed: purchaseVm.nextMonth,
@@ -181,7 +182,7 @@ class InsightsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFFCE6), Color(0xFFFEF3C7)],
+          colors: [AppColors.primaryContainer, AppColors.aiContainer],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -195,7 +196,7 @@ class InsightsScreen extends StatelessWidget {
             children: [
               const Icon(
                 Icons.auto_awesome,
-                color: Color(0xFFB45309),
+                color: AppColors.aiAccent,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -229,7 +230,7 @@ class InsightsScreen extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     height: 1.4,
-                    color: Color(0xFF374151),
+                    color: AppColors.textBody,
                   ),
                 ),
                 if (reason == InsightFallbackReason.aiFailed &&
@@ -250,7 +251,7 @@ class InsightsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: Color(0xFF47667B),
+                    color: AppColors.accentNeutral,
                   ),
                 ),
               ],
@@ -290,7 +291,7 @@ class _InsightCardView extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +329,7 @@ class _InsightCardView extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               height: 1.45,
-              color: Color(0xFF374151),
+              color: AppColors.textBody,
             ),
           ),
         ],

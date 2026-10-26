@@ -11,7 +11,7 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -24,7 +24,7 @@ class OnboardingScreen extends StatelessWidget {
                 width: 100,
                 height: 100,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFFFCE6), // Soft yellow container
+                  color: AppColors.primaryContainer, // Soft yellow container
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
@@ -41,7 +41,7 @@ class OnboardingScreen extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
-                  color: Color(0xFF47667B),
+                  color: AppColors.accentNeutral,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -68,7 +68,7 @@ class OnboardingScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.45,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -84,7 +84,7 @@ class OnboardingScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+                  border: Border.all(color: AppColors.border, width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -102,7 +102,10 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Divider(color: Color(0xFFF3F4F6), height: 1),
+                      child: Divider(
+                        color: AppColors.surfaceVariant,
+                        height: 1,
+                      ),
                     ),
                     _buildFeatureRow(
                       icon: Icons.bar_chart_rounded,
@@ -111,7 +114,10 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Divider(color: Color(0xFFF3F4F6), height: 1),
+                      child: Divider(
+                        color: AppColors.surfaceVariant,
+                        height: 1,
+                      ),
                     ),
                     _buildFeatureRow(
                       icon: Icons.lightbulb_outline_rounded,
@@ -161,7 +167,7 @@ class OnboardingScreen extends StatelessWidget {
               // Footer Note
               const Text(
                 'Dữ liệu được lưu trên máy của bạn.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                style: TextStyle(fontSize: 12, color: AppColors.textHint),
                 textAlign: TextAlign.center,
               ),
 
@@ -181,10 +187,10 @@ class OnboardingScreen extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
+            color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 20, color: const Color(0xFF47667B)),
+          child: Icon(icon, size: 20, color: AppColors.accentNeutral),
         ),
         const SizedBox(width: 14),
         Expanded(

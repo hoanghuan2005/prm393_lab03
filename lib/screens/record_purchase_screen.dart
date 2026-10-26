@@ -171,7 +171,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               Text('Đã cập nhật khoản mua: $title!'),
             ],
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -198,7 +198,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               Text('Đã lưu khoản mua: $title!'),
             ],
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -216,7 +216,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -248,7 +248,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             IconButton(
               icon: const Icon(
                 Icons.help_outline_rounded,
-                color: Color(0xFF6D6E73),
+                color: AppColors.textSecondary,
               ),
               tooltip: 'Giải thích động cơ',
               onPressed: () => _showMotiveHelpDialog(context),
@@ -271,7 +271,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFCE6),
+                      color: AppColors.primaryContainer,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: AppColors.primary.withValues(alpha: 0.5),
@@ -307,7 +307,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                         decoration: BoxDecoration(
                           color: _currentStep == 2
                               ? AppColors.primary
-                              : const Color(0xFFE5E7EB),
+                              : AppColors.divider,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -317,7 +317,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               ),
             ),
 
-            const Divider(height: 1, color: Color(0xFFE5E7EB)),
+            const Divider(height: 1, color: AppColors.divider),
 
             // Content body
             Expanded(
@@ -349,13 +349,13 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6D6E73),
+                color: AppColors.textSecondary,
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
+                color: AppColors.errorContainer,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Text(
@@ -363,7 +363,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFFDC2626),
+                  color: AppColors.onErrorContainer,
                 ),
               ),
             ),
@@ -378,7 +378,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
           child: Row(
             children: [
@@ -402,7 +402,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               IconButton(
                 icon: const Icon(
                   Icons.cancel_rounded,
-                  color: Color(0xFF9CA3AF),
+                  color: AppColors.textHint,
                   size: 22,
                 ),
                 onPressed: _clearAmount,
@@ -432,7 +432,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF6D6E73),
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
@@ -441,13 +441,13 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
           child: Row(
             children: [
               const Icon(
                 Icons.local_cafe_outlined,
-                color: Color(0xFF6D6E73),
+                color: AppColors.textSecondary,
                 size: 22,
               ),
               const SizedBox(width: 12),
@@ -463,7 +463,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                     border: InputBorder.none,
                     hintText: 'Ví dụ: Trà sữa nướng, Cơm tấm...',
                     hintStyle: TextStyle(
-                      color: Color(0xFF9CA3AF),
+                      color: AppColors.textHint,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -481,7 +481,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF6D6E73),
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
@@ -493,13 +493,13 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+              border: Border.all(color: AppColors.border, width: 1.5),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.access_time_rounded,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                   size: 22,
                 ),
                 const SizedBox(width: 12),
@@ -520,7 +520,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                         formatWeekdayDate(_selectedDateTime),
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6D6E73),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -528,7 +528,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                 ),
                 const Icon(
                   Icons.calendar_today_rounded,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                   size: 20,
                 ),
               ],
@@ -546,16 +546,16 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
+          color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Text(
           label,
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF47667B),
+            color: AppColors.accentNeutral,
           ),
         ),
       ),
@@ -573,7 +573,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -581,7 +581,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFCE6),
+                  color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -609,7 +609,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF47667B),
+                        color: AppColors.accentNeutral,
                       ),
                     ),
                   ],
@@ -633,7 +633,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         const SizedBox(height: 4),
         const Text(
           'Chọn 1 động cơ chính',
-          style: TextStyle(fontSize: 13, color: Color(0xFF6D6E73)),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
 
         const SizedBox(height: 16),
@@ -664,7 +664,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF6D6E73),
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
@@ -673,7 +673,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.border),
           ),
           child: TextField(
             controller: _noteController,
@@ -682,7 +682,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             decoration: const InputDecoration(
               border: InputBorder.none,
               hintText: 'Ví dụ: Buồn vì công việc nên muốn uống gì ngọt...',
-              hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+              hintStyle: TextStyle(color: AppColors.textHint, fontSize: 13),
               isDense: true,
             ),
           ),
@@ -705,10 +705,10 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFFCE6) : Colors.white,
+          color: isSelected ? AppColors.primaryContainer : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
+            color: isSelected ? AppColors.primary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -753,7 +753,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               const Icon(
                 Icons.check_circle_rounded,
                 size: 18,
-                color: Color(0xFF070E20),
+                color: AppColors.onPrimary,
               ),
           ],
         ),
@@ -767,7 +767,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -825,7 +825,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             const SizedBox(height: 6),
             const Text(
               'Bước tiếp theo: chọn động cơ của khoản mua',
-              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+              style: TextStyle(fontSize: 12, color: AppColors.textHint),
             ),
           ],
         ],

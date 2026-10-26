@@ -66,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
         ),
         child: SafeArea(
           child: SizedBox(
@@ -128,7 +128,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Icon(
             isSelected ? activeIcon : icon,
             size: 24,
-            color: isSelected ? AppColors.onPrimary : const Color(0xFF9CA3AF),
+            color: isSelected ? AppColors.onPrimary : AppColors.navInactive,
           ),
           const SizedBox(height: 3),
           Text(
@@ -136,7 +136,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? AppColors.onPrimary : const Color(0xFF9CA3AF),
+              color: isSelected ? AppColors.onPrimary : AppColors.navInactive,
             ),
           ),
         ],

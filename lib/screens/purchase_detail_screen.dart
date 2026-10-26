@@ -51,7 +51,7 @@ class PurchaseDetailScreen extends StatelessWidget {
           'Bạn có chắc chắn muốn xoá "${purchase.title}" không? Khoản tiền này sẽ được khấu trừ khỏi tổng chi tiêu tháng.',
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF6D6E73),
+            color: AppColors.textSecondary,
             height: 1.4,
           ),
         ),
@@ -60,7 +60,7 @@ class PurchaseDetailScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text(
               'Huỷ',
-              style: TextStyle(color: Color(0xFF6D6E73)),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -105,7 +105,7 @@ class PurchaseDetailScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -128,7 +128,7 @@ class PurchaseDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(
               Icons.delete_outline_rounded,
-              color: Color(0xFFEF4444),
+              color: AppColors.error,
             ),
             tooltip: 'Xoá khoản mua',
             onPressed: () => _confirmDelete(context),
@@ -177,7 +177,7 @@ class PurchaseDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -199,7 +199,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
               ),
               Container(
@@ -238,14 +238,14 @@ class PurchaseDetailScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF47667B),
+              color: AppColors.accentNeutral,
               letterSpacing: -0.5,
             ),
           ),
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1, color: Color(0xFFF3F4F6)),
+            child: Divider(height: 1, color: AppColors.surfaceVariant),
           ),
 
           // Motive Row
@@ -257,7 +257,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
               ),
               Container(
@@ -300,7 +300,7 @@ class PurchaseDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -320,13 +320,13 @@ class PurchaseDetailScreen extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.access_time_rounded,
                   size: 18,
-                  color: Color(0xFF47667B),
+                  color: AppColors.accentNeutral,
                 ),
               ),
               const SizedBox(width: 12),
@@ -339,7 +339,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF6D6E73),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -356,7 +356,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                       formatWeekdayDate(item.dateTime),
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6D6E73),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -367,7 +367,7 @@ class PurchaseDetailScreen extends StatelessWidget {
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1, color: Color(0xFFF3F4F6)),
+            child: Divider(height: 1, color: AppColors.surfaceVariant),
           ),
 
           // Note Row
@@ -378,7 +378,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFCE6),
+                  color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -397,7 +397,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF6D6E73),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -405,9 +405,9 @@ class PurchaseDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         (item.note != null && item.note!.trim().isNotEmpty)
@@ -424,7 +424,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                               (item.note != null &&
                                   item.note!.trim().isNotEmpty)
                               ? AppColors.onPrimary
-                              : const Color(0xFF9CA3AF),
+                              : AppColors.textHint,
                           height: 1.4,
                         ),
                       ),
@@ -445,7 +445,7 @@ class PurchaseDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFCE6),
+        color: AppColors.primaryContainer,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
       ),
@@ -475,7 +475,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                   _getBehavioralInsight(item.motive),
                   style: const TextStyle(
                     fontSize: 12.5,
-                    color: Color(0xFF47667B),
+                    color: AppColors.accentNeutral,
                     height: 1.4,
                   ),
                 ),
@@ -493,7 +493,7 @@ class PurchaseDetailScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: SizedBox(
         width: double.infinity,

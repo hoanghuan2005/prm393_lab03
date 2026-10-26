@@ -1,79 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/motive_colors.dart';
 
 /// 8 Buying Motives based on "Why I Buy - The Psychology of Money"
 enum BuyingMotive {
-  need(
-    'need',
-    'Nhu cầu',
-    Icons.inventory_2_outlined,
-    AppColors.motiveNeed,
-    AppColors.motiveNeedBg,
-  ),
-  want(
-    'want',
-    'Mong muốn',
-    Icons.favorite_outline,
-    AppColors.motiveWant,
-    AppColors.motiveWantBg,
-  ),
-  sale(
-    'sale',
-    'Khuyến mãi',
-    Icons.local_offer_outlined,
-    AppColors.motiveSale,
-    AppColors.motiveSaleBg,
-  ),
-  emotion(
-    'emotion',
-    'Cảm xúc',
-    Icons.sentiment_very_satisfied_outlined,
-    AppColors.motiveEmotion,
-    AppColors.motiveEmotionBg,
-  ),
-  social(
-    'social',
-    'Ảnh hưởng MXH',
-    Icons.trending_up,
-    AppColors.motiveSocial,
-    AppColors.motiveSocialBg,
-  ),
-  convenience(
-    'convenience',
-    'Tiện lợi',
-    Icons.bolt_outlined,
-    AppColors.motiveConvenience,
-    AppColors.motiveConvenienceBg,
-  ),
-  ads(
-    'ads',
-    'Quảng cáo',
-    Icons.campaign_outlined,
-    AppColors.motiveAds,
-    AppColors.motiveAdsBg,
-  ),
-  other(
-    'other',
-    'Khác',
-    Icons.more_horiz,
-    AppColors.motiveOther,
-    AppColors.motiveOtherBg,
-  );
+  need('need', 'Nhu cầu', Icons.inventory_2_outlined),
+  want('want', 'Mong muốn', Icons.favorite_outline),
+  sale('sale', 'Khuyến mãi', Icons.local_offer_outlined),
+  emotion('emotion', 'Cảm xúc', Icons.sentiment_very_satisfied_outlined),
+  social('social', 'Ảnh hưởng MXH', Icons.trending_up),
+  convenience('convenience', 'Tiện lợi', Icons.bolt_outlined),
+  ads('ads', 'Quảng cáo', Icons.campaign_outlined),
+  other('other', 'Khác', Icons.more_horiz);
 
   final String key;
   final String label;
   final IconData icon;
-  final Color color;
-  final Color backgroundColor;
 
-  const BuyingMotive(
-    this.key,
-    this.label,
-    this.icon,
-    this.color,
-    this.backgroundColor,
-  );
+  const BuyingMotive(this.key, this.label, this.icon);
+
+  /// Colors come from the single source in MotiveColors (theme/motive_colors.dart)
+  Color get color => MotiveColors.light.paletteOf(this).foreground;
+  Color get backgroundColor => MotiveColors.light.paletteOf(this).background;
 
   static BuyingMotive fromKey(String? key) {
     return BuyingMotive.values.firstWhere(

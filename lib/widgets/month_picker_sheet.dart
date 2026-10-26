@@ -63,7 +63,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1D5DB),
+              color: AppColors.outline,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -85,7 +85,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                 icon: const Icon(
                   Icons.close_rounded,
                   size: 20,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
                 onPressed: () => Navigator.pop(context),
               ),
@@ -98,7 +98,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -166,12 +166,12 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
-                        : const Color(0xFFF9FAFB),
+                        : AppColors.background,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
                           ? AppColors.onPrimary
-                          : const Color(0xFFE5E7EB),
+                          : AppColors.divider,
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -184,7 +184,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                           : FontWeight.w600,
                       color: isSelected
                           ? AppColors.onPrimary
-                          : const Color(0xFF47667B),
+                          : AppColors.accentNeutral,
                     ),
                   ),
                 ),

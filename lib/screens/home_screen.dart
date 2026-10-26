@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
     final wishlistVm = context.watch<WishlistViewModel>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -68,7 +68,7 @@ class HomeScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFEF4444),
+                    color: AppColors.error,
                     shape: BoxShape.circle,
                   ),
                   child: const Text(
@@ -187,7 +187,7 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -208,7 +208,7 @@ class HomeScreen extends StatelessWidget {
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 14,
-                    color: Color(0xFF6D6E73),
+                    color: AppColors.textSecondary,
                   ),
                   SizedBox(width: 6),
                   Text(
@@ -217,7 +217,7 @@ class HomeScreen extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
-                      color: Color(0xFF6D6E73),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -239,7 +239,7 @@ class HomeScreen extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
@@ -257,7 +257,7 @@ class HomeScreen extends StatelessWidget {
                       const Icon(
                         Icons.arrow_drop_down_rounded,
                         size: 16,
-                        color: Color(0xFF6D6E73),
+                        color: AppColors.textSecondary,
                       ),
                     ],
                   ),
@@ -274,7 +274,7 @@ class HomeScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF47667B),
+              color: AppColors.accentNeutral,
               letterSpacing: -0.5,
             ),
           ),
@@ -287,7 +287,7 @@ class HomeScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
-              color: Color(0xFF6D6E73),
+              color: AppColors.textSecondary,
             ),
           ),
 
@@ -297,7 +297,10 @@ class HomeScreen extends StatelessWidget {
           Text.rich(
             TextSpan(
               text: 'Nhiều nhất: ',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF6D6E73)),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
               children: [
                 TextSpan(
                   text: purchaseVm.dominantMotiveSummary.replaceFirst(
@@ -321,7 +324,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               const Text(
                 'Động cơ chính',
-                style: TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               Text(
                 purchaseVm.dominantMotiveText,
@@ -352,19 +355,19 @@ class HomeScreen extends StatelessWidget {
                   // Tiện lợi (25% - Slate)
                   Expanded(
                     flex: 25,
-                    child: Container(color: const Color(0xFF47667B)),
+                    child: Container(color: AppColors.accentNeutral),
                   ),
                   const SizedBox(width: 2),
                   // Mong muốn (20% - Dark)
                   Expanded(
                     flex: 20,
-                    child: Container(color: const Color(0xFF1F2937)),
+                    child: Container(color: AppColors.chartStrong),
                   ),
                   const SizedBox(width: 2),
                   // Nhu cầu (15% - Light gray)
                   Expanded(
                     flex: 15,
-                    child: Container(color: const Color(0xFFD1D5DB)),
+                    child: Container(color: AppColors.outline),
                   ),
                 ],
               ),
@@ -373,7 +376,7 @@ class HomeScreen extends StatelessWidget {
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, color: Color(0xFFF3F4F6)),
+            child: Divider(height: 1, color: AppColors.surfaceVariant),
           ),
 
           // Monthly Budget Quick View
@@ -389,7 +392,7 @@ class HomeScreen extends StatelessWidget {
                   const Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 15,
-                    color: Color(0xFF47667B),
+                    color: AppColors.accentNeutral,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -398,7 +401,7 @@ class HomeScreen extends StatelessWidget {
                         text: 'Ngân sách tháng: ',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6D6E73),
+                          color: AppColors.textSecondary,
                         ),
                         children: [
                           TextSpan(
@@ -420,8 +423,8 @@ class HomeScreen extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: purchaseVm.isBudgetExceeded
-                          ? const Color(0xFFFEE2E2)
-                          : const Color(0xFFECFDF5),
+                          ? AppColors.surfaceVariant
+                          : AppColors.successContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -430,8 +433,8 @@ class HomeScreen extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: purchaseVm.isBudgetExceeded
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF059669),
+                            ? AppColors.accentNeutral
+                            : AppColors.onSuccessContainer,
                       ),
                     ),
                   ),
@@ -439,7 +442,7 @@ class HomeScreen extends StatelessWidget {
                   const Icon(
                     Icons.chevron_right_rounded,
                     size: 16,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textHint,
                   ),
                 ],
               ),
@@ -469,7 +472,7 @@ class HomeScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: const Row(
           children: [
@@ -494,14 +497,17 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     '2 món đang cân nhắc',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF6D6E73)),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textHint,
               size: 22,
             ),
           ],
@@ -535,7 +541,7 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
@@ -543,7 +549,7 @@ class HomeScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF6D6E73),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -564,13 +570,13 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF47667B),
+                      color: AppColors.accentNeutral,
                     ),
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: Color(0xFF47667B),
+                    color: AppColors.accentNeutral,
                   ),
                 ],
               ),
@@ -585,7 +591,7 @@ class HomeScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
           child: Column(
             children: List.generate(recentList.length, (index) {
@@ -595,7 +601,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _buildPurchaseRow(context, item),
                   if (!isLast)
-                    const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                    const Divider(height: 1, color: AppColors.surfaceVariant),
                 ],
               );
             }),
@@ -623,13 +629,13 @@ class HomeScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 item.motive.icon,
                 size: 20,
-                color: const Color(0xFF47667B),
+                color: AppColors.accentNeutral,
               ),
             ),
             const SizedBox(width: 12),
@@ -688,7 +694,7 @@ class HomeScreen extends StatelessWidget {
                         item.formattedTime,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textHint,
                         ),
                       ),
                     ],
@@ -703,7 +709,7 @@ class HomeScreen extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF47667B),
+                color: AppColors.accentNeutral,
               ),
             ),
           ],

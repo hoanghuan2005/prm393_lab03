@@ -201,8 +201,6 @@ class WishlistViewModel extends ChangeNotifier
     final uid = _uid;
     if (uid == null) return false;
     try {
-      // TODO(decision flow): "Mua" should go through PurchaseService.buyFromWishlist
-      // once the record-purchase screen accepts a PurchaseDraft.
       switch (status) {
         case WishlistStatus.skipped:
           await wishlistService.skip(uid, itemId);
@@ -213,15 +211,8 @@ class WishlistViewModel extends ChangeNotifier
             DateTime.now().add(Duration(days: _coolingOffDays)),
           );
         case WishlistStatus.purchased:
-          final item = _allItems.firstWhere((i) => i.id == itemId);
-          await wishlistService.update(
-            uid,
-            item.copyWith(
-              status: WishlistStatus.purchased,
-              decidedAt: DateTime.now(),
-              note: note,
-            ),
-          );
+          _actionError = 'Vui lòng ghi giá thực trả để hoàn tất khoản mua.';
+          return false;
       }
 
       unawaited(

@@ -57,10 +57,12 @@ class WishlistCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppDimens.space12),
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: AppDimens.space12,
+                  runSpacing: AppDimens.space8,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
-                    const Spacer(),
                     _buildStatusBadge(),
                   ],
                 ),

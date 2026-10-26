@@ -195,7 +195,7 @@ class PurchaseDetailScreen extends StatelessWidget {
 
           // Big Amount
           Text(
-            '${item.formattedAmount} ₫',
+            item.formattedAmount,
             style: const TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,

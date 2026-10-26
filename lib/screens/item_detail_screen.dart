@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
@@ -29,19 +31,22 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<WishlistViewModel>().onItemViewed(widget.item);
     });
   }
 
   Future<void> _handleDecision(WishlistStatus newStatus) async {
+    if (_isProcessing) return;
     setState(() => _isProcessing = true);
     final wishlistVm = context.read<WishlistViewModel>();
+    final item = _currentItem(wishlistVm);
 
     final success = await wishlistVm.updateDecision(
-      itemId: widget.item.id,
+      itemId: item.id,
       status: newStatus,
-      motive: widget.item.displayMotive,
-      price: widget.item.latestPriceVnd,
+      motive: item.displayMotive,
+      price: item.latestPriceVnd,
     );
 
     if (mounted) {
@@ -50,23 +55,57 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         String msg = '';
         if (newStatus == WishlistStatus.skipped) {
           msg = 'Đã chuyển món sang Bỏ qua.';
-        } else if (newStatus == WishlistStatus.purchased) {
-          msg = 'Đã đánh dấu mua thành công sau khi cân nhắc kỹ.';
         } else {
-          msg = 'Đã chuyển sang danh sách Chờ sale định kỳ.';
+          msg = 'Đã đặt ngày xem lại món.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: AppColors.success),
         );
         Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              wishlistVm.actionError ??
+                  'Chưa lưu được quyết định. Vui lòng thử lại.',
+            ),
+          ),
+        );
       }
+    }
+  }
+
+  WishlistItem _currentItem(WishlistViewModel vm) => vm.allItems.firstWhere(
+    (item) => item.id == widget.item.id,
+    orElse: () => widget.item,
+  );
+
+  Future<void> _recordPurchase(WishlistItem item) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    final saved = await Navigator.pushNamed<PurchaseItem>(
+      context,
+      AppRoutes.recordPurchase,
+      arguments: RecordPurchaseArgs(wishlistItem: item),
+    );
+    if (!mounted) return;
+    setState(() => _isProcessing = false);
+    if (saved != null) {
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.purchaseDetail,
+        arguments: PurchaseDetailArgs(saved),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final item = widget.item;
+    final item = _currentItem(context.watch<WishlistViewModel>());
+    final canDecide = item.status == WishlistStatus.considering;
+    final needsPurchase =
+        item.status == WishlistStatus.purchased && item.purchaseId == null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết & Quyết định')),
@@ -97,10 +136,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: AppDimens.space16),
-                  Row(
+                  Wrap(
+                    spacing: AppDimens.space12,
+                    runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
-                      const Spacer(),
                       Text(
                         'Lưu ngày: ${formatDate(item.createdAt)}',
                         style: AppTextStyles.labelMedium,
@@ -166,33 +206,43 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
             const SizedBox(height: AppDimens.space16),
 
-            // Button 1: Dropped (Save Money)
-            AppButton(
-              title: 'Bỏ qua',
-              icon: Icons.savings_outlined,
-              isLoading: _isProcessing,
-              onPressed: () => _handleDecision(WishlistStatus.skipped),
-            ),
-            const SizedBox(height: AppDimens.space12),
+            if (needsPurchase) ...[
+              Text(
+                'Món đã được đánh dấu mua nhưng chưa có khoản thực chi. Bạn có thể bổ sung khoản mua.',
+                style: AppTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: AppDimens.space12),
+            ],
+            if (canDecide || needsPurchase) ...[
+              AppButton(
+                title: needsPurchase ? 'Bổ sung khoản mua' : 'Mua',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.shopping_bag_outlined,
+                isLoading: _isProcessing,
+                onPressed: () => _recordPurchase(item),
+              ),
+            ],
+            if (canDecide) ...[
+              const SizedBox(height: AppDimens.space12),
 
-            // Button 2: Wait for Sale
-            AppButton(
-              title: 'Chờ đợt sale định kỳ',
-              variant: AppButtonVariant.secondary,
-              icon: Icons.schedule,
-              isLoading: _isProcessing,
-              onPressed: () => _handleDecision(WishlistStatus.considering),
-            ),
-            const SizedBox(height: AppDimens.space12),
+              AppButton(
+                title: 'Chờ',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.schedule,
+                isLoading: _isProcessing,
+                onPressed: () => _handleDecision(WishlistStatus.considering),
+              ),
+              const SizedBox(height: AppDimens.space12),
 
-            // Button 3: Buy Now
-            AppButton(
-              title: 'Quyết định mua ngay',
-              variant: AppButtonVariant.secondary,
-              icon: Icons.shopping_bag_outlined,
-              isLoading: _isProcessing,
-              onPressed: () => _handleDecision(WishlistStatus.purchased),
-            ),
+              AppButton(
+                title: 'Bỏ qua',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.do_not_disturb_on_outlined,
+                isLoading: _isProcessing,
+                onPressed: () => _handleDecision(WishlistStatus.skipped),
+              ),
+            ] else if (!needsPurchase)
+              Text(item.status.label, style: AppTextStyles.titleMedium),
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
@@ -57,32 +58,31 @@ class HomeScreen extends StatelessWidget {
                 ),
                 tooltip: 'Danh sách mong muốn',
                 onPressed: () {
-                  if (onNavigateTab != null) {
-                    onNavigateTab!(1); // Go to Lịch sử / Wishlist
-                  } else {
-                    Navigator.pushNamed(context, AppRoutes.wishlist);
-                  }
+                  Navigator.pushNamed(context, AppRoutes.wishlist);
                 },
               ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+              if (wishlistVm.consideringCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${wishlistVm.consideringCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           // User Avatar
@@ -220,11 +220,14 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: TỔNG QUAN TUẦN + Date chip
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Let the period selector wrap on narrow screens and larger text.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space8,
             children: [
               const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
@@ -339,9 +342,11 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Motive bar header: Động cơ chính | 40% do Khuyến mãi
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Motive bar header
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space4,
             children: [
               const Text(
                 'Động cơ chính',
@@ -457,11 +462,7 @@ class HomeScreen extends StatelessWidget {
   ) {
     return InkWell(
       onTap: () {
-        if (onNavigateTab != null) {
-          onNavigateTab!(1); // Go to Wishlist / Lịch sử
-        } else {
-          Navigator.pushNamed(context, AppRoutes.wishlist);
-        }
+        Navigator.pushNamed(context, AppRoutes.wishlist);
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -526,12 +527,14 @@ class HomeScreen extends StatelessWidget {
         // Section Header: Khoản mua gần đây [3]    Xem tất cả >
         Row(
           children: [
-            const Text(
-              'Khoản mua gần đây',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.onPrimary,
+            const Expanded(
+              child: Text(
+                'Khoản mua gần đây',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onPrimary,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -550,7 +553,6 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const Spacer(),
             TextButton(
               onPressed: () {
                 if (onNavigateTab != null) onNavigateTab!(1); // Lịch sử

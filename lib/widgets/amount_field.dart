@@ -19,6 +19,7 @@ class AmountField extends StatefulWidget {
   /// Empty allowed (e.g. price not known yet)
   final bool optional;
   final TextEditingController? controller;
+  final bool enabled;
 
   const AmountField({
     super.key,
@@ -28,6 +29,7 @@ class AmountField extends StatefulWidget {
     this.onChanged,
     this.optional = false,
     this.controller,
+    this.enabled = true,
   });
 
   @override
@@ -72,6 +74,7 @@ class _AmountFieldState extends State<AmountField> {
           const SizedBox(height: AppDimens.space8),
         ],
         TextFormField(
+          enabled: widget.enabled,
           controller: _controller,
           keyboardType: TextInputType.number,
           inputFormatters: [_VndInputFormatter()],
@@ -92,7 +95,7 @@ class _AmountFieldState extends State<AmountField> {
                       size: 20,
                       color: AppColors.textSecondary,
                     ),
-                    onPressed: _clear,
+                    onPressed: widget.enabled ? _clear : null,
                   ),
           ),
         ),
@@ -112,9 +115,37 @@ class _VndInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    final raw = newValue.text.trim();
+    if (raw.isNotEmpty && !RegExp(r'^[0-9.,\s₫]+$').hasMatch(raw)) {
+      return oldValue;
+    }
+    // Separators in the existing formatted value move while typing/deleting.
+    // Validate multi-character insertions (paste), not those intermediate groups.
+    final oldText = oldValue.text;
+    final newText = newValue.text;
+    var prefix = 0;
+    while (prefix < oldText.length &&
+        prefix < newText.length &&
+        oldText[prefix] == newText[prefix]) {
+      prefix++;
+    }
+    var suffix = 0;
+    while (suffix < oldText.length - prefix &&
+        suffix < newText.length - prefix &&
+        oldText[oldText.length - 1 - suffix] ==
+            newText[newText.length - 1 - suffix]) {
+      suffix++;
+    }
+    final insertedLength = newText.length - prefix - suffix;
+    if (raw.isNotEmpty &&
+        insertedLength > 1 &&
+        raw.replaceAll(RegExp(r'[0₫\s.,]'), '').isNotEmpty &&
+        parseVnd(raw) == null) {
+      return oldValue;
+    }
     var digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.length > _maxDigits) {
-      digits = digits.substring(0, _maxDigits);
+      return oldValue;
     }
     digits = digits.replaceFirst(RegExp(r'^0+(?=\d)'), '');
     if (digits.isEmpty) return const TextEditingValue();

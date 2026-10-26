@@ -37,4 +37,21 @@ class Validators {
     }
     return null;
   }
+
+  /// Shared by the form's ViewModel and the Firestore write boundary.
+  static String? validatePurchase({
+    required String title,
+    required int amountVnd,
+    required String budgetGroupId,
+    String? note,
+  }) {
+    final titleError = validateTitle(title);
+    if (titleError != null) return titleError;
+    if (amountVnd <= 0) return 'Số tiền phải lớn hơn 0';
+    if (amountVnd > AppConstants.amountMax) {
+      return 'Số tiền tối đa ${formatVnd(AppConstants.amountMax)}';
+    }
+    if (budgetGroupId.trim().isEmpty) return 'Vui lòng chọn nhóm ngân sách';
+    return validateNote(note);
+  }
 }

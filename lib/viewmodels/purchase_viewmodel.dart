@@ -1,12 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
+import '../core/errors/app_exception.dart';
 import '../core/utils/month_key.dart';
 import '../core/utils/time_slot.dart';
+import '../core/validators/validators.dart';
+import '../models/budget_group.dart';
 import '../models/buying_motive.dart';
+import '../models/purchase_draft.dart';
 import '../models/purchase_item.dart';
 import '../models/ui_state.dart';
+import '../models/wishlist_item.dart';
+import '../services/analytics_events.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/purchase_service.dart';
@@ -33,6 +40,7 @@ class PurchaseViewModel extends ChangeNotifier
 
   /// Message of the last failed add / update / delete, for a SnackBar
   String? _actionError;
+  Object? _writeToken;
 
   StreamSubscription<List<PurchaseItem>>? _purchasesSubscription;
   String? _uid;
@@ -48,6 +56,7 @@ class PurchaseViewModel extends ChangeNotifier
   });
 
   String? get actionError => _actionError;
+  bool get isSaving => _writeToken != null;
 
   static DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
 
@@ -60,6 +69,8 @@ class PurchaseViewModel extends ChangeNotifier
   void updateUid(String? uid) {
     if (uid == _uid) return;
     _uid = uid;
+    _writeToken = null;
+    _actionError = null;
     _purchasesSubscription?.cancel();
     _purchasesSubscription = null;
     _purchases = [];
@@ -77,6 +88,7 @@ class PurchaseViewModel extends ChangeNotifier
         .watchPurchases(uid)
         .listen(
           (items) {
+            if (isDisposed || _uid != uid) return;
             _purchases = items;
             _state = items.isEmpty
                 ? const UiEmpty(message: 'Chưa có khoản mua nào được ghi')
@@ -84,6 +96,7 @@ class PurchaseViewModel extends ChangeNotifier
             notifyListeners();
           },
           onError: (Object error, StackTrace stack) {
+            if (isDisposed || _uid != uid) return;
             _state = UiError(
               message: messageFor(error, stack, reason: 'watchPurchases'),
               onRetry: () => _retry(uid),
@@ -235,21 +248,41 @@ class PurchaseViewModel extends ChangeNotifier
     required BuyingMotive motive,
     DateTime? dateTime,
     String? note,
+    String budgetGroupId = BudgetGroup.otherId,
+    bool usedDiscountCode = false,
+    WishlistItem? fromWishlist,
+    String? requestId,
   }) async {
-    final uid = _uid;
-    if (uid == null) return null;
-    try {
-      final saved = await purchaseService.add(
+    final trimmedNote = note?.trim();
+    final purchase = PurchaseItem(
+      id: requestId ?? const Uuid().v4(),
+      title: title.trim(),
+      amountVnd: amount,
+      motive: motive,
+      occurredAt: dateTime ?? DateTime.now(),
+      note: trimmedNote == null || trimmedNote.isEmpty ? null : trimmedNote,
+      budgetGroupId: budgetGroupId,
+      usedDiscountCode: usedDiscountCode,
+    );
+    final saved = await _runWrite<PurchaseItem>((uid) async {
+      _validate(purchase);
+      if (fromWishlist == null) return purchaseService.add(uid, purchase);
+      return purchaseService.buyFromWishlist(
         uid,
-        PurchaseItem(
-          id: '',
-          title: title,
-          amountVnd: amount,
-          motive: motive,
-          occurredAt: dateTime ?? DateTime.now(),
-          note: note,
+        fromWishlist,
+        PurchaseDraft(
+          title: purchase.title,
+          amountVnd: purchase.amountVnd,
+          motive: purchase.motive,
+          budgetGroupId: purchase.budgetGroupId,
+          fromWishlistId: fromWishlist.id,
+          occurredAt: purchase.occurredAt,
+          note: purchase.note,
+          usedDiscountCode: purchase.usedDiscountCode,
         ),
       );
+    }, reason: 'addPurchase');
+    if (saved != null) {
       unawaited(
         analyticsService?.logPurchaseRecorded(
               motive: saved.motive.key,
@@ -258,50 +291,98 @@ class PurchaseViewModel extends ChangeNotifier
             ) ??
             Future<void>.value(),
       );
-      _actionError = null;
-      return saved;
-    } catch (e, stack) {
-      _actionError = messageFor(e, stack, reason: 'addPurchase');
-      return null;
+      if (fromWishlist != null) {
+        unawaited(
+          analyticsService?.logMakeDecision(
+                decision: AnalyticsDecisions.buy,
+                motive: saved.motive.key,
+                priceVnd: saved.amountVnd,
+              ) ??
+              Future<void>.value(),
+        );
+      }
     }
+    return saved;
   }
 
   /// Update an existing purchase
-  Future<void> updatePurchase({
+  Future<bool> updatePurchase({
     required String id,
     required String title,
     required int amount,
     required BuyingMotive motive,
     required DateTime dateTime,
     String? note,
+    String? budgetGroupId,
+    bool? usedDiscountCode,
+    PurchaseItem? originalPurchase,
+  }) async {
+    final index = _purchases.indexWhere((p) => p.id == id);
+    final base = index != -1 ? _purchases[index] : originalPurchase;
+    final result = await _runWrite<bool>((uid) async {
+      if (base == null || base.id != id) {
+        throw const AppException(
+          'not-found',
+          'Không tìm thấy khoản mua cần sửa. Vui lòng tải lại lịch sử.',
+        );
+      }
+      final trimmedNote = note?.trim();
+      final updated = base.copyWith(
+        title: title.trim(),
+        amountVnd: amount,
+        motive: motive,
+        occurredAt: dateTime,
+        note: trimmedNote,
+        clearNote: trimmedNote == null || trimmedNote.isEmpty,
+        budgetGroupId: budgetGroupId,
+        usedDiscountCode: usedDiscountCode,
+      );
+      _validate(updated);
+      await purchaseService.update(uid, updated);
+      return true;
+    }, reason: 'updatePurchase');
+    return result ?? false;
+  }
+
+  Future<T?> _runWrite<T>(
+    Future<T> Function(String uid) action, {
+    required String reason,
   }) async {
     final uid = _uid;
-    if (uid == null) return;
-    final index = _purchases.indexWhere((p) => p.id == id);
-    final base = index != -1
-        ? _purchases[index]
-        : PurchaseItem(
-            id: id,
-            title: title,
-            amountVnd: amount,
-            motive: motive,
-            occurredAt: dateTime,
-          );
-    try {
-      await purchaseService.update(
-        uid,
-        base.copyWith(
-          title: title,
-          amountVnd: amount,
-          motive: motive,
-          occurredAt: dateTime,
-          note: note,
-        ),
-      );
-      _actionError = null;
-    } catch (e, stack) {
-      _actionError = messageFor(e, stack, reason: 'updatePurchase');
+    if (uid == null) {
+      _actionError = 'Vui lòng đăng nhập trước khi lưu khoản mua.';
+      return null;
     }
+    if (isSaving) return null;
+    final token = Object();
+    _writeToken = token;
+    _actionError = null;
+    notifyListeners();
+    try {
+      final result = await action(uid);
+      if (isDisposed || _uid != uid || _writeToken != token) return null;
+      return result;
+    } catch (e, stack) {
+      if (!isDisposed && _uid == uid && _writeToken == token) {
+        _actionError = messageFor(e, stack, reason: reason);
+      }
+      return null;
+    } finally {
+      if (_writeToken == token) {
+        _writeToken = null;
+        if (!isDisposed) notifyListeners();
+      }
+    }
+  }
+
+  static void _validate(PurchaseItem purchase) {
+    final error = Validators.validatePurchase(
+      title: purchase.title,
+      amountVnd: purchase.amountVnd,
+      budgetGroupId: purchase.budgetGroupId,
+      note: purchase.note,
+    );
+    if (error != null) throw AppException('invalid-purchase', error);
   }
 
   /// Delete a purchase
@@ -318,6 +399,7 @@ class PurchaseViewModel extends ChangeNotifier
 
   @override
   void dispose() {
+    _writeToken = null;
     _purchasesSubscription?.cancel();
     super.dispose();
   }

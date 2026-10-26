@@ -13,8 +13,18 @@ String formatVnd(int? amount, {String empty = 'Chưa có giá'}) {
 
 /// "389.000 ₫" → 389000; returns null when nothing is entered or the value is 0
 int? parseVnd(String input) {
-  final digits = input.replaceAll(_nonDigits, '');
-  if (digits.isEmpty) return null;
+  final text = input
+      .trim()
+      .replaceFirst(RegExp(r'\s*(?:₫|đ|vnd)$', caseSensitive: false), '')
+      .trim();
+  // VND has no fractional part. Reject signs, decimals and arbitrary text
+  // instead of silently turning e.g. "-100" into a positive expense.
+  if (!RegExp(
+    r'^(?:[0-9]+|[0-9]{1,3}(?:\.[0-9]{3})+|[0-9]{1,3}(?:,[0-9]{3})+)$',
+  ).hasMatch(text)) {
+    return null;
+  }
+  final digits = text.replaceAll(_nonDigits, '');
   final value = int.tryParse(digits);
   if (value == null || value == 0) return null;
   return value;

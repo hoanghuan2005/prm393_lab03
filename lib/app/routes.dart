@@ -44,12 +44,14 @@ class RecordPurchaseArgs {
   final int? initialAmount;
   final String? initialTitle;
   final PurchaseItem? existingPurchase;
+  final WishlistItem? wishlistItem;
 
   const RecordPurchaseArgs({
     this.initialAmount,
     this.initialTitle,
     this.existingPurchase,
-  });
+    this.wishlistItem,
+  }) : assert(existingPurchase == null || wishlistItem == null);
 }
 
 /// Every named route in the app. Screens navigate only through these names.
@@ -92,6 +94,7 @@ class AppRoutes {
         existingPurchase: args is RecordPurchaseArgs
             ? args.existingPurchase
             : null,
+        wishlistItem: args is RecordPurchaseArgs ? args.wishlistItem : null,
       ),
       purchaseDetail when args is PurchaseDetailArgs => PurchaseDetailScreen(
         purchase: args.purchase,
@@ -106,6 +109,12 @@ class AppRoutes {
       _ => null,
     };
     if (page == null) return null;
+    if (settings.name == recordPurchase) {
+      return MaterialPageRoute<PurchaseItem>(
+        builder: (_) => page,
+        settings: settings,
+      );
+    }
     return MaterialPageRoute(builder: (_) => page, settings: settings);
   }
 }

@@ -51,7 +51,7 @@ class _FakePurchaseService implements PurchaseService {
   Future<void> delete(String uid, String purchaseId) => throw UnimplementedError();
 
   @override
-  Future<String> buyFromWishlist(String uid, WishlistItem item, PurchaseDraft draft) =>
+  Future<PurchaseItem> buyFromWishlist(String uid, WishlistItem item, PurchaseDraft draft) =>
       throw UnimplementedError();
 }
 

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/errors/app_exception.dart';
+import '../core/validators/validators.dart';
 import '../models/budget_group.dart';
 import '../models/decision.dart';
 import '../models/purchase_draft.dart';
@@ -27,8 +28,8 @@ abstract interface class PurchaseService {
   Future<void> delete(String uid, String purchaseId);
 
   /// One batch: new purchase linked to [item], item marked purchased, decision "buy".
-  /// Returns the new purchase id.
-  Future<String> buyFromWishlist(
+  /// Stable ids make a retry refer to the same purchase and decision.
+  Future<PurchaseItem> buyFromWishlist(
     String uid,
     WishlistItem item,
     PurchaseDraft draft,
@@ -68,7 +69,11 @@ class FirestorePurchaseService implements PurchaseService {
   @override
   Future<PurchaseItem> add(String uid, PurchaseItem purchase) =>
       guard(() async {
-        final ref = _paths.purchases(uid).doc();
+        _validate(purchase);
+        // The form retains its operation id on retry, including a lost acknowledgement.
+        final ref = _paths
+            .purchases(uid)
+            .doc(purchase.id.isEmpty ? null : purchase.id);
         await ref.set({
           ...purchase.toMap(),
           'createdAt': FieldValue.serverTimestamp(),
@@ -79,6 +84,7 @@ class FirestorePurchaseService implements PurchaseService {
 
   @override
   Future<void> update(String uid, PurchaseItem purchase) => guard(() {
+    _validate(purchase);
     final data = purchase.toMap()..remove('createdAt');
     return _paths.purchase(uid, purchase.id).update({
       ...data,
@@ -91,30 +97,68 @@ class FirestorePurchaseService implements PurchaseService {
       guard(() => _paths.purchase(uid, purchaseId).delete());
 
   @override
-  Future<String> buyFromWishlist(
+  Future<PurchaseItem> buyFromWishlist(
     String uid,
     WishlistItem item,
     PurchaseDraft draft,
   ) => guard(() async {
-    final amount = draft.amountVnd ?? item.latestPriceVnd;
+    if (draft.fromWishlistId != null && draft.fromWishlistId != item.id) {
+      throw const AppException(
+        'invalid-wishlist',
+        'Món cần ghi khoản mua không khớp. Vui lòng mở lại món.',
+      );
+    }
+    final amount = draft.amountVnd;
     if (amount == null || amount <= 0) {
       throw const AppException(
         'missing-amount',
         'Vui lòng nhập số tiền thực chi trước khi lưu.',
       );
     }
+    final itemRef = _paths.wishlistItem(uid, item.id);
+    final snapshot = await itemRef.get();
+    if (!snapshot.exists) {
+      throw const AppException(
+        'not-found',
+        'Món này đã bị xoá. Vui lòng quay lại danh sách.',
+      );
+    }
+    final current = WishlistItem.fromFirestore(snapshot);
+    final purchaseRef = _paths.purchase(
+      uid,
+      current.purchaseId ?? 'wishlist_${item.id}',
+    );
+    final existing = await purchaseRef.get();
+    if (existing.exists) return _readLinkedPurchase(existing, item.id);
+    if (current.purchaseId != null) {
+      throw const AppException(
+        'missing-purchase',
+        'Không tìm thấy khoản mua đã liên kết với món này. Vui lòng tải lại danh sách.',
+      );
+    }
+    if (current.status == WishlistStatus.skipped) {
+      throw const AppException(
+        'item-skipped',
+        'Món này đã được bỏ qua. Vui lòng quay lại danh sách.',
+      );
+    }
+    // Older app versions could mark a wishlist item as purchased without a
+    // purchaseId. An explicit confirmation in this form can repair that state.
     final now = DateTime.now();
-    final purchaseRef = _paths.purchases(uid).doc();
     final purchase = PurchaseItem(
       id: purchaseRef.id,
-      title: draft.title.trim().isNotEmpty ? draft.title.trim() : item.title,
+      title: draft.title.trim().isNotEmpty ? draft.title.trim() : current.title,
       amountVnd: amount,
-      motive: draft.motive ?? item.displayMotive,
-      occurredAt: now,
+      motive: draft.motive ?? current.displayMotive,
+      occurredAt: draft.occurredAt ?? now,
       budgetGroupId:
-          draft.budgetGroupId ?? item.budgetGroupId ?? BudgetGroup.otherId,
+          draft.budgetGroupId ?? current.budgetGroupId ?? BudgetGroup.otherId,
       wishlistItemId: item.id,
+      note: draft.note,
+      usedDiscountCode: draft.usedDiscountCode,
+      createdAt: now,
     );
+    _validate(purchase);
     final decision = Decision(
       id: '',
       itemId: item.id,
@@ -128,18 +172,61 @@ class FirestorePurchaseService implements PurchaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       })
-      ..update(_paths.wishlistItem(uid, item.id), {
+      ..update(itemRef, {
         'status': WishlistStatus.purchased.key,
         'purchaseId': purchaseRef.id,
         'decidedAt': FieldValue.serverTimestamp(),
         'reviewAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
       })
-      ..set(_paths.decisions(uid).doc(), {
+      // Decisions are create-only in firestore.rules. A competing batch for
+      // this same item cannot overwrite the first completed purchase.
+      ..set(_paths.decisions(uid).doc('buy_${item.id}'), {
         ...decision.toMap(),
         'at': FieldValue.serverTimestamp(),
       });
-    await batch.commit();
-    return purchaseRef.id;
+    try {
+      await batch.commit();
+    } on FirebaseException catch (error) {
+      if (error.code != 'permission-denied' && error.code != 'already-exists') {
+        rethrow;
+      }
+      // Another client may have completed this item after our initial read.
+      // Accept only a server-confirmed linked purchase; do not mask a failed write.
+      try {
+        final committed = await purchaseRef.get(
+          const GetOptions(source: Source.server),
+        );
+        if (committed.exists) return _readLinkedPurchase(committed, item.id);
+      } catch (_) {
+        // Preserve the original write error when recovery cannot be confirmed.
+      }
+      rethrow;
+    }
+    return purchase;
   });
+
+  static PurchaseItem _readLinkedPurchase(
+    DocumentSnapshot snapshot,
+    String itemId,
+  ) {
+    final purchase = PurchaseItem.fromFirestore(snapshot);
+    if (purchase.wishlistItemId != itemId) {
+      throw const AppException(
+        'invalid-link',
+        'Khoản mua liên kết không khớp với món. Vui lòng tải lại danh sách.',
+      );
+    }
+    return purchase;
+  }
+
+  static void _validate(PurchaseItem purchase) {
+    final message = Validators.validatePurchase(
+      title: purchase.title,
+      amountVnd: purchase.amountVnd,
+      budgetGroupId: purchase.budgetGroupId,
+      note: purchase.note,
+    );
+    if (message != null) throw AppException('invalid-purchase', message);
+  }
 }

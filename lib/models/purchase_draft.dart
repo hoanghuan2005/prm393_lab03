@@ -8,6 +8,9 @@ class PurchaseDraft {
   final BuyingMotive? motive;
   final String? budgetGroupId;
   final String? fromWishlistId;
+  final DateTime? occurredAt;
+  final String? note;
+  final bool usedDiscountCode;
 
   const PurchaseDraft({
     this.title = '',
@@ -15,6 +18,9 @@ class PurchaseDraft {
     this.motive,
     this.budgetGroupId,
     this.fromWishlistId,
+    this.occurredAt,
+    this.note,
+    this.usedDiscountCode = false,
   });
 
   factory PurchaseDraft.fromMap(Map<String, dynamic> data) {
@@ -25,6 +31,11 @@ class PurchaseDraft {
       motive: motiveKey is String ? BuyingMotive.fromKey(motiveKey) : null,
       budgetGroupId: data['budgetGroupId'] as String?,
       fromWishlistId: data['fromWishlistId'] as String?,
+      occurredAt: data['occurredAt'] is DateTime
+          ? data['occurredAt'] as DateTime
+          : DateTime.tryParse(data['occurredAt']?.toString() ?? ''),
+      note: data['note'] as String?,
+      usedDiscountCode: data['usedDiscountCode'] == true,
     );
   }
 
@@ -34,6 +45,9 @@ class PurchaseDraft {
     'motive': motive?.key,
     'budgetGroupId': budgetGroupId,
     'fromWishlistId': fromWishlistId,
+    'occurredAt': occurredAt?.toIso8601String(),
+    'note': note,
+    'usedDiscountCode': usedDiscountCode,
   };
 
   PurchaseDraft copyWith({
@@ -42,6 +56,9 @@ class PurchaseDraft {
     BuyingMotive? motive,
     String? budgetGroupId,
     String? fromWishlistId,
+    DateTime? occurredAt,
+    String? note,
+    bool? usedDiscountCode,
   }) {
     return PurchaseDraft(
       title: title ?? this.title,
@@ -49,6 +66,9 @@ class PurchaseDraft {
       motive: motive ?? this.motive,
       budgetGroupId: budgetGroupId ?? this.budgetGroupId,
       fromWishlistId: fromWishlistId ?? this.fromWishlistId,
+      occurredAt: occurredAt ?? this.occurredAt,
+      note: note ?? this.note,
+      usedDiscountCode: usedDiscountCode ?? this.usedDiscountCode,
     );
   }
 
@@ -60,9 +80,20 @@ class PurchaseDraft {
           other.amountVnd == amountVnd &&
           other.motive == motive &&
           other.budgetGroupId == budgetGroupId &&
-          other.fromWishlistId == fromWishlistId;
+          other.fromWishlistId == fromWishlistId &&
+          other.occurredAt == occurredAt &&
+          other.note == note &&
+          other.usedDiscountCode == usedDiscountCode;
 
   @override
-  int get hashCode =>
-      Object.hash(title, amountVnd, motive, budgetGroupId, fromWishlistId);
+  int get hashCode => Object.hash(
+    title,
+    amountVnd,
+    motive,
+    budgetGroupId,
+    fromWishlistId,
+    occurredAt,
+    note,
+    usedDiscountCode,
+  );
 }

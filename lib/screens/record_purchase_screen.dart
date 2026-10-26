@@ -1,65 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../app/routes.dart';
+import '../core/constants/app_constants.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
+import '../models/budget_group.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
+import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import '../theme/app_text_styles.dart';
+import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/amount_field.dart';
+import '../widgets/app_button.dart';
 
-/// Screen 03 & 04: Ghi khoản mua (Bước 1/2 và Bước 2/2) from Figma "Why I Buy ver2"
+/// Shared Android/web form. Wishlist items are only changed by a successful save.
 class RecordPurchaseScreen extends StatefulWidget {
   final int? initialAmount;
   final String? initialTitle;
   final PurchaseItem? existingPurchase;
+  final WishlistItem? wishlistItem;
 
   const RecordPurchaseScreen({
     super.key,
     this.initialAmount,
     this.initialTitle,
     this.existingPurchase,
-  });
+    this.wishlistItem,
+  }) : assert(existingPurchase == null || wishlistItem == null);
 
   @override
   State<RecordPurchaseScreen> createState() => _RecordPurchaseScreenState();
 }
 
 class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
-  int _currentStep = 1; // 1 or 2
-
-  // Step 1 Controllers & State
+  final _informationKey = GlobalKey<FormState>();
+  final _detailsKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _titleController = TextEditingController();
-  DateTime _selectedDateTime = DateTime.now();
-  int _rawAmount = 0;
-
-  // Step 2 State
-  BuyingMotive _selectedMotive = BuyingMotive.emotion;
   final _noteController = TextEditingController();
+  final _requestId = const Uuid().v4();
+  late final String? _sessionUid;
+  late DateTime _occurredAt;
+  late BuyingMotive _motive;
+  late String _budgetGroupId;
+  late bool _usedDiscountCode;
+  int _step = 1;
   bool _isSaving = false;
+  bool _didSave = false;
+  String? _saveError;
 
   @override
   void initState() {
     super.initState();
-    if (widget.existingPurchase != null) {
-      final p = widget.existingPurchase!;
-      _rawAmount = p.amountVnd;
-      _amountController.text = formatVnd(_rawAmount);
-      _titleController.text = p.title;
-      _selectedDateTime = p.occurredAt;
-      _selectedMotive = p.motive;
-      _noteController.text = p.note ?? '';
-    } else {
-      _rawAmount = widget.initialAmount ?? 0;
-      if (_rawAmount > 0) {
-        _amountController.text = formatVnd(_rawAmount);
-      }
-      _titleController.text = widget.initialTitle ?? '';
-      _noteController.text = '';
-    }
+    _sessionUid = context.read<PurchaseViewModel>().uid;
+    final purchase = widget.existingPurchase;
+    final item = widget.wishlistItem;
+    final amount =
+        purchase?.amountVnd ?? item?.latestPriceVnd ?? widget.initialAmount;
+    _amountController.text = amount == null || amount <= 0
+        ? ''
+        : formatVnd(amount).replaceAll(' ₫', '');
+    _titleController.text =
+        purchase?.title ?? item?.title ?? widget.initialTitle ?? '';
+    _noteController.text = purchase?.note ?? item?.note ?? '';
+    _occurredAt = purchase?.occurredAt ?? DateTime.now();
+    _motive = purchase?.motive ?? item?.displayMotive ?? BuyingMotive.emotion;
+    _budgetGroupId =
+        purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
+    _usedDiscountCode = purchase?.usedDiscountCode ?? false;
   }
 
   @override
@@ -70,788 +85,494 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     super.dispose();
   }
 
-  void _onAmountChanged(String val) {
-    final parsed = parseVnd(val) ?? 0;
+  void _back() {
+    if (_isSaving || _didSave) return;
+    if (_step == 2) {
+      setState(() => _step = 1);
+    } else {
+      Navigator.maybePop(context);
+    }
+  }
+
+  void _next() {
+    if (_informationKey.currentState?.validate() != true) return;
+    FocusScope.of(context).unfocus();
     setState(() {
-      _rawAmount = parsed;
+      _step = 2;
+      _saveError = null;
     });
   }
 
-  void _addQuickAmount(int amount) {
-    setState(() {
-      _rawAmount += amount;
-      _amountController.text = formatVnd(_rawAmount);
-    });
-  }
-
-  void _clearAmount() {
-    setState(() {
-      _rawAmount = 0;
-      _amountController.text = '0 ₫';
-    });
+  void _addAmount(int amount) {
+    final next = (parseVnd(_amountController.text) ?? 0) + amount;
+    if (next > AppConstants.amountMax) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Số tiền tối đa ${formatVnd(AppConstants.amountMax)}'),
+        ),
+      );
+      return;
+    }
+    _amountController.text = formatVnd(next).replaceAll(' ₫', '');
+    setState(() {});
   }
 
   Future<void> _pickDateTime() async {
+    final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDateTime,
-      firstDate: DateTime(2025),
-      lastDate: DateTime(2030),
+      initialDate: _occurredAt,
+      firstDate: DateTime(_occurredAt.year < 2000 ? _occurredAt.year : 2000),
+      lastDate: DateTime(
+        _occurredAt.year > now.year ? _occurredAt.year + 1 : now.year + 1,
+        12,
+        31,
+      ),
     );
     if (date == null || !mounted) return;
-
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
+      initialTime: TimeOfDay.fromDateTime(_occurredAt),
     );
     if (time == null || !mounted) return;
-
-    setState(() {
-      _selectedDateTime = DateTime(
+    setState(
+      () => _occurredAt = DateTime(
         date.year,
         date.month,
         date.day,
         time.hour,
         time.minute,
-      );
-    });
+      ),
+    );
   }
 
-  void _goToStep2() {
-    final error =
-        Validators.validateAmount(_rawAmount > 0 ? '$_rawAmount' : '') ??
-        Validators.validateTitle(_titleController.text);
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: AppColors.error),
+  Future<void> _save() async {
+    if (_isSaving || _didSave || _detailsKey.currentState?.validate() != true) {
+      return;
+    }
+    final vm = context.read<PurchaseViewModel>();
+    if (_sessionUid == null || vm.uid != _sessionUid) {
+      setState(
+        () => _saveError =
+            'Phiên đăng nhập đã thay đổi. Vui lòng mở lại màn ghi khoản mua.',
       );
       return;
     }
+    final amount = parseVnd(_amountController.text) ?? 0;
+    final error = Validators.validatePurchase(
+      title: _titleController.text,
+      amountVnd: amount,
+      budgetGroupId: _budgetGroupId,
+      note: _noteController.text,
+    );
+    if (error != null) {
+      setState(() => _saveError = error);
+      return;
+    }
+    FocusScope.of(context).unfocus();
     setState(() {
-      _currentStep = 2;
+      _isSaving = true;
+      _saveError = null;
     });
-  }
-
-  Future<void> _handleSavePurchase() async {
-    setState(() => _isSaving = true);
-
-    final purchaseVm = context.read<PurchaseViewModel>();
-    final title = _titleController.text.trim();
-    final note = _noteController.text.trim().isNotEmpty
-        ? _noteController.text.trim()
-        : null;
-
-    if (widget.existingPurchase != null) {
-      await purchaseVm.updatePurchase(
-        id: widget.existingPurchase!.id,
-        title: title,
-        amount: _rawAmount,
-        motive: _selectedMotive,
-        dateTime: _selectedDateTime,
-        note: note,
+    final original = widget.existingPurchase;
+    PurchaseItem? saved;
+    if (original != null) {
+      final ok = await vm.updatePurchase(
+        id: original.id,
+        title: _titleController.text,
+        amount: amount,
+        motive: _motive,
+        dateTime: _occurredAt,
+        note: _noteController.text,
+        budgetGroupId: _budgetGroupId,
+        usedDiscountCode: _usedDiscountCode,
+        originalPurchase: original,
       );
-
-      if (!mounted) return;
-      setState(() => _isSaving = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Đã cập nhật khoản mua: $title.'),
-            ],
-          ),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      Navigator.of(context).pop();
-    } else {
-      final savedItem = await purchaseVm.addPurchase(
-        title: title,
-        amount: _rawAmount,
-        motive: _selectedMotive,
-        dateTime: _selectedDateTime,
-        note: note,
-      );
-
-      if (!mounted) return;
-      setState(() => _isSaving = false);
-
-      if (savedItem == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Chưa lưu được khoản mua. Thử lại sau ít phút.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      if (ok) {
+        final note = _noteController.text.trim();
+        saved = original.copyWith(
+          title: _titleController.text.trim(),
+          amountVnd: amount,
+          motive: _motive,
+          occurredAt: _occurredAt,
+          note: note,
+          clearNote: note.isEmpty,
+          budgetGroupId: _budgetGroupId,
+          usedDiscountCode: _usedDiscountCode,
         );
-        return;
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Đã lưu khoản mua: $title.'),
-            ],
-          ),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      Navigator.of(context).pop();
-      // Flow 8: Navigate to detail review screen
-      Navigator.pushNamed(
-        context,
-        AppRoutes.purchaseDetail,
-        arguments: PurchaseDetailArgs(savedItem),
+    } else {
+      saved = await vm.addPurchase(
+        title: _titleController.text,
+        amount: amount,
+        motive: _motive,
+        dateTime: _occurredAt,
+        note: _noteController.text,
+        budgetGroupId: _budgetGroupId,
+        usedDiscountCode: _usedDiscountCode,
+        fromWishlist: widget.wishlistItem,
+        requestId: _requestId,
       );
     }
+    if (!mounted) return;
+    final sessionChanged = vm.uid != _sessionUid;
+    setState(() {
+      _isSaving = false;
+      _didSave = saved != null && !sessionChanged;
+      if (!_didSave) {
+        _saveError = sessionChanged
+            ? 'Phiên đăng nhập đã thay đổi. Vui lòng mở lại màn ghi khoản mua.'
+            : vm.actionError ?? 'Chưa lưu được khoản mua. Thông tin vẫn được giữ, bạn có thể thử lại.';
+      }
+    });
+    if (!_didSave || saved == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          original == null ? 'Đã lưu khoản mua.' : 'Đã cập nhật khoản mua.',
+        ),
+      ),
+    );
+    if (widget.wishlistItem != null || original != null) {
+      Navigator.pop(context, saved);
+    } else {
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.purchaseDetail,
+        arguments: PurchaseDetailArgs(saved),
+      );
+    }
+  }
+
+  List<BudgetGroup> _groups(BudgetViewModel vm) {
+    final groups = [...vm.groups];
+    if (!groups.any((g) => g.id == BudgetGroup.otherId)) {
+      groups.add(defaultBudgetGroups.last);
+    }
+    // Preserve an older/custom group instead of silently changing an edited expense.
+    if (!groups.any((g) => g.id == _budgetGroupId)) {
+      groups.add(
+        BudgetGroup(
+          id: _budgetGroupId,
+          name: 'Nhóm đã lưu',
+          order: groups.length,
+        ),
+      );
+    }
+    return groups;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppColors.onPrimary,
+    final vm = context.watch<PurchaseViewModel>();
+    final groups = _groups(context.watch<BudgetViewModel>());
+    final activeSession = _sessionUid != null && vm.uid == _sessionUid;
+    final busy = _isSaving || _didSave || vm.isSaving;
+    return PopScope<PurchaseItem>(
+      canPop: !busy && _step == 1,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !busy) _back();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.existingPurchase == null
+                ? 'Ghi khoản mua'
+                : 'Chỉnh sửa khoản mua',
           ),
-          onPressed: () {
-            if (_currentStep == 2) {
-              setState(() => _currentStep = 1);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-        title: Text(
-          widget.existingPurchase != null
-              ? 'Chỉnh sửa khoản mua'
-              : 'Ghi khoản mua',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onPrimary,
+          leading: IconButton(
+            tooltip: 'Quay lại',
+            onPressed: busy ? null : _back,
+            icon: const Icon(Icons.arrow_back_rounded),
           ),
-        ),
-        actions: [
-          if (_currentStep == 2)
-            IconButton(
-              icon: const Icon(
-                Icons.help_outline_rounded,
-                color: AppColors.textSecondary,
+          actions: [
+            if (_step == 2)
+              IconButton(
+                tooltip: 'Giải thích động cơ',
+                onPressed: busy ? null : _showMotiveHelp,
+                icon: const Icon(Icons.help_outline_rounded),
               ),
-              tooltip: 'Giải thích động cơ',
-              onPressed: () => _showMotiveHelpDialog(context),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Stepper indicator header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: Colors.white,
-              child: Row(
+          ],
+        ),
+        body: SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Yellow pill step tag
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.5),
-                      ),
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppDimens.space16),
                     child: Text(
-                      _currentStep == 1
-                          ? 'Bước 1/2: Thông tin khoản chi'
-                          : 'Bước 2/2: Động cơ mua sắm',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onPrimary,
+                      _step == 1
+                          ? 'Bước 1/2: Thông tin khoản mua'
+                          : 'Bước 2/2: Động cơ và ghi chú',
+                      style: AppTextStyles.labelLarge,
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.space16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (widget.wishlistItem != null) ...[
+                            _message(
+                              'Xác nhận số tiền bạn thực trả sau giảm giá. Món chỉ được chuyển sang Đã mua khi lưu khoản mua thành công.',
+                            ),
+                            const SizedBox(height: AppDimens.space16),
+                          ],
+                          if (!activeSession) ...[
+                            _message(
+                              'Phiên đăng nhập đã thay đổi. Vui lòng quay lại và mở lại màn ghi khoản mua.',
+                            ),
+                            const SizedBox(height: AppDimens.space16),
+                          ],
+                          if (_step == 1)
+                            _information(groups, !busy && activeSession)
+                          else
+                            _details(!busy && activeSession),
+                          const SizedBox(height: AppDimens.space24),
+                        ],
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  // Progress Dots
-                  Row(
-                    children: [
-                      Container(
-                        width: _currentStep == 1 ? 18 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(4),
+                  if (_saveError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.space16,
+                      ),
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          _saveError!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.error,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Container(
-                        width: _currentStep == 2 ? 18 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _currentStep == 2
-                              ? AppColors.primary
-                              : AppColors.divider,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppDimens.space16),
+                    child: AppButton(
+                      title: _step == 1
+                          ? 'Tiếp tục'
+                          : widget.existingPurchase == null
+                          ? 'Lưu khoản mua'
+                          : 'Cập nhật khoản mua',
+                      icon: _step == 1
+                          ? Icons.arrow_forward_rounded
+                          : Icons.check_rounded,
+                      isLoading: _isSaving,
+                      onPressed: busy || !activeSession
+                          ? null
+                          : _step == 1
+                          ? _next
+                          : _save,
+                    ),
                   ),
                 ],
               ),
             ),
-
-            const Divider(height: 1, color: AppColors.divider),
-
-            // Content body
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: _currentStep == 1 ? _buildStep1() : _buildStep2(),
-              ),
-            ),
-
-            // Bottom action container
-            _buildBottomBar(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ===================== STEP 1 WIDGETS =====================
-  Widget _buildStep1() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1. Số tiền thực chi
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Số tiền thực chi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.errorContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'Bắt buộc',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.onErrorContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        // Amount Input Box
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.onPrimary,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  onChanged: _onAmountChanged,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.cancel_rounded,
-                  color: AppColors.textHint,
-                  size: 22,
-                ),
-                onPressed: _clearAmount,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Quick amount chips
-        Row(
-          children: [
-            _buildQuickChip('+20.000 ₫', 20000),
-            const SizedBox(width: 8),
-            _buildQuickChip('+50.000 ₫', 50000),
-            const SizedBox(width: 8),
-            _buildQuickChip('+100.000 ₫', 100000),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        // 2. Tên món đồ hoặc dịch vụ
-        const Text(
-          'Tên món đồ hoặc dịch vụ',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.local_cafe_outlined,
-                color: AppColors.textSecondary,
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _titleController,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onPrimary,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Ví dụ: Trà sữa nướng, Cơm tấm...',
-                    hintStyle: TextStyle(
-                      color: AppColors.textHint,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // 3. Thời điểm chi tiêu
-        const Text(
-          'Thời điểm chi tiêu',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: _pickDateTime,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1.5),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.access_time_rounded,
-                  color: AppColors.textSecondary,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        formatRelativeDateTime(_selectedDateTime),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.onPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        formatWeekdayDate(_selectedDateTime),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.calendar_today_rounded,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickChip(String label, int amount) {
-    return InkWell(
-      onTap: () => _addQuickAmount(amount),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.accentNeutral,
           ),
         ),
       ),
     );
   }
 
-  // ===================== STEP 2 WIDGETS =====================
-  Widget _buildStep2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Recap Card of Item being saved
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.local_cafe_outlined,
-                  color: AppColors.onPrimary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _titleController.text.trim(),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      formatVnd(_rawAmount),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accentNeutral,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Question header
-        const Text(
-          'Điều gì thúc đẩy bạn mua món này?',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Chọn 1 động cơ chính',
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Motive 8-Grid (2 columns x 4 rows)
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: BuyingMotive.values.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 2.3,
-          ),
-          itemBuilder: (context, index) {
-            final motive = BuyingMotive.values[index];
-            final isSelected = motive == _selectedMotive;
-            return _buildMotiveCard(motive, isSelected);
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // Optional note input
-        const Text(
-          'Ghi chú thêm (không bắt buộc)',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _noteController,
-            maxLines: 2,
-            style: const TextStyle(fontSize: 14, color: AppColors.onPrimary),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: 'Ví dụ: Buồn vì công việc nên muốn uống gì ngọt...',
-              hintStyle: TextStyle(color: AppColors.textHint, fontSize: 13),
-              isDense: true,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildMotiveCard(BuyingMotive motive, bool isSelected) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedMotive = motive;
-        });
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : motive.backgroundColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                motive.icon,
-                size: 18,
-                color: isSelected ? AppColors.onPrimary : motive.color,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                motive.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: AppColors.onPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (isSelected)
-              const Icon(
-                Icons.check_circle_rounded,
-                size: 18,
-                color: AppColors.onPrimary,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ===================== BOTTOM ACTION BAR =====================
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-      ),
+  Widget _information(List<BudgetGroup> groups, bool enabled) {
+    return Form(
+      key: _informationKey,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+          AmountField(
+            label: 'Số tiền thực trả *',
+            hint: 'Ví dụ: 389.000',
+            controller: _amountController,
+            enabled: enabled,
+          ),
+          const SizedBox(height: AppDimens.space8),
+          Text(
+            'Số tiền sau giảm giá, không bao gồm phí vận chuyển.',
+            style: AppTextStyles.labelMedium,
+          ),
+          const SizedBox(height: AppDimens.space12),
+          Wrap(
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space8,
+            children: [
+              for (final amount in [20000, 50000, 100000])
+                ActionChip(
+                  label: Text('+${formatVnd(amount)}'),
+                  onPressed: enabled ? () => _addAmount(amount) : null,
                 ),
-              ),
-              onPressed: _isSaving
-                  ? null
-                  : (_currentStep == 1 ? _goToStep2 : _handleSavePurchase),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: AppColors.onPrimary,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentStep == 1
-                              ? 'Tiếp tục'
-                              : (widget.existingPurchase != null
-                                    ? 'Cập nhật khoản mua'
-                                    : 'Lưu khoản mua'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          _currentStep == 1
-                              ? Icons.arrow_forward_rounded
-                              : Icons.check_rounded,
-                          size: 20,
-                        ),
-                      ],
-                    ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.space24),
+          TextFormField(
+            key: const ValueKey('purchase-title'),
+            controller: _titleController,
+            enabled: enabled,
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.next,
+            maxLength: AppConstants.titleMaxLength,
+            maxLengthEnforcement: MaxLengthEnforcement.none,
+            validator: Validators.validateTitle,
+            decoration: const InputDecoration(
+              labelText: 'Tên món hoặc dịch vụ *',
+              hintText: 'Ví dụ: Tai nghe Bluetooth',
             ),
           ),
-          if (_currentStep == 1) ...[
-            const SizedBox(height: 6),
-            const Text(
-              'Bước tiếp theo: chọn động cơ của khoản mua',
-              style: TextStyle(fontSize: 12, color: AppColors.textHint),
+          const SizedBox(height: AppDimens.space16),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('purchase-budget-group'),
+            initialValue: _budgetGroupId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
+            items: [
+              for (final group in groups)
+                DropdownMenuItem(value: group.id, child: Text(group.name)),
+            ],
+            onChanged: enabled
+                ? (value) {
+                    if (value != null) setState(() => _budgetGroupId = value);
+                  }
+                : null,
+          ),
+          const SizedBox(height: AppDimens.space16),
+          OutlinedButton.icon(
+            onPressed: enabled ? _pickDateTime : null,
+            icon: const Icon(Icons.calendar_month_outlined),
+            label: Text(
+              '${formatDate(_occurredAt)} · ${formatTime(_occurredAt)}',
+              textAlign: TextAlign.center,
             ),
-          ],
+          ),
+          const SizedBox(height: AppDimens.space12),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Có dùng mã giảm giá'),
+            controlAffinity: ListTileControlAffinity.leading,
+            value: _usedDiscountCode,
+            onChanged: enabled
+                ? (value) => setState(() => _usedDiscountCode = value ?? false)
+                : null,
+          ),
         ],
       ),
     );
   }
 
-  void _showMotiveHelpDialog(BuildContext context) {
-    showDialog(
+  Widget _details(bool enabled) {
+    return Form(
+      key: _detailsKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _message(
+            '${_titleController.text.trim()}\n${formatVnd(parseVnd(_amountController.text))}',
+          ),
+          const SizedBox(height: AppDimens.space24),
+          Text(
+            'Điều gì thúc đẩy bạn mua món này?',
+            style: AppTextStyles.titleMedium,
+          ),
+          const SizedBox(height: AppDimens.space8),
+          Text('Chọn một động cơ chính.', style: AppTextStyles.bodyMedium),
+          const SizedBox(height: AppDimens.space16),
+          LayoutBuilder(
+            builder: (context, constraints) => Wrap(
+              spacing: AppDimens.space8,
+              runSpacing: AppDimens.space8,
+              children: [
+                for (final motive in BuyingMotive.values)
+                  SizedBox(
+                    width: (constraints.maxWidth - AppDimens.space8) / 2,
+                    child: Semantics(
+                      selected: _motive == motive,
+                      child: OutlinedButton(
+                        onPressed: enabled
+                            ? () => setState(() => _motive = motive)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 72),
+                          padding: const EdgeInsets.all(AppDimens.space12),
+                          backgroundColor: _motive == motive
+                              ? AppColors.primaryContainer
+                              : AppColors.surface,
+                          side: BorderSide(
+                            color: _motive == motive
+                                ? AppColors.onPrimary
+                                : AppColors.border,
+                          ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppDimens.borderMedium,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(motive.icon, size: 20),
+                            const SizedBox(width: AppDimens.space8),
+                            Expanded(child: Text(motive.label)),
+                            if (_motive == motive)
+                              const Icon(Icons.check, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimens.space24),
+          TextFormField(
+            key: const ValueKey('purchase-note'),
+            controller: _noteController,
+            enabled: enabled,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: AppConstants.noteMaxLength,
+            maxLengthEnforcement: MaxLengthEnforcement.none,
+            validator: Validators.validateNote,
+            decoration: const InputDecoration(
+              labelText: 'Ghi chú (không bắt buộc)',
+              hintText: 'Điều bạn muốn ghi nhớ về khoản mua này',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _message(String text) => Container(
+    padding: const EdgeInsets.all(AppDimens.space16),
+    decoration: const BoxDecoration(
+      color: AppColors.primaryContainer,
+      borderRadius: AppDimens.borderMedium,
+    ),
+    child: Text(text, style: AppTextStyles.bodyLarge),
+  );
+
+  void _showMotiveHelp() {
+    showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Động cơ mua sắm là gì?'),
+      builder: (context) => AlertDialog(
+        title: const Text('Động cơ mua sắm'),
         content: const SingleChildScrollView(
           child: Text(
-            'Why I Buy giúp bạn phân biệt rõ 8 lý do thực sự khiến bạn móc hầu bao:\n\n'
-            '• Nhu cầu: Đồ thiết yếu cho sinh hoạt, công việc.\n'
-            '• Mong muốn: Món đồ nâng cấp chất lượng cuộc sống.\n'
-            '• Khuyến mãi: Giảm giá, quà tặng khiến bạn quyết định mua nhanh.\n'
-            '• Ảnh hưởng MXH: Thấy trên TikTok, Facebook, người nổi tiếng dùng.\n'
-            '• Quảng cáo: Tiếp thị nhắm mục tiêu, banner tài trợ.\n'
-            '• Cảm xúc: Mua để giải tỏa căng thẳng, buồn bã hoặc tự thưởng.\n'
-            '• Tiện lợi: Tiện đường, tiết kiệm công sức nhất thời.\n'
-            '• Khác: Các nguyên nhân phát sinh khác.',
-            style: TextStyle(height: 1.4),
+            'Chọn lý do gần nhất với quyết định của bạn:\n\n'
+            '• Nhu cầu: Phục vụ sinh hoạt hoặc công việc.\n'
+            '• Mong muốn: Món bạn muốn có hoặc nâng cấp.\n'
+            '• Khuyến mãi: Bị thu hút bởi ưu đãi.\n'
+            '• Cảm xúc: Tự thưởng hoặc phản ứng với cảm xúc.\n'
+            '• Ảnh hưởng MXH: Thấy người khác giới thiệu hoặc sử dụng.\n'
+            '• Tiện lợi: Phù hợp hoàn cảnh tại thời điểm mua.\n'
+            '• Quảng cáo: Thấy thông tin tiếp thị.\n'
+            '• Khác: Lý do khác với các lựa chọn trên.',
           ),
         ),
         actions: [

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../firebase/platform_support.dart';
 import '../models/purchase_item.dart';
 import '../models/spending_insight.dart';
@@ -46,10 +47,12 @@ class InsightsViewModel extends ChangeNotifier {
   MonthlySpendingStats? get stats => _stats;
   bool get isGenerating => _isGenerating;
   bool get userAiEnabled => _userAiEnabled;
-  InsightFallbackReason? get fallbackReason => _reportKey == _stats?.cacheKey ? _fallbackReason : null;
+  InsightFallbackReason? get fallbackReason =>
+      _reportKey == _stats?.cacheKey ? _fallbackReason : null;
 
   /// AI can be toggled by the user only when the platform and remote flag allow it
-  bool get canToggleAi => PlatformSupport.supportsFirebaseAi && remoteConfigService.enableAiInsight;
+  bool get canToggleAi =>
+      PlatformSupport.supportsFirebaseAi && remoteConfigService.enableAiInsight;
 
   /// Report for the current data; template sentences until AI wording arrives
   InsightReport? get report {
@@ -96,8 +99,12 @@ class InsightsViewModel extends ChangeNotifier {
   }
 
   InsightFallbackReason? _blockingReason(MonthlySpendingStats stats) {
-    if (!PlatformSupport.supportsFirebaseAi) return InsightFallbackReason.unsupportedPlatform;
-    if (!remoteConfigService.enableAiInsight) return InsightFallbackReason.disabledRemotely;
+    if (!PlatformSupport.supportsFirebaseAi) {
+      return InsightFallbackReason.unsupportedPlatform;
+    }
+    if (!remoteConfigService.enableAiInsight) {
+      return InsightFallbackReason.disabledRemotely;
+    }
     if (!_userAiEnabled) return InsightFallbackReason.userTurnedOff;
     if (!stats.hasEnoughDataForAi) return InsightFallbackReason.notEnoughData;
     return null;
@@ -126,11 +133,17 @@ class InsightsViewModel extends ChangeNotifier {
     InsightFallbackReason? reason;
     try {
       result = await aiInsightService.generate(stats);
-      if (result.source == InsightSource.template) reason = InsightFallbackReason.aiFailed;
+      if (result.source == InsightSource.template) {
+        reason = InsightFallbackReason.aiFailed;
+      }
     } catch (e, stack) {
       result = aiInsightService.buildTemplateReport(stats);
       reason = InsightFallbackReason.aiFailed;
-      await crashlyticsService.recordHandledError(e, stack, reason: 'AI insight generation failed');
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'AI insight generation failed',
+      );
     }
 
     _isGenerating = false;

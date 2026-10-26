@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +16,9 @@ class AppCheckSetup {
   static const String tokenAsset = 'assets/local/app_check.json';
 
   /// Optional override: flutter run --dart-define-from-file=app_check.local.json
-  static const String _definedToken = String.fromEnvironment('APP_CHECK_DEBUG_TOKEN');
+  static const String _definedToken = String.fromEnvironment(
+    'APP_CHECK_DEBUG_TOKEN',
+  );
 
   static String _debugToken = _definedToken;
 
@@ -27,7 +30,9 @@ class AppCheckSetup {
 
   static Future<String> _loadTokenFromAsset() async {
     try {
-      final json = jsonDecode(await rootBundle.loadString(tokenAsset)) as Map<String, dynamic>;
+      final json = jsonDecode(
+        await rootBundle.loadString(tokenAsset),
+      ) as Map<String, dynamic>;
       return (json['APP_CHECK_DEBUG_TOKEN'] as String?)?.trim() ?? '';
     } catch (_) {
       // File not copied on this machine: AI falls back to template sentences
@@ -37,10 +42,13 @@ class AppCheckSetup {
 
   static Future<void> activate() async {
     if (_debugToken.isEmpty) _debugToken = await _loadTokenFromAsset();
-    debugPrint('AppCheck debug token: ${hasDebugToken ? 'found' : 'not found ($tokenAsset)'}');
+    debugPrint(
+      'AppCheck debug token: ${hasDebugToken ? 'found' : 'not found ($tokenAsset)'}',
+    );
 
     // Windows has no attestation provider; without a token App Check cannot issue tokens there
-    final isWindows = !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+    final isWindows =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
     if (isWindows && !hasDebugToken) return;
 
     final token = hasDebugToken ? _debugToken : null;
@@ -48,7 +56,9 @@ class AppCheckSetup {
       providerAndroid: _useAndroidDebugProvider
           ? AndroidDebugProvider(debugToken: token)
           : const AndroidPlayIntegrityProvider(),
-      providerWeb: hasDebugToken ? WebDebugProvider(debugToken: token) : ReCaptchaEnterpriseProvider(webSiteKey),
+      providerWeb: hasDebugToken
+          ? WebDebugProvider(debugToken: token)
+          : ReCaptchaEnterpriseProvider(webSiteKey),
       providerWindows: WindowsDebugProvider(debugToken: token),
     );
   }

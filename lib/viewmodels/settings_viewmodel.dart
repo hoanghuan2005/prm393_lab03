@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+
 import '../services/crashlytics_service.dart';
 import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
@@ -58,7 +60,9 @@ class SettingsViewModel extends ChangeNotifier {
   /// Trigger a test non-fatal error recorded in Crashlytics
   Future<void> testHandledNonFatalError(String userId) async {
     try {
-      throw FormatException('Simulated non-fatal exception for Lab 3 validation (UID: $userId)');
+      throw FormatException(
+        'Simulated non-fatal exception for Lab 3 validation (UID: $userId)',
+      );
     } catch (e, stack) {
       await crashlyticsService.recordHandledError(
         e,

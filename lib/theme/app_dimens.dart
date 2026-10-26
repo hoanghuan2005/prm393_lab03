@@ -24,11 +24,21 @@ class AppDimens {
   static const double radiusXLarge = 24.0;
   static const double radiusPill = 999.0; // Capsule buttons / chips
 
-  static const BorderRadius borderSmall = BorderRadius.all(Radius.circular(radiusSmall));
-  static const BorderRadius borderMedium = BorderRadius.all(Radius.circular(radiusMedium));
-  static const BorderRadius borderLarge = BorderRadius.all(Radius.circular(radiusLarge));
-  static const BorderRadius borderXLarge = BorderRadius.all(Radius.circular(radiusXLarge));
-  static const BorderRadius borderPill = BorderRadius.all(Radius.circular(radiusPill));
+  static const BorderRadius borderSmall = BorderRadius.all(
+    Radius.circular(radiusSmall),
+  );
+  static const BorderRadius borderMedium = BorderRadius.all(
+    Radius.circular(radiusMedium),
+  );
+  static const BorderRadius borderLarge = BorderRadius.all(
+    Radius.circular(radiusLarge),
+  );
+  static const BorderRadius borderXLarge = BorderRadius.all(
+    Radius.circular(radiusXLarge),
+  );
+  static const BorderRadius borderPill = BorderRadius.all(
+    Radius.circular(radiusPill),
+  );
 
   // Accessibility Requirements
   static const double minTouchTarget = 48.0; // Min 48dp touch target rule

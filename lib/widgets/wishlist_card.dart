@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -11,25 +12,25 @@ class WishlistCard extends StatelessWidget {
   final WishlistItem item;
   final VoidCallback onTap;
 
-  const WishlistCard({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const WishlistCard({super.key, required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+    );
 
     return Semantics(
       button: true,
-      label: 'Món ${item.title}, giá ${currencyFormatter.format(item.price)}, động cơ ${item.motive.label}',
+      label:
+          'Món ${item.title}, giá ${currencyFormatter.format(item.price)}, động cơ ${item.motive.label}',
       child: Card(
         margin: const EdgeInsets.only(bottom: AppDimens.space12),
         elevation: 0,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: AppDimens.borderLarge,
-          side: const BorderSide(color: AppColors.divider, width: 1),
+          side: BorderSide(color: AppColors.divider, width: 1),
         ),
         child: InkWell(
           onTap: onTap,
@@ -63,10 +64,7 @@ class WishlistCard extends StatelessWidget {
                 const SizedBox(height: AppDimens.space12),
                 Row(
                   children: [
-                    MotiveChip(
-                      motive: item.motive,
-                      isCompact: true,
-                    ),
+                    MotiveChip(motive: item.motive, isCompact: true),
                     const Spacer(),
                     _buildStatusBadge(),
                   ],
@@ -86,19 +84,28 @@ class WishlistCard extends StatelessWidget {
       final timeText = days > 0 ? '$days ngày hoãn' : '$hours giờ hoãn';
 
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimens.space8, vertical: AppDimens.space4),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space8,
+          vertical: AppDimens.space4,
+        ),
+        decoration: const BoxDecoration(
           color: AppColors.motiveEmotionBg,
           borderRadius: AppDimens.borderPill,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.timer_outlined, size: 14, color: AppColors.motiveEmotion),
+            const Icon(
+              Icons.timer_outlined,
+              size: 14,
+              color: AppColors.motiveEmotion,
+            ),
             const SizedBox(width: AppDimens.space4),
             Text(
               timeText,
-              style: AppTextStyles.labelMedium.copyWith(color: AppColors.motiveEmotion),
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.motiveEmotion,
+              ),
             ),
           ],
         ),
@@ -106,7 +113,10 @@ class WishlistCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimens.space8, vertical: AppDimens.space4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space8,
+        vertical: AppDimens.space4,
+      ),
       decoration: BoxDecoration(
         color: item.status.color.withValues(alpha: 0.12),
         borderRadius: AppDimens.borderPill,

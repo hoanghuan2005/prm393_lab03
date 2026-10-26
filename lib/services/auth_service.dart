@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Authentication
@@ -8,11 +9,9 @@ class AuthService {
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
 
-  AuthService({
-    FirebaseAuth? auth,
-    GoogleSignIn? googleSignIn,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   /// Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -24,13 +23,18 @@ class AuthService {
   String? get currentUserId => _auth.currentUser?.uid;
 
   /// User display name or email
-  String get displayName => _auth.currentUser?.displayName ?? _auth.currentUser?.email ?? 'Người dùng';
+  String get displayName =>
+      _auth.currentUser?.displayName ??
+      _auth.currentUser?.email ??
+      'Người dùng';
 
   /// Sign in with Google
   /// Mobile: native google_sign_in. Web: Firebase popup. Windows: unsupported.
   Future<UserCredential?> signInWithGoogle() async {
     if (!PlatformSupport.supportsGoogleSignIn) {
-      throw UnsupportedError('Google Sign-In is not available on this platform');
+      throw UnsupportedError(
+        'Google Sign-In is not available on this platform',
+      );
     }
     try {
       if (kIsWeb) {
@@ -43,7 +47,8 @@ class AuthService {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,

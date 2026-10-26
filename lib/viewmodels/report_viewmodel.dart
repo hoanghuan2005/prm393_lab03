@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
 import '../services/report_service.dart';

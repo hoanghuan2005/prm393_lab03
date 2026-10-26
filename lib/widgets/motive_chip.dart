@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -45,25 +46,29 @@ class MotiveChip extends StatelessWidget {
               color: bgColor,
               borderRadius: AppDimens.borderPill,
               border: Border.all(
-                color: isSelected ? motive.color : motive.color.withValues(alpha: 0.3),
+                color: isSelected
+                    ? motive.color
+                    : motive.color.withValues(alpha: 0.3),
                 width: 1.2,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  motive.icon,
-                  size: isCompact ? 16 : 18,
-                  color: fgColor,
-                ),
+                Icon(motive.icon, size: isCompact ? 16 : 18, color: fgColor),
                 const SizedBox(width: AppDimens.space6),
                 Text(
                   motive.label,
-                  style: (isCompact ? AppTextStyles.labelMedium : AppTextStyles.labelLarge).copyWith(
-                    color: fgColor,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
+                  style:
+                      (isCompact
+                              ? AppTextStyles.labelMedium
+                              : AppTextStyles.labelLarge)
+                          .copyWith(
+                            color: fgColor,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
                 ),
               ],
             ),

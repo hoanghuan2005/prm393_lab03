@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
@@ -11,16 +12,17 @@ import 'record_purchase_screen.dart';
 class PurchaseDetailScreen extends StatelessWidget {
   final PurchaseItem purchase;
 
-  const PurchaseDetailScreen({
-    super.key,
-    required this.purchase,
-  });
+  const PurchaseDetailScreen({super.key, required this.purchase});
 
   String _formatTimeRelative(DateTime dt) {
     final now = DateTime.now();
-    final isToday = now.year == dt.year && now.month == dt.month && now.day == dt.day;
+    final isToday =
+        now.year == dt.year && now.month == dt.month && now.day == dt.day;
     final yesterday = now.subtract(const Duration(days: 1));
-    final isYesterday = yesterday.year == dt.year && yesterday.month == dt.month && yesterday.day == dt.day;
+    final isYesterday =
+        yesterday.year == dt.year &&
+        yesterday.month == dt.month &&
+        yesterday.day == dt.day;
     final timeStr = DateFormat('HH:mm').format(dt);
 
     if (isToday) {
@@ -82,18 +84,27 @@ class PurchaseDetailScreen extends StatelessWidget {
         ),
         content: Text(
           'Bạn có chắc chắn muốn xoá "${purchase.title}" không? Khoản tiền này sẽ được khấu trừ khỏi tổng chi tiêu tháng.',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF6D6E73), height: 1.4),
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6D6E73),
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Huỷ', style: TextStyle(color: Color(0xFF6D6E73))),
+            child: const Text(
+              'Huỷ',
+              style: TextStyle(color: Color(0xFF6D6E73)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               Navigator.pop(dialogCtx); // close dialog
@@ -134,7 +145,10 @@ class PurchaseDetailScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.onPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.onPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -147,7 +161,10 @@ class PurchaseDetailScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Color(0xFFEF4444),
+            ),
             tooltip: 'Xoá khoản mua',
             onPressed: () => _confirmDelete(context),
           ),
@@ -279,7 +296,10 @@ class PurchaseDetailScreen extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: item.motive.backgroundColor,
                   borderRadius: BorderRadius.circular(999),
@@ -338,7 +358,11 @@ class PurchaseDetailScreen extends StatelessWidget {
                   color: const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF47667B)),
+                child: const Icon(
+                  Icons.access_time_rounded,
+                  size: 18,
+                  color: Color(0xFF47667B),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -392,7 +416,11 @@ class PurchaseDetailScreen extends StatelessWidget {
                   color: const Color(0xFFFFFCE6),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.edit_note_rounded, size: 20, color: AppColors.onPrimary),
+                child: const Icon(
+                  Icons.edit_note_rounded,
+                  size: 20,
+                  color: AppColors.onPrimary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -422,10 +450,14 @@ class PurchaseDetailScreen extends StatelessWidget {
                             : 'Không có ghi chú thêm',
                         style: TextStyle(
                           fontSize: 13.5,
-                          fontStyle: (item.note != null && item.note!.trim().isNotEmpty)
+                          fontStyle:
+                              (item.note != null &&
+                                  item.note!.trim().isNotEmpty)
                               ? FontStyle.italic
                               : FontStyle.normal,
-                          color: (item.note != null && item.note!.trim().isNotEmpty)
+                          color:
+                              (item.note != null &&
+                                  item.note!.trim().isNotEmpty)
                               ? AppColors.onPrimary
                               : const Color(0xFF9CA3AF),
                           height: 1.4,
@@ -455,7 +487,11 @@ class PurchaseDetailScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lightbulb_rounded, size: 22, color: AppColors.onPrimary),
+          const Icon(
+            Icons.lightbulb_rounded,
+            size: 22,
+            color: AppColors.onPrimary,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -520,10 +556,7 @@ class PurchaseDetailScreen extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 'Sửa khoản mua',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ],
           ),

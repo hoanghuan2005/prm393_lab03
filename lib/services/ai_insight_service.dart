@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
+
 import '../models/spending_insight.dart';
 
 /// Produces the raw JSON text for a prompt. Abstracted so tests can replace Gemini with a fake.
@@ -32,7 +34,9 @@ class FirebaseAiInsightGenerator implements InsightTextGenerator {
         responseMimeType: 'application/json',
         responseSchema: Schema.object(
           properties: {
-            'summary': Schema.string(description: 'Đoạn chiêm nghiệm tháng, 2-3 câu'),
+            'summary': Schema.string(
+              description: 'Đoạn chiêm nghiệm tháng, 2-3 câu',
+            ),
             'cards': Schema.array(
               items: Schema.object(
                 properties: {
@@ -98,7 +102,8 @@ Quy tắc bắt buộc:
 6. Viết tiếng Việt có dấu. Chỉ trả về JSON đúng schema.''';
 
   /// Template sentences used when AI is off, unavailable, fails, or writes something not allowed
-  InsightReport buildTemplateReport(MonthlySpendingStats stats) => _templateFor(stats);
+  InsightReport buildTemplateReport(MonthlySpendingStats stats) =>
+      _templateFor(stats);
 
   Future<InsightReport> generate(MonthlySpendingStats stats) async {
     final cached = _cache[stats.cacheKey];
@@ -150,7 +155,9 @@ Quy tắc bắt buộc:
     final rawCards = json['cards'];
     if (rawCards is List) {
       for (final c in rawCards) {
-        if (c is Map<String, dynamic> && c['id'] is String) aiCards[c['id'] as String] = c;
+        if (c is Map<String, dynamic> && c['id'] is String) {
+          aiCards[c['id'] as String] = c;
+        }
       }
     }
 
@@ -163,14 +170,22 @@ Quy tắc bắt buộc:
           body is String &&
           isAcceptable(title, allowed, maxTitleLength) &&
           isAcceptable(body, allowed, maxBodyLength)) {
-        cards.add(InsightCard(kind: kind, title: title.trim(), body: body.trim(), fromAi: true));
+        cards.add(
+          InsightCard(
+            kind: kind,
+            title: title.trim(),
+            body: body.trim(),
+            fromAi: true,
+          ),
+        );
       } else {
         cards.add(templateCard(kind, stats));
       }
     }
 
     final summary = json['summary'];
-    final summaryOk = summary is String && isAcceptable(summary, allowed, maxSummaryLength);
+    final summaryOk =
+        summary is String && isAcceptable(summary, allowed, maxSummaryLength);
 
     return InsightReport(
       summary: summaryOk ? summary.trim() : template.summary,
@@ -180,18 +195,26 @@ Quy tắc bắt buộc:
   }
 
   /// Non-empty, within length, no banned wording, and every number is one the code computed
-  static bool isAcceptable(String text, Set<int> allowedNumbers, int maxLength) {
+  static bool isAcceptable(
+    String text,
+    Set<int> allowedNumbers,
+    int maxLength,
+  ) {
     final trimmed = text.trim();
     if (trimmed.isEmpty || trimmed.length > maxLength) return false;
     final lower = trimmed.toLowerCase();
     if (bannedPhrases.any(lower.contains)) return false;
-    return MonthlySpendingStats.extractNumbers(trimmed).every(allowedNumbers.contains);
+    return MonthlySpendingStats.extractNumbers(trimmed)
+        .every(allowedNumbers.contains);
   }
 
-  static InsightReport _templateFor(MonthlySpendingStats stats) => InsightReport(
+  static InsightReport _templateFor(MonthlySpendingStats stats) =>
+      InsightReport(
         summary: templateSummary(stats),
         summaryFromAi: false,
-        cards: [for (final kind in stats.applicableKinds) templateCard(kind, stats)],
+        cards: [
+          for (final kind in stats.applicableKinds) templateCard(kind, stats),
+        ],
       );
 
   static String templateSummary(MonthlySpendingStats stats) {
@@ -204,23 +227,31 @@ Quy tắc bắt buộc:
     );
     final top = stats.dominantMotive;
     if (top != null) {
-      buffer.write(' Động cơ bạn ghi nhiều nhất là ${top.motive.label} (${stats.sharePercent(top)}%).');
+      buffer.write(
+        ' Động cơ bạn ghi nhiều nhất là ${top.motive.label} (${stats.sharePercent(top)}%).',
+      );
     }
     if (stats.skippedCount > 0) {
-      buffer.write(' Bạn cũng đã cân nhắc và không mua ${stats.skippedCount} món.');
+      buffer.write(
+        ' Bạn cũng đã cân nhắc và không mua ${stats.skippedCount} món.',
+      );
     }
     return buffer.toString();
   }
 
-  static InsightCard templateCard(InsightKind kind, MonthlySpendingStats stats) {
-    final vnd = MonthlySpendingStats.formatVnd;
+  static InsightCard templateCard(
+    InsightKind kind,
+    MonthlySpendingStats stats,
+  ) {
+    const vnd = MonthlySpendingStats.formatVnd;
     switch (kind) {
       case InsightKind.dominantMotive:
         final top = stats.dominantMotive!;
         return InsightCard(
           kind: kind,
           title: 'Động cơ ghi nhiều nhất: ${top.motive.label}',
-          body: '${top.count}/${stats.purchaseCount} khoản mua tháng này bạn ghi là ${top.motive.label} '
+          body:
+              '${top.count}/${stats.purchaseCount} khoản mua tháng này bạn ghi là ${top.motive.label} '
               '(${stats.sharePercent(top)}%), tổng ${vnd(top.amount)}.',
           fromAi: false,
         );
@@ -228,7 +259,8 @@ Quy tắc bắt buộc:
         return InsightCard(
           kind: kind,
           title: 'Mua trong khung 22:00 - 05:00',
-          body: 'Có ${stats.lateNightCount} khoản mua trong khung giờ này, tổng ${vnd(stats.lateNightAmount)}. '
+          body:
+              'Có ${stats.lateNightCount} khoản mua trong khung giờ này, tổng ${vnd(stats.lateNightAmount)}. '
               'Bạn còn nhớ lúc đó mình mua vì sao không?',
           fromAi: false,
         );
@@ -241,24 +273,28 @@ Quy tắc bắt buộc:
         return InsightCard(
           kind: kind,
           title: 'So với tháng trước',
-          body: 'Tổng đã chi bạn ghi tháng này là ${vnd(stats.totalSpent)}, $comparison '
+          body:
+              'Tổng đã chi bạn ghi tháng này là ${vnd(stats.totalSpent)}, $comparison '
               '(${vnd(stats.previousMonthTotal ?? 0)}).',
           fromAi: false,
         );
       case InsightKind.largestPurchase:
         final p = stats.largestPurchase!;
-        final time = '${p.dateTime.hour.toString().padLeft(2, '0')}:${p.dateTime.minute.toString().padLeft(2, '0')}';
+        final time =
+            '${p.dateTime.hour.toString().padLeft(2, '0')}:${p.dateTime.minute.toString().padLeft(2, '0')}';
         return InsightCard(
           kind: kind,
           title: 'Khoản lớn nhất tháng',
-          body: '${p.title}: ${vnd(p.amount.round())}, bạn ghi động cơ ${p.motive.label}, lúc $time.',
+          body:
+              '${p.title}: ${vnd(p.amount.round())}, bạn ghi động cơ ${p.motive.label}, lúc $time.',
           fromAi: false,
         );
       case InsightKind.skippedItems:
         return InsightCard(
           kind: kind,
           title: 'Món đã quyết định không mua',
-          body: 'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
+          body:
+              'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
               'tổng giá đã ghi ${vnd(stats.skippedValue)}.',
           fromAi: false,
         );

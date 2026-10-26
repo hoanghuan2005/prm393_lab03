@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../models/item_status.dart';
 import '../models/ui_state.dart';
@@ -45,9 +46,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
             icon: const Icon(Icons.add),
             tooltip: 'Thêm món',
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddItemScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AddItemScreen()));
             },
           ),
         ],
@@ -56,7 +57,10 @@ class _WishlistScreenState extends State<WishlistScreen> {
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16, vertical: AppDimens.space8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space16,
+              vertical: AppDimens.space8,
+            ),
             child: AppTextField(
               controller: _searchController,
               hint: 'Tìm kiếm sản phẩm hoặc động cơ...',
@@ -81,9 +85,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
             height: 48,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space16,
+              ),
               itemCount: BuyingMotive.values.length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppDimens.space8),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: AppDimens.space8),
               itemBuilder: (context, index) {
                 final motive = BuyingMotive.values[index];
                 final isSelected = wishlistVm.selectedMotiveFilter == motive;
@@ -129,9 +136,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           const Divider(),
 
           // Items Content
-          Expanded(
-            child: _buildBodyContent(context, wishlistVm),
-          ),
+          Expanded(child: _buildBodyContent(context, wishlistVm)),
         ],
       ),
     );
@@ -175,10 +180,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
               : null,
         );
       case UiError(message: final msg, onRetry: final retry):
-        return ErrorView(
-          message: msg,
-          onRetry: retry,
-        );
+        return ErrorView(message: msg, onRetry: retry);
       case UiSuccess(data: final items):
         return ListView.builder(
           padding: const EdgeInsets.all(AppDimens.space16),

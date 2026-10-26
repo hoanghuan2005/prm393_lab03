@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+
 import '../firebase/platform_support.dart';
 
 /// App notification model to keep an in-app list of received messages
@@ -36,8 +38,7 @@ class NotificationService {
   final _notificationsStreamController =
       StreamController<List<AppNotificationItem>>.broadcast();
 
-  NotificationService({FirebaseMessaging? fcm})
-      : _injectedFcm = fcm;
+  NotificationService({FirebaseMessaging? fcm}) : _injectedFcm = fcm;
 
   List<AppNotificationItem> get receivedNotifications =>
       List.unmodifiable(_receivedNotifications);
@@ -50,7 +51,9 @@ class NotificationService {
     Function(RemoteMessage message)? onNotificationOpened,
   }) async {
     if (!PlatformSupport.isMobile) {
-      debugPrint('NotificationService: FCM skipped (only available on Android/iOS)');
+      debugPrint(
+        'NotificationService: FCM skipped (only available on Android/iOS)',
+      );
       return;
     }
     try {
@@ -68,11 +71,15 @@ class NotificationService {
       debugPrint('FCM Authorization status: ${settings.authorizationStatus}');
 
       // 2. Register background handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
       // 3. Foreground message listener
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('FCM Foreground message received: ${message.notification?.title}');
+        debugPrint(
+          'FCM Foreground message received: ${message.notification?.title}',
+        );
         _recordNotification(message);
       });
 
@@ -86,7 +93,9 @@ class NotificationService {
       // 5. Terminated state notification tap
       final initialMessage = await _fcm.getInitialMessage();
       if (initialMessage != null) {
-        debugPrint('FCM App opened from terminated message: ${initialMessage.data}');
+        debugPrint(
+          'FCM App opened from terminated message: ${initialMessage.data}',
+        );
         _recordNotification(initialMessage);
         onNotificationOpened?.call(initialMessage);
       }
@@ -109,7 +118,9 @@ class NotificationService {
       data: message.data,
     );
     _receivedNotifications.insert(0, item);
-    _notificationsStreamController.add(List.unmodifiable(_receivedNotifications));
+    _notificationsStreamController.add(
+      List.unmodifiable(_receivedNotifications),
+    );
   }
 
   void dispose() {

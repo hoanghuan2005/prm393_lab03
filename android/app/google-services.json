@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "21478927288",
+    "firebase_url": "https://prm393-34056-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "prm393-34056",
     "storage_bucket": "prm393-34056.firebasestorage.app"
   },
@@ -19,6 +20,14 @@
           "android_info": {
             "package_name": "com.group07.whyibuy",
             "certificate_hash": "ecd5e35cb1570a27eb2cac2e14d0e46c5082d766"
+          }
+        },
+        {
+          "client_id": "21478927288-q64m9fparppek5j04r68191uqf31rmdl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.group07.whyibuy",
+            "certificate_hash": "f1551ce313e126021cffa8659b2bea41a5abee82"
           }
         },
         {

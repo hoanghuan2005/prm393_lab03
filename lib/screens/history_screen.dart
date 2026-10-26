@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
@@ -60,24 +61,37 @@ class HistoryScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left_rounded, color: Color(0xFF47667B)),
+                  icon: const Icon(
+                    Icons.chevron_left_rounded,
+                    color: Color(0xFF47667B),
+                  ),
                   tooltip: 'Tháng trước',
                   onPressed: () => purchaseVm.previousMonth(),
                 ),
                 InkWell(
                   onTap: () async {
-                    final picked = await MonthPickerSheet.show(context, selectedMonth);
+                    final picked = await MonthPickerSheet.show(
+                      context,
+                      selectedMonth,
+                    );
                     if (picked != null) {
                       purchaseVm.setSelectedMonth(picked);
                     }
                   },
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_month_outlined, size: 18, color: AppColors.onPrimary),
+                        const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 18,
+                          color: AppColors.onPrimary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           monthLabel,
@@ -88,13 +102,20 @@ class HistoryScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down_rounded, size: 22, color: Color(0xFF6D6E73)),
+                        const Icon(
+                          Icons.arrow_drop_down_rounded,
+                          size: 22,
+                          color: Color(0xFF6D6E73),
+                        ),
                       ],
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right_rounded, color: Color(0xFF47667B)),
+                  icon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFF47667B),
+                  ),
                   tooltip: 'Tháng sau',
                   onPressed: () => purchaseVm.nextMonth(),
                 ),
@@ -126,7 +147,9 @@ class HistoryScreen extends StatelessWidget {
                       label: motive.label,
                       icon: motive.icon,
                       isSelected: isSelected,
-                      onTap: () => purchaseVm.setMotiveFilter(isSelected ? null : motive),
+                      onTap: () => purchaseVm.setMotiveFilter(
+                        isSelected ? null : motive,
+                      ),
                     ),
                   );
                 }),
@@ -153,7 +176,11 @@ class HistoryScreen extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Column(
                       children: [
-                        const Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFFD1D5DB)),
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 48,
+                          color: Color(0xFFD1D5DB),
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Không có khoản chi nào trong $monthLabel',
@@ -166,7 +193,10 @@ class HistoryScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         const Text(
                           'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9CA3AF),
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -175,14 +205,20 @@ class HistoryScreen extends StatelessWidget {
                 else
                   ...grouped.keys.map((dateKey) {
                     final dayItems = grouped[dateKey]!;
-                    final dayTotal = dayItems.fold(0.0, (sum, i) => sum + i.amount);
+                    final dayTotal = dayItems.fold(
+                      0.0,
+                      (sum, i) => sum + i.amount,
+                    );
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Day Header Row
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 4,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -222,9 +258,17 @@ class HistoryScreen extends StatelessWidget {
                                   // Own Material so ink splashes paint above the white card
                                   Material(
                                     type: MaterialType.transparency,
-                                    child: _buildHistoryRow(context, item, purchaseVm),
+                                    child: _buildHistoryRow(
+                                      context,
+                                      item,
+                                      purchaseVm,
+                                    ),
                                   ),
-                                  if (!isLast) const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                                  if (!isLast)
+                                    const Divider(
+                                      height: 1,
+                                      color: Color(0xFFF3F4F6),
+                                    ),
                                 ],
                               );
                             }),
@@ -255,7 +299,10 @@ class HistoryScreen extends StatelessWidget {
   }
 
   // ==================== BUDGET METER CARD (Figma 31) ====================
-  Widget _buildBudgetMeterCard(BuildContext context, PurchaseViewModel purchaseVm) {
+  Widget _buildBudgetMeterCard(
+    BuildContext context,
+    PurchaseViewModel purchaseVm,
+  ) {
     final spent = purchaseVm.monthlySpent;
     final budget = purchaseVm.monthlyBudget;
     final progress = purchaseVm.budgetProgress;
@@ -284,7 +331,11 @@ class HistoryScreen extends StatelessWidget {
           // Header Row
           Row(
             children: [
-              const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Color(0xFF47667B)),
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 18,
+                color: Color(0xFF47667B),
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Ngân sách tháng',
@@ -299,7 +350,9 @@ class HistoryScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isExceeded ? const Color(0xFFFEE2E2) : const Color(0xFFECFDF5),
+                  color: isExceeded
+                      ? const Color(0xFFFEE2E2)
+                      : const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -307,7 +360,9 @@ class HistoryScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isExceeded ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                    color: isExceeded
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF059669),
                   ),
                 ),
               ),
@@ -325,7 +380,11 @@ class HistoryScreen extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.tune_rounded, size: 14, color: Color(0xFF47667B)),
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 14,
+                        color: Color(0xFF47667B),
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Chi tiết',
@@ -387,10 +446,7 @@ class HistoryScreen extends StatelessWidget {
             isExceeded
                 ? 'Đã vượt ${_formatCurrency(spent - budget)} ₫ so với mốc bạn đặt. Ứng dụng không chặn mua.'
                 : 'Còn lại ${_formatCurrency(budget - spent)} ₫ trong ngân sách dự kiến tháng này.',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF6D6E73),
-            ),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
           ),
         ],
       ),
@@ -417,7 +473,11 @@ class HistoryScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: isSelected ? Colors.white : const Color(0xFF6D6E73)),
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : const Color(0xFF6D6E73),
+              ),
               const SizedBox(width: 4),
             ],
             Text(
@@ -434,12 +494,18 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryRow(BuildContext context, PurchaseItem item, PurchaseViewModel vm) {
+  Widget _buildHistoryRow(
+    BuildContext context,
+    PurchaseItem item,
+    PurchaseViewModel vm,
+  ) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PurchaseDetailScreen(purchase: item)),
+          MaterialPageRoute(
+            builder: (_) => PurchaseDetailScreen(purchase: item),
+          ),
         );
       },
       leading: Container(
@@ -471,7 +537,11 @@ class HistoryScreen extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               '"${item.note}"',
-              style: const TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: Color(0xFF6D6E73)),
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFF6D6E73),
+              ),
             ),
           ],
         ],
@@ -489,7 +559,8 @@ class HistoryScreen extends StatelessWidget {
 
   String _formatDayHeader(String dateKey) {
     final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    final yesterday = DateFormat('dd/MM/yyyy').format(DateTime.now().subtract(const Duration(days: 1)));
+    final yesterday = DateFormat('dd/MM/yyyy')
+        .format(DateTime.now().subtract(const Duration(days: 1)));
 
     if (dateKey == now) {
       return 'Hôm nay · $dateKey';
@@ -502,6 +573,8 @@ class HistoryScreen extends StatelessWidget {
 
   String _formatCurrency(double amount) {
     final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount.toStringAsFixed(0).replaceAllMapped(formatter, (Match m) => '${m[1]}.');
+    return amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

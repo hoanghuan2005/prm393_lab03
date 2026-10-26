@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../services/analytics_service.dart';
@@ -24,10 +26,7 @@ class PurchaseViewModel extends ChangeNotifier {
   };
   bool _isSyncing = false;
 
-  PurchaseViewModel({
-    this.purchaseService,
-    this.analyticsService,
-  }) {
+  PurchaseViewModel({this.purchaseService, this.analyticsService}) {
     _seedDefaultData();
   }
 
@@ -130,22 +129,24 @@ class PurchaseViewModel extends ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
 
-    _purchasesSubscription = purchaseService!.streamUserPurchases(userId).listen(
-      (cloudItems) {
-        _isSyncing = false;
-        if (cloudItems.isNotEmpty) {
-          _purchases = cloudItems;
-        } else if (_purchases.isEmpty) {
-          _seedDefaultData();
-        }
-        notifyListeners();
-      },
-      onError: (err) {
-        _isSyncing = false;
-        debugPrint('Purchase Firestore stream error: $err');
-        notifyListeners();
-      },
-    );
+    _purchasesSubscription = purchaseService!
+        .streamUserPurchases(userId)
+        .listen(
+          (cloudItems) {
+            _isSyncing = false;
+            if (cloudItems.isNotEmpty) {
+              _purchases = cloudItems;
+            } else if (_purchases.isEmpty) {
+              _seedDefaultData();
+            }
+            notifyListeners();
+          },
+          onError: (err) {
+            _isSyncing = false;
+            debugPrint('Purchase Firestore stream error: $err');
+            notifyListeners();
+          },
+        );
 
     _subscribeToBudget();
   }
@@ -160,22 +161,24 @@ class PurchaseViewModel extends ChangeNotifier {
     _budgetSubscription = purchaseService!
         .streamMonthlyBudget(_currentUserId, currentMonthKey)
         .listen(
-      (data) {
-        if (data != null) {
-          if (data['monthlyLimit'] != null) {
-            _monthlyBudget = (data['monthlyLimit'] as num).toDouble();
-          }
-          if (data['categoryBudgets'] != null) {
-            final catData = data['categoryBudgets'] as Map<String, dynamic>;
-            _categoryBudgets = catData.map((k, v) => MapEntry(k, (v as num).toDouble()));
-          }
-          notifyListeners();
-        }
-      },
-      onError: (err) {
-        debugPrint('Budget Firestore stream error: $err');
-      },
-    );
+          (data) {
+            if (data != null) {
+              if (data['monthlyLimit'] != null) {
+                _monthlyBudget = (data['monthlyLimit'] as num).toDouble();
+              }
+              if (data['categoryBudgets'] != null) {
+                final catData = data['categoryBudgets'] as Map<String, dynamic>;
+                _categoryBudgets = catData.map(
+                  (k, v) => MapEntry(k, (v as num).toDouble()),
+                );
+              }
+              notifyListeners();
+            }
+          },
+          onError: (err) {
+            debugPrint('Budget Firestore stream error: $err');
+          },
+        );
   }
 
   List<PurchaseItem> get allPurchases => List.unmodifiable(_purchases);
@@ -188,16 +191,20 @@ class PurchaseViewModel extends ChangeNotifier {
   /// Purchases belonging to currently selected month
   List<PurchaseItem> get monthPurchases {
     return _purchases.where((item) {
-      return item.dateTime.year == _selectedMonth.year && item.dateTime.month == _selectedMonth.month;
+      return item.dateTime.year == _selectedMonth.year &&
+          item.dateTime.month == _selectedMonth.month;
     }).toList();
   }
 
   /// Filtered by both selected month and active motive filter
   List<PurchaseItem> get filteredPurchases {
     return _purchases.where((item) {
-      final matchesMonth = item.dateTime.year == _selectedMonth.year && item.dateTime.month == _selectedMonth.month;
+      final matchesMonth =
+          item.dateTime.year == _selectedMonth.year &&
+          item.dateTime.month == _selectedMonth.month;
       if (!matchesMonth) return false;
-      if (_selectedMotiveFilter != null && item.motive != _selectedMotiveFilter) {
+      if (_selectedMotiveFilter != null &&
+          item.motive != _selectedMotiveFilter) {
         return false;
       }
       return true;
@@ -215,8 +222,11 @@ class PurchaseViewModel extends ChangeNotifier {
   /// Monthly budget settings & calculations
   double get monthlyBudget => _monthlyBudget;
   double get monthlySpent => weeklyTotal;
-  double get budgetProgress => _monthlyBudget > 0 ? (monthlySpent / _monthlyBudget).clamp(0.0, 1.0) : 0.0;
-  bool get isBudgetExceeded => monthlySpent > _monthlyBudget && _monthlyBudget > 0;
+  double get budgetProgress => _monthlyBudget > 0
+      ? (monthlySpent / _monthlyBudget).clamp(0.0, 1.0)
+      : 0.0;
+  bool get isBudgetExceeded =>
+      monthlySpent > _monthlyBudget && _monthlyBudget > 0;
   double get budgetRemaining => _monthlyBudget - monthlySpent;
 
   Map<String, double> get categoryBudgets => Map.unmodifiable(_categoryBudgets);
@@ -262,7 +272,10 @@ class PurchaseViewModel extends ChangeNotifier {
   }
 
   /// Set and persist monthly budget + category budgets to Firestore
-  Future<void> setMonthlyBudget(double amount, {Map<String, double>? categoryBudgets}) async {
+  Future<void> setMonthlyBudget(
+    double amount, {
+    Map<String, double>? categoryBudgets,
+  }) async {
     _monthlyBudget = amount;
     if (categoryBudgets != null) {
       _categoryBudgets = Map.from(categoryBudgets);
@@ -284,7 +297,10 @@ class PurchaseViewModel extends ChangeNotifier {
       }
     }
 
-    analyticsService?.logBudgetSet(amount: amount, month: monthKey);
+    unawaited(
+      analyticsService?.logBudgetSet(amount: amount, month: monthKey) ??
+          Future<void>.value(),
+    );
   }
 
   /// Month navigation
@@ -370,7 +386,9 @@ class PurchaseViewModel extends ChangeNotifier {
     String? note,
   }) async {
     final effectiveTime = dateTime ?? DateTime.now();
-    final effectiveUserId = _currentUserId.isNotEmpty ? _currentUserId : 'demo-user';
+    final effectiveUserId = _currentUserId.isNotEmpty
+        ? _currentUserId
+        : 'demo-user';
 
     PurchaseItem newItem;
 
@@ -411,10 +429,13 @@ class PurchaseViewModel extends ChangeNotifier {
     _purchases.insert(0, newItem);
     notifyListeners();
 
-    analyticsService?.logPurchaseRecorded(
-      itemId: newItem.id,
-      price: newItem.amount,
-      motive: newItem.motive.key,
+    unawaited(
+      analyticsService?.logPurchaseRecorded(
+            itemId: newItem.id,
+            price: newItem.amount,
+            motive: newItem.motive.key,
+          ) ??
+          Future<void>.value(),
     );
 
     return newItem;
@@ -441,7 +462,9 @@ class PurchaseViewModel extends ChangeNotifier {
       notifyListeners();
     }
 
-    if (purchaseService != null && _currentUserId.isNotEmpty && !id.startsWith('seed-')) {
+    if (purchaseService != null &&
+        _currentUserId.isNotEmpty &&
+        !id.startsWith('seed-')) {
       try {
         await purchaseService!.updatePurchase(
           purchaseId: id,
@@ -462,7 +485,9 @@ class PurchaseViewModel extends ChangeNotifier {
     _purchases.removeWhere((p) => p.id == id);
     notifyListeners();
 
-    if (purchaseService != null && _currentUserId.isNotEmpty && !id.startsWith('seed-')) {
+    if (purchaseService != null &&
+        _currentUserId.isNotEmpty &&
+        !id.startsWith('seed-')) {
       try {
         await purchaseService!.deletePurchase(id);
       } catch (e) {

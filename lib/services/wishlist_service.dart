@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/buying_motive.dart';
 import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
@@ -8,7 +9,7 @@ class WishlistService {
   final FirebaseFirestore _firestore;
 
   WishlistService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _wishlistRef => _firestore.collection('wishlist');
 
@@ -23,8 +24,10 @@ class WishlistService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => WishlistItem.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => WishlistItem.fromFirestore(doc))
+              .toList();
+        });
   }
 
   /// Add a new item to Wishlist
@@ -52,7 +55,9 @@ class WishlistService {
       'productUrl': productUrl,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(now),
-      'coolingOffUntil': coolingOffUntil != null ? Timestamp.fromDate(coolingOffUntil) : null,
+      'coolingOffUntil': coolingOffUntil != null
+          ? Timestamp.fromDate(coolingOffUntil)
+          : null,
       'note': null,
       'decidedAt': null,
     };

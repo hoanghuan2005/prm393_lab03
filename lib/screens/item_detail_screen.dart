@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
@@ -30,7 +31,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     // Log view_item_detail analytics event on enter
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final analytics = context.read<AppAnalyticsService>();
-      final daysInCooldown = DateTime.now().difference(widget.item.createdAt).inDays;
+      final daysInCooldown = DateTime.now()
+          .difference(widget.item.createdAt)
+          .inDays;
       analytics.logViewItemDetail(
         itemId: widget.item.id,
         motive: widget.item.motive.key,
@@ -72,13 +75,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+    );
     final item = widget.item;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chi tiết & Quyết định'),
-      ),
+      appBar: AppBar(title: const Text('Chi tiết & Quyết định')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Column(
@@ -96,10 +100,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: AppTextStyles.headlineMedium,
-                  ),
+                  Text(item.title, style: AppTextStyles.headlineMedium),
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     currencyFormatter.format(item.price),
@@ -131,11 +132,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.motiveEmotionBg,
                   borderRadius: AppDimens.borderMedium,
-                  border: Border.all(color: AppColors.motiveEmotion.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppColors.motiveEmotion.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.hourglass_top, color: AppColors.motiveEmotion, size: 28),
+                    const Icon(
+                      Icons.hourglass_top,
+                      color: AppColors.motiveEmotion,
+                      size: 28,
+                    ),
                     const SizedBox(width: AppDimens.space12),
                     Expanded(
                       child: Column(
@@ -143,7 +150,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         children: [
                           Text(
                             'Đang trong khoảng hoãn 3 ngày',
-                            style: AppTextStyles.labelLarge.copyWith(color: AppColors.motiveEmotion),
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: AppColors.motiveEmotion,
+                            ),
                           ),
                           Text(
                             'Còn lại khoảng ${item.remainingCooldown.inDays} ngày ${item.remainingCooldown.inHours % 24} giờ để bạn cân nhắc lý do mua.',

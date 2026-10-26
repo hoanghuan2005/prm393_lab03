@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 
@@ -24,14 +25,20 @@ class BudgetSettingSheet extends StatefulWidget {
 class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   late TextEditingController _controller;
   late double _amount;
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
     super.initState();
     final purchaseVm = context.read<PurchaseViewModel>();
     _amount = purchaseVm.monthlyBudget;
-    _controller = TextEditingController(text: _currencyFormat.format(_amount).trim());
+    _controller = TextEditingController(
+      text: _currencyFormat.format(_amount).trim(),
+    );
   }
 
   @override
@@ -97,7 +104,11 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.account_balance_wallet_outlined, color: AppColors.onPrimary, size: 22),
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: AppColors.onPrimary,
+                      size: 22,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Ngân sách chi tiêu tháng',
@@ -110,7 +121,11 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF6D6E73)),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: Color(0xFF6D6E73),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -120,7 +135,11 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
 
             const Text(
               'Thiết lập mốc ngân sách để tự quan sát thói quen. Ứng dụng không chặn mua sắm, chỉ gửi thông tin trung tính.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6D6E73), height: 1.35),
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF6D6E73),
+                height: 1.35,
+              ),
             ),
 
             const SizedBox(height: 16),
@@ -182,7 +201,10 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                     children: [
                       const Text(
                         'Đã chi tháng này',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6D6E73),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -195,7 +217,11 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                       ),
                     ],
                   ),
-                  Container(height: 28, width: 1, color: const Color(0xFFD1D5DB)),
+                  Container(
+                    height: 28,
+                    width: 1,
+                    color: const Color(0xFFD1D5DB),
+                  ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -203,7 +229,9 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         isExceeded ? 'Đã vượt mốc' : 'Dự kiến còn lại',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isExceeded ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                          color: isExceeded
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF10B981),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -213,7 +241,9 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: isExceeded ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                          color: isExceeded
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF10B981),
                         ),
                       ),
                     ],
@@ -251,9 +281,14 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                           SnackBar(
                             content: Row(
                               children: [
-                                const Icon(Icons.check_circle, color: Colors.white),
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                ),
                                 const SizedBox(width: 8),
-                                Text('Đã lưu ngân sách: ${_currencyFormat.format(_amount).trim()} lên Firebase!'),
+                                Text(
+                                  'Đã lưu ngân sách: ${_currencyFormat.format(_amount).trim()} lên Firebase!',
+                                ),
                               ],
                             ),
                             backgroundColor: const Color(0xFF10B981),
@@ -265,11 +300,17 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.onPrimary),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.onPrimary,
+                        ),
                       )
                     : const Text(
                         'Lưu ngân sách',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
               ),
             ),

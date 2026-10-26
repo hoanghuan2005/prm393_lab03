@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
@@ -28,12 +29,12 @@ class MonthlyReflectionScreen extends StatelessWidget {
     final totalSaved = wishlistVm.totalSavedAmount;
     final stats = insightsVm.stats;
     final report = insightsVm.report;
-    final motiveCounts = {for (final m in stats?.motives ?? const <MotiveStat>[]) m.motive: m.count};
+    final motiveCounts = {
+      for (final m in stats?.motives ?? const <MotiveStat>[]) m.motive: m.count,
+    };
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chiêm nghiệm tháng'),
-      ),
+      appBar: AppBar(title: const Text('Chiêm nghiệm tháng')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Column(
@@ -55,11 +56,14 @@ class MonthlyReflectionScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          stats == null ? 'Chiêm nghiệm tháng' : 'Tháng ${stats.month}/${stats.year}',
+                          stats == null
+                              ? 'Chiêm nghiệm tháng'
+                              : 'Tháng ${stats.month}/${stats.year}',
                           style: AppTextStyles.titleMedium,
                         ),
                       ),
-                      if (report != null) InsightSourceChip(fromAi: report.summaryFromAi),
+                      if (report != null)
+                        InsightSourceChip(fromAi: report.summaryFromAi),
                     ],
                   ),
                   const SizedBox(height: AppDimens.space12),
@@ -86,7 +90,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
                   if (insightsVm.fallbackReason != null) ...[
                     const SizedBox(height: AppDimens.space8),
                     Text(
-                      InsightsScreen.fallbackMessage(insightsVm.fallbackReason!),
+                      InsightsScreen.fallbackMessage(
+                        insightsVm.fallbackReason!,
+                      ),
                       style: AppTextStyles.caption,
                     ),
                   ],
@@ -116,10 +122,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space8),
 
             // Motives breakdown of recorded purchases in the selected month
-            Text(
-              'Phân bổ 8 động cơ mua sắm',
-              style: AppTextStyles.titleLarge,
-            ),
+            Text('Phân bổ 8 động cơ mua sắm', style: AppTextStyles.titleLarge),
             const SizedBox(height: AppDimens.space8),
             Text(
               'Số khoản mua trong tháng theo động cơ bạn đã ghi:',
@@ -134,11 +137,16 @@ class MonthlyReflectionScreen extends StatelessWidget {
               children: BuyingMotive.values.map((motive) {
                 final count = motiveCounts[motive] ?? 0;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.space12,
+                    vertical: AppDimens.space8,
+                  ),
                   decoration: BoxDecoration(
                     color: motive.backgroundColor,
                     borderRadius: AppDimens.borderMedium,
-                    border: Border.all(color: motive.color.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: motive.color.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -147,7 +155,10 @@ class MonthlyReflectionScreen extends StatelessWidget {
                       const SizedBox(width: AppDimens.space6),
                       Text(
                         '${motive.label}: $count',
-                        style: AppTextStyles.labelMedium.copyWith(color: motive.color, fontWeight: FontWeight.w600),
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: motive.color,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -169,10 +180,11 @@ class MonthlyReflectionScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space16),
 
             // Upload Progress or Status Card
-            if (reportVm.status == ReportStatus.generating || reportVm.status == ReportStatus.uploading) ...[
+            if (reportVm.status == ReportStatus.generating ||
+                reportVm.status == ReportStatus.uploading) ...[
               Container(
                 padding: const EdgeInsets.all(AppDimens.space16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.surfaceVariant,
                   borderRadius: AppDimens.borderMedium,
                 ),
@@ -187,9 +199,13 @@ class MonthlyReflectionScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppDimens.space8),
                     LinearProgressIndicator(
-                      value: reportVm.uploadProgress > 0 ? reportVm.uploadProgress : null,
+                      value: reportVm.uploadProgress > 0
+                          ? reportVm.uploadProgress
+                          : null,
                       backgroundColor: AppColors.divider,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.onPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -197,28 +213,39 @@ class MonthlyReflectionScreen extends StatelessWidget {
               const SizedBox(height: AppDimens.space16),
             ],
 
-            if (reportVm.status == ReportStatus.success && reportVm.downloadUrl != null) ...[
+            if (reportVm.status == ReportStatus.success &&
+                reportVm.downloadUrl != null) ...[
               Container(
                 padding: const EdgeInsets.all(AppDimens.space16),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: AppDimens.borderMedium,
-                  border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: AppColors.success),
+                        const Icon(
+                          Icons.check_circle,
+                          color: AppColors.success,
+                        ),
                         const SizedBox(width: AppDimens.space8),
-                        Text('Đã upload thành công lên Cloud Storage!', style: AppTextStyles.labelLarge),
+                        Text(
+                          'Đã upload thành công lên Cloud Storage!',
+                          style: AppTextStyles.labelLarge,
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppDimens.space8),
                     Text(
                       'Download URL:\n${reportVm.downloadUrl}',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -226,17 +253,22 @@ class MonthlyReflectionScreen extends StatelessWidget {
               const SizedBox(height: AppDimens.space16),
             ],
 
-            if (reportVm.status == ReportStatus.error && reportVm.errorMessage != null) ...[
+            if (reportVm.status == ReportStatus.error &&
+                reportVm.errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(AppDimens.space16),
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppDimens.borderMedium,
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Text(
                   reportVm.errorMessage!,
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
+                  ),
                 ),
               ),
               const SizedBox(height: AppDimens.space16),
@@ -246,7 +278,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
             AppButton(
               title: 'Xuất & Upload báo cáo PDF',
               icon: Icons.picture_as_pdf,
-              isLoading: reportVm.status == ReportStatus.generating || reportVm.status == ReportStatus.uploading,
+              isLoading:
+                  reportVm.status == ReportStatus.generating ||
+                  reportVm.status == ReportStatus.uploading,
               onPressed: () async {
                 final userId = authVm.userId ?? 'anonymous_test';
                 await reportVm.generateAndUploadReport(

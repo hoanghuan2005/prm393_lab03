@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -40,12 +41,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
 
-    final price = double.tryParse(_priceController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0.0;
+    final price =
+        double.tryParse(
+          _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+        ) ??
+        0.0;
     final success = await wishlistVm.addItem(
       title: _titleController.text.trim(),
       price: price,
       motive: _selectedMotive,
-      productUrl: _urlController.text.trim().isNotEmpty ? _urlController.text.trim() : null,
+      productUrl: _urlController.text.trim().isNotEmpty
+          ? _urlController.text.trim()
+          : null,
     );
 
     if (mounted) {
@@ -76,9 +83,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Thêm món cân nhắc'),
-      ),
+      appBar: AppBar(title: const Text('Thêm món cân nhắc')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Form(
@@ -154,16 +159,23 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.motiveEmotionBg,
                     borderRadius: AppDimens.borderMedium,
-                    border: Border.all(color: AppColors.motiveEmotion.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.motiveEmotion.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.psychology, color: AppColors.motiveEmotion),
+                      const Icon(
+                        Icons.psychology,
+                        color: AppColors.motiveEmotion,
+                      ),
                       const SizedBox(width: AppDimens.space12),
                       Expanded(
                         child: Text(
                           'Động cơ cảm xúc / MXH sẽ kích hoạt khoảng hoãn tâm lý 3 ngày để bạn suy ngẫm trước khi thanh toán.',
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.motiveEmotion),
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.motiveEmotion,
+                          ),
                         ),
                       ),
                     ],

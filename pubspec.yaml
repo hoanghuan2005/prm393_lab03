@@ -1,5 +1,5 @@
 name: prm393_lab03
-description: "A new Flutter project."
+description: "Why I Buy? – mindful shopping companion (PRM393 Lab 3)"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -42,16 +42,15 @@ dependencies:
   firebase_auth: ^7.0.0
   google_sign_in: 6.2.2
   cloud_firestore: ^7.0.0
-  firebase_storage: ^14.0.0
   firebase_messaging: ^17.0.0
   firebase_analytics: ^13.0.0
   firebase_crashlytics: ^6.0.0
   firebase_remote_config: ^7.0.0
   pdf: ^3.13.1
-  firebase_database: ^13.0.0
   firebase_ai: ^5.1.0
   shared_preferences: ^2.5.6
   firebase_app_check: ^0.5.1
+  printing: ^5.15.1
 
 dev_dependencies:
   flutter_test:

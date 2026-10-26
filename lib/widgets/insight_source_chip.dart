@@ -8,7 +8,9 @@ class InsightSourceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = fromAi ? const Color(0xFF92400E) : const Color(0xFF4B5563);
+    final foreground = fromAi
+        ? const Color(0xFF92400E)
+        : const Color(0xFF4B5563);
     return Semantics(
       label: fromAi ? 'Do AI viết' : 'Câu mẫu',
       child: Container(
@@ -20,11 +22,19 @@ class InsightSourceChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(fromAi ? Icons.auto_awesome : Icons.notes_rounded, size: 12, color: foreground),
+            Icon(
+              fromAi ? Icons.auto_awesome : Icons.notes_rounded,
+              size: 12,
+              color: foreground,
+            ),
             const SizedBox(width: 4),
             Text(
               fromAi ? 'AI' : 'Câu mẫu',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: foreground),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: foreground,
+              ),
             ),
           ],
         ),

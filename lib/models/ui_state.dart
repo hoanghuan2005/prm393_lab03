@@ -18,11 +18,7 @@ class UiEmpty<T> extends UiState<T> {
   final String? actionTitle;
   final VoidCallback? onAction;
 
-  const UiEmpty({
-    required this.message,
-    this.actionTitle,
-    this.onAction,
-  });
+  const UiEmpty({required this.message, this.actionTitle, this.onAction});
 }
 
 class UiSuccess<T> extends UiState<T> {
@@ -34,8 +30,5 @@ class UiError<T> extends UiState<T> {
   final String message;
   final VoidCallback? onRetry;
 
-  const UiError({
-    required this.message,
-    this.onRetry,
-  });
+  const UiError({required this.message, this.onRetry});
 }

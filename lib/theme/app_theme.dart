@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 import 'app_dimens.dart';
 import 'app_text_styles.dart';
@@ -8,7 +9,7 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get lightTheme {
-    final colorScheme = ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.light,
       primary: AppColors.primary,
       onPrimary: AppColors.onPrimary,
@@ -29,7 +30,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: 'Be Vietnam Pro',
-      
+
       // Text Theme
       textTheme: TextTheme(
         displayLarge: AppTextStyles.displayLarge,
@@ -60,10 +61,15 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
           minimumSize: const Size(double.infinity, AppDimens.minTouchTarget),
-          shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderPill),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppDimens.borderPill,
+          ),
           elevation: AppDimens.elevationNone,
           textStyle: AppTextStyles.labelLarge,
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24, vertical: AppDimens.space12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.space24,
+            vertical: AppDimens.space12,
+          ),
         ),
       ),
 
@@ -73,9 +79,14 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
           minimumSize: const Size(double.infinity, AppDimens.minTouchTarget),
           side: const BorderSide(color: AppColors.outline, width: 1.5),
-          shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderPill),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppDimens.borderPill,
+          ),
           textStyle: AppTextStyles.labelLarge,
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24, vertical: AppDimens.space12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.space24,
+            vertical: AppDimens.space12,
+          ),
         ),
       ),
 
@@ -88,31 +99,31 @@ class AppTheme {
           vertical: AppDimens.space16,
         ),
         hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(color: AppColors.outline),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: BorderSide(color: AppColors.divider),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.onPrimary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.onPrimary, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
+        errorBorder: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error),
         ),
       ),
 
       // Card Theme
-      cardTheme: CardThemeData(
+      cardTheme: const CardThemeData(
         color: AppColors.surface,
         elevation: AppDimens.elevationNone,
         shape: RoundedRectangleBorder(
           borderRadius: AppDimens.borderLarge,
-          side: const BorderSide(color: AppColors.divider, width: 1),
+          side: BorderSide(color: AppColors.divider, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),

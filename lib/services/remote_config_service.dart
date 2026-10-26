@@ -1,15 +1,17 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
+
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Remote Config
 class RemoteConfigService {
   /// Provided via constructor for testing, otherwise assigned lazily in [initialize].
   final FirebaseRemoteConfig? _injectedConfig;
-  FirebaseRemoteConfig get _remoteConfig => _injectedConfig ?? FirebaseRemoteConfig.instance;
+  FirebaseRemoteConfig get _remoteConfig =>
+      _injectedConfig ?? FirebaseRemoteConfig.instance;
 
   RemoteConfigService({FirebaseRemoteConfig? remoteConfig})
-      : _injectedConfig = remoteConfig;
+    : _injectedConfig = remoteConfig;
 
   /// Keys matching firebase/remote-config-defaults.json
   static const String keyCoolingOffDays = 'cooling_off_days';
@@ -33,7 +35,9 @@ class RemoteConfigService {
   /// Initialize and fetch Remote Config
   Future<void> initialize() async {
     if (!_isSupported) {
-      debugPrint('RemoteConfig skipped (only available on Android/iOS), using local defaults');
+      debugPrint(
+        'RemoteConfig skipped (only available on Android/iOS), using local defaults',
+      );
       return;
     }
     try {
@@ -49,7 +53,9 @@ class RemoteConfigService {
 
       // Fetch and activate
       await _remoteConfig.fetchAndActivate();
-      debugPrint('RemoteConfig initialized successfully. cooling_off_days: $coolingOffDays, ai_enabled: $enableAiInsight');
+      debugPrint(
+        'RemoteConfig initialized successfully. cooling_off_days: $coolingOffDays, ai_enabled: $enableAiInsight',
+      );
     } catch (e) {
       debugPrint('RemoteConfig initialize error: $e');
     }
@@ -69,7 +75,9 @@ class RemoteConfigService {
 
   /// Gemini model used for Góc nhìn wording; switchable from the console when a model is retired
   String get aiInsightModel {
-    final value = _isSupported ? _remoteConfig.getString(keyAiInsightModel) : '';
+    final value = _isSupported
+        ? _remoteConfig.getString(keyAiInsightModel)
+        : '';
     return value.isNotEmpty ? value : defaults[keyAiInsightModel] as String;
   }
 

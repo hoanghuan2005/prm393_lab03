@@ -1,10 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
 import '../firebase_options.dart';
-import 'app_check_setup.dart';
 import '../services/crashlytics_service.dart';
 import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
+import 'app_check_setup.dart';
 
 /// Centralized Firebase Initialization and Service Orchestrator
 class FirebaseSetup {

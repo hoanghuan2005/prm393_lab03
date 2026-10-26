@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/crashlytics_service.dart';
@@ -35,11 +37,15 @@ class AuthViewModel extends ChangeNotifier {
 
   void _init() {
     _currentUser = authService.currentUser;
-    _status = _currentUser != null ? AuthStatus.authenticated : AuthStatus.unauthenticated;
+    _status = _currentUser != null
+        ? AuthStatus.authenticated
+        : AuthStatus.unauthenticated;
 
     _authSubscription = authService.authStateChanges.listen((User? user) {
       _currentUser = user;
-      _status = user != null ? AuthStatus.authenticated : AuthStatus.unauthenticated;
+      _status = user != null
+          ? AuthStatus.authenticated
+          : AuthStatus.unauthenticated;
       if (user != null) {
         analyticsService.setUserId(user.uid);
         crashlyticsService.setUserId(user.uid);
@@ -70,13 +76,18 @@ class AuthViewModel extends ChangeNotifier {
       return true;
     } on UnsupportedError {
       _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập Google chưa hỗ trợ trên Windows. Hãy dùng chế độ Khách.';
+      _errorMessage =
+          'Đăng nhập Google chưa hỗ trợ trên Windows. Hãy dùng chế độ Khách.';
       notifyListeners();
       return false;
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
-      await crashlyticsService.recordHandledError(e, stack, reason: 'Google sign-in error');
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'Google sign-in error',
+      );
       notifyListeners();
       return false;
     }
@@ -97,7 +108,11 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng nhập khách thất bại.';
-      await crashlyticsService.recordHandledError(e, stack, reason: 'Anonymous sign-in error');
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'Anonymous sign-in error',
+      );
       notifyListeners();
       return false;
     }
@@ -115,7 +130,11 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng xuất thất bại: $e';
-      await crashlyticsService.recordHandledError(e, stack, reason: 'Sign-out error');
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'Sign-out error',
+      );
     }
     notifyListeners();
   }

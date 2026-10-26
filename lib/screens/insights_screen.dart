@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
-import '../widgets/month_picker_sheet.dart';
 import '../widgets/insight_source_chip.dart';
+import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 import 'monthly_reflection_screen.dart';
@@ -68,7 +69,9 @@ class InsightsScreen extends StatelessWidget {
               ],
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MonthlyReflectionScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const MonthlyReflectionScreen(),
+                  ),
                 ),
                 icon: const Icon(Icons.auto_stories_outlined, size: 18),
                 label: const Text('Xem chiêm nghiệm tháng'),
@@ -76,7 +79,9 @@ class InsightsScreen extends StatelessWidget {
                   foregroundColor: AppColors.onPrimary,
                   minimumSize: const Size.fromHeight(48),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
             ],
@@ -86,7 +91,10 @@ class InsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMonthSelector(BuildContext context, PurchaseViewModel purchaseVm) {
+  Widget _buildMonthSelector(
+    BuildContext context,
+    PurchaseViewModel purchaseVm,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -98,23 +106,36 @@ class InsightsScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left_rounded, color: Color(0xFF47667B)),
+            icon: const Icon(
+              Icons.chevron_left_rounded,
+              color: Color(0xFF47667B),
+            ),
             tooltip: 'Tháng trước',
             onPressed: purchaseVm.previousMonth,
           ),
           Flexible(
             child: InkWell(
               onTap: () async {
-                final picked = await MonthPickerSheet.show(context, purchaseVm.selectedMonth);
+                final picked = await MonthPickerSheet.show(
+                  context,
+                  purchaseVm.selectedMonth,
+                );
                 if (picked != null) purchaseVm.setSelectedMonth(picked);
               },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.onPrimary),
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      size: 16,
+                      color: AppColors.onPrimary,
+                    ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -133,7 +154,10 @@ class InsightsScreen extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right_rounded, color: Color(0xFF47667B)),
+            icon: const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF47667B),
+            ),
             tooltip: 'Tháng sau',
             onPressed: purchaseVm.nextMonth,
           ),
@@ -171,7 +195,11 @@ class InsightsScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: Color(0xFFB45309), size: 24),
+              const Icon(
+                Icons.auto_awesome,
+                color: Color(0xFFB45309),
+                size: 24,
+              ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
@@ -200,9 +228,14 @@ class InsightsScreen extends StatelessWidget {
                 ],
                 Text(
                   status,
-                  style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF374151)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: Color(0xFF374151),
+                  ),
                 ),
-                if (reason == InsightFallbackReason.aiFailed && !vm.isGenerating)
+                if (reason == InsightFallbackReason.aiFailed &&
+                    !vm.isGenerating)
                   TextButton.icon(
                     onPressed: () => vm.refresh(force: true),
                     icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -216,7 +249,11 @@ class InsightsScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 const Text(
                   'Chỉ gửi số liệu đã tổng hợp, động cơ và tên khoản lớn nhất. Không gửi ghi chú hay link.',
-                  style: TextStyle(fontSize: 12, height: 1.35, color: Color(0xFF47667B)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: Color(0xFF47667B),
+                  ),
                 ),
               ],
             ),
@@ -290,7 +327,11 @@ class _InsightCardView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             card.body,
-            style: const TextStyle(fontSize: 14, height: 1.45, color: Color(0xFF374151)),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: Color(0xFF374151),
+            ),
           ),
         ],
       ),

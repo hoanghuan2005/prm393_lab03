@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+
 import 'firebase/firebase_setup.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart';
@@ -21,7 +23,6 @@ import 'viewmodels/purchase_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/wishlist_viewmodel.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'widgets/states/loading_view.dart';
 
 void main() async {
@@ -105,19 +106,23 @@ void main() async {
           ),
         ),
         // Góc nhìn / Chiêm nghiệm: recomputes stats whenever purchases, wishlist or month change
-        ChangeNotifierProxyProvider2<PurchaseViewModel, WishlistViewModel, InsightsViewModel>(
+        ChangeNotifierProxyProvider2<
+          PurchaseViewModel,
+          WishlistViewModel,
+          InsightsViewModel
+        >(
           create: (_) => InsightsViewModel(
             aiInsightService: aiInsightService,
             remoteConfigService: remoteConfigService,
             preferencesService: preferencesService,
             crashlyticsService: crashlyticsService,
           ),
-          update: (_, purchaseVm, wishlistVm, insightsVm) => insightsVm!
-            ..updateSources(
-              purchases: purchaseVm.allPurchases,
-              wishlistItems: wishlistVm.allItems,
-              month: purchaseVm.selectedMonth,
-            ),
+          update: (_, purchaseVm, wishlistVm, insightsVm) =>
+              insightsVm!..updateSources(
+                purchases: purchaseVm.allPurchases,
+                wishlistItems: wishlistVm.allItems,
+                month: purchaseVm.selectedMonth,
+              ),
         ),
       ],
       child: const WhyIBuyApp(),
@@ -154,7 +159,9 @@ class AuthGate extends StatelessWidget {
       case AuthStatus.initial:
       case AuthStatus.loading:
         return const Scaffold(
-          body: LoadingView(message: 'Đang kiểm tra trạng thái phiên đăng nhập...'),
+          body: LoadingView(
+            message: 'Đang kiểm tra trạng thái phiên đăng nhập...',
+          ),
         );
       case AuthStatus.authenticated:
         return const MainNavigationScreen();

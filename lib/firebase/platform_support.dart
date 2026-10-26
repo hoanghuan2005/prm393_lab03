@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import 'app_check_setup.dart';
 
 /// Which Firebase features are available on the current platform.
@@ -21,5 +22,8 @@ class PlatformSupport {
   /// Firebase AI Logic (Gemini) requires an App Check token. Windows has no attestation
   /// provider, so it only works with a registered debug token (not officially supported).
   static bool get supportsFirebaseAi =>
-      isMobile || kIsWeb || (defaultTargetPlatform == TargetPlatform.windows && AppCheckSetup.hasDebugToken);
+      isMobile ||
+      kIsWeb ||
+      (defaultTargetPlatform == TargetPlatform.windows &&
+          AppCheckSetup.hasDebugToken);
 }

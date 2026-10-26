@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 
 /// Month Picker Bottom Sheet matching Figma "Month picker sheet"
 class MonthPickerSheet extends StatefulWidget {
   final DateTime initialDate;
 
-  const MonthPickerSheet({
-    super.key,
-    required this.initialDate,
-  });
+  const MonthPickerSheet({super.key, required this.initialDate});
 
   static Future<DateTime?> show(BuildContext context, DateTime initialDate) {
     return showModalBottomSheet<DateTime>(
@@ -37,9 +35,18 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
   @override
   Widget build(BuildContext context) {
     const monthNames = [
-      'Thg 1', 'Thg 2', 'Thg 3', 'Thg 4',
-      'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8',
-      'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12',
+      'Thg 1',
+      'Thg 2',
+      'Thg 3',
+      'Thg 4',
+      'Thg 5',
+      'Thg 6',
+      'Thg 7',
+      'Thg 8',
+      'Thg 9',
+      'Thg 10',
+      'Thg 11',
+      'Thg 12',
     ];
 
     return Container(
@@ -75,7 +82,11 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF6D6E73)),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: Color(0xFF6D6E73),
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -94,7 +105,11 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left_rounded, size: 22, color: AppColors.onPrimary),
+                  icon: const Icon(
+                    Icons.chevron_left_rounded,
+                    size: 22,
+                    color: AppColors.onPrimary,
+                  ),
                   onPressed: () {
                     setState(() => _selectedYear--);
                   },
@@ -108,7 +123,11 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right_rounded, size: 22, color: AppColors.onPrimary),
+                  icon: const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 22,
+                    color: AppColors.onPrimary,
+                  ),
                   onPressed: () {
                     setState(() => _selectedYear++);
                   },
@@ -132,7 +151,9 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             ),
             itemBuilder: (context, index) {
               final month = index + 1;
-              final isSelected = month == _selectedMonth && _selectedYear == widget.initialDate.year;
+              final isSelected =
+                  month == _selectedMonth &&
+                  _selectedYear == widget.initialDate.year;
 
               return InkWell(
                 onTap: () {
@@ -143,10 +164,14 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                 child: Container(
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : const Color(0xFFF9FAFB),
+                    color: isSelected
+                        ? AppColors.primary
+                        : const Color(0xFFF9FAFB),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? AppColors.onPrimary : const Color(0xFFE5E7EB),
+                      color: isSelected
+                          ? AppColors.onPrimary
+                          : const Color(0xFFE5E7EB),
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -154,8 +179,12 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                     monthNames[index],
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected ? AppColors.onPrimary : const Color(0xFF47667B),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.onPrimary
+                          : const Color(0xFF47667B),
                     ),
                   ),
                 ),

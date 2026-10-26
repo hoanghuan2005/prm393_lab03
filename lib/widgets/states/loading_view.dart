@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/app_colors.dart';
 import '../../theme/app_dimens.dart';
 import '../../theme/app_text_styles.dart';
@@ -25,7 +26,9 @@ class LoadingView extends StatelessWidget {
                 height: 40,
                 child: CircularProgressIndicator(
                   strokeWidth: 3.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.onPrimary,
+                  ),
                 ),
               ),
               if (message != null) ...[

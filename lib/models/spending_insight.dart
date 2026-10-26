@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import 'buying_motive.dart';
 import 'item_status.dart';
@@ -15,11 +17,27 @@ const int kLateNightEndHour = 5;
 
 /// Observation types shown on Góc nhìn. The key is the card id exchanged with the AI.
 enum InsightKind {
-  dominantMotive('dominant_motive', Icons.pie_chart_outline_rounded, AppColors.motiveSale),
+  dominantMotive(
+    'dominant_motive',
+    Icons.pie_chart_outline_rounded,
+    AppColors.motiveSale,
+  ),
   lateNight('late_night', Icons.nightlight_round, AppColors.motiveNeed),
-  monthOverMonth('month_over_month', Icons.compare_arrows_rounded, AppColors.motiveSocial),
-  largestPurchase('largest_purchase', Icons.receipt_long_outlined, AppColors.motiveEmotion),
-  skippedItems('skipped_items', Icons.do_not_disturb_on_outlined, AppColors.motiveConvenience);
+  monthOverMonth(
+    'month_over_month',
+    Icons.compare_arrows_rounded,
+    AppColors.motiveSocial,
+  ),
+  largestPurchase(
+    'largest_purchase',
+    Icons.receipt_long_outlined,
+    AppColors.motiveEmotion,
+  ),
+  skippedItems(
+    'skipped_items',
+    Icons.do_not_disturb_on_outlined,
+    AppColors.motiveConvenience,
+  );
 
   final String key;
   final IconData icon;
@@ -33,7 +51,11 @@ class MotiveStat {
   final int count;
   final int amount;
 
-  const MotiveStat({required this.motive, required this.count, required this.amount});
+  const MotiveStat({
+    required this.motive,
+    required this.count,
+    required this.amount,
+  });
 }
 
 /// Monthly numbers computed by code. AI only rephrases these and never adds new figures (spec 7.6).
@@ -80,9 +102,13 @@ class MonthlySpendingStats {
   }) {
     bool inMonth(DateTime d, int y, int m) => d.year == y && d.month == m;
 
-    final monthPurchases = purchases.where((p) => inMonth(p.dateTime, month.year, month.month)).toList();
+    final monthPurchases = purchases
+        .where((p) => inMonth(p.dateTime, month.year, month.month))
+        .toList();
     final previous = DateTime(month.year, month.month - 1, 1);
-    final previousPurchases = purchases.where((p) => inMonth(p.dateTime, previous.year, previous.month));
+    final previousPurchases = purchases.where(
+      (p) => inMonth(p.dateTime, previous.year, previous.month),
+    );
 
     final counts = <BuyingMotive, int>{};
     final sums = <BuyingMotive, int>{};
@@ -103,15 +129,33 @@ class MonthlySpendingStats {
       if (largest == null || p.amount > largest.amount) largest = p;
     }
 
-    final motives = counts.entries
-        .map((e) => MotiveStat(motive: e.key, count: e.value, amount: sums[e.key] ?? 0))
-        .toList()
-      ..sort((a, b) => b.count != a.count ? b.count.compareTo(a.count) : b.amount.compareTo(a.amount));
+    final motives =
+        counts.entries
+            .map(
+              (e) => MotiveStat(
+                motive: e.key,
+                count: e.value,
+                amount: sums[e.key] ?? 0,
+              ),
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.count != a.count
+                ? b.count.compareTo(a.count)
+                : b.amount.compareTo(a.amount),
+          );
 
-    final previousTotal = previousPurchases.fold<int>(0, (sum, p) => sum + p.amount.round());
+    final previousTotal = previousPurchases.fold<int>(
+      0,
+      (sum, p) => sum + p.amount.round(),
+    );
 
-    final skipped = wishlistItems.where((i) =>
-        i.status == ItemStatus.dropped && i.decidedAt != null && inMonth(i.decidedAt!, month.year, month.month));
+    final skipped = wishlistItems.where(
+      (i) =>
+          i.status == ItemStatus.dropped &&
+          i.decidedAt != null &&
+          inMonth(i.decidedAt!, month.year, month.month),
+    );
 
     return MonthlySpendingStats(
       year: month.year,
@@ -128,14 +172,16 @@ class MonthlySpendingStats {
     );
   }
 
-  static bool isLateNight(DateTime d) => d.hour >= kLateNightStartHour || d.hour < kLateNightEndHour;
+  static bool isLateNight(DateTime d) =>
+      d.hour >= kLateNightStartHour || d.hour < kLateNightEndHour;
 
   bool get hasPurchases => purchaseCount > 0;
   bool get hasEnoughDataForAi => purchaseCount >= kMinPurchasesForAi;
 
   MotiveStat? get dominantMotive => motives.isEmpty ? null : motives.first;
 
-  int sharePercent(MotiveStat stat) => purchaseCount == 0 ? 0 : (stat.count * 100 / purchaseCount).round();
+  int sharePercent(MotiveStat stat) =>
+      purchaseCount == 0 ? 0 : (stat.count * 100 / purchaseCount).round();
 
   /// Change in total spent vs. previous month, in percent
   int? get changeVsPreviousPercent {
@@ -148,12 +194,12 @@ class MonthlySpendingStats {
 
   /// Observations that apply to this month, in display order
   List<InsightKind> get applicableKinds => [
-        if (hasPurchases) InsightKind.dominantMotive,
-        if (lateNightCount > 0) InsightKind.lateNight,
-        if (hasPurchases && previousMonthTotal != null) InsightKind.monthOverMonth,
-        if (purchaseCount >= 2) InsightKind.largestPurchase,
-        if (skippedCount > 0) InsightKind.skippedItems,
-      ];
+    if (hasPurchases) InsightKind.dominantMotive,
+    if (lateNightCount > 0) InsightKind.lateNight,
+    if (hasPurchases && previousMonthTotal != null) InsightKind.monthOverMonth,
+    if (purchaseCount >= 2) InsightKind.largestPurchase,
+    if (skippedCount > 0) InsightKind.skippedItems,
+  ];
 
   /// Data sent to the model. Only names, amounts, motives and computed numbers; never notes or links (spec 7.6).
   Map<String, dynamic> toPromptData() {
@@ -171,7 +217,7 @@ class MonthlySpendingStats {
             'tyLePhanTram': sharePercent(m),
             'soTien': m.amount,
             'soTienText': formatVnd(m.amount),
-          }
+          },
       ],
       'muaKhungDem': {
         'khungGio': '22:00-05:00',
@@ -228,7 +274,11 @@ class MonthlySpendingStats {
     if (change != null) numbers.add(change.abs());
     final largest = largestPurchase;
     if (largest != null) {
-      numbers.addAll([largest.amount.round(), largest.dateTime.hour, largest.dateTime.minute]);
+      numbers.addAll([
+        largest.amount.round(),
+        largest.dateTime.hour,
+        largest.dateTime.minute,
+      ]);
       numbers.addAll(extractNumbers(largest.title));
     }
     return numbers;
@@ -245,9 +295,9 @@ class MonthlySpendingStats {
 
   static String formatVnd(int amount) {
     final digits = amount.abs().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
     return '${amount < 0 ? '-' : ''}$digits ₫';
   }
 
@@ -285,6 +335,7 @@ class InsightReport {
     required this.cards,
   });
 
-  InsightSource get source =>
-      summaryFromAi || cards.any((c) => c.fromAi) ? InsightSource.ai : InsightSource.template;
+  InsightSource get source => summaryFromAi || cards.any((c) => c.fromAi)
+      ? InsightSource.ai
+      : InsightSource.template;
 }

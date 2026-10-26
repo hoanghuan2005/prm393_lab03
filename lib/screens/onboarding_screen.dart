@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../widgets/why_i_buy_logo.dart';
 import 'main_navigation_screen.dart';
@@ -76,7 +77,10 @@ class OnboardingScreen extends StatelessWidget {
 
               // 3 Features Card
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -93,7 +97,8 @@ class OnboardingScreen extends StatelessWidget {
                   children: [
                     _buildFeatureRow(
                       icon: Icons.add_circle_outline,
-                      text: 'Ghi số tiền, tên món và động cơ của mỗi khoản mua.',
+                      text:
+                          'Ghi số tiền, tên món và động cơ của mỗi khoản mua.',
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 14),
@@ -101,7 +106,8 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     _buildFeatureRow(
                       icon: Icons.bar_chart_rounded,
-                      text: 'Xem động cơ và khung giờ mua theo tuần, theo tháng.',
+                      text:
+                          'Xem động cơ và khung giờ mua theo tuần, theo tháng.',
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 14),
@@ -159,10 +165,7 @@ class OnboardingScreen extends StatelessWidget {
               // Footer Note
               const Text(
                 'Dữ liệu được lưu trên máy của bạn.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9CA3AF),
-                ),
+                style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                 textAlign: TextAlign.center,
               ),
 
@@ -185,11 +188,7 @@ class OnboardingScreen extends StatelessWidget {
             color: const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF47667B),
-          ),
+          child: Icon(icon, size: 20, color: const Color(0xFF47667B)),
         ),
         const SizedBox(width: 14),
         Expanded(

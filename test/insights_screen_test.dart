@@ -1,9 +1,9 @@
 import 'dart:convert';
+
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:prm393_lab03/screens/insights_screen.dart';
 import 'package:prm393_lab03/services/ai_insight_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
@@ -12,6 +12,7 @@ import 'package:prm393_lab03/services/remote_config_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/insights_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {

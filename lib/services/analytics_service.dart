@@ -1,5 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
+
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Analytics
@@ -9,12 +10,13 @@ class AppAnalyticsService {
   final FirebaseAnalytics? _analytics;
 
   AppAnalyticsService({FirebaseAnalytics? analytics})
-      : _analytics = analytics ??
-            (PlatformSupport.isMobile ? FirebaseAnalytics.instance : null);
+    : _analytics =
+          analytics ??
+          (PlatformSupport.isMobile ? FirebaseAnalytics.instance : null);
 
   List<NavigatorObserver> get navigatorObservers => [
-        if (_analytics != null) FirebaseAnalyticsObserver(analytics: _analytics),
-      ];
+    if (_analytics != null) FirebaseAnalyticsObserver(analytics: _analytics),
+  ];
 
   /// Set user ID upon sign-in
   Future<void> setUserId(String? userId) async {
@@ -78,11 +80,7 @@ class AppAnalyticsService {
     try {
       await _analytics?.logEvent(
         name: 'record_purchase',
-        parameters: {
-          'item_id': itemId,
-          'motive': motive,
-          'item_price': price,
-        },
+        parameters: {'item_id': itemId, 'motive': motive, 'item_price': price},
       );
     } catch (e) {
       debugPrint('Analytics logPurchaseRecorded error: $e');
@@ -97,10 +95,7 @@ class AppAnalyticsService {
     try {
       await _analytics?.logEvent(
         name: 'set_budget',
-        parameters: {
-          'budget_amount': amount,
-          'month': month,
-        },
+        parameters: {'budget_amount': amount, 'month': month},
       );
     } catch (e) {
       debugPrint('Analytics logBudgetSet error: $e');

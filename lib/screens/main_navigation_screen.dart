@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
@@ -34,7 +35,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         context.read<WishlistViewModel>().setUserId(authVm.userId!);
         context.read<PurchaseViewModel>().setUserId(authVm.userId!);
       }
-      context.read<InsightsViewModel>().setVisible(_currentIndex == _insightsTabIndex);
+      context.read<InsightsViewModel>().setVisible(
+        _currentIndex == _insightsTabIndex,
+      );
     });
   }
 
@@ -59,10 +62,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -74,11 +74,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(index: 0, label: 'Trang chủ', icon: Icons.home_outlined, activeIcon: Icons.home_rounded),
-                _buildNavItem(index: 1, label: 'Lịch sử', icon: Icons.format_list_bulleted_rounded, activeIcon: Icons.format_list_bulleted_rounded),
-                _buildNavItem(index: 2, label: 'Mô hình', icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart_rounded),
-                _buildNavItem(index: 3, label: 'Góc nhìn', icon: Icons.lightbulb_outline_rounded, activeIcon: Icons.lightbulb_rounded),
-                _buildNavItem(index: 4, label: 'Cá nhân', icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded),
+                _buildNavItem(
+                  index: 0,
+                  label: 'Trang chủ',
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                ),
+                _buildNavItem(
+                  index: 1,
+                  label: 'Lịch sử',
+                  icon: Icons.format_list_bulleted_rounded,
+                  activeIcon: Icons.format_list_bulleted_rounded,
+                ),
+                _buildNavItem(
+                  index: 2,
+                  label: 'Mô hình',
+                  icon: Icons.bar_chart_rounded,
+                  activeIcon: Icons.bar_chart_rounded,
+                ),
+                _buildNavItem(
+                  index: 3,
+                  label: 'Góc nhìn',
+                  icon: Icons.lightbulb_outline_rounded,
+                  activeIcon: Icons.lightbulb_rounded,
+                ),
+                _buildNavItem(
+                  index: 4,
+                  label: 'Cá nhân',
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                ),
               ],
             ),
           ),

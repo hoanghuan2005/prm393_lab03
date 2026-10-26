@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+
 import '../models/buying_motive.dart';
 import '../models/item_status.dart';
 import '../models/ui_state.dart';
@@ -38,10 +40,12 @@ class WishlistViewModel extends ChangeNotifier {
   /// Filtered items based on active motive, status, and search query
   List<WishlistItem> get filteredItems {
     return _allItems.where((item) {
-      if (_selectedMotiveFilter != null && item.motive != _selectedMotiveFilter) {
+      if (_selectedMotiveFilter != null &&
+          item.motive != _selectedMotiveFilter) {
         return false;
       }
-      if (_selectedStatusFilter != null && item.status != _selectedStatusFilter) {
+      if (_selectedStatusFilter != null &&
+          item.status != _selectedStatusFilter) {
         return false;
       }
       if (_searchQuery.isNotEmpty) {
@@ -74,7 +78,9 @@ class WishlistViewModel extends ChangeNotifier {
 
     if (userId.isEmpty) {
       _allItems = [];
-      _state = const UiEmpty(message: 'Vui lòng đăng nhập để xem danh sách cân nhắc.');
+      _state = const UiEmpty(
+        message: 'Vui lòng đăng nhập để xem danh sách cân nhắc.',
+      );
       notifyListeners();
       return;
     }
@@ -82,19 +88,21 @@ class WishlistViewModel extends ChangeNotifier {
     _state = const UiLoading();
     notifyListeners();
 
-    _itemsSubscription = wishlistService.streamUserItems(userId).listen(
-      (items) {
-        _allItems = items;
-        _updateFilteredState();
-      },
-      onError: (error) {
-        _state = UiError(
-          message: 'Không thể tải dữ liệu: $error',
-          onRetry: () => setUserId(userId),
+    _itemsSubscription = wishlistService
+        .streamUserItems(userId)
+        .listen(
+          (items) {
+            _allItems = items;
+            _updateFilteredState();
+          },
+          onError: (error) {
+            _state = UiError(
+              message: 'Không thể tải dữ liệu: $error',
+              onRetry: () => setUserId(userId),
+            );
+            notifyListeners();
+          },
         );
-        notifyListeners();
-      },
-    );
   }
 
   /// Set search query and log analytics event

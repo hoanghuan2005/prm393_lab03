@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -19,9 +20,7 @@ class ProfileScreen extends StatelessWidget {
     final settingsVm = context.watch<SettingsViewModel>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cá nhân & Firebase Demo'),
-      ),
+      appBar: AppBar(title: const Text('Cá nhân & Firebase Demo')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Column(
@@ -41,8 +40,12 @@ class ProfileScreen extends StatelessWidget {
                     radius: 28,
                     backgroundColor: AppColors.primary,
                     child: Text(
-                      authVm.displayName.isNotEmpty ? authVm.displayName[0].toUpperCase() : 'U',
-                      style: AppTextStyles.headlineMedium.copyWith(color: AppColors.onPrimary),
+                      authVm.displayName.isNotEmpty
+                          ? authVm.displayName[0].toUpperCase()
+                          : 'U',
+                      style: AppTextStyles.headlineMedium.copyWith(
+                        color: AppColors.onPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppDimens.space16),
@@ -50,7 +53,10 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(authVm.displayName, style: AppTextStyles.titleMedium),
+                        Text(
+                          authVm.displayName,
+                          style: AppTextStyles.titleMedium,
+                        ),
                         Text(
                           authVm.user?.email ?? 'Tài khoản ẩn danh / Khách',
                           style: AppTextStyles.bodyMedium,
@@ -83,14 +89,20 @@ class ProfileScreen extends StatelessWidget {
 
             // Firebase Demo Area Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space6),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space12,
+                vertical: AppDimens.space6,
+              ),
+              decoration: const BoxDecoration(
                 color: AppColors.primaryContainer,
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
                 'FIREBASE DEMO AREA (Section 6)',
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.onPrimary, fontWeight: FontWeight.w700),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(height: AppDimens.space16),
@@ -124,10 +136,22 @@ class ProfileScreen extends StatelessWidget {
               title: '1. Firebase Remote Config',
               icon: Icons.tune,
               children: [
-                _buildKeyValueRow('Thời gian hoãn mua (cooling_off_days):', '${settingsVm.coolingOffDays} ngày'),
-                _buildKeyValueRow('Bật tính năng AI (enable_ai_insight):', settingsVm.enableAiInsight ? 'Bật (True)' : 'Tắt (False)'),
-                _buildKeyValueRow('Số món tối đa (max_wishlist_items):', '${settingsVm.maxWishlistItems} món'),
-                _buildKeyValueRow('Nhắc nhở đợt sale (sale_reminder_enabled):', settingsVm.saleReminderEnabled ? 'Bật (True)' : 'Tắt (False)'),
+                _buildKeyValueRow(
+                  'Thời gian hoãn mua (cooling_off_days):',
+                  '${settingsVm.coolingOffDays} ngày',
+                ),
+                _buildKeyValueRow(
+                  'Bật tính năng AI (enable_ai_insight):',
+                  settingsVm.enableAiInsight ? 'Bật (True)' : 'Tắt (False)',
+                ),
+                _buildKeyValueRow(
+                  'Số món tối đa (max_wishlist_items):',
+                  '${settingsVm.maxWishlistItems} món',
+                ),
+                _buildKeyValueRow(
+                  'Nhắc nhở đợt sale (sale_reminder_enabled):',
+                  settingsVm.saleReminderEnabled ? 'Bật (True)' : 'Tắt (False)',
+                ),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
                   title: 'Cập nhật Remote Config (Live Fetch)',
@@ -137,7 +161,11 @@ class ProfileScreen extends StatelessWidget {
                     await settingsVm.refreshRemoteConfig();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Đã cập nhật cấu hình Remote Config mới nhất từ Firebase!')),
+                        const SnackBar(
+                          content: Text(
+                            'Đã cập nhật cấu hình Remote Config mới nhất từ Firebase!',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -161,11 +189,15 @@ class ProfileScreen extends StatelessWidget {
                   variant: AppButtonVariant.secondary,
                   icon: Icons.warning_amber_rounded,
                   onPressed: () async {
-                    await settingsVm.testHandledNonFatalError(authVm.userId ?? 'unknown_user');
+                    await settingsVm.testHandledNonFatalError(
+                      authVm.userId ?? 'unknown_user',
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard thành công!'),
+                          content: Text(
+                            'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard thành công!',
+                          ),
                           backgroundColor: AppColors.success,
                         ),
                       );
@@ -197,7 +229,9 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: AppDimens.space8),
                 if (settingsVm.notifications.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppDimens.space12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppDimens.space12,
+                    ),
                     child: Text(
                       'Chưa có thông báo nào. Bạn có thể gửi tin nhắn thử từ Firebase Console FCM để kiểm tra nhận thông báo ở 3 trạng thái.',
                       style: AppTextStyles.bodyMedium,
@@ -213,9 +247,18 @@ class ProfileScreen extends StatelessWidget {
                       final notif = settingsVm.notifications[index];
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.mark_email_unread_outlined, color: AppColors.info),
-                        title: Text(notif.title, style: AppTextStyles.titleMedium),
-                        subtitle: Text(notif.body, style: AppTextStyles.bodyMedium),
+                        leading: const Icon(
+                          Icons.mark_email_unread_outlined,
+                          color: AppColors.info,
+                        ),
+                        title: Text(
+                          notif.title,
+                          style: AppTextStyles.titleMedium,
+                        ),
+                        subtitle: Text(
+                          notif.body,
+                          style: AppTextStyles.bodyMedium,
+                        ),
                       );
                     },
                   ),

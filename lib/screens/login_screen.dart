@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -66,7 +67,9 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppDimens.space12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.space16,
+                ),
                 child: Text(
                   'Kiểm soát mua sắm bốc đồng với 8 động cơ tâm lý và khoảng hoãn thông minh.',
                   textAlign: TextAlign.center,
@@ -82,16 +85,24 @@ class LoginScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: AppDimens.borderMedium,
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.error, size: 20),
+                      const Icon(
+                        Icons.info_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
                       const SizedBox(width: AppDimens.space8),
                       Expanded(
                         child: Text(
                           authVm.errorMessage!,
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.error,
+                          ),
                         ),
                       ),
                     ],
@@ -124,7 +135,11 @@ class LoginScreen extends StatelessWidget {
 
               // Directly explore Figma screens
               TextButton.icon(
-                icon: const Icon(Icons.explore_outlined, size: 18, color: AppColors.onPrimary),
+                icon: const Icon(
+                  Icons.explore_outlined,
+                  size: 18,
+                  color: AppColors.onPrimary,
+                ),
                 label: const Text(
                   'Xem màn hình Onboarding & Trang chủ Figma',
                   style: TextStyle(

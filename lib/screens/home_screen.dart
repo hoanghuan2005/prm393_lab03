@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -48,7 +49,11 @@ class HomeScreen extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               IconButton(
-                icon: const Icon(Icons.bookmark_outline_rounded, color: AppColors.onPrimary, size: 24),
+                icon: const Icon(
+                  Icons.bookmark_outline_rounded,
+                  color: AppColors.onPrimary,
+                  size: 24,
+                ),
                 tooltip: 'Danh sách mong muốn',
                 onPressed: () {
                   if (onNavigateTab != null) {
@@ -96,7 +101,11 @@ class HomeScreen extends StatelessWidget {
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.person, color: AppColors.onPrimary, size: 20),
+                child: const Icon(
+                  Icons.person,
+                  color: AppColors.onPrimary,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -162,10 +171,7 @@ class HomeScreen extends StatelessWidget {
                 SizedBox(width: 8),
                 Text(
                   'Ghi khoản mua',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -176,7 +182,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ==================== TỔNG QUAN TUẦN CARD ====================
-  Widget _buildWeeklySummaryCard(BuildContext context, PurchaseViewModel purchaseVm) {
+  Widget _buildWeeklySummaryCard(
+    BuildContext context,
+    PurchaseViewModel purchaseVm,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -201,7 +210,11 @@ class HomeScreen extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF6D6E73)),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: Color(0xFF6D6E73),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'TỔNG QUAN TUẦN',
@@ -216,14 +229,20 @@ class HomeScreen extends StatelessWidget {
               ),
               InkWell(
                 onTap: () async {
-                  final picked = await MonthPickerSheet.show(context, purchaseVm.selectedMonth);
+                  final picked = await MonthPickerSheet.show(
+                    context,
+                    purchaseVm.selectedMonth,
+                  );
                   if (picked != null) {
                     purchaseVm.setSelectedMonth(picked);
                   }
                 },
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(999),
@@ -240,7 +259,11 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 2),
-                      const Icon(Icons.arrow_drop_down_rounded, size: 16, color: Color(0xFF6D6E73)),
+                      const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 16,
+                        color: Color(0xFF6D6E73),
+                      ),
                     ],
                   ),
                 ),
@@ -282,7 +305,10 @@ class HomeScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 13, color: Color(0xFF6D6E73)),
               children: [
                 TextSpan(
-                  text: purchaseVm.dominantMotiveSummary.replaceFirst('Nhiều nhất: ', ''),
+                  text: purchaseVm.dominantMotiveSummary.replaceFirst(
+                    'Nhiều nhất: ',
+                    '',
+                  ),
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     color: AppColors.onPrimary,
@@ -358,35 +384,51 @@ class HomeScreen extends StatelessWidget {
           // Monthly Budget Quick View
           InkWell(
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const BudgetScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const BudgetScreen()));
             },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet_outlined, size: 15, color: Color(0xFF47667B)),
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 15,
+                    color: Color(0xFF47667B),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text.rich(
                       TextSpan(
                         text: 'Ngân sách tháng: ',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6D6E73),
+                        ),
                         children: [
                           TextSpan(
-                            text: '${_formatCurrency(purchaseVm.monthlySpent)} ₫ / ${_formatCurrency(purchaseVm.monthlyBudget)} ₫',
-                            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.onPrimary),
+                            text:
+                                '${_formatCurrency(purchaseVm.monthlySpent)} ₫ / ${_formatCurrency(purchaseVm.monthlyBudget)} ₫',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onPrimary,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1.5,
+                    ),
                     decoration: BoxDecoration(
-                      color: purchaseVm.isBudgetExceeded ? const Color(0xFFFEE2E2) : const Color(0xFFECFDF5),
+                      color: purchaseVm.isBudgetExceeded
+                          ? const Color(0xFFFEE2E2)
+                          : const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -394,12 +436,18 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: purchaseVm.isBudgetExceeded ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                        color: purchaseVm.isBudgetExceeded
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF059669),
                       ),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: Color(0xFF9CA3AF),
+                  ),
                 ],
               ),
             ),
@@ -410,15 +458,17 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ==================== DANH SÁCH MONG MUỐN ENTRY CARD ====================
-  Widget _buildWishlistEntryCard(BuildContext context, WishlistViewModel wishlistVm) {
+  Widget _buildWishlistEntryCard(
+    BuildContext context,
+    WishlistViewModel wishlistVm,
+  ) {
     return InkWell(
       onTap: () {
         if (onNavigateTab != null) {
           onNavigateTab!(1); // Go to Wishlist / Lịch sử
         } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const WishlistScreen()),
-          );
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const WishlistScreen()));
         }
       },
       borderRadius: BorderRadius.circular(16),
@@ -431,7 +481,11 @@ class HomeScreen extends StatelessWidget {
         ),
         child: const Row(
           children: [
-            Icon(Icons.bookmark_border_rounded, color: AppColors.onPrimary, size: 22),
+            Icon(
+              Icons.bookmark_border_rounded,
+              color: AppColors.onPrimary,
+              size: 22,
+            ),
             SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -448,15 +502,16 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     '2 món đang cân nhắc',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: Color(0xFF6D6E73),
-                    ),
+                    style: TextStyle(fontSize: 12.5, color: Color(0xFF6D6E73)),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 22),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF9CA3AF),
+              size: 22,
+            ),
           ],
         ),
       ),
@@ -464,7 +519,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ==================== KHOẢN MUA GẦN ĐÂY SECTION ====================
-  Widget _buildRecentPurchasesSection(BuildContext context, PurchaseViewModel purchaseVm) {
+  Widget _buildRecentPurchasesSection(
+    BuildContext context,
+    PurchaseViewModel purchaseVm,
+  ) {
     final recentList = purchaseVm.recentPurchases;
 
     return Column(
@@ -517,7 +575,11 @@ class HomeScreen extends StatelessWidget {
                       color: Color(0xFF47667B),
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF47667B)),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: Color(0xFF47667B),
+                  ),
                 ],
               ),
             ),
@@ -540,7 +602,8 @@ class HomeScreen extends StatelessWidget {
               return Column(
                 children: [
                   _buildPurchaseRow(context, item),
-                  if (!isLast) const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                  if (!isLast)
+                    const Divider(height: 1, color: Color(0xFFF3F4F6)),
                 ],
               );
             }),
@@ -554,7 +617,9 @@ class HomeScreen extends StatelessWidget {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PurchaseDetailScreen(purchase: item)),
+          MaterialPageRoute(
+            builder: (_) => PurchaseDetailScreen(purchase: item),
+          ),
         );
       },
       child: Padding(
@@ -597,7 +662,10 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       // Motive Tag
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: item.motive.backgroundColor,
                           borderRadius: BorderRadius.circular(6),
@@ -605,7 +673,11 @@ class HomeScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(item.motive.icon, size: 11, color: item.motive.color),
+                            Icon(
+                              item.motive.icon,
+                              size: 11,
+                              color: item.motive.color,
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               item.motive.label,
@@ -650,6 +722,8 @@ class HomeScreen extends StatelessWidget {
 
   String _formatCurrency(double amount) {
     final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount.toStringAsFixed(0).replaceAllMapped(formatter, (Match m) => '${m[1]}.');
+    return amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

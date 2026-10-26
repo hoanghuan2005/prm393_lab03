@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 
@@ -7,7 +8,7 @@ class PurchaseService {
   final FirebaseFirestore _firestore;
 
   PurchaseService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _purchasesRef => _firestore.collection('purchases');
 
@@ -17,11 +18,12 @@ class PurchaseService {
       return Stream.value([]);
     }
 
-    return _purchasesRef
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
-      final items = snapshot.docs.map((doc) => PurchaseItem.fromFirestore(doc)).toList();
+    return _purchasesRef.where('userId', isEqualTo: userId).snapshots().map((
+      snapshot,
+    ) {
+      final items = snapshot.docs
+          .map((doc) => PurchaseItem.fromFirestore(doc))
+          .toList();
       items.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return items;
     });
@@ -85,7 +87,10 @@ class PurchaseService {
   CollectionReference get _budgetsRef => _firestore.collection('budgets');
 
   /// Stream user's budget for a specific month (e.g. "2026-10") from Firestore
-  Stream<Map<String, dynamic>?> streamMonthlyBudget(String userId, String month) {
+  Stream<Map<String, dynamic>?> streamMonthlyBudget(
+    String userId,
+    String month,
+  ) {
     if (userId.isEmpty) return Stream.value(null);
     final docId = '${userId}_$month';
     return _budgetsRef.doc(docId).snapshots().map((doc) {

@@ -1,5 +1,6 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Crashlytics
@@ -7,7 +8,7 @@ class CrashlyticsService {
   final FirebaseCrashlytics? _providedCrashlytics;
 
   CrashlyticsService({FirebaseCrashlytics? crashlytics})
-      : _providedCrashlytics = crashlytics;
+    : _providedCrashlytics = crashlytics;
 
   FirebaseCrashlytics get _crashlytics =>
       _providedCrashlytics ?? FirebaseCrashlytics.instance;
@@ -51,7 +52,9 @@ class CrashlyticsService {
     Map<String, Object>? customKeys,
   }) async {
     if (!PlatformSupport.isMobile) {
-      debugPrint('Handled error (Crashlytics unavailable on this platform): $error');
+      debugPrint(
+        'Handled error (Crashlytics unavailable on this platform): $error',
+      );
       return;
     }
     try {
@@ -75,10 +78,15 @@ class CrashlyticsService {
   /// Trigger a test crash for verification per Lab 3 requirement
   void forceCrashForTesting() {
     if (!PlatformSupport.isMobile) {
-      debugPrint('forceCrashForTesting skipped: Crashlytics is only available on Android/iOS');
+      debugPrint(
+        'forceCrashForTesting skipped: Crashlytics is only available on Android/iOS',
+      );
       return;
     }
-    _crashlytics.setCustomKey('test_scenario', 'lab3_verification_forced_crash');
+    _crashlytics.setCustomKey(
+      'test_scenario',
+      'lab3_verification_forced_crash',
+    );
     _crashlytics.crash();
   }
 }

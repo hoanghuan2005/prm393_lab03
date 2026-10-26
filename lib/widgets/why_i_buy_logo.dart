@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 
 /// Custom Vector Logo for "Why I Buy"
@@ -18,9 +19,7 @@ class WhyIBuyLogo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _WhyIBuyLogoPainter(color: color),
-      ),
+      child: CustomPaint(painter: _WhyIBuyLogoPainter(color: color)),
     );
   }
 }
@@ -47,21 +46,36 @@ class _WhyIBuyLogoPainter extends CustomPainter {
 
     // Bar 1 (Short left)
     final bar1Rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.15, size.height * 0.45, barWidth, size.height * 0.35),
+      Rect.fromLTWH(
+        size.width * 0.15,
+        size.height * 0.45,
+        barWidth,
+        size.height * 0.35,
+      ),
       r,
     );
     canvas.drawRRect(bar1Rect, paint);
 
     // Bar 2 (Medium center)
     final bar2Rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.38, size.height * 0.28, barWidth, size.height * 0.52),
+      Rect.fromLTWH(
+        size.width * 0.38,
+        size.height * 0.28,
+        barWidth,
+        size.height * 0.52,
+      ),
       r,
     );
     canvas.drawRRect(bar2Rect, paint);
 
     // Bar 3 (Tall right)
     final bar3Rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.61, size.height * 0.20, barWidth, size.height * 0.35),
+      Rect.fromLTWH(
+        size.width * 0.61,
+        size.height * 0.20,
+        barWidth,
+        size.height * 0.35,
+      ),
       r,
     );
     canvas.drawRRect(bar3Rect, paint);

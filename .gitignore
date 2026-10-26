@@ -51,3 +51,12 @@ app.*.map.json
 app_check.local.json
 /assets/local/*
 !/assets/local/.gitkeep
+
+# Build outputs (mọi cấp thư mục)
+build/
+
+# E2E test results (ARTEMIS) & local env
+e2e_test/results/
+.env
+
+# KHÔNG thêm android/app/google-services.json vào đây — nhóm cần file này trong repo.

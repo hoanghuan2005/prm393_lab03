@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -67,12 +68,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _buildSegmentOption('Tuần', 0),
-                  ),
-                  Expanded(
-                    child: _buildSegmentOption('Tháng', 1),
-                  ),
+                  Expanded(child: _buildSegmentOption('Tuần', 0)),
+                  Expanded(child: _buildSegmentOption('Tháng', 1)),
                 ],
               ),
             ),
@@ -91,22 +88,35 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded, color: Color(0xFF47667B)),
+                    icon: const Icon(
+                      Icons.chevron_left_rounded,
+                      color: Color(0xFF47667B),
+                    ),
                     onPressed: () => purchaseVm.previousMonth(),
                   ),
                   InkWell(
                     onTap: () async {
-                      final picked = await MonthPickerSheet.show(context, purchaseVm.selectedMonth);
+                      final picked = await MonthPickerSheet.show(
+                        context,
+                        purchaseVm.selectedMonth,
+                      );
                       if (picked != null) {
                         purchaseVm.setSelectedMonth(picked);
                       }
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.onPrimary),
+                          const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 16,
+                            color: AppColors.onPrimary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
@@ -117,13 +127,20 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.arrow_drop_down_rounded, size: 20, color: Color(0xFF6D6E73)),
+                          const Icon(
+                            Icons.arrow_drop_down_rounded,
+                            size: 20,
+                            color: Color(0xFF6D6E73),
+                          ),
                         ],
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded, color: Color(0xFF47667B)),
+                    icon: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFF47667B),
+                    ),
                     onPressed: () => purchaseVm.nextMonth(),
                   ),
                 ],
@@ -179,7 +196,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       color: Color(0xFFFFFCE6),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.pie_chart_rounded, color: AppColors.onPrimary, size: 24),
+                    child: const Icon(
+                      Icons.pie_chart_rounded,
+                      color: AppColors.onPrimary,
+                      size: 24,
+                    ),
                   ),
                 ],
               ),
@@ -214,7 +235,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   if (count == 0) return const SizedBox.shrink();
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       children: [
                         Row(
@@ -226,7 +250,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                 color: motive.backgroundColor,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(motive.icon, size: 16, color: motive.color),
+                              child: Icon(
+                                motive.icon,
+                                size: 16,
+                                color: motive.color,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -234,7 +262,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         motive.label,
@@ -256,11 +285,15 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         '$count khoản chi',
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF9CA3AF),
+                                        ),
                                       ),
                                       Text(
                                         '${(percent * 100).toStringAsFixed(0)}%',
@@ -285,7 +318,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             value: percent,
                             minHeight: 6,
                             backgroundColor: const Color(0xFFF3F4F6),
-                            color: motive == BuyingMotive.sale ? AppColors.primary : motive.color,
+                            color: motive == BuyingMotive.sale
+                                ? AppColors.primary
+                                : motive.color,
                           ),
                         ),
                       ],
@@ -317,13 +352,37 @@ class _PatternsScreenState extends State<PatternsScreen> {
               ),
               child: Column(
                 children: [
-                  _buildTimeSlotRow('Đêm (22:00 - 05:00)', '1 khoản (389.000 ₫)', Icons.nightlight_round, const Color(0xFF6366F1), 0.48),
+                  _buildTimeSlotRow(
+                    'Đêm (22:00 - 05:00)',
+                    '1 khoản (389.000 ₫)',
+                    Icons.nightlight_round,
+                    const Color(0xFF6366F1),
+                    0.48,
+                  ),
                   const Divider(height: 20),
-                  _buildTimeSlotRow('Chiều & Tối (14:00 - 22:00)', '2 khoản (245.000 ₫)', Icons.wb_twilight_rounded, const Color(0xFFF59E0B), 0.30),
+                  _buildTimeSlotRow(
+                    'Chiều & Tối (14:00 - 22:00)',
+                    '2 khoản (245.000 ₫)',
+                    Icons.wb_twilight_rounded,
+                    const Color(0xFFF59E0B),
+                    0.30,
+                  ),
                   const Divider(height: 20),
-                  _buildTimeSlotRow('Trưa (11:00 - 14:00)', '1 khoản (40.000 ₫)', Icons.wb_sunny_rounded, const Color(0xFF10B981), 0.05),
+                  _buildTimeSlotRow(
+                    'Trưa (11:00 - 14:00)',
+                    '1 khoản (40.000 ₫)',
+                    Icons.wb_sunny_rounded,
+                    const Color(0xFF10B981),
+                    0.05,
+                  ),
                   const Divider(height: 20),
-                  _buildTimeSlotRow('Sáng (05:00 - 11:00)', '1 khoản (143.000 ₫)', Icons.wb_sunny_outlined, const Color(0xFF3B82F6), 0.17),
+                  _buildTimeSlotRow(
+                    'Sáng (05:00 - 11:00)',
+                    '1 khoản (143.000 ₫)',
+                    Icons.wb_sunny_outlined,
+                    const Color(0xFF3B82F6),
+                    0.17,
+                  ),
                 ],
               ),
             ),
@@ -366,7 +425,13 @@ class _PatternsScreenState extends State<PatternsScreen> {
     );
   }
 
-  Widget _buildTimeSlotRow(String title, String subtitle, IconData icon, Color color, double progress) {
+  Widget _buildTimeSlotRow(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    double progress,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -376,7 +441,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.onPrimary),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onPrimary,
+              ),
             ),
             const Spacer(),
             Text(
@@ -401,6 +470,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
 
   String _formatCurrency(double amount) {
     final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount.toStringAsFixed(0).replaceAllMapped(formatter, (Match m) => '${m[1]}.');
+    return amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

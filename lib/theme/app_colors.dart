@@ -6,8 +6,12 @@ class AppColors {
 
   // Primary Brand Colors
   static const Color primary = Color(0xFFFFDE02); // Figma #FFDE02 Bright Yellow
-  static const Color primaryContainer = Color(0xFFFFFCE6); // Figma #FFFCE6 Light Yellow
-  static const Color onPrimary = Color(0xFF070E20); // Figma #070E20 Dark Navy/Black
+  static const Color primaryContainer = Color(
+    0xFFFFFCE6,
+  ); // Figma #FFFCE6 Light Yellow
+  static const Color onPrimary = Color(
+    0xFF070E20,
+  ); // Figma #070E20 Dark Navy/Black
 
   // Neutral Background & Surfaces
   static const Color background = Color(0xFFF8F9FA);
@@ -38,7 +42,9 @@ class AppColors {
   static const Color motiveSale = Color(0xFFD97706); // Khuyến mãi / Sale
   static const Color motiveSaleBg = Color(0xFFFEF3C7);
 
-  static const Color motiveEmotion = Color(0xFF7C3AED); // Cảm xúc (Trigger Cooldown 3 days)
+  static const Color motiveEmotion = Color(
+    0xFF7C3AED,
+  ); // Cảm xúc (Trigger Cooldown 3 days)
   static const Color motiveEmotionBg = Color(0xFFEDE9FE);
 
   static const Color motiveSocial = Color(0xFF0284C7); // MXH / Trend / FOMO

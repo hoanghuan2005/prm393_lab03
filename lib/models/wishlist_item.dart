@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'buying_motive.dart';
 import 'item_status.dart';
 
@@ -34,7 +35,9 @@ class WishlistItem {
 
   /// Check whether the item is still in psychological cooldown
   bool get isInCooldown {
-    if (status != ItemStatus.considering || coolingOffUntil == null) return false;
+    if (status != ItemStatus.considering || coolingOffUntil == null) {
+      return false;
+    }
     return DateTime.now().isBefore(coolingOffUntil!);
   }
 
@@ -54,7 +57,9 @@ class WishlistItem {
       'productUrl': productUrl,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
-      'coolingOffUntil': coolingOffUntil != null ? Timestamp.fromDate(coolingOffUntil!) : null,
+      'coolingOffUntil': coolingOffUntil != null
+          ? Timestamp.fromDate(coolingOffUntil!)
+          : null,
       'note': note,
       'decidedAt': decidedAt != null ? Timestamp.fromDate(decidedAt!) : null,
     };

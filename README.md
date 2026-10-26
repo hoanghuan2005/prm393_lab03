@@ -19,27 +19,43 @@
 | **Analytics Plan** | [`docs/analytics-plan.md`](docs/analytics-plan.md) | Kế hoạch 7+ sự kiện Firebase Analytics (No PII) |
 | **Test Plan** | [`docs/test-plan.md`](docs/test-plan.md) | Kế hoạch 10+ E2E test cases bằng Google ARTEMIS |
 | **Code Review** | [`docs/code-review.md`](docs/code-review.md) | Biên bản đánh giá mã nguồn bằng AI và cam kết sửa lỗi |
-| **Storage Rules** | [`firebase/storage.rules`](firebase/storage.rules) | Luật phân quyền Cloud Storage theo từng người dùng |
 | **Remote Config** | [`firebase/remote-config-defaults.json`](firebase/remote-config-defaults.json) | Giá trị cấu hình mặc định (cooling-off days, AI feature flag) |
 | **E2E Tests** | [`e2e_test/`](e2e_test/) | Bộ kiểm thử tự động với Pytest & Google ARTEMIS |
-| **Báo cáo & Slide** | [`report/`](report/), [`slides/`](slides/) | Báo cáo chi tiết và slide thuyết trình |
 
 ---
 
 ## 2. Phiên bản công nghệ cố định (Pinned Versions)
 
-* **Flutter**: 3.24.x (Channel stable)
-* **Dart**: 3.5.x
+* **Flutter**: 3.47.3 (channel stable, revision e8113bf456)
+* **Dart**: 3.13.3
+* **DevTools**: 2.60.0
 * **Python**: 3.11+ / 3.12+ (cho bộ kiểm thử Google ARTEMIS)
-* **Firebase Core**: 3.6.0
+* **Firebase Core**: 5.1.0 (theo `pubspec.lock`)
 * **Google ARTEMIS**: Pin commit theo hướng dẫn Lab 3
+
+### Dịch vụ Firebase đang dùng (project `prm393-34056`, gói Spark)
+
+| # | Dịch vụ | Package | Dùng cho |
+|:-:|:---|:---|:---|
+| 1 | Authentication | `firebase_auth` | Đăng nhập Google |
+| 2 | Cloud Firestore | `cloud_firestore` | Dữ liệu người dùng theo `users/{uid}/...` |
+| 3 | Analytics | `firebase_analytics` | Sự kiện theo [`docs/analytics-plan.md`](docs/analytics-plan.md) (không PII) |
+| 4 | Crashlytics | `firebase_crashlytics` | Ghi nhận lỗi/crash |
+| 5 | Remote Config | `firebase_remote_config` | Số ngày chờ, cờ bật/tắt tính năng AI |
+| 6 | Cloud Messaging | `firebase_messaging` | Thông báo nhắc |
+| 7 | Firebase AI Logic | `firebase_ai` | Viết câu nhận xét ở màn Góc nhìn / Chiêm nghiệm tháng (code tính số, AI chỉ viết câu) |
+| 8 | App Check | `firebase_app_check` | Bảo vệ lời gọi Firebase AI Logic — cài debug token theo mục 4.1.1 |
+
+Nhóm **không** dùng Cloud Storage và Realtime Database. Báo cáo PDF được tạo trên máy (`pdf`) và chia sẻ bằng package `printing`.
 
 ---
 
 ## 3. Công cụ AI sử dụng (Disclosed AI Tools)
 
+Nhóm commit thẳng lên `main` (không dùng nhánh, không dùng Pull Request — xem [`CONTRIBUTING.md`](CONTRIBUTING.md)). Mỗi lần dùng AI được ghi lại trong [`docs/ai-log.md`](docs/ai-log.md) (prompt, kết quả, chấp nhận / sửa / từ chối).
+
 1. **Antigravity AI Assistant**: Đồng lập trình, thiết kế kiến trúc, hỗ trợ viết tài liệu quy hoạch và scaffold code.
-2. **CodeRabbit / GitHub Copilot**: Rà soát vi phạm kiến trúc, bảo mật và hiệu năng qua PR.
+2. **Claude Code**: Dựng phần base (cấu hình lint, quy ước, dọn repo), refactor và rà soát code ngay trên máy trước khi commit.
 3. **Google Gemini Multimodal API**: Mô hình trí tuệ nhân tạo hỗ trợ Google ARTEMIS phân tích màn hình Android và nhận định tâm lý chi tiêu.
 
 ---

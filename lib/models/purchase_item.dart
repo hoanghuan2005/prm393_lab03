@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+
 import 'buying_motive.dart';
 
 /// Purchase Item Data Model for Why I Buy
@@ -23,15 +24,25 @@ class PurchaseItem {
   });
 
   String get formattedAmount {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    );
     return formatter.format(amount).trim();
   }
 
   String get formattedTime {
     final now = DateTime.now();
-    final isToday = now.year == dateTime.year && now.month == dateTime.month && now.day == dateTime.day;
+    final isToday =
+        now.year == dateTime.year &&
+        now.month == dateTime.month &&
+        now.day == dateTime.day;
     final yesterday = now.subtract(const Duration(days: 1));
-    final isYesterday = yesterday.year == dateTime.year && yesterday.month == dateTime.month && yesterday.day == dateTime.day;
+    final isYesterday =
+        yesterday.year == dateTime.year &&
+        yesterday.month == dateTime.month &&
+        yesterday.day == dateTime.day;
 
     final timeStr = DateFormat('HH:mm').format(dateTime);
 

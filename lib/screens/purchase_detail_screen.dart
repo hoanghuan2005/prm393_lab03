@@ -8,6 +8,7 @@ import '../models/budget_group.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/confirm_dialog.dart';
 
 /// Screen 05: Chi tiết khoản mua from Figma "Why I Buy ver2"
 class PurchaseDetailScreen extends StatelessWidget {
@@ -29,64 +30,30 @@ class PurchaseDetailScreen extends StatelessWidget {
         'thuộc nhóm ngân sách $group.';
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.delete_outline_rounded, color: AppColors.error),
-            SizedBox(width: 8),
-            Text('Xoá khoản mua này?'),
-          ],
-        ),
-        content: Text(
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: 'Xoá khoản mua này?',
+      message:
           'Bạn có chắc chắn muốn xoá "${purchase.title}" không? Khoản tiền này sẽ được khấu trừ khỏi tổng chi tiêu tháng.',
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text(
-              'Huỷ',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(dialogCtx); // close dialog
-              final purchaseVm = context.read<PurchaseViewModel>();
-              await purchaseVm.deletePurchase(purchase.id);
+      confirmLabel: 'Xoá',
+      isDanger: true,
+    );
+    if (!confirmed || !context.mounted) return;
 
-              if (!context.mounted) return;
+    final purchaseVm = context.read<PurchaseViewModel>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    await purchaseVm.deletePurchase(purchase.id);
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Đã xoá khoản mua "${purchase.title}"'),
-                  backgroundColor: AppColors.onPrimary,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-
-              Navigator.of(context).pop(); // pop back to list
-            },
-            child: const Text('Xoá'),
-          ),
-        ],
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Đã xoá khoản mua "${purchase.title}"'),
+        backgroundColor: AppColors.onPrimary,
+        behavior: SnackBarBehavior.floating,
       ),
     );
+    navigator.pop(); // pop back to list
   }
 
   @override

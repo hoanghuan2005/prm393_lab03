@@ -5,7 +5,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 
-/// Reusable Motive Chip for the 8 Buying Motives
+/// Reusable Motive Chip for the 8 Buying Motives.
+/// Tappable chips always get a 48dp touch target; [isCompact] only shrinks display-only chips.
 class MotiveChip extends StatelessWidget {
   final BuyingMotive motive;
   final bool isSelected;
@@ -24,14 +25,18 @@ class MotiveChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bgColor = isSelected ? motive.color : motive.backgroundColor;
     final fgColor = isSelected ? AppColors.textOnDark : motive.color;
+    final isInteractive = onSelected != null;
 
     return Semantics(
-      button: onSelected != null,
+      button: isInteractive,
       selected: isSelected,
-      label: 'Động cơ ${motive.label}',
+      label: 'Động cơ: ${motive.label}',
+      excludeSemantics: true,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: isCompact ? 32 : AppDimens.minTouchTarget,
+          minHeight: isInteractive || !isCompact
+              ? AppDimens.minTouchTarget
+              : 32,
         ),
         child: InkWell(
           onTap: onSelected != null ? () => onSelected!(motive) : null,

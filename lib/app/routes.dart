@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
+import '../screens/dev/widget_gallery_screen.dart';
 import '../screens/history_screen.dart';
 import '../screens/insights_screen.dart';
 import '../screens/item_detail_screen.dart';
@@ -69,6 +71,9 @@ class AppRoutes {
   static const reflection = '/reflection';
   static const profile = '/profile';
 
+  /// Debug builds only (shared widget catalogue)
+  static const widgetGallery = '/dev/widgets';
+
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     final args = settings.arguments;
     final Widget? page = switch (settings.name) {
@@ -97,6 +102,7 @@ class AppRoutes {
       patterns => const PatternsScreen(),
       reflection => const MonthlyReflectionScreen(),
       profile => const ProfileScreen(),
+      widgetGallery when kDebugMode => const WidgetGalleryScreen(),
       _ => null,
     };
     if (page == null) return null;

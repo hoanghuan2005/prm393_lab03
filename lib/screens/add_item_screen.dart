@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/formatters/money_format.dart';
+import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -94,12 +95,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 label: 'Tên sản phẩm *',
                 hint: 'Ví dụ: Tai nghe chống ồn Sony...',
                 controller: _titleController,
-                validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'Vui lòng nhập tên sản phẩm';
-                  }
-                  return null;
-                },
+                validator: Validators.validateTitle,
               ),
               const SizedBox(height: AppDimens.space16),
 
@@ -110,6 +106,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 controller: _priceController,
                 keyboardType: TextInputType.number,
                 prefixIcon: Icons.attach_money,
+                validator: Validators.validateOptionalAmount,
               ),
               const SizedBox(height: AppDimens.space16),
 

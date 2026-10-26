@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
@@ -117,21 +118,12 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   }
 
   void _goToStep2() {
-    if (_rawAmount <= 0) {
+    final error =
+        Validators.validateAmount(_rawAmount > 0 ? '$_rawAmount' : '') ??
+        Validators.validateTitle(_titleController.text);
+    if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập số tiền thực chi hợp lệ'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập tên món đồ hoặc dịch vụ'),
-          backgroundColor: AppColors.error,
-        ),
+        SnackBar(content: Text(error), backgroundColor: AppColors.error),
       );
       return;
     }

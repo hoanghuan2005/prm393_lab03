@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +9,8 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/confirm_dialog.dart';
+import '../widgets/section_card.dart';
 
 /// Screen Profile & Firebase Demo Area
 class ProfileScreen extends StatelessWidget {
@@ -105,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space16),
 
             // Budget Management Section
-            _buildSectionCard(
+            SectionCard(
               title: 'Ngân sách chi tiêu',
               icon: Icons.account_balance_wallet_outlined,
               children: [
@@ -130,7 +133,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space16),
 
             // Demo data (never seeded automatically)
-            _buildSectionCard(
+            SectionCard(
               title: 'Dữ liệu demo',
               icon: Icons.dataset_outlined,
               children: [
@@ -158,8 +161,19 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
+            if (kDebugMode) ...[
+              AppButton(
+                title: 'Widget Gallery (debug)',
+                icon: Icons.widgets_outlined,
+                variant: AppButtonVariant.secondary,
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.widgetGallery),
+              ),
+              const SizedBox(height: AppDimens.space16),
+            ],
+
             // 1. Remote Config Section
-            _buildSectionCard(
+            SectionCard(
               title: '1. Firebase Remote Config',
               icon: Icons.tune,
               children: [
@@ -202,7 +216,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space16),
 
             // 2. Crashlytics Section
-            _buildSectionCard(
+            SectionCard(
               title: '2. Firebase Crashlytics',
               icon: Icons.bug_report_outlined,
               children: [
@@ -245,7 +259,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space16),
 
             // 3. FCM Notification Center
-            _buildSectionCard(
+            SectionCard(
               title: '3. Cloud Messaging (FCM) Center',
               icon: Icons.notifications_active_outlined,
               children: [
@@ -314,26 +328,13 @@ class ProfileScreen extends StatelessWidget {
     SettingsViewModel settingsVm,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Tạo lại dữ liệu demo?'),
-        content: const Text(
-          'Dữ liệu hiện tại của bạn sẽ được thay bằng dữ liệu demo.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Huỷ'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Tạo dữ liệu'),
-          ),
-        ],
-      ),
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Tạo lại dữ liệu demo?',
+      message: 'Dữ liệu hiện tại của bạn sẽ được thay bằng dữ liệu demo.',
+      confirmLabel: 'Tạo dữ liệu',
     );
-    if (ok != true) return;
+    if (!ok) return;
     final done = await settingsVm.seedDemoData();
     messenger.showSnackBar(
       SnackBar(
@@ -351,29 +352,16 @@ class ProfileScreen extends StatelessWidget {
     SettingsViewModel settingsVm,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.error),
-        title: const Text('Xoá toàn bộ dữ liệu?'),
-        content: const Text(
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Xoá toàn bộ dữ liệu?',
+      message:
           'Mọi khoản mua, món mong muốn, quyết định, ngân sách và chiêm nghiệm '
           'sẽ bị xoá vĩnh viễn khỏi tài khoản. Không thể hoàn tác.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Huỷ'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Xoá tất cả'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Xoá tất cả',
+      isDanger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
     final done = await settingsVm.clearAllData();
     messenger.showSnackBar(
       SnackBar(
@@ -382,38 +370,6 @@ class ProfileScreen extends StatelessWidget {
               ? 'Đã xoá toàn bộ dữ liệu.'
               : 'Chưa xoá được dữ liệu. Thử lại sau ít phút.',
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimens.space16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.onPrimary, size: 20),
-              const SizedBox(width: AppDimens.space8),
-              Text(title, style: AppTextStyles.titleMedium),
-            ],
-          ),
-          const SizedBox(height: AppDimens.space12),
-          const Divider(),
-          const SizedBox(height: AppDimens.space12),
-          ...children,
-        ],
       ),
     );
   }

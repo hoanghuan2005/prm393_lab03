@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// RULE CHUYỂN TIẾP – Why I Buy? (Lab 3)
+// Chạy được với code hiện tại (collection gốc wishlist / purchases / budgets)
+// và mở sẵn cấu trúc mới users/{uid}/...
+// Khi code đã chuyển hết sang users/{uid}: xoá 3 khối "Cấu trúc CŨ"
+// và thay bằng rule đầy đủ (kiểm tra kiểu dữ liệu).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    // Tài liệu hiện có thuộc về người đang đăng nhập
+    function ownsExisting() {
+      return signedIn() && resource.data.userId == request.auth.uid;
+    }
+    // Dữ liệu ghi xuống vẫn mang userId của người đang đăng nhập
+    // (chặn việc đổi userId sang người khác khi update)
+    function writesOwnUserId() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // ===== Cấu trúc CŨ (xoá sau khi chuyển sang users/{uid}) =====
+    match /wishlist/{id} {
+      allow read, delete: if ownsExisting();
+      allow update: if ownsExisting() && writesOwnUserId();
+      allow create: if signedIn() && writesOwnUserId();
+    }
+
+    match /purchases/{id} {
+      allow read, delete: if ownsExisting();
+      allow update: if ownsExisting() && writesOwnUserId();
+      allow create: if signedIn() && writesOwnUserId();
+    }
+
+    // Mã tài liệu dạng {uid}_{yyyy-MM}
+    match /budgets/{docId} {
+      allow read, delete: if signedIn() && docId.matches(request.auth.uid + '_.*');
+      allow create, update: if signedIn()
+        && docId.matches(request.auth.uid + '_.*')
+        && writesOwnUserId();
+    }
+
+    // ===== Cấu trúc MỚI =====
+    // {document=**} ở rules_version 2 khớp cả users/{uid} lẫn mọi subcollection bên dưới
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Mọi đường dẫn khác: mặc định bị chặn
+  }
+}

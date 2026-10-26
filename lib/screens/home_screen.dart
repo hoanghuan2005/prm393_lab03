@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/why_i_buy_logo.dart';
-import 'budget_screen.dart';
-import 'purchase_detail_screen.dart';
-import 'record_purchase_screen.dart';
-import 'wishlist_screen.dart';
 
 /// Screen 02: Trang chủ from Figma "Why I Buy ver2"
 class HomeScreen extends StatelessWidget {
@@ -59,9 +58,7 @@ class HomeScreen extends StatelessWidget {
                   if (onNavigateTab != null) {
                     onNavigateTab!(1); // Go to Lịch sử / Wishlist
                   } else {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                    );
+                    Navigator.pushNamed(context, AppRoutes.wishlist);
                   }
                 },
               ),
@@ -160,9 +157,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RecordPurchaseScreen()),
-              );
+              Navigator.pushNamed(context, AppRoutes.recordPurchase);
             },
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -251,7 +246,7 @@ class HomeScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
+                        formatMonthLabel(purchaseVm.selectedMonth),
                         style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -275,7 +270,7 @@ class HomeScreen extends StatelessWidget {
 
           // Big Amount: 817.000 ₫
           Text(
-            '${_formatCurrency(purchaseVm.weeklyTotal)} ₫',
+            formatVnd(purchaseVm.weeklyTotal.round()),
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -288,7 +283,7 @@ class HomeScreen extends StatelessWidget {
 
           // Subtitle: Tuần này: 5 khoản · 817.000 ₫
           Text(
-            'Tuần này: ${purchaseVm.weeklyCount} khoản · ${_formatCurrency(purchaseVm.weeklyTotal)} ₫',
+            'Tuần này: ${purchaseVm.weeklyCount} khoản · ${formatVnd(purchaseVm.weeklyTotal.round())}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -384,9 +379,7 @@ class HomeScreen extends StatelessWidget {
           // Monthly Budget Quick View
           InkWell(
             onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const BudgetScreen()));
+              Navigator.pushNamed(context, AppRoutes.budget);
             },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
@@ -410,7 +403,7 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           TextSpan(
                             text:
-                                '${_formatCurrency(purchaseVm.monthlySpent)} ₫ / ${_formatCurrency(purchaseVm.monthlyBudget)} ₫',
+                                '${formatVnd(purchaseVm.monthlySpent.round())} / ${formatVnd(purchaseVm.monthlyBudget.round())}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.onPrimary,
@@ -467,8 +460,7 @@ class HomeScreen extends StatelessWidget {
         if (onNavigateTab != null) {
           onNavigateTab!(1); // Go to Wishlist / Lịch sử
         } else {
-          Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const WishlistScreen()));
+          Navigator.pushNamed(context, AppRoutes.wishlist);
         }
       },
       borderRadius: BorderRadius.circular(16),
@@ -616,10 +608,10 @@ class HomeScreen extends StatelessWidget {
   Widget _buildPurchaseRow(BuildContext context, PurchaseItem item) {
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PurchaseDetailScreen(purchase: item),
-          ),
+        Navigator.pushNamed(
+          context,
+          AppRoutes.purchaseDetail,
+          arguments: PurchaseDetailArgs(item),
         );
       },
       child: Padding(
@@ -707,7 +699,7 @@ class HomeScreen extends StatelessWidget {
 
             // Trailing Amount: e.g. 40.000 ₫
             Text(
-              '${_formatCurrency(item.amount)} ₫',
+              formatVnd(item.amount.round()),
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -718,12 +710,5 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatCurrency(double amount) {
-    final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

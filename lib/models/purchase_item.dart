@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import 'buying_motive.dart';
 
 /// Purchase Item Data Model for Why I Buy
@@ -23,37 +24,9 @@ class PurchaseItem {
     this.note,
   });
 
-  String get formattedAmount {
-    final formatter = NumberFormat.currency(
-      locale: 'vi_VN',
-      symbol: '₫',
-      decimalDigits: 0,
-    );
-    return formatter.format(amount).trim();
-  }
+  String get formattedAmount => formatVnd(amount.round());
 
-  String get formattedTime {
-    final now = DateTime.now();
-    final isToday =
-        now.year == dateTime.year &&
-        now.month == dateTime.month &&
-        now.day == dateTime.day;
-    final yesterday = now.subtract(const Duration(days: 1));
-    final isYesterday =
-        yesterday.year == dateTime.year &&
-        yesterday.month == dateTime.month &&
-        yesterday.day == dateTime.day;
-
-    final timeStr = DateFormat('HH:mm').format(dateTime);
-
-    if (isToday) {
-      return 'Hôm nay $timeStr';
-    } else if (isYesterday) {
-      return 'Hôm qua $timeStr';
-    } else {
-      return '${DateFormat('dd/MM').format(dateTime)} $timeStr';
-    }
-  }
+  String get formattedTime => formatRelativeDateTime(dateTime);
 
   Map<String, dynamic> toMap() {
     return {

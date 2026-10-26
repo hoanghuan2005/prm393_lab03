@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../app/routes.dart';
 import '../theme/app_colors.dart';
 import '../widgets/why_i_buy_logo.dart';
-import 'main_navigation_screen.dart';
 
 /// Screen 01: Onboarding from Figma "Why I Buy ver2"
 class OnboardingScreen extends StatelessWidget {
@@ -137,11 +137,7 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const MainNavigationScreen(),
-                      ),
-                    );
+                    Navigator.pushReplacementNamed(context, AppRoutes.shell);
                   },
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,

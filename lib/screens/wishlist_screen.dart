@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../models/buying_motive.dart';
 import '../models/item_status.dart';
 import '../models/ui_state.dart';
@@ -14,8 +15,6 @@ import '../widgets/states/empty_view.dart';
 import '../widgets/states/error_view.dart';
 import '../widgets/states/loading_view.dart';
 import '../widgets/wishlist_card.dart';
-import 'add_item_screen.dart';
-import 'item_detail_screen.dart';
 
 /// Screen 01: Smart Wishlist with Search & Motive Filters
 class WishlistScreen extends StatefulWidget {
@@ -46,9 +45,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
             icon: const Icon(Icons.add),
             tooltip: 'Thêm món',
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const AddItemScreen()));
+              Navigator.pushNamed(context, AppRoutes.wishlistAdd);
             },
           ),
         ],
@@ -190,10 +187,10 @@ class _WishlistScreenState extends State<WishlistScreen> {
             return WishlistCard(
               item: item,
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ItemDetailScreen(item: item),
-                  ),
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.itemDetail,
+                  arguments: ItemDetailArgs(item),
                 );
               },
             );

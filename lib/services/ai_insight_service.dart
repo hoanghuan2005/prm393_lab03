@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/spending_insight.dart';
 
 /// Produces the raw JSON text for a prompt. Abstracted so tests can replace Gemini with a fake.
@@ -219,11 +221,11 @@ Quy tắc bắt buộc:
 
   static String templateSummary(MonthlySpendingStats stats) {
     if (!stats.hasPurchases) {
-      return 'Tháng ${stats.month}/${stats.year} bạn chưa ghi khoản mua nào.';
+      return '${formatMonthLabel(DateTime(stats.year, stats.month))} bạn chưa ghi khoản mua nào.';
     }
     final buffer = StringBuffer(
-      'Tháng ${stats.month}/${stats.year} bạn đã ghi ${stats.purchaseCount} khoản mua, '
-      'tổng ${MonthlySpendingStats.formatVnd(stats.totalSpent)}.',
+      '${formatMonthLabel(DateTime(stats.year, stats.month))} bạn đã ghi ${stats.purchaseCount} khoản mua, '
+      'tổng ${formatVnd(stats.totalSpent)}.',
     );
     final top = stats.dominantMotive;
     if (top != null) {
@@ -243,7 +245,7 @@ Quy tắc bắt buộc:
     InsightKind kind,
     MonthlySpendingStats stats,
   ) {
-    const vnd = MonthlySpendingStats.formatVnd;
+    const vnd = formatVnd;
     switch (kind) {
       case InsightKind.dominantMotive:
         final top = stats.dominantMotive!;
@@ -280,8 +282,7 @@ Quy tắc bắt buộc:
         );
       case InsightKind.largestPurchase:
         final p = stats.largestPurchase!;
-        final time =
-            '${p.dateTime.hour.toString().padLeft(2, '0')}:${p.dateTime.minute.toString().padLeft(2, '0')}';
+        final time = formatTime(p.dateTime);
         return InsightCard(
           kind: kind,
           title: 'Khoản lớn nhất tháng',

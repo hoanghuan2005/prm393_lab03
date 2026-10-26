@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
-import 'onboarding_screen.dart';
 
 /// Screen for Authentication (Google Sign-In & Guest Mode)
 class LoginScreen extends StatelessWidget {
@@ -149,9 +149,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                  );
+                  Navigator.pushNamed(context, AppRoutes.onboarding);
                 },
               ),
               const SizedBox(height: AppDimens.space16),

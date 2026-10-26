@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
@@ -9,13 +11,6 @@ import '../widgets/month_picker_sheet.dart';
 /// Screen 31, 31a, 31b: Ngân sách theo nhóm from Figma "Why I Buy ver2"
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
-
-  String _formatCurrency(double amount) {
-    final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
-  }
 
   void _showHelpDialog(BuildContext context) {
     showDialog(
@@ -261,7 +256,7 @@ class BudgetScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
+                    formatMonthLabel(purchaseVm.selectedMonth),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -421,7 +416,7 @@ class BudgetScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_formatCurrency(spent)} ₫',
+                formatVnd(spent.round()),
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -429,7 +424,7 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '/ ${_formatCurrency(budget)} ₫',
+                '/ ${formatVnd(budget.round())}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -454,8 +449,8 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             isExceeded
-                ? 'Đã vượt ${_formatCurrency(spent - budget)} ₫ so với mốc bạn đặt. App không chặn mua.'
-                : 'Còn lại ${_formatCurrency(budget - spent)} ₫ trong ngân sách dự kiến tháng này.',
+                ? 'Đã vượt ${formatVnd((spent - budget).round())} so với mốc bạn đặt. App không chặn mua.'
+                : 'Còn lại ${formatVnd((budget - spent).round())} trong ngân sách dự kiến tháng này.',
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF6D6E73),
@@ -510,7 +505,7 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '${_formatCurrency(spent)} ₫ / ${_formatCurrency(catBudget)} ₫',
+                '${formatVnd(spent.round())} / ${formatVnd(catBudget.round())}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -535,8 +530,8 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             isExceeded
-                ? 'Đã vượt ${_formatCurrency(spent - catBudget)} ₫ so với mốc nhóm. App không chặn mua.'
-                : 'Còn lại ${_formatCurrency(catBudget - spent)} ₫ trong nhóm này.',
+                ? 'Đã vượt ${formatVnd((spent - catBudget).round())} so với mốc nhóm. App không chặn mua.'
+                : 'Còn lại ${formatVnd((catBudget - spent).round())} trong nhóm này.',
             style: const TextStyle(fontSize: 11.5, color: Color(0xFF6D6E73)),
           ),
         ],

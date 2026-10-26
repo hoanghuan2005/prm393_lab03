@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
@@ -9,7 +11,6 @@ import '../widgets/insight_source_chip.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/why_i_buy_logo.dart';
-import 'monthly_reflection_screen.dart';
 
 /// Screen 08: Góc nhìn (có AI) from Figma "Why I Buy ver2".
 /// Numbers come from code; AI only rewrites the sentences (spec 7.6).
@@ -68,11 +69,8 @@ class InsightsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
               OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const MonthlyReflectionScreen(),
-                  ),
-                ),
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.reflection),
                 icon: const Icon(Icons.auto_stories_outlined, size: 18),
                 label: const Text('Xem chiêm nghiệm tháng'),
                 style: OutlinedButton.styleFrom(
@@ -139,7 +137,7 @@ class InsightsScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
+                        formatMonthLabel(purchaseVm.selectedMonth),
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,

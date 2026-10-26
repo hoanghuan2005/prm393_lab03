@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/month_key.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../services/analytics_service.dart';
@@ -151,8 +152,7 @@ class PurchaseViewModel extends ChangeNotifier {
     _subscribeToBudget();
   }
 
-  String get currentMonthKey =>
-      '${_selectedMonth.year}-${_selectedMonth.month.toString().padLeft(2, '0')}';
+  String get currentMonthKey => monthKey(_selectedMonth);
 
   void _subscribeToBudget() {
     _budgetSubscription?.cancel();

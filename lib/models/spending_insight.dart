@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import 'buying_motive.dart';
 import 'item_status.dart';
@@ -238,7 +240,7 @@ class MonthlySpendingStats {
           'soTien': largest.amount.round(),
           'soTienText': formatVnd(largest.amount.round()),
           'dongCo': largest.motive.label,
-          'gio': _formatTime(largest.dateTime),
+          'gio': formatTime(largest.dateTime),
         },
       'monDaQuyetDinhKhongMua': {
         'soMon': skippedCount,
@@ -292,17 +294,6 @@ class MonthlySpendingStats {
       .map((m) => int.tryParse(m.group(0)!.replaceAll(RegExp(r'[.,]'), '')))
       .whereType<int>()
       .toList();
-
-  static String formatVnd(int amount) {
-    final digits = amount.abs().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-    return '${amount < 0 ? '-' : ''}$digits ₫';
-  }
-
-  static String _formatTime(DateTime d) =>
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }
 
 class InsightCard {

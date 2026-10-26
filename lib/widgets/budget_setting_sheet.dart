@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 
@@ -25,20 +25,13 @@ class BudgetSettingSheet extends StatefulWidget {
 class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   late TextEditingController _controller;
   late double _amount;
-  final _currencyFormat = NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: '₫',
-    decimalDigits: 0,
-  );
 
   @override
   void initState() {
     super.initState();
     final purchaseVm = context.read<PurchaseViewModel>();
     _amount = purchaseVm.monthlyBudget;
-    _controller = TextEditingController(
-      text: _currencyFormat.format(_amount).trim(),
-    );
+    _controller = TextEditingController(text: formatVnd(_amount.round()));
   }
 
   @override
@@ -48,8 +41,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   }
 
   void _onAmountChanged(String val) {
-    final cleaned = val.replaceAll(RegExp(r'[^0-9]'), '');
-    final parsed = double.tryParse(cleaned) ?? 0;
+    final parsed = (parseVnd(val) ?? 0).toDouble();
     setState(() {
       _amount = parsed;
     });
@@ -58,7 +50,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   void _setPredefinedAmount(double val) {
     setState(() {
       _amount = val;
-      _controller.text = _currencyFormat.format(_amount).trim();
+      _controller.text = formatVnd(_amount.round());
     });
   }
 
@@ -208,7 +200,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _currencyFormat.format(spent).trim(),
+                        formatVnd(spent.round()),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -237,7 +229,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _currencyFormat.format(remaining.abs()).trim(),
+                        formatVnd(remaining.abs().round()),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -287,7 +279,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Đã lưu ngân sách: ${_currencyFormat.format(_amount).trim()} lên Firebase!',
+                                  'Đã lưu ngân sách: ${formatVnd(_amount.round())} lên Firebase!',
                                 ),
                               ],
                             ),

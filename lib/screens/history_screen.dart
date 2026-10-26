@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/why_i_buy_logo.dart';
-import 'budget_screen.dart';
-import 'purchase_detail_screen.dart';
-import 'record_purchase_screen.dart';
 
 /// Screen 06: Lịch sử from Figma "Why I Buy ver2"
 class HistoryScreen extends StatelessWidget {
@@ -21,12 +20,12 @@ class HistoryScreen extends StatelessWidget {
     final purchaseVm = context.watch<PurchaseViewModel>();
     final purchases = purchaseVm.filteredPurchases;
     final selectedMonth = purchaseVm.selectedMonth;
-    final monthLabel = 'Tháng ${selectedMonth.month}/${selectedMonth.year}';
+    final monthLabel = formatMonthLabel(selectedMonth);
 
     // Group purchases by day
     final Map<String, List<PurchaseItem>> grouped = {};
     for (final p in purchases) {
-      final key = DateFormat('dd/MM/yyyy').format(p.dateTime);
+      final key = formatDate(p.dateTime);
       grouped.putIfAbsent(key, () => []).add(p);
     }
 
@@ -231,7 +230,7 @@ class HistoryScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '${_formatCurrency(dayTotal)} ₫',
+                                formatVnd(dayTotal.round()),
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -289,9 +288,7 @@ class HistoryScreen extends StatelessWidget {
         foregroundColor: AppColors.onPrimary,
         tooltip: 'Ghi khoản mua mới',
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const RecordPurchaseScreen()),
-          );
+          Navigator.pushNamed(context, AppRoutes.recordPurchase);
         },
         child: const Icon(Icons.add),
       ),
@@ -370,9 +367,7 @@ class HistoryScreen extends StatelessWidget {
               // Edit button
               InkWell(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const BudgetScreen()),
-                  );
+                  Navigator.pushNamed(context, AppRoutes.budget);
                 },
                 borderRadius: BorderRadius.circular(6),
                 child: const Padding(
@@ -408,7 +403,7 @@ class HistoryScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_formatCurrency(spent)} ₫',
+                formatVnd(spent.round()),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -416,7 +411,7 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                'Mục tiêu: ${_formatCurrency(budget)} ₫',
+                'Mục tiêu: ${formatVnd(budget.round())}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -444,8 +439,8 @@ class HistoryScreen extends StatelessWidget {
           // Explanatory note
           Text(
             isExceeded
-                ? 'Đã vượt ${_formatCurrency(spent - budget)} ₫ so với mốc bạn đặt. Ứng dụng không chặn mua.'
-                : 'Còn lại ${_formatCurrency(budget - spent)} ₫ trong ngân sách dự kiến tháng này.',
+                ? 'Đã vượt ${formatVnd((spent - budget).round())} so với mốc bạn đặt. Ứng dụng không chặn mua.'
+                : 'Còn lại ${formatVnd((budget - spent).round())} trong ngân sách dự kiến tháng này.',
             style: const TextStyle(fontSize: 12, color: Color(0xFF6D6E73)),
           ),
         ],
@@ -502,10 +497,10 @@ class HistoryScreen extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PurchaseDetailScreen(purchase: item),
-          ),
+        Navigator.pushNamed(
+          context,
+          AppRoutes.purchaseDetail,
+          arguments: PurchaseDetailArgs(item),
         );
       },
       leading: Container(
@@ -530,7 +525,7 @@ class HistoryScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 2),
           Text(
-            '${item.motive.label} • ${DateFormat('HH:mm').format(item.dateTime)}',
+            '${item.motive.label} • ${formatTime(item.dateTime)}',
             style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
           ),
           if (item.note != null && item.note!.isNotEmpty) ...[
@@ -547,7 +542,7 @@ class HistoryScreen extends StatelessWidget {
         ],
       ),
       trailing: Text(
-        '${_formatCurrency(item.amount)} ₫',
+        formatVnd(item.amount.round()),
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w700,
@@ -558,9 +553,10 @@ class HistoryScreen extends StatelessWidget {
   }
 
   String _formatDayHeader(String dateKey) {
-    final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    final yesterday = DateFormat('dd/MM/yyyy')
-        .format(DateTime.now().subtract(const Duration(days: 1)));
+    final now = formatDate(DateTime.now());
+    final yesterday = formatDate(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
 
     if (dateKey == now) {
       return 'Hôm nay · $dateKey';
@@ -569,12 +565,5 @@ class HistoryScreen extends StatelessWidget {
     } else {
       return dateKey;
     }
-  }
-
-  String _formatCurrency(double amount) {
-    final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

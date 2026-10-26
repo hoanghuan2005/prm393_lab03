@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prm393_lab03/core/formatters/money_format.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
 import 'package:prm393_lab03/models/item_status.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
@@ -101,7 +102,7 @@ void main() {
     });
 
     test('formats VND with dot separators', () {
-      expect(MonthlySpendingStats.formatVnd(1250000), '1.250.000 ₫');
+      expect(formatVnd(1250000), '1.250.000 ₫');
       expect(MonthlySpendingStats.extractNumbers('1.250.000 ₫ lúc 23:40'), [1250000, 23, 40]);
     });
   });

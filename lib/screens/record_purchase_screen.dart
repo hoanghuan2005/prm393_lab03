@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
-import 'purchase_detail_screen.dart';
 
 /// Screen 03 & 04: Ghi khoản mua (Bước 1/2 và Bước 2/2) from Figma "Why I Buy ver2"
 class RecordPurchaseScreen extends StatefulWidget {
@@ -39,19 +40,13 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   final _noteController = TextEditingController();
   bool _isSaving = false;
 
-  final _currencyFormat = NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: '₫',
-    decimalDigits: 0,
-  );
-
   @override
   void initState() {
     super.initState();
     if (widget.existingPurchase != null) {
       final p = widget.existingPurchase!;
       _rawAmount = p.amount;
-      _amountController.text = _currencyFormat.format(_rawAmount).trim();
+      _amountController.text = formatVnd(_rawAmount.round());
       _titleController.text = p.title;
       _selectedDateTime = p.dateTime;
       _selectedMotive = p.motive;
@@ -59,7 +54,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     } else {
       _rawAmount = widget.initialAmount ?? 0;
       if (_rawAmount > 0) {
-        _amountController.text = _currencyFormat.format(_rawAmount).trim();
+        _amountController.text = formatVnd(_rawAmount.round());
       }
       _titleController.text = widget.initialTitle ?? '';
       _noteController.text = '';
@@ -75,8 +70,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   }
 
   void _onAmountChanged(String val) {
-    final cleaned = val.replaceAll(RegExp(r'[^0-9]'), '');
-    final parsed = double.tryParse(cleaned) ?? 0;
+    final parsed = (parseVnd(val) ?? 0).toDouble();
     setState(() {
       _rawAmount = parsed;
     });
@@ -85,7 +79,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   void _addQuickAmount(double amount) {
     setState(() {
       _rawAmount += amount;
-      _amountController.text = _currencyFormat.format(_rawAmount).trim();
+      _amountController.text = formatVnd(_rawAmount.round());
     });
   }
 
@@ -120,41 +114,6 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         time.minute,
       );
     });
-  }
-
-  String _formatTimeHeader(DateTime dt) {
-    final now = DateTime.now();
-    final isToday =
-        now.year == dt.year && now.month == dt.month && now.day == dt.day;
-    final yesterday = now.subtract(const Duration(days: 1));
-    final isYesterday =
-        yesterday.year == dt.year &&
-        yesterday.month == dt.month &&
-        yesterday.day == dt.day;
-    final timeStr = DateFormat('HH:mm').format(dt);
-
-    if (isToday) {
-      return 'Hôm nay $timeStr';
-    } else if (isYesterday) {
-      return 'Hôm qua $timeStr';
-    } else {
-      return '${DateFormat('dd/MM').format(dt)} $timeStr';
-    }
-  }
-
-  String _formatVietnameseDate(DateTime dt) {
-    const weekdays = [
-      'Thứ Hai',
-      'Thứ Ba',
-      'Thứ Tư',
-      'Thứ Năm',
-      'Thứ Sáu',
-      'Thứ Bảy',
-      'Chủ Nhật',
-    ];
-    final weekdayName = weekdays[dt.weekday - 1];
-    final dateStr = DateFormat('dd/MM/yyyy').format(dt);
-    return '$weekdayName, $dateStr';
   }
 
   void _goToStep2() {
@@ -246,10 +205,10 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
 
       Navigator.of(context).pop();
       // Flow 8: Navigate to detail review screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PurchaseDetailScreen(purchase: savedItem),
-        ),
+      Navigator.pushNamed(
+        context,
+        AppRoutes.purchaseDetail,
+        arguments: PurchaseDetailArgs(savedItem),
       );
     }
   }
@@ -549,7 +508,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _formatTimeHeader(_selectedDateTime),
+                        formatRelativeDateTime(_selectedDateTime),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -558,7 +517,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatVietnameseDate(_selectedDateTime),
+                        formatWeekdayDate(_selectedDateTime),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6D6E73),
@@ -646,7 +605,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _currencyFormat.format(_rawAmount).trim(),
+                      formatVnd(_rawAmount.round()),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

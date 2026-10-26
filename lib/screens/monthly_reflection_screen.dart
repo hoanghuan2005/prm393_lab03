@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
@@ -58,7 +60,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
                         child: Text(
                           stats == null
                               ? 'Chiêm nghiệm tháng'
-                              : 'Tháng ${stats.month}/${stats.year}',
+                              : formatMonthLabel(
+                                  DateTime(stats.year, stats.month),
+                                ),
                           style: AppTextStyles.titleMedium,
                         ),
                       ),
@@ -68,7 +72,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppDimens.space12),
                   Text(
-                    MonthlySpendingStats.formatVnd(stats?.totalSpent ?? 0),
+                    formatVnd(stats?.totalSpent ?? 0),
                     style: AppTextStyles.headlineLarge.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.w800,
@@ -113,7 +117,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                 ),
                 child: Text(
                   'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
-                  'tổng giá đã ghi ${MonthlySpendingStats.formatVnd(stats.skippedValue)}.',
+                  'tổng giá đã ghi ${formatVnd(stats.skippedValue)}.',
                   style: AppTextStyles.bodyMedium,
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -41,11 +42,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
 
-    final price =
-        double.tryParse(
-          _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-        ) ??
-        0.0;
+    final price = (parseVnd(_priceController.text) ?? 0).toDouble();
     final success = await wishlistVm.addItem(
       title: _titleController.text.trim(),
       price: price,

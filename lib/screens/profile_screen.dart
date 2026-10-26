@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
-import 'budget_screen.dart';
-import 'onboarding_screen.dart';
 
 /// Screen Profile & Firebase Demo Area (Section 6)
 class ProfileScreen extends StatelessWidget {
@@ -79,9 +78,7 @@ class ProfileScreen extends StatelessWidget {
               icon: const Icon(Icons.school_outlined, size: 20),
               label: const Text('Xem màn hình giới thiệu (01 Onboarding)'),
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                );
+                Navigator.pushNamed(context, AppRoutes.onboarding);
               },
             ),
 
@@ -122,9 +119,7 @@ class ProfileScreen extends StatelessWidget {
                   variant: AppButtonVariant.primary,
                   icon: Icons.bar_chart_rounded,
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const BudgetScreen()),
-                    );
+                    Navigator.pushNamed(context, AppRoutes.budget);
                   },
                 ),
               ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../core/formatters/money_format.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -16,15 +16,10 @@ class WishlistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'vi_VN',
-      symbol: 'đ',
-    );
-
     return Semantics(
       button: true,
       label:
-          'Món ${item.title}, giá ${currencyFormatter.format(item.price)}, động cơ ${item.motive.label}',
+          'Món ${item.title}, giá ${formatVnd(item.price.round())}, động cơ ${item.motive.label}',
       child: Card(
         margin: const EdgeInsets.only(bottom: AppDimens.space12),
         elevation: 0,
@@ -53,7 +48,7 @@ class WishlistCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppDimens.space12),
                     Text(
-                      currencyFormatter.format(item.price),
+                      formatVnd(item.price.round()),
                       style: AppTextStyles.titleMedium.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.w700,

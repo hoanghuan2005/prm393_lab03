@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -119,7 +121,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
+                            formatMonthLabel(purchaseVm.selectedMonth),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -172,7 +174,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_formatCurrency(totalSpent)} ₫',
+                        formatVnd(totalSpent.round()),
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
@@ -274,7 +276,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '${_formatCurrency(sum)} ₫',
+                                        formatVnd(sum.round()),
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
@@ -466,12 +468,5 @@ class _PatternsScreenState extends State<PatternsScreen> {
         ),
       ],
     );
-  }
-
-  String _formatCurrency(double amount) {
-    final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(formatter, (Match m) => '${m[1]}.');
   }
 }

@@ -1,53 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
-import 'record_purchase_screen.dart';
 
 /// Screen 05: Chi tiết khoản mua from Figma "Why I Buy ver2"
 class PurchaseDetailScreen extends StatelessWidget {
   final PurchaseItem purchase;
 
   const PurchaseDetailScreen({super.key, required this.purchase});
-
-  String _formatTimeRelative(DateTime dt) {
-    final now = DateTime.now();
-    final isToday =
-        now.year == dt.year && now.month == dt.month && now.day == dt.day;
-    final yesterday = now.subtract(const Duration(days: 1));
-    final isYesterday =
-        yesterday.year == dt.year &&
-        yesterday.month == dt.month &&
-        yesterday.day == dt.day;
-    final timeStr = DateFormat('HH:mm').format(dt);
-
-    if (isToday) {
-      return 'Hôm nay $timeStr';
-    } else if (isYesterday) {
-      return 'Hôm qua $timeStr';
-    } else {
-      return '${DateFormat('dd/MM').format(dt)} $timeStr';
-    }
-  }
-
-  String _formatFullDate(DateTime dt) {
-    const weekdays = [
-      'Thứ Hai',
-      'Thứ Ba',
-      'Thứ Tư',
-      'Thứ Năm',
-      'Thứ Sáu',
-      'Thứ Bảy',
-      'Chủ Nhật',
-    ];
-    final weekdayName = weekdays[dt.weekday - 1];
-    final dateStr = DateFormat('dd/MM/yyyy').format(dt);
-    return '$weekdayName, $dateStr';
-  }
 
   String _getBehavioralInsight(BuyingMotive motive) {
     switch (motive) {
@@ -379,7 +344,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatTimeRelative(item.dateTime),
+                      formatRelativeDateTime(item.dateTime),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -388,7 +353,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatFullDate(item.dateTime),
+                      formatWeekdayDate(item.dateTime),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF6D6E73),
@@ -543,10 +508,10 @@ class PurchaseDetailScreen extends StatelessWidget {
             ),
           ),
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => RecordPurchaseScreen(existingPurchase: item),
-              ),
+            Navigator.pushNamed(
+              context,
+              AppRoutes.recordPurchase,
+              arguments: RecordPurchaseArgs(existingPurchase: item),
             );
           },
           child: const Row(

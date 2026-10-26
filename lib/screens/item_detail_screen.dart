@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
 import '../models/item_status.dart';
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
@@ -75,10 +76,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'vi_VN',
-      symbol: 'đ',
-    );
     final item = widget.item;
 
     return Scaffold(
@@ -103,7 +100,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   Text(item.title, style: AppTextStyles.headlineMedium),
                   const SizedBox(height: AppDimens.space12),
                   Text(
-                    currencyFormatter.format(item.price),
+                    formatVnd(item.price.round()),
                     style: AppTextStyles.displayMedium.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.w700,
@@ -115,7 +112,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       MotiveChip(motive: item.motive),
                       const Spacer(),
                       Text(
-                        'Lưu ngày: ${DateFormat('dd/MM/yyyy').format(item.createdAt)}',
+                        'Lưu ngày: ${formatDate(item.createdAt)}',
                         style: AppTextStyles.labelMedium,
                       ),
                     ],

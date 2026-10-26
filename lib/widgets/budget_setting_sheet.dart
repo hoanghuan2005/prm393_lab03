@@ -240,12 +240,14 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                 onPressed: _isSaving
                     ? null
                     : () async {
+                        final navigator = Navigator.of(context);
+                        final messenger = ScaffoldMessenger.of(context);
                         setState(() => _isSaving = true);
                         await purchaseVm.setMonthlyBudget(_amount);
                         if (!mounted) return;
                         setState(() => _isSaving = false);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        navigator.pop();
+                        messenger.showSnackBar(
                           SnackBar(
                             content: Row(
                               children: [

@@ -25,7 +25,10 @@ class WishlistScreen extends StatefulWidget {
 }
 
 class _WishlistScreenState extends State<WishlistScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  // The query lives in the view model and survives tab switches; show it again
+  late final TextEditingController _searchController = TextEditingController(
+    text: context.read<WishlistViewModel>().searchQuery,
+  );
 
   @override
   void dispose() {
@@ -178,7 +181,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
       case UiInitial():
       case UiLoading():
         return const LoadingView(message: 'Đang lọc danh sách...');
-      case UiEmpty(message: final msg):
+      case UiEmpty(message: final msg, actionTitle: final addTitle):
+        if (vm.allItems.isEmpty) {
+          return EmptyView(
+            title: msg,
+            subtitle:
+                'Lưu món bạn đang muốn mua để cân nhắc trước khi quyết định.',
+            actionTitle: addTitle,
+            onAction: () => Navigator.pushNamed(context, AppRoutes.wishlistAdd),
+          );
+        }
         return EmptyView(
           title: msg,
           subtitle: 'Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc động cơ.',

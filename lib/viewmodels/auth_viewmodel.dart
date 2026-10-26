@@ -7,6 +7,7 @@ import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/pending_writes.dart';
 import '../services/user_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -54,6 +55,8 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> _onAuthChanged(User? user) async {
     final event = ++_authEvent;
+    // Firestore holds another account's queued writes until that account signs in again
+    if (user?.uid != _currentUser?.uid) PendingWrites.instance.reset();
     _currentUser = user;
 
     if (user == null) {

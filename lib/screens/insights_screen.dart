@@ -10,6 +10,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/insight_source_chip.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/empty_view.dart';
+import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 08: Góc nhìn (có AI) from Figma "Why I Buy ver2".
@@ -45,48 +46,52 @@ class InsightsScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: RefreshIndicator(
-        color: AppColors.onPrimary,
-        onRefresh: () => insightsVm.refresh(force: true),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildMonthSelector(context, purchaseVm),
-            const SizedBox(height: 12),
-            _buildAiStatusCard(insightsVm),
-            const SizedBox(height: 20),
-            if (stats == null || report == null || !stats.hasPurchases)
-              const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: EmptyView(
-                  title: 'Chưa có khoản mua nào trong tháng',
-                  subtitle: 'Khi bạn ghi khoản mua kèm động cơ, Góc nhìn sẽ tổng hợp lại ở đây.',
-                  icon: Icons.lightbulb_outline_rounded,
-                ),
-              )
-            else ...[
-              for (final card in report.cards) ...[
-                _InsightCardView(card: card),
-                const SizedBox(height: 16),
-              ],
-              OutlinedButton.icon(
-                onPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.reflection),
-                icon: const Icon(Icons.auto_stories_outlined, size: 18),
-                label: const Text('Xem chiêm nghiệm tháng'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.onPrimary,
-                  minimumSize: const Size.fromHeight(48),
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+      body:
+          stateView([
+            purchaseVm.state,
+          ], loadingMessage: 'Đang tải khoản mua...') ??
+          RefreshIndicator(
+            color: AppColors.onPrimary,
+            onRefresh: () => insightsVm.refresh(force: true),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildMonthSelector(context, purchaseVm),
+                const SizedBox(height: 12),
+                _buildAiStatusCard(insightsVm),
+                const SizedBox(height: 20),
+                if (stats == null || report == null || !stats.hasPurchases)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24),
+                    child: EmptyView(
+                      title: 'Chưa có khoản mua nào trong tháng',
+                      subtitle: 'Khi bạn ghi khoản mua kèm động cơ, Góc nhìn sẽ tổng hợp lại ở đây.',
+                      icon: Icons.lightbulb_outline_rounded,
+                    ),
+                  )
+                else ...[
+                  for (final card in report.cards) ...[
+                    _InsightCardView(card: card),
+                    const SizedBox(height: 16),
+                  ],
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.reflection),
+                    icon: const Icon(Icons.auto_stories_outlined, size: 18),
+                    label: const Text('Xem chiêm nghiệm tháng'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.onPrimary,
+                      minimumSize: const Size.fromHeight(48),
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+                ],
+              ],
+            ),
+          ),
     );
   }
 

@@ -242,7 +242,7 @@ Quy tắc bắt buộc:
           title: 'Món đã quyết định không mua',
           body:
               'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
-              'tổng giá đã ghi ${vnd(stats.skippedValue)}.',
+              '${stats.skippedValueText}.',
           fromAi: false,
         );
     }

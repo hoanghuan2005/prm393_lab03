@@ -60,8 +60,10 @@ class FirestoreUserService implements UserService {
 
   @override
   Future<void> updateSettings(String uid, UserSettings settings) => guard(
-    () => _paths.user(uid).set({
-      'settings': settings.toMap(),
-    }, SetOptions(merge: true)),
+    () => awaitWrite(
+      _paths.user(uid).set({
+        'settings': settings.toMap(),
+      }, SetOptions(merge: true)),
+    ),
   );
 }

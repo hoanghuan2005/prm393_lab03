@@ -69,6 +69,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         SnackBar(
           content: Text(message),
           behavior: SnackBarBehavior.floating,
+          persist: false,
           action: SnackBarAction(label: 'Thử lại', onPressed: onRetry),
         ),
       );
@@ -134,6 +135,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 : vm.actionError ?? 'Chưa hoàn tác được.',
           ),
           behavior: SnackBarBehavior.floating,
+          persist: false,
           action: ok
               ? null
               : SnackBarAction(

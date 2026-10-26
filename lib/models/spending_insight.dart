@@ -80,6 +80,9 @@ class MonthlySpendingStats {
   final int skippedCount;
   final int skippedValue;
 
+  /// Skipped items with no recorded price; they are not part of [skippedValue]
+  final int skippedUnpricedCount;
+
   /// Stable identity of the input data; used to cache AI output
   late final String cacheKey = jsonEncode(toPromptData());
 
@@ -95,6 +98,7 @@ class MonthlySpendingStats {
     required this.previousMonthTotal,
     required this.skippedCount,
     required this.skippedValue,
+    required this.skippedUnpricedCount,
   });
 
   factory MonthlySpendingStats.compute({
@@ -170,6 +174,9 @@ class MonthlySpendingStats {
       largestPurchase: largest,
       previousMonthTotal: previousPurchases.isEmpty ? null : previousTotal,
       skippedCount: skipped.length,
+      skippedUnpricedCount: skipped
+          .where((i) => i.latestPriceVnd == null)
+          .length,
       skippedValue: skipped.fold<int>(
         0,
         (sum, i) => sum + (i.latestPriceVnd ?? 0),
@@ -179,6 +186,25 @@ class MonthlySpendingStats {
 
   static bool isLateNight(DateTime d) =>
       d.hour >= kLateNightStartHour || d.hour < kLateNightEndHour;
+
+  /// Never shows 0 ₫ for items whose price was not recorded
+  String get skippedValueText => describeSkippedValue(
+    skippedValue: skippedValue,
+    skippedCount: skippedCount,
+    unpricedCount: skippedUnpricedCount,
+  );
+
+  static String describeSkippedValue({
+    required int skippedValue,
+    required int skippedCount,
+    required int unpricedCount,
+  }) {
+    if (unpricedCount >= skippedCount) return 'chưa ghi giá';
+    final total = 'tổng giá đã ghi ${formatVnd(skippedValue)}';
+    return unpricedCount == 0
+        ? total
+        : '$total ($unpricedCount món chưa ghi giá)';
+  }
 
   bool get hasPurchases => purchaseCount > 0;
   bool get hasEnoughDataForAi => purchaseCount >= kMinPurchasesForAi;
@@ -247,8 +273,12 @@ class MonthlySpendingStats {
         },
       'monDaQuyetDinhKhongMua': {
         'soMon': skippedCount,
-        'tongGiaDaGhi': skippedValue,
-        'tongGiaDaGhiText': formatVnd(skippedValue),
+        // No price at all is not "0 ₫"; leave the total out so the model cannot say it
+        if (skippedUnpricedCount < skippedCount) ...{
+          'tongGiaDaGhi': skippedValue,
+          'tongGiaDaGhiText': formatVnd(skippedValue),
+        },
+        'soMonChuaGhiGia': skippedUnpricedCount,
       },
     };
   }
@@ -269,6 +299,7 @@ class MonthlySpendingStats {
       lateNightAmount,
       skippedCount,
       skippedValue,
+      skippedUnpricedCount,
       BuyingMotive.values.length,
     };
     for (final m in motives) {

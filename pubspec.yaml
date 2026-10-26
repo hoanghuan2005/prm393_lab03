@@ -81,8 +81,11 @@ flutter:
   uses-material-design: true
 
   # Local, git-ignored files such as the App Check debug token (assets/local/app_check.json)
+  # Be Vietnam Pro (SIL OFL, see assets/fonts/OFL.txt) is embedded in the PDF report
   assets:
     - assets/local/
+    - assets/fonts/BeVietnamPro-Regular.ttf
+    - assets/fonts/BeVietnamPro-Bold.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

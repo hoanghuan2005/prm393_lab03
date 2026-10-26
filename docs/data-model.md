@@ -96,3 +96,16 @@ Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems`
 5. **Giá chưa biết là `null`, không bao giờ lưu `0`.** Có giá thì mỗi lần ghi giá thêm một `priceSnapshot` và cập nhật `latestPriceVnd` / `latestPriceAt`.
 6. **Cooldown:** khi thêm món, `cooldownUntil = createdAt + coolingOffDays` trừ khi động cơ là Nhu cầu.
 7. **Lịch sử chỉ thêm:** `priceSnapshots` và `decisions` không sửa được (rules `update: false`).
+8. **Mất mạng (E04):** Firestore bật bộ nhớ đệm trên máy (`firebase_setup.dart`). Mọi lệnh ghi qua `awaitWrite` (`service_guard.dart`): server chưa xác nhận sau 5 giây thì coi như đã lưu trên máy, đếm trong `PendingWrites` và hiện dải "Đang chờ mạng" trên mọi màn; Firestore tự gửi khi có mạng. Đọc trước khi ghi (`buyFromWishlist`, `delete`) chuyển sang bộ nhớ đệm khi không có mạng. Đổi tài khoản thì `PendingWrites.reset()` – hàng chờ của tài khoản cũ chỉ gửi khi tài khoản đó đăng nhập lại.
+9. **Món bỏ qua không có giá:** không cộng thành `0 ₫`. Màn Chiêm nghiệm, câu mẫu AI và PDF ghi "chưa ghi giá" hoặc "tổng giá đã ghi … (N món chưa ghi giá)"; dữ liệu gửi AI bỏ trường tổng khi không món nào có giá.
+
+## Khác biệt giữa các nền tảng
+
+| Tính năng | Android | Web | Windows |
+|---|---|---|---|
+| Firestore, Auth, ngân sách, Wishlist, PDF | Có | Có | Có |
+| Góc nhìn AI (Firebase AI Logic) | Có | Có (App Check reCAPTCHA Enterprise) | Có khi có `assets/local/app_check.json`; không có thì dùng câu mẫu |
+| Analytics, Remote Config | Có | Có | Không (giá trị mặc định) |
+| FCM | Có | Có, sau khi bấm "Bật thông báo" ở Cá nhân | Không |
+| Crashlytics | Có | Không (lỗi ghi ra console) | Không |
+| Nhắc xem lại theo giờ | Có | Không – dùng mục "Cần xem lại" | Không – dùng mục "Cần xem lại" |

@@ -14,7 +14,9 @@ class AppAnalyticsService {
   AppAnalyticsService({FirebaseAnalytics? analytics})
     : _analytics =
           analytics ??
-          (PlatformSupport.isMobile ? FirebaseAnalytics.instance : null);
+          (PlatformSupport.supportsAnalytics
+              ? FirebaseAnalytics.instance
+              : null);
 
   List<NavigatorObserver> get navigatorObservers => [
     if (_analytics != null) FirebaseAnalyticsObserver(analytics: _analytics),

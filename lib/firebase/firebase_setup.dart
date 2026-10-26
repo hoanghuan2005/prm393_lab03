@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +24,16 @@ class FirebaseSetup {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // 1a. Offline cache everywhere, so web behaves like Android (where it is the default):
+    // data stays readable offline and writes queue until the connection returns.
+    try {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+      );
+    } catch (e) {
+      debugPrint('Firestore persistence settings error: $e');
+    }
 
     // 1b. App Check (required by Firebase AI Logic). Failure only disables AI wording.
     try {

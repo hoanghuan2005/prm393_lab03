@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
+import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -263,6 +264,33 @@ class ProfileScreen extends StatelessWidget {
               title: '3. Cloud Messaging (FCM) Center',
               icon: Icons.notifications_active_outlined,
               children: [
+                if (settingsVm.asksNotificationPermissionInApp) ...[
+                  if (settingsVm.notificationsEnabled)
+                    Text(
+                      'Đã bật thông báo cho ứng dụng.',
+                      style: AppTextStyles.bodyMedium,
+                    )
+                  else
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.notifications_outlined),
+                      label: const Text('Bật thông báo'),
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final ok = await settingsVm.enableNotifications();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              ok
+                                  ? 'Đã bật thông báo. Tin nhắn FCM và nhắc xem lại sẽ hiện kể cả khi app đang đóng.'
+                                  : 'Chưa được phép gửi thông báo. Bạn có thể bật lại trong cài đặt của máy hoặc trình duyệt.',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: AppDimens.space12),
+                ],
                 Text(
                   'Hộp thư nhận thông báo (${settingsVm.notifications.length} tin nhắn):',
                   style: AppTextStyles.labelLarge,
@@ -313,7 +341,21 @@ class ProfileScreen extends StatelessWidget {
               variant: AppButtonVariant.secondary,
               icon: Icons.logout,
               onPressed: () async {
-                await authVm.signOut();
+                final isGuest = authVm.user?.isAnonymous ?? false;
+                final pending = PendingWrites.instance.count;
+                final ok = await ConfirmDialog.show(
+                  context,
+                  title: 'Đăng xuất?',
+                  message: [
+                    if (isGuest) 'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
+                    if (pending > 0)
+                      'Còn $pending thay đổi chưa đồng bộ do mất mạng; chúng chỉ được gửi lên khi bạn đăng nhập lại tài khoản này.',
+                    if (!isGuest && pending == 0) 'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
+                  ].join('\n\n'),
+                  confirmLabel: 'Đăng xuất',
+                  isDanger: isGuest || pending > 0,
+                );
+                if (ok) await authVm.signOut();
               },
             ),
             const SizedBox(height: AppDimens.space24),

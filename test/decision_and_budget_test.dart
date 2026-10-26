@@ -38,13 +38,16 @@ void main() {
       expect(await decisionChoices(), ['wait']);
     });
 
-    test('Bỏ qua then undo returns to "Đang cân nhắc" with skip + undo in the log', () async {
-      expect(await h.wishlist.skip(sampleWishlist()), isTrue);
-      expect((await itemData())['status'], WishlistStatus.skipped.key);
-      expect(await h.wishlist.reconsider(sampleWishlist()), isTrue);
-      expect((await itemData())['status'], WishlistStatus.considering.key);
-      expect(await decisionChoices(), containsAll(['skip', 'undo']));
-    });
+    test(
+      'Bỏ qua then undo returns to "Đang cân nhắc" with skip + undo in the log',
+      () async {
+        expect(await h.wishlist.skip(sampleWishlist()), isTrue);
+        expect((await itemData())['status'], WishlistStatus.skipped.key);
+        expect(await h.wishlist.reconsider(sampleWishlist()), isTrue);
+        expect((await itemData())['status'], WishlistStatus.considering.key);
+        expect(await decisionChoices(), containsAll(['skip', 'undo']));
+      },
+    );
 
     test('a failed decision reports an error instead of success', () async {
       h.wishlist.updateUid(null);
@@ -78,110 +81,146 @@ void main() {
       final data = await itemData();
       expect(data['status'], WishlistStatus.considering.key);
       expect(data['purchaseId'], isNull);
-      expect((await h.db.doc('$_path/purchases/$purchaseId').get()).exists, isFalse);
+      expect(
+        (await h.db.doc('$_path/purchases/$purchaseId').get()).exists,
+        isFalse,
+      );
       expect(await decisionChoices(), contains('undo'));
     });
 
-    test('the item can be bought again after its purchase was deleted', () async {
-      final first = await buy();
-      await h.purchases.deletePurchase(first);
-      final second = await buy();
-      expect((await h.db.doc('$_path/purchases/$second').get()).exists, isTrue);
-      expect((await itemData())['purchaseId'], second);
-    });
+    test(
+      'the item can be bought again after its purchase was deleted',
+      () async {
+        final first = await buy();
+        await h.purchases.deletePurchase(first);
+        final second = await buy();
+        expect(
+          (await h.db.doc('$_path/purchases/$second').get()).exists,
+          isTrue,
+        );
+        expect((await itemData())['purchaseId'], second);
+      },
+    );
 
-    test('an unlinked purchase is deleted without touching wishlist items', () async {
-      final saved = await h.purchases.addPurchase(
-        title: 'Cơm tấm',
-        amount: 40000,
-        motive: BuyingMotive.convenience,
-      );
-      expect(await h.purchases.deletePurchase(saved!.id), isTrue);
-      expect((await itemData())['status'], WishlistStatus.considering.key);
-      expect(await decisionChoices(), isEmpty);
-    });
+    test(
+      'an unlinked purchase is deleted without touching wishlist items',
+      () async {
+        final saved = await h.purchases.addPurchase(
+          title: 'Cơm tấm',
+          amount: 40000,
+          motive: BuyingMotive.convenience,
+        );
+        expect(await h.purchases.deletePurchase(saved!.id), isTrue);
+        expect((await itemData())['status'], WishlistStatus.considering.key);
+        expect(await decisionChoices(), isEmpty);
+      },
+    );
   });
 
   group('Budget per group (item 6)', () {
-    test('several group limits are saved in one write; empty removes a limit', () async {
-      final month = h.budget.monthKeyValue;
-      expect(await h.budget.setGroupLimits({'food': 1000000, 'tech': 2000000}), isTrue);
-      var limits = (await h.db.doc('$_path/budgets/$month').get()).data()!['limits'] as Map;
-      expect(limits, {'food': 1000000, 'tech': 2000000});
+    test(
+      'several group limits are saved in one write; empty removes a limit',
+      () async {
+        final month = h.budget.monthKeyValue;
+        expect(
+          await h.budget.setGroupLimits({'food': 1000000, 'tech': 2000000}),
+          isTrue,
+        );
+        var limits =
+            (await h.db.doc('$_path/budgets/$month').get()).data()!['limits']
+                as Map;
+        expect(limits, {'food': 1000000, 'tech': 2000000});
 
-      expect(await h.budget.setGroupLimits({'tech': null}), isTrue);
-      limits = (await h.db.doc('$_path/budgets/$month').get()).data()!['limits'] as Map;
-      expect(limits, {'food': 1000000});
-    });
+        expect(await h.budget.setGroupLimits({'tech': null}), isTrue);
+        limits =
+            (await h.db.doc('$_path/budgets/$month').get()).data()!['limits']
+                as Map;
+        expect(limits, {'food': 1000000});
+      },
+    );
 
-    testWidgets('purchases count towards their own group and month; total = sum of groups', (
-      tester,
-    ) async {
-      final now = DateTime.now();
-      await h.budgetService.setGroupLimits(PurchaseHarness.uid, h.budget.monthKeyValue, {
-        'food': 500000,
-        'tech': 1000000,
-      });
-      await h.purchases.addPurchase(
-        title: 'Cơm',
-        amount: 50000,
-        motive: BuyingMotive.need,
-        budgetGroupId: 'food',
-        dateTime: now,
-      );
-      await h.purchases.addPurchase(
-        title: 'Áo',
-        amount: 200000,
-        motive: BuyingMotive.want,
-        budgetGroupId: 'fashion',
-        dateTime: now,
-      );
-      await h.purchases.addPurchase(
-        title: 'Tháng trước',
-        amount: 999000,
-        motive: BuyingMotive.want,
-        budgetGroupId: 'food',
-        dateTime: DateTime(now.year, now.month - 1, 10),
-      );
+    testWidgets(
+      'purchases count towards their own group and month; total = sum of groups',
+      (tester) async {
+        final now = DateTime.now();
+        await h.budgetService.setGroupLimits(
+          PurchaseHarness.uid,
+          h.budget.monthKeyValue,
+          {'food': 500000, 'tech': 1000000},
+        );
+        await h.purchases.addPurchase(
+          title: 'Cơm',
+          amount: 50000,
+          motive: BuyingMotive.need,
+          budgetGroupId: 'food',
+          dateTime: now,
+        );
+        await h.purchases.addPurchase(
+          title: 'Áo',
+          amount: 200000,
+          motive: BuyingMotive.want,
+          budgetGroupId: 'fashion',
+          dateTime: now,
+        );
+        await h.purchases.addPurchase(
+          title: 'Tháng trước',
+          amount: 999000,
+          motive: BuyingMotive.want,
+          budgetGroupId: 'food',
+          dateTime: DateTime(now.year, now.month - 1, 10),
+        );
+        await tester.pumpWidget(h.app(const BudgetScreen()));
+        await tester.pumpAndSettle();
+
+        expect(h.budget.spentFor('food'), 50000);
+        expect(h.budget.spentFor('fashion'), 200000);
+        expect(h.budget.totalLimit, 1500000);
+        // The total is compared only with groups that have a limit
+        expect(h.budget.limitedSpent, 50000);
+        expect(h.budget.unlimitedSpent, 200000);
+        expect(h.budget.remaining, 1450000);
+        // A group without a limit but with spending still appears
+        expect(find.text('Chưa đặt hạn mức tháng này'), findsOneWidget);
+        expect(find.text('Vì sao con số này?'), findsNWidgets(2));
+      },
+    );
+  });
+
+  testWidgets(
+    'budget sheet saves a limit per group and shows the total as their sum',
+    (tester) async {
       await tester.pumpWidget(h.app(const BudgetScreen()));
+      // Streams opened in setUp deliver outside the widget test's fake clock
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đặt ngân sách cho tháng này'));
       await tester.pumpAndSettle();
 
-      expect(h.budget.spentFor('food'), 50000);
-      expect(h.budget.spentFor('fashion'), 200000);
-      expect(h.budget.totalLimit, 1500000);
-      // A group without a limit but with spending still appears
-      expect(find.text('Chưa đặt hạn mức tháng này'), findsOneWidget);
-      expect(find.text('Vì sao con số này?'), findsNWidgets(2));
-    });
-  });
+      Finder field(String groupId) => find.descendant(
+        of: find.byKey(ValueKey('budget-limit-$groupId')),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(field('food'), '500000');
+      await tester.enterText(field('tech'), '1000000');
+      await tester.pumpAndSettle();
+      expect(find.text('Tổng ngân sách tháng: 1.500.000 ₫'), findsOneWidget);
 
-  testWidgets('budget sheet saves a limit per group and shows the total as their sum', (
-    tester,
-  ) async {
-    await tester.pumpWidget(h.app(const BudgetScreen()));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Đặt ngân sách cho tháng này'));
-    await tester.pumpAndSettle();
-
-    Finder field(String groupId) => find.descendant(
-      of: find.byKey(ValueKey('budget-limit-$groupId')),
-      matching: find.byType(TextFormField),
-    );
-    await tester.enterText(field('food'), '500000');
-    await tester.enterText(field('tech'), '1000000');
-    await tester.pumpAndSettle();
-    expect(find.text('Tổng ngân sách tháng: 1.500.000 ₫'), findsOneWidget);
-
-    await tester.ensureVisible(find.text('Lưu hạn mức'));
-    await tester.tap(find.text('Lưu hạn mức'));
-    await tester.pumpAndSettle();
-    final limits =
-        (await h.db.doc('$_path/budgets/${h.budget.monthKeyValue}').get())
-                .data()!['limits']
-            as Map;
-    expect(limits, {'food': 500000, 'tech': 1000000});
-    expect(find.text('Lưu hạn mức'), findsNothing); // sheet closed only after saving
-  });
+      await tester.ensureVisible(find.text('Lưu hạn mức'));
+      await tester.tap(find.text('Lưu hạn mức'));
+      await tester.pumpAndSettle();
+      final limits =
+          (await h.db.doc('$_path/budgets/${h.budget.monthKeyValue}').get())
+                  .data()!['limits']
+              as Map;
+      expect(limits, {'food': 500000, 'tech': 1000000});
+      expect(
+        find.text('Lưu hạn mức'),
+        findsNothing,
+      ); // sheet closed only after saving
+    },
+  );
 
   testWidgets('a failed delete stays on the purchase and offers "Thử lại"', (
     tester,
@@ -221,7 +260,10 @@ void main() {
     await tester.tap(find.text('Thử lại'));
     await tester.pumpAndSettle();
     expect(find.text('open'), findsOneWidget);
-    expect((await h.db.doc('$_path/purchases/${saved!.id}').get()).exists, isFalse);
+    expect(
+      (await h.db.doc('$_path/purchases/${saved!.id}').get()).exists,
+      isFalse,
+    );
   });
 
   group('Item detail screen', () {
@@ -249,23 +291,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('Bỏ qua goes back with a 5-second "Hoàn tác" that restores the item', (
+    testWidgets(
+      'Bỏ qua goes back with a 5-second "Hoàn tác" that restores the item',
+      (tester) async {
+        await openDetail(tester);
+        await tester.tap(find.text('Bỏ qua'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('open'), findsOneWidget);
+        expect(find.text('Hoàn tác'), findsOneWidget);
+        expect((await itemData())['status'], WishlistStatus.skipped.key);
+
+        await tester.tap(find.text('Hoàn tác'));
+        await tester.pumpAndSettle();
+        expect((await itemData())['status'], WishlistStatus.considering.key);
+      },
+    );
+
+    testWidgets('Chờ asks for a date and shows the chosen review date', (
       tester,
     ) async {
-      await openDetail(tester);
-      await tester.tap(find.text('Bỏ qua'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('open'), findsOneWidget);
-      expect(find.text('Hoàn tác'), findsOneWidget);
-      expect((await itemData())['status'], WishlistStatus.skipped.key);
-
-      await tester.tap(find.text('Hoàn tác'));
-      await tester.pumpAndSettle();
-      expect((await itemData())['status'], WishlistStatus.considering.key);
-    });
-
-    testWidgets('Chờ asks for a date and shows the chosen review date', (tester) async {
       await openDetail(tester);
       await tester.tap(find.text('Chờ'));
       await tester.pumpAndSettle();

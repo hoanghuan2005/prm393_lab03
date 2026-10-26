@@ -8,6 +8,7 @@ import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 07: Mô hình from Figma "Why I Buy ver2"
@@ -99,357 +100,365 @@ class _PatternsScreenState extends State<PatternsScreen> {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Period Segmented Switcher: Tuần | Tháng
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildSegmentOption('Tuần', StatsPeriod.week),
+      body:
+          stateView([
+            purchaseVm.state,
+          ], loadingMessage: 'Đang tải khoản mua...') ??
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Period Segmented Switcher: Tuần | Tháng
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Expanded(
-                    child: _buildSegmentOption('Tháng', StatsPeriod.month),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Period Selector (Interactive)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_left_rounded,
-                      color: AppColors.accentNeutral,
-                    ),
-                    tooltip: isWeek ? 'Tuần trước' : 'Tháng trước',
-                    onPressed: isWeek
-                        ? () => _shiftWeek(-1)
-                        : purchaseVm.previousMonth,
-                  ),
-                  Flexible(
-                    child: InkWell(
-                      onTap: () async {
-                        if (isWeek) return _pickWeek();
-                        final picked = await MonthPickerSheet.show(
-                          context,
-                          purchaseVm.selectedMonth,
-                        );
-                        if (picked != null) {
-                          purchaseVm.setSelectedMonth(picked);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.calendar_month_outlined,
-                              size: 16,
-                              color: AppColors.onPrimary,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                isWeek
-                                    ? _weekLabel
-                                    : formatMonthLabel(
-                                        purchaseVm.selectedMonth,
-                                      ),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.onPrimary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.arrow_drop_down_rounded,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.accentNeutral,
-                    ),
-                    tooltip: isWeek ? 'Tuần sau' : 'Tháng sau',
-                    onPressed: isWeek
-                        ? () => _shiftWeek(1)
-                        : purchaseVm.nextMonth,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Total Summary Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        isWeek
-                            ? 'Tổng chi tiêu trong tuần'
-                            : 'Tổng chi tiêu trong tháng',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                      Expanded(
+                        child: _buildSegmentOption('Tuần', StatsPeriod.week),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        formatVnd(totalSpent),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.accentNeutral,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${stats.count} khoản đã ghi nhận',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textHint,
-                        ),
+                      Expanded(
+                        child: _buildSegmentOption('Tháng', StatsPeriod.month),
                       ),
                     ],
                   ),
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.pie_chart_rounded,
-                      color: AppColors.onPrimary,
-                      size: 24,
-                    ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Period Selector (Interactive)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Theo động cơ Header
-            const Text(
-              'Theo động cơ',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.onPrimary,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Motives Breakdown List
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  if (stats.motives.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Chưa có khoản mua nào trong kỳ này.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: AppColors.accentNeutral,
+                        ),
+                        tooltip: isWeek ? 'Tuần trước' : 'Tháng trước',
+                        onPressed: isWeek
+                            ? () => _shiftWeek(-1)
+                            : purchaseVm.previousMonth,
+                      ),
+                      Flexible(
+                        child: InkWell(
+                          onTap: () async {
+                            if (isWeek) return _pickWeek();
+                            final picked = await MonthPickerSheet.show(
+                              context,
+                              purchaseVm.selectedMonth,
+                            );
+                            if (picked != null) {
+                              purchaseVm.setSelectedMonth(picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.calendar_month_outlined,
+                                  size: 16,
+                                  color: AppColors.onPrimary,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    isWeek
+                                        ? _weekLabel
+                                        : formatMonthLabel(
+                                            purchaseVm.selectedMonth,
+                                          ),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.onPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_drop_down_rounded,
+                                  size: 20,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ...stats.motives.map((m) {
-                    final motive = m.motive;
-                    final sum = m.totalVnd;
-                    final count = m.count;
-                    final percent = stats.shareOf(sum);
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.accentNeutral,
+                        ),
+                        tooltip: isWeek ? 'Tuần sau' : 'Tháng sau',
+                        onPressed: isWeek
+                            ? () => _shiftWeek(1)
+                            : purchaseVm.nextMonth,
                       ),
-                      child: Column(
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Total Summary Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: motive.backgroundColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  motive.icon,
-                                  size: 16,
-                                  color: motive.color,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          motive.label,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.onPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                          formatVnd(sum),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.accentNeutral,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          '$count khoản chi',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.textHint,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${(percent * 100).toStringAsFixed(0)}%',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          Text(
+                            isWeek
+                                ? 'Tổng chi tiêu trong tuần'
+                                : 'Tổng chi tiêu trong tháng',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          // Track
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: percent,
-                              minHeight: 6,
-                              backgroundColor: AppColors.surfaceVariant,
-                              color: motive == BuyingMotive.sale
-                                  ? AppColors.primary
-                                  : motive.color,
+                          const SizedBox(height: 4),
+                          Text(
+                            formatVnd(totalSpent),
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accentNeutral,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${stats.count} khoản đã ghi nhận',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textHint,
                             ),
                           ),
                         ],
                       ),
-                    );
-                  }),
-                ],
-              ),
-            ),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.pie_chart_rounded,
+                          color: AppColors.onPrimary,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-            const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-            // Khung giờ chi tiêu
-            const Text(
-              'Khung giờ mua sắm',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.onPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
+                // Theo động cơ Header
+                const Text(
+                  'Theo động cơ',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
 
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  for (final stat in stats.timeSlots) ...[
-                    if (stat.slot != TimeSlot.values.first)
-                      const Divider(height: 20),
-                    _buildTimeSlotRow(
-                      '${stat.slot.label} (${stat.slot.rangeLabel})',
-                      '${stat.count} khoản (${formatVnd(stat.totalVnd)})',
-                      _slotIcons[stat.slot]!,
-                      _slotColors[stat.slot]!,
-                      stats.shareOf(stat.totalVnd),
-                    ),
-                  ],
-                ],
-              ),
+                const SizedBox(height: 12),
+
+                // Motives Breakdown List
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      if (stats.motives.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Chưa có khoản mua nào trong kỳ này.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ...stats.motives.map((m) {
+                        final motive = m.motive;
+                        final sum = m.totalVnd;
+                        final count = m.count;
+                        final percent = stats.shareOf(sum);
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: motive.backgroundColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      motive.icon,
+                                      size: 16,
+                                      color: motive.color,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              motive.label,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.onPrimary,
+                                              ),
+                                            ),
+                                            Text(
+                                              formatVnd(sum),
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.accentNeutral,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              '$count khoản chi',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppColors.textHint,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${(percent * 100).toStringAsFixed(0)}%',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // Track
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: percent,
+                                  minHeight: 6,
+                                  backgroundColor: AppColors.surfaceVariant,
+                                  color: motive == BuyingMotive.sale
+                                      ? AppColors.primary
+                                      : motive.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Khung giờ chi tiêu
+                const Text(
+                  'Khung giờ mua sắm',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final stat in stats.timeSlots) ...[
+                        if (stat.slot != TimeSlot.values.first)
+                          const Divider(height: 20),
+                        _buildTimeSlotRow(
+                          '${stat.slot.label} (${stat.slot.rangeLabel})',
+                          '${stat.count} khoản (${formatVnd(stat.totalVnd)})',
+                          _slotIcons[stat.slot]!,
+                          _slotColors[stat.slot]!,
+                          stats.shareOf(stat.totalVnd),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 

@@ -116,7 +116,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                 ),
                 child: Text(
                   'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
-                  'tổng giá đã ghi ${formatVnd(stats.skippedValue)}.',
+                  '${stats.skippedValueText}.',
                   style: AppTextStyles.bodyMedium,
                 ),
               ),
@@ -240,8 +240,10 @@ class _ReflectionFormState extends State<_ReflectionForm> {
     if (!mounted) return;
     if (!ok) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Chưa lưu được chiêm nghiệm. Thử lại sau ít phút.'),
+        SnackBar(
+          content: Text(
+            vm.actionError ?? 'Chưa lưu được chiêm nghiệm. Vui lòng chọn mức độ hài lòng rồi thử lại.',
+          ),
         ),
       );
       return;

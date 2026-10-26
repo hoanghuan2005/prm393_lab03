@@ -13,6 +13,8 @@ void showUndoSnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 5),
+        // With an action, Flutter keeps the SnackBar until dismissed unless persist is false
+        persist: false,
         action: SnackBarAction(label: 'Hoàn tác', onPressed: onUndo),
       ),
     );

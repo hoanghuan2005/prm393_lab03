@@ -59,6 +59,9 @@ class BudgetViewModel extends ChangeNotifier
   int? limitFor(String groupId) => limits[groupId];
   int get totalLimit => _budget?.totalLimit ?? 0;
 
+  /// False until the selected month's limits arrive, so "chưa đặt" is not shown early
+  bool get isBudgetLoaded => _budget != null;
+
   void updateUid(String? uid) {
     if (uid == _uid) return;
     _uid = uid;
@@ -124,11 +127,17 @@ class BudgetViewModel extends ChangeNotifier
           onError: (Object error, StackTrace stack) {
             _state = UiError(
               message: messageFor(error, stack, reason: 'watchMonthlyBudget'),
-              onRetry: _subscribeBudget,
+              onRetry: _retryBudget,
             );
             notifyListeners();
           },
         );
+  }
+
+  void _retryBudget() {
+    _state = _groups.isEmpty ? const UiLoading() : UiSuccess(groups);
+    notifyListeners();
+    _subscribeBudget();
   }
 
   void _retry(String uid) {
@@ -167,10 +176,17 @@ class BudgetViewModel extends ChangeNotifier
   /// All purchases of the selected month
   int get totalSpent => _monthPurchases.fold(0, (sum, p) => sum + p.amountVnd);
 
+  /// Spent in the groups that have a limit: the only spending [totalLimit] can be
+  /// compared with (a group without a limit cannot "exceed" anything)
+  int get limitedSpent => limits.keys.fold(0, (sum, id) => sum + spentFor(id));
+
+  /// Spent in groups without a limit this month, shown separately
+  int get unlimitedSpent => totalSpent - limitedSpent;
+
   double get progress =>
-      totalLimit > 0 ? (totalSpent / totalLimit).clamp(0.0, 1.0) : 0.0;
-  bool get isExceeded => totalLimit > 0 && totalSpent > totalLimit;
-  int get remaining => totalLimit - totalSpent;
+      totalLimit > 0 ? (limitedSpent / totalLimit).clamp(0.0, 1.0) : 0.0;
+  bool get isExceeded => totalLimit > 0 && limitedSpent > totalLimit;
+  int get remaining => totalLimit - limitedSpent;
 
   /// Spec 7.1 "phần khả dụng cho Wishlist" with every step of the calculation;
   /// null when the group has no limit this month

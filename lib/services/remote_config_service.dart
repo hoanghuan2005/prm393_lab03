@@ -30,13 +30,14 @@ class RemoteConfigService {
     keyAiInsightModel: 'gemini-3.5-flash-lite',
   };
 
-  bool get _isSupported => _injectedConfig != null || PlatformSupport.isMobile;
+  bool get _isSupported =>
+      _injectedConfig != null || PlatformSupport.supportsRemoteConfig;
 
   /// Initialize and fetch Remote Config
   Future<void> initialize() async {
     if (!_isSupported) {
       debugPrint(
-        'RemoteConfig skipped (only available on Android/iOS), using local defaults',
+        'RemoteConfig skipped (no Remote Config plugin on this platform), using local defaults',
       );
       return;
     }

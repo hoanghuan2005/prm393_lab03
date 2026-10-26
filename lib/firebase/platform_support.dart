@@ -15,6 +15,15 @@ class PlatformSupport {
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
+  /// Analytics, Remote Config and Cloud Messaging have web SDKs and the web app is
+  /// registered in Firebase, so web behaves like Android. Windows has no plugins for them.
+  static bool get supportsAnalytics => isMobile || kIsWeb;
+  static bool get supportsRemoteConfig => isMobile || kIsWeb;
+  static bool get supportsMessaging => isMobile || kIsWeb;
+
+  /// Crashlytics has no web or Windows SDK
+  static bool get supportsCrashlytics => isMobile;
+
   /// Google Sign-In: native SDK on mobile, Firebase popup on web.
   /// Not available on Windows desktop.
   static bool get supportsGoogleSignIn => isMobile || kIsWeb;

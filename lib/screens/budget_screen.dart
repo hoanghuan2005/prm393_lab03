@@ -9,6 +9,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/states/state_view.dart';
 
 /// Screen 31, 31a, 31b: Ngân sách theo nhóm from Figma "Why I Buy ver2"
 class BudgetScreen extends StatelessWidget {
@@ -64,7 +65,8 @@ class BudgetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final purchaseVm = context.watch<PurchaseViewModel>();
     final budgetVm = context.watch<BudgetViewModel>();
-    final spent = budgetVm.totalSpent;
+    // Compared with the limits, so only groups that have one
+    final spent = budgetVm.limitedSpent;
     final budget = budgetVm.totalLimit;
     final progress = budgetVm.progress;
     final isExceeded = budgetVm.isExceeded;
@@ -102,109 +104,130 @@ class BudgetScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Month Selector Row
-              _buildMonthSelector(context, purchaseVm),
+      body:
+          stateView([
+            budgetVm.state,
+            purchaseVm.state,
+          ], loadingMessage: 'Đang tải ngân sách...') ??
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Month Selector Row
+                  _buildMonthSelector(context, purchaseVm),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-              if (budget <= 0)
-                _buildEmptyState(context)
-              else
-                // Overall Budget Card (Figma 31a/31b)
-                _buildOverallBudgetCard(
-                  context,
-                  spent,
-                  budget,
-                  progress,
-                  isExceeded,
-                ),
-
-              if (visibleGroups.isNotEmpty) ...[
-                const SizedBox(height: 24),
-
-                // Category Budgets Header
-                const Text(
-                  'CÁC NHÓM NGÂN SÁCH',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Category Cards
-                ...visibleGroups.map((group) {
-                  return _buildCategoryCard(
-                    context,
-                    name: group.name,
-                    icon: _groupIcons[group.id] ?? Icons.more_horiz_rounded,
-                    spent: budgetVm.spentFor(group.id),
-                    breakdown: budgetVm.availableBreakdown(group.id),
-                  );
-                }),
-              ],
-
-              if (budget > 0) ...[
-                const SizedBox(height: 16),
-
-                // Note at bottom (Figma 31)
-                const Center(
-                  child: Text(
-                    'Bỏ qua cũng được: Decision Card vẫn hoạt động, chỉ không tính phần trăm.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textHint,
-                      height: 1.35,
+                  if (!budgetVm.isBudgetLoaded)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (budget <= 0)
+                    _buildEmptyState(context)
+                  else
+                    // Overall Budget Card (Figma 31a/31b)
+                    _buildOverallBudgetCard(
+                      context,
+                      spent,
+                      budget,
+                      progress,
+                      isExceeded,
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Action Button: Thiết lập lại ngân sách
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
+                  if (budget > 0 && budgetVm.unlimitedSpent > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Ngoài ra bạn đã chi ${formatVnd(budgetVm.unlimitedSpent)} ở nhóm chưa đặt hạn mức (không tính vào tổng trên).',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
-                    onPressed: () => BudgetSettingSheet.show(context),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.tune_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Cài đặt mức ngân sách',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+
+                  if (visibleGroups.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+
+                    // Category Budgets Header
+                    const Text(
+                      'CÁC NHÓM NGÂN SÁCH',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Category Cards
+                    ...visibleGroups.map((group) {
+                      return _buildCategoryCard(
+                        context,
+                        name: group.name,
+                        icon: _groupIcons[group.id] ?? Icons.more_horiz_rounded,
+                        spent: budgetVm.spentFor(group.id),
+                        breakdown: budgetVm.availableBreakdown(group.id),
+                      );
+                    }),
+                  ],
+
+                  if (budget > 0) ...[
+                    const SizedBox(height: 16),
+
+                    // Note at bottom (Figma 31)
+                    const Center(
+                      child: Text(
+                        'Bỏ qua cũng được: Decision Card vẫn hoạt động, chỉ không tính phần trăm.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Action Button: Thiết lập lại ngân sách
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                      ],
+                        onPressed: () => BudgetSettingSheet.show(context),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.tune_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Cài đặt mức ngân sách',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 

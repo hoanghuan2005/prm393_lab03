@@ -76,11 +76,13 @@ class FirestorePurchaseService implements PurchaseService {
         final ref = _paths
             .purchases(uid)
             .doc(purchase.id.isEmpty ? null : purchase.id);
-        await ref.set({
-          ...purchase.toMap(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        await awaitWrite(
+          ref.set({
+            ...purchase.toMap(),
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }),
+        );
         return purchase.copyWith(id: ref.id);
       });
 
@@ -88,26 +90,29 @@ class FirestorePurchaseService implements PurchaseService {
   Future<void> update(String uid, PurchaseItem purchase) => guard(() {
     _validate(purchase);
     final data = purchase.toMap()..remove('createdAt');
-    return _paths.purchase(uid, purchase.id).update({
-      ...data,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    return awaitWrite(
+      _paths.purchase(uid, purchase.id).update({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    );
   });
 
   @override
   Future<void> delete(String uid, String purchaseId) => guard(() async {
     final purchaseRef = _paths.purchase(uid, purchaseId);
-    final snapshot = await purchaseRef.get();
-    final itemId = snapshot.exists
+    final snapshot = await _readOfflineSafe(purchaseRef);
+    final itemId = snapshot != null && snapshot.exists
         ? PurchaseItem.fromFirestore(snapshot).wishlistItemId
         : null;
     final batch = _paths.db.batch()..delete(purchaseRef);
 
     if (itemId != null) {
       final itemRef = _paths.wishlistItem(uid, itemId);
-      final itemSnapshot = await itemRef.get();
+      final itemSnapshot = await _readOfflineSafe(itemRef);
       // Only unlink when the item still points at this purchase (it may be deleted or re-bought)
-      if (itemSnapshot.exists &&
+      if (itemSnapshot != null &&
+          itemSnapshot.exists &&
           WishlistItem.fromFirestore(itemSnapshot).purchaseId == purchaseId) {
         batch
           ..update(itemRef, {
@@ -130,7 +135,7 @@ class FirestorePurchaseService implements PurchaseService {
           });
       }
     }
-    await batch.commit();
+    await awaitWrite(batch.commit());
   });
 
   @override
@@ -153,20 +158,25 @@ class FirestorePurchaseService implements PurchaseService {
       );
     }
     final itemRef = _paths.wishlistItem(uid, item.id);
-    final snapshot = await itemRef.get();
-    if (!snapshot.exists) {
+    final snapshot = await _readOfflineSafe(itemRef);
+    if (snapshot != null && !snapshot.exists) {
       throw const AppException(
         'not-found',
         'Món này đã bị xoá. Vui lòng quay lại danh sách.',
       );
     }
-    final current = WishlistItem.fromFirestore(snapshot);
+    // Offline and not cached: the screen's copy of the item is the best we know
+    final current = snapshot == null
+        ? item
+        : WishlistItem.fromFirestore(snapshot);
     final purchaseRef = _paths.purchase(
       uid,
       current.purchaseId ?? 'wishlist_${item.id}',
     );
-    final existing = await purchaseRef.get();
-    if (existing.exists) return _readLinkedPurchase(existing, item.id);
+    final existing = await _readOfflineSafe(purchaseRef);
+    if (existing != null && existing.exists) {
+      return _readLinkedPurchase(existing, item.id);
+    }
     if (current.purchaseId != null) {
       throw const AppException(
         'missing-purchase',
@@ -223,7 +233,7 @@ class FirestorePurchaseService implements PurchaseService {
         'at': FieldValue.serverTimestamp(),
       });
     try {
-      await batch.commit();
+      await awaitWrite(batch.commit());
     } on FirebaseException catch (error) {
       if (error.code != 'permission-denied' && error.code != 'already-exists') {
         rethrow;
@@ -242,6 +252,24 @@ class FirestorePurchaseService implements PurchaseService {
     }
     return purchase;
   });
+
+  /// `get()` fails offline for a document that is not in the local cache (e.g. the
+  /// `wishlist_{itemId}` purchase that does not exist yet). Falls back to the cache and
+  /// returns null when this device does not know the document.
+  static Future<DocumentSnapshot<JsonMap>?> _readOfflineSafe(
+    DocumentReference<JsonMap> ref,
+  ) async {
+    try {
+      return await ref.get();
+    } on FirebaseException catch (e) {
+      if (e.code != 'unavailable') rethrow;
+      try {
+        return await ref.get(const GetOptions(source: Source.cache));
+      } on FirebaseException {
+        return null;
+      }
+    }
+  }
 
   static PurchaseItem _readLinkedPurchase(
     DocumentSnapshot snapshot,

@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 06: Lịch sử from Figma "Why I Buy ver2"
@@ -51,239 +52,251 @@ class HistoryScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // Period Selector: < Tháng MM/YYYY > (Fully Interactive)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.chevron_left_rounded,
-                    color: AppColors.accentNeutral,
-                  ),
-                  tooltip: 'Tháng trước',
-                  onPressed: () => purchaseVm.previousMonth(),
+      body:
+          stateView([
+            purchaseVm.state,
+          ], loadingMessage: 'Đang tải lịch sử...') ??
+          Column(
+            children: [
+              // Period Selector: < Tháng MM/YYYY > (Fully Interactive)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                InkWell(
-                  onTap: () async {
-                    final picked = await MonthPickerSheet.show(
-                      context,
-                      selectedMonth,
-                    );
-                    if (picked != null) {
-                      purchaseVm.setSelectedMonth(picked);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                color: Colors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: AppColors.accentNeutral,
+                      ),
+                      tooltip: 'Tháng trước',
+                      onPressed: () => purchaseVm.previousMonth(),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.calendar_month_outlined,
-                          size: 18,
-                          color: AppColors.onPrimary,
+                    InkWell(
+                      onTap: () async {
+                        final picked = await MonthPickerSheet.show(
+                          context,
+                          selectedMonth,
+                        );
+                        if (picked != null) {
+                          purchaseVm.setSelectedMonth(picked);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          monthLabel,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.onPrimary,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_outlined,
+                              size: 18,
+                              color: AppColors.onPrimary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              monthLabel,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.onPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_drop_down_rounded,
+                              size: 22,
+                              color: AppColors.textSecondary,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.arrow_drop_down_rounded,
-                          size: 22,
-                          color: AppColors.textSecondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.accentNeutral,
-                  ),
-                  tooltip: 'Tháng sau',
-                  onPressed: () => purchaseVm.nextMonth(),
-                ),
-              ],
-            ),
-          ),
-
-          // Motive Filter Chips (Horizontal scroll)
-          Container(
-            height: 48,
-            color: Colors.white,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                _buildFilterChip(
-                  context,
-                  label: 'Tất cả',
-                  isSelected: purchaseVm.selectedMotiveFilter == null,
-                  onTap: () => purchaseVm.setMotiveFilter(null),
-                ),
-                const SizedBox(width: 8),
-                ...BuyingMotive.values.map((motive) {
-                  final isSelected = purchaseVm.selectedMotiveFilter == motive;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: _buildFilterChip(
-                      context,
-                      label: motive.label,
-                      icon: motive.icon,
-                      isSelected: isSelected,
-                      onTap: () => purchaseVm.setMotiveFilter(
-                        isSelected ? null : motive,
                       ),
                     ),
-                  );
-                }),
-              ],
-            ),
-          ),
-
-          const Divider(height: 1, color: AppColors.divider),
-
-          // Main Scroll Area with Budget Meter & Purchases
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // 1. Monthly Budget Meter Card (Figma "31 Ngân sách theo nhóm")
-                _buildBudgetMeterCard(context),
-
-                const SizedBox(height: 16),
-
-                // 2. Day Grouped Purchases or Empty State
-                if (purchases.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(32),
-                    alignment: Alignment.center,
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 48,
-                          color: AppColors.outline,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Không có khoản chi nào trong $monthLabel',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textHint,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.accentNeutral,
+                      ),
+                      tooltip: 'Tháng sau',
+                      onPressed: () => purchaseVm.nextMonth(),
                     ),
-                  )
-                else
-                  ...grouped.keys.map((dateKey) {
-                    final dayItems = grouped[dateKey]!;
-                    final dayTotal = dayItems.fold(
-                      0,
-                      (sum, i) => sum + i.amountVnd,
-                    );
+                  ],
+                ),
+              ),
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Day Header Row
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 4,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _formatDayHeader(dateKey),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              Text(
-                                formatVnd(dayTotal),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.accentNeutral,
-                                ),
-                              ),
-                            ],
+              // Motive Filter Chips (Horizontal scroll)
+              Container(
+                height: 48,
+                color: Colors.white,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  children: [
+                    _buildFilterChip(
+                      context,
+                      label: 'Tất cả',
+                      isSelected: purchaseVm.selectedMotiveFilter == null,
+                      onTap: () => purchaseVm.setMotiveFilter(null),
+                    ),
+                    const SizedBox(width: 8),
+                    ...BuyingMotive.values.map((motive) {
+                      final isSelected =
+                          purchaseVm.selectedMotiveFilter == motive;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: _buildFilterChip(
+                          context,
+                          label: motive.label,
+                          icon: motive.icon,
+                          isSelected: isSelected,
+                          onTap: () => purchaseVm.setMotiveFilter(
+                            isSelected ? null : motive,
                           ),
                         ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
 
-                        // Day Purchases Card
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            children: List.generate(dayItems.length, (i) {
-                              final item = dayItems[i];
-                              final isLast = i == dayItems.length - 1;
-                              return Column(
+              const Divider(height: 1, color: AppColors.divider),
+
+              // Main Scroll Area with Budget Meter & Purchases
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // 1. Monthly Budget Meter Card (Figma "31 Ngân sách theo nhóm")
+                    _buildBudgetMeterCard(context),
+
+                    const SizedBox(height: 16),
+
+                    // 2. Day Grouped Purchases or Empty State
+                    if (purchases.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 48,
+                              color: AppColors.outline,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Không có khoản chi nào trong $monthLabel',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textHint,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...grouped.keys.map((dateKey) {
+                        final dayItems = grouped[dateKey]!;
+                        final dayTotal = dayItems.fold(
+                          0,
+                          (sum, i) => sum + i.amountVnd,
+                        );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Day Header Row
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 4,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  // Own Material so ink splashes paint above the white card
-                                  Material(
-                                    type: MaterialType.transparency,
-                                    child: _buildHistoryRow(
-                                      context,
-                                      item,
-                                      purchaseVm,
+                                  Text(
+                                    _formatDayHeader(dateKey),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                  if (!isLast)
-                                    const Divider(
-                                      height: 1,
-                                      color: AppColors.surfaceVariant,
+                                  Text(
+                                    formatVnd(dayTotal),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.accentNeutral,
                                     ),
+                                  ),
                                 ],
-                              );
-                            }),
-                          ),
-                        ),
+                              ),
+                            ),
 
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  }),
-              ],
-            ),
+                            // Day Purchases Card
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Column(
+                                children: List.generate(dayItems.length, (i) {
+                                  final item = dayItems[i];
+                                  final isLast = i == dayItems.length - 1;
+                                  return Column(
+                                    children: [
+                                      // Own Material so ink splashes paint above the white card
+                                      Material(
+                                        type: MaterialType.transparency,
+                                        child: _buildHistoryRow(
+                                          context,
+                                          item,
+                                          purchaseVm,
+                                        ),
+                                      ),
+                                      if (!isLast)
+                                        const Divider(
+                                          height: 1,
+                                          color: AppColors.surfaceVariant,
+                                        ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
@@ -299,7 +312,7 @@ class HistoryScreen extends StatelessWidget {
   // ==================== BUDGET METER CARD (Figma 31) ====================
   Widget _buildBudgetMeterCard(BuildContext context) {
     final budgetVm = context.watch<BudgetViewModel>();
-    final spent = budgetVm.totalSpent;
+    final spent = budgetVm.limitedSpent;
     final budget = budgetVm.totalLimit;
     final progress = budgetVm.progress;
     final isExceeded = budgetVm.isExceeded;

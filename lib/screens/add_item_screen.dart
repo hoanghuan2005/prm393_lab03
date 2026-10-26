@@ -110,6 +110,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     'Chưa lưu được món. Vui lòng thử lại.',
               ),
               behavior: SnackBarBehavior.floating,
+              persist: false,
               action: SnackBarAction(label: 'Thử lại', onPressed: _handleSave),
             ),
           );

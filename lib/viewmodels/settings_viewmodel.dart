@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../firebase/platform_support.dart';
 import '../models/user_profile.dart';
 import '../services/crashlytics_service.dart';
 import '../services/demo_data_service.dart';
@@ -56,7 +57,29 @@ class SettingsViewModel extends ChangeNotifier
   // FCM Notifications
   List<AppNotificationItem> get notifications => _notifications;
 
+  /// Notification permission is asked from a tap (here or right after "Chờ"), never on
+  /// launch, on every platform that has Cloud Messaging
+  bool get asksNotificationPermissionInApp => PlatformSupport.supportsMessaging;
+  bool _notificationsEnabled = false;
+  bool get notificationsEnabled => _notificationsEnabled;
+
+  /// Must be called from a user's tap
+  Future<bool> enableNotifications() async {
+    _notificationsEnabled = await notificationService
+        .requestPermissionFromUser();
+    notifyListeners();
+    return _notificationsEnabled;
+  }
+
   void _init() {
+    if (PlatformSupport.supportsMessaging) {
+      unawaited(
+        notificationService.isPermissionGranted().then((granted) {
+          _notificationsEnabled = granted;
+          notifyListeners();
+        }),
+      );
+    }
     _notifications = notificationService.receivedNotifications;
     _notifSubscription = notificationService.notificationsStream.listen((list) {
       _notifications = list;
@@ -67,6 +90,8 @@ class SettingsViewModel extends ChangeNotifier
   /// Called by the provider whenever the signed-in user changes
   void updateUid(String? uid) {
     if (uid == _uid) return;
+    // Leaving an account (not the first sign-in, whose launch message must survive)
+    if (_uid != null) notificationService.clearReceived();
     _uid = uid;
     _settingsSubscription?.cancel();
     _settingsSubscription = null;

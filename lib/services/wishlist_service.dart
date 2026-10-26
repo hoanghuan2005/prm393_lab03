@@ -105,17 +105,19 @@ class FirestoreWishlistService implements WishlistService {
         PriceSnapshot(id: '', amountVnd: price, observedAt: createdAt).toMap(),
       );
     }
-    await batch.commit();
+    await awaitWrite(batch.commit());
     return item;
   });
 
   @override
   Future<void> update(String uid, WishlistItem item) => guard(() {
     final data = item.toMap()..remove('createdAt');
-    return _paths.wishlistItem(uid, item.id).update({
-      ...data,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    return awaitWrite(
+      _paths.wishlistItem(uid, item.id).update({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    );
   });
 
   @override
@@ -132,7 +134,7 @@ class FirestoreWishlistService implements WishlistService {
           'latestPriceAt': Timestamp.fromDate(now),
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      await batch.commit();
+      await awaitWrite(batch.commit());
     },
   );
 
@@ -145,7 +147,7 @@ class FirestoreWishlistService implements WishlistService {
             'updatedAt': FieldValue.serverTimestamp(),
           });
         _addDecision(batch, uid, itemId, DecisionChoice.wait, reviewAt);
-        await batch.commit();
+        await awaitWrite(batch.commit());
       });
 
   @override
@@ -158,7 +160,7 @@ class FirestoreWishlistService implements WishlistService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     _addDecision(batch, uid, itemId, DecisionChoice.skip, null);
-    await batch.commit();
+    await awaitWrite(batch.commit());
   });
 
   @override
@@ -170,7 +172,7 @@ class FirestoreWishlistService implements WishlistService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     _addDecision(batch, uid, itemId, DecisionChoice.undo, null);
-    await batch.commit();
+    await awaitWrite(batch.commit());
   });
 
   @override
@@ -181,7 +183,7 @@ class FirestoreWishlistService implements WishlistService {
       batch.delete(doc.reference);
     }
     batch.delete(_paths.wishlistItem(uid, itemId));
-    await batch.commit();
+    await awaitWrite(batch.commit());
   });
 
   void _addDecision(

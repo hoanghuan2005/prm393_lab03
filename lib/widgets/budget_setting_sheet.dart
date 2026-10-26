@@ -88,7 +88,10 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
   Widget build(BuildContext context) {
     final vm = context.watch<BudgetViewModel>();
     final total = _total;
-    final spent = vm.totalSpent;
+    // Only groups that get a limit in this form can be compared with the total
+    final spent = _values.entries
+        .where((e) => e.value != null)
+        .fold(0, (sum, e) => sum + vm.spentFor(e.key));
     return Form(
       key: _formKey,
       child: Column(
@@ -139,7 +142,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
                 Text(
                   total == 0
                       ? 'Chưa đặt hạn mức nào. Decision Card vẫn hoạt động, chỉ không tính phần trăm.'
-                      : 'Bằng tổng hạn mức các nhóm. Đã chi ${formatVnd(spent)}; '
+                      : 'Bằng tổng hạn mức các nhóm. Các nhóm này đã chi ${formatVnd(spent)}; '
                             '${spent > total ? 'đã vượt ${formatVnd(spent - total)}' : 'còn ${formatVnd(total - spent)}'}.',
                   style: AppTextStyles.bodyMedium,
                 ),

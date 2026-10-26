@@ -28,9 +28,11 @@ class FirestoreReflectionService implements ReflectionService {
 
   @override
   Future<void> save(String uid, Reflection reflection) => guard(
-    () => _paths.reflection(uid, reflection.month).set({
-      ...reflection.toMap(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true)),
+    () => awaitWrite(
+      _paths.reflection(uid, reflection.month).set({
+        ...reflection.toMap(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)),
+    ),
   );
 }

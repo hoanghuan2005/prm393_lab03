@@ -12,6 +12,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 02: Trang chủ from Figma "Why I Buy ver2"
@@ -110,38 +111,42 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Greeting
-            const Text(
-              'Chào bạn,',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.onPrimary,
-              ),
+      body:
+          stateView([
+            purchaseVm.state,
+          ], loadingMessage: 'Đang tải khoản mua...') ??
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting
+                const Text(
+                  'Chào bạn,',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Card 1: TỔNG QUAN THÁNG (selected month)
+                _buildMonthSummaryCard(context, purchaseVm),
+
+                const SizedBox(height: 16),
+
+                // Card 2: Danh sách mong muốn entry
+                _buildWishlistEntryCard(context, wishlistVm),
+
+                const SizedBox(height: 24),
+
+                // Section 3: Khoản mua gần đây
+                _buildRecentPurchasesSection(context, purchaseVm),
+              ],
             ),
-
-            const SizedBox(height: 12),
-
-            // Card 1: TỔNG QUAN THÁNG (selected month)
-            _buildMonthSummaryCard(context, purchaseVm),
-
-            const SizedBox(height: 16),
-
-            // Card 2: Danh sách mong muốn entry
-            _buildWishlistEntryCard(context, wishlistVm),
-
-            const SizedBox(height: 24),
-
-            // Section 3: Khoản mua gần đây
-            _buildRecentPurchasesSection(context, purchaseVm),
-          ],
-        ),
-      ),
+          ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -408,8 +413,9 @@ class HomeScreen extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text:
-                                '${formatVnd(budgetVm.totalSpent)} / ${formatVnd(budgetVm.totalLimit)}',
+                            text: budgetVm.totalLimit > 0
+                                ? '${formatVnd(budgetVm.limitedSpent)} / ${formatVnd(budgetVm.totalLimit)}'
+                                : 'chưa đặt',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.onPrimary,
@@ -419,28 +425,30 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: budgetVm.isExceeded
-                          ? AppColors.surfaceVariant
-                          : AppColors.successContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${(budgetVm.progress * 100).toInt()}%',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                  // No percentage without a limit (it would read as a green "0%")
+                  if (budgetVm.totalLimit > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
                         color: budgetVm.isExceeded
-                            ? AppColors.accentNeutral
-                            : AppColors.onSuccessContainer,
+                            ? AppColors.surfaceVariant
+                            : AppColors.successContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${(budgetVm.progress * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: budgetVm.isExceeded
+                              ? AppColors.accentNeutral
+                              : AppColors.onSuccessContainer,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.chevron_right_rounded,
@@ -594,19 +602,33 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border, width: 1),
           ),
-          child: Column(
-            children: List.generate(recentList.length, (index) {
-              final item = recentList[index];
-              final isLast = index == recentList.length - 1;
-              return Column(
-                children: [
-                  _buildPurchaseRow(context, item),
-                  if (!isLast)
-                    const Divider(height: 1, color: AppColors.surfaceVariant),
-                ],
-              );
-            }),
-          ),
+          child: recentList.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Chưa có khoản mua nào trong tháng này. Bấm "Ghi khoản mua" để bắt đầu.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: List.generate(recentList.length, (index) {
+                    final item = recentList[index];
+                    final isLast = index == recentList.length - 1;
+                    return Column(
+                      children: [
+                        _buildPurchaseRow(context, item),
+                        if (!isLast)
+                          const Divider(
+                            height: 1,
+                            color: AppColors.surfaceVariant,
+                          ),
+                      ],
+                    );
+                  }),
+                ),
         ),
       ],
     );

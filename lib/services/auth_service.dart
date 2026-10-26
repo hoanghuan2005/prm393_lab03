@@ -7,11 +7,16 @@ import '../firebase/platform_support.dart';
 /// Service abstraction for Authentication
 class AuthService {
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  final GoogleSignIn? _injectedGoogleSignIn;
+
+  /// Created on first use, i.e. only on Android/iOS: the web uses Firebase's popup, and
+  /// creating google_sign_in_web without a client-id meta tag fails an assertion on start.
+  late final GoogleSignIn _googleSignIn =
+      _injectedGoogleSignIn ?? GoogleSignIn();
 
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
     : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn();
+      _injectedGoogleSignIn = googleSignIn;
 
   /// Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();

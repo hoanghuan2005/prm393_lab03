@@ -46,34 +46,28 @@ class NotificationService {
   Stream<List<AppNotificationItem>> get notificationsStream =>
       _notificationsStreamController.stream;
 
-  /// Initialize FCM, request permissions, and register listeners
+  /// Initialize FCM and register listeners. Permission is never asked here: it is asked
+  /// right after the user chooses "Chờ" or taps "Bật thông báo" in Cá nhân (spec A-09).
+  /// Asking on launch would spend Android's limited prompts and may get a web site blocked.
   Future<void> initialize({
     Function(RemoteMessage message)? onNotificationOpened,
   }) async {
-    if (!PlatformSupport.isMobile) {
+    if (!PlatformSupport.supportsMessaging) {
       debugPrint(
-        'NotificationService: FCM skipped (only available on Android/iOS)',
+        'NotificationService: FCM skipped (no plugin on this platform)',
       );
       return;
     }
     try {
-      // 1. Request notification permission (Crucial for Android 13+)
-      final settings = await _fcm.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
+      final current = await _fcm.getNotificationSettings();
+      debugPrint('FCM permission: ${current.authorizationStatus}');
 
-      debugPrint('FCM Authorization status: ${settings.authorizationStatus}');
-
-      // 2. Register background handler
-      FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler,
-      );
+      // Background messages: native handler on mobile, web/firebase-messaging-sw.js on web
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+      }
 
       // 3. Foreground message listener
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -100,12 +94,43 @@ class NotificationService {
         onNotificationOpened?.call(initialMessage);
       }
 
-      // Log FCM Token
-      // ignore: deprecated_member_use
-      final token = await _fcm.getToken();
-      debugPrint('FCM Device Token: $token');
+      // On web getToken itself would open the browser prompt; wait for the user's click
+      if (!kIsWeb || await isPermissionGranted()) await _logToken();
     } catch (e) {
       debugPrint('NotificationService initialize error: $e');
+    }
+  }
+
+  Future<void> _logToken() async {
+    // ignore: deprecated_member_use
+    final token = await _fcm.getToken();
+    debugPrint('FCM Device Token: $token');
+  }
+
+  /// Notifications are allowed for this app (web: for this site)
+  Future<bool> isPermissionGranted() async {
+    if (!PlatformSupport.supportsMessaging) return false;
+    try {
+      final settings = await _fcm.getNotificationSettings();
+      return settings.authorizationStatus == AuthorizationStatus.authorized;
+    } catch (e) {
+      debugPrint('NotificationService permission check error: $e');
+      return false;
+    }
+  }
+
+  /// Asks for permission (Android 13+ / browser). Must run from a user's tap.
+  Future<bool> requestPermissionFromUser() async {
+    if (!PlatformSupport.supportsMessaging) return false;
+    try {
+      final settings = await _fcm.requestPermission();
+      final granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
+      if (granted) await _logToken();
+      return granted;
+    } catch (e) {
+      debugPrint('NotificationService requestPermission error: $e');
+      return false;
     }
   }
 
@@ -121,6 +146,13 @@ class NotificationService {
     _notificationsStreamController.add(
       List.unmodifiable(_receivedNotifications),
     );
+  }
+
+  /// Forgets messages received in the previous session (sign-out / account switch)
+  void clearReceived() {
+    if (_receivedNotifications.isEmpty) return;
+    _receivedNotifications.clear();
+    _notificationsStreamController.add(const []);
   }
 
   void dispose() {

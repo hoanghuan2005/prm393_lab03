@@ -487,7 +487,7 @@ class _BatchWriter {
 
   Future<void> commit() async {
     for (final batch in _batches) {
-      await batch.commit();
+      await awaitWrite(batch.commit());
     }
   }
 }

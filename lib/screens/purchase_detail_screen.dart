@@ -57,6 +57,7 @@ class PurchaseDetailScreen extends StatelessWidget {
         SnackBar(
           content: Text(purchaseVm.actionError ?? 'Chưa xoá được khoản mua.'),
           behavior: SnackBarBehavior.floating,
+          persist: false,
           action: context.mounted
               ? SnackBarAction(
                   label: 'Thử lại',

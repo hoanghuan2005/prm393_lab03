@@ -55,7 +55,7 @@ class FirestoreBudgetService implements BudgetService {
     for (final group in defaultBudgetGroups) {
       batch.set(_paths.budgetGroup(uid, group.id), group.toMap());
     }
-    await batch.commit();
+    await awaitWrite(batch.commit());
   });
 
   @override
@@ -85,14 +85,16 @@ class FirestoreBudgetService implements BudgetService {
     String monthKey,
     Map<String, int?> limits,
   ) => guard(
-    () => _paths.budget(uid, monthKey).set({
-      'limits': {
-        for (final e in limits.entries)
-          e.key: e.value != null && e.value! > 0
-              ? e.value
-              : FieldValue.delete(),
-      },
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true)),
+    () => awaitWrite(
+      _paths.budget(uid, monthKey).set({
+        'limits': {
+          for (final e in limits.entries)
+            e.key: e.value != null && e.value! > 0
+                ? e.value
+                : FieldValue.delete(),
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)),
+    ),
   );
 }

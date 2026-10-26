@@ -168,7 +168,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
-              Text('Đã cập nhật khoản mua: $title!'),
+              Text('Đã cập nhật khoản mua: $title.'),
             ],
           ),
           backgroundColor: AppColors.success,
@@ -205,7 +205,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
-              Text('Đã lưu khoản mua: $title!'),
+              Text('Đã lưu khoản mua: $title.'),
             ],
           ),
           backgroundColor: AppColors.success,

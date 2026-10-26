@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -18,6 +19,20 @@ class PatternsScreen extends StatefulWidget {
 }
 
 class _PatternsScreenState extends State<PatternsScreen> {
+  static const Map<TimeSlot, IconData> _slotIcons = {
+    TimeSlot.morning: Icons.wb_sunny_outlined,
+    TimeSlot.noon: Icons.wb_sunny_rounded,
+    TimeSlot.afternoon: Icons.wb_twilight_rounded,
+    TimeSlot.evening: Icons.nightlight_round,
+  };
+
+  static const Map<TimeSlot, Color> _slotColors = {
+    TimeSlot.morning: AppColors.slotMorning,
+    TimeSlot.noon: AppColors.slotNoon,
+    TimeSlot.afternoon: AppColors.slotEvening,
+    TimeSlot.evening: AppColors.slotNight,
+  };
+
   int _selectedPeriod = 0; // 0 = Tuần, 1 = Tháng
 
   @override
@@ -354,37 +369,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
               ),
               child: Column(
                 children: [
-                  _buildTimeSlotRow(
-                    'Đêm (22:00 - 05:00)',
-                    '1 khoản (389.000 ₫)',
-                    Icons.nightlight_round,
-                    AppColors.slotNight,
-                    0.48,
-                  ),
-                  const Divider(height: 20),
-                  _buildTimeSlotRow(
-                    'Chiều & Tối (14:00 - 22:00)',
-                    '2 khoản (245.000 ₫)',
-                    Icons.wb_twilight_rounded,
-                    AppColors.slotEvening,
-                    0.30,
-                  ),
-                  const Divider(height: 20),
-                  _buildTimeSlotRow(
-                    'Trưa (11:00 - 14:00)',
-                    '1 khoản (40.000 ₫)',
-                    Icons.wb_sunny_rounded,
-                    AppColors.slotNoon,
-                    0.05,
-                  ),
-                  const Divider(height: 20),
-                  _buildTimeSlotRow(
-                    'Sáng (05:00 - 11:00)',
-                    '1 khoản (143.000 ₫)',
-                    Icons.wb_sunny_outlined,
-                    AppColors.slotMorning,
-                    0.17,
-                  ),
+                  for (final stat in purchaseVm.timeSlotStats) ...[
+                    if (stat.slot != TimeSlot.values.first)
+                      const Divider(height: 20),
+                    _buildTimeSlotRow(
+                      '${stat.slot.label} (${stat.slot.rangeLabel})',
+                      '${stat.count} khoản (${formatVnd(stat.totalVnd)})',
+                      _slotIcons[stat.slot]!,
+                      _slotColors[stat.slot]!,
+                      totalSpent > 0 ? stat.totalVnd / totalSpent : 0,
+                    ),
+                  ],
                 ],
               ),
             ),

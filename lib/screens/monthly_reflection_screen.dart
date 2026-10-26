@@ -9,28 +9,25 @@ import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
-import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
-import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/insight_source_chip.dart';
+import '../widgets/states/error_view.dart';
 import 'insights_screen.dart';
 
-/// Screen 09: Monthly Reflection & Cloud Storage PDF Export
+/// Screen 09: Monthly Reflection + PDF report shared from the device (D7: no Cloud Storage)
 class MonthlyReflectionScreen extends StatelessWidget {
   const MonthlyReflectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authVm = context.watch<AuthViewModel>();
-    final wishlistVm = context.watch<WishlistViewModel>();
     final reportVm = context.watch<ReportViewModel>();
+    final month = context.watch<PurchaseViewModel>().selectedMonth;
     final insightsVm = context.watch<InsightsViewModel>();
 
-    final items = wishlistVm.filteredItems;
-    final totalSaved = wishlistVm.totalSavedAmount;
     final stats = insightsVm.stats;
     final report = insightsVm.report;
     final motiveCounts = {
@@ -173,130 +170,43 @@ class MonthlyReflectionScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space32),
 
-            // Cloud Storage PDF Section (Lab 3 Core Requirement)
-            Text(
-              'Báo cáo Cloud Storage (Firebase)',
-              style: AppTextStyles.titleLarge,
-            ),
-            const SizedBox(height: AppDimens.space8),
-            Text(
-              'Xuất báo cáo PDF chiêm nghiệm và upload trực tiếp lên Firebase Cloud Storage per-user path: reports/{uid}/...',
-              style: AppTextStyles.bodyMedium,
-            ),
-            const SizedBox(height: AppDimens.space16),
-
-            // Upload Progress or Status Card
-            if (reportVm.status == ReportStatus.generating ||
-                reportVm.status == ReportStatus.uploading) ...[
-              Container(
-                padding: const EdgeInsets.all(AppDimens.space16),
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: AppDimens.borderMedium,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      reportVm.status == ReportStatus.generating
-                          ? 'Đang kết xuất tài liệu PDF...'
-                          : 'Đang upload lên Firebase Cloud Storage... ${(reportVm.uploadProgress * 100).toInt()}%',
-                      style: AppTextStyles.labelLarge,
-                    ),
-                    const SizedBox(height: AppDimens.space8),
-                    LinearProgressIndicator(
-                      value: reportVm.uploadProgress > 0
-                          ? reportVm.uploadProgress
-                          : null,
-                      backgroundColor: AppColors.divider,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.onPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppDimens.space16),
-            ],
-
-            if (reportVm.status == ReportStatus.success &&
-                reportVm.downloadUrl != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppDimens.space16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  borderRadius: AppDimens.borderMedium,
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: AppColors.success,
-                        ),
-                        const SizedBox(width: AppDimens.space8),
-                        Text(
-                          'Đã upload thành công lên Cloud Storage!',
-                          style: AppTextStyles.labelLarge,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimens.space8),
-                    Text(
-                      'Download URL:\n${reportVm.downloadUrl}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppDimens.space16),
-            ],
-
-            if (reportVm.status == ReportStatus.error &&
-                reportVm.errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppDimens.space16),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: AppDimens.borderMedium,
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Text(
-                  reportVm.errorMessage!,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppDimens.space16),
-            ],
-
             const _ReflectionForm(),
             const SizedBox(height: AppDimens.space16),
 
-            // Export Button
+            // PDF report: built on the device and shared with `printing`
+            // (decision D7 – no Cloud Storage on the Spark plan)
+            Text('Báo cáo PDF', style: AppTextStyles.titleLarge),
+            const SizedBox(height: AppDimens.space8),
+            Text(
+              'Báo cáo ${formatMonthLabel(month).toLowerCase()} được tạo ngay trên máy. '
+              'Bạn chọn ứng dụng để lưu hoặc gửi.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: AppDimens.space16),
+            if (reportVm.status == ReportStatus.error)
+              ErrorView(
+                message: reportVm.errorMessage ?? 'Chưa tạo được báo cáo.',
+                onRetry: () => reportVm.generateAndShare(month),
+              )
+            else if (reportVm.status == ReportStatus.shared) ...[
+              Text(
+                'Đã tạo ${ReportViewModel.fileNameFor(month)}.',
+                style: AppTextStyles.labelMedium,
+              ),
+              const SizedBox(height: AppDimens.space12),
+            ],
             AppButton(
-              title: 'Xuất & Upload báo cáo PDF',
-              icon: Icons.picture_as_pdf,
-              isLoading:
-                  reportVm.status == ReportStatus.generating ||
-                  reportVm.status == ReportStatus.uploading,
-              onPressed: () async {
-                await reportVm.generateAndUploadReport(
-                  userName: authVm.displayName,
-                  items: items,
-                  totalSaved: totalSaved,
-                );
-              },
+              title: 'Xuất và chia sẻ PDF',
+              icon: Icons.ios_share,
+              isLoading: reportVm.isBusy,
+              onPressed: () => reportVm.generateAndShare(month),
+            ),
+            const SizedBox(height: AppDimens.space8),
+            AppButton(
+              title: 'Xem trước',
+              icon: Icons.visibility_outlined,
+              variant: AppButtonVariant.secondary,
+              onPressed: reportVm.isBusy ? null : () => reportVm.preview(month),
             ),
           ],
         ),

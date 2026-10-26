@@ -145,7 +145,7 @@ class AppAnalyticsService {
   /// Event 6: export_report
   Future<void> logExportReport({
     required String fileFormat,
-    required int fileSizeKb,
+    int? fileSizeKb,
     required int itemCount,
   }) async {
     try {
@@ -153,7 +153,7 @@ class AppAnalyticsService {
         name: 'export_report',
         parameters: {
           'file_format': fileFormat,
-          'file_size_kb': fileSizeKb,
+          'file_size_kb': ?fileSizeKb,
           'item_count': itemCount,
         },
       );

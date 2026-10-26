@@ -3,27 +3,34 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../core/formatters/date_format.dart';
+import '../core/formatters/money_format.dart';
+import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
 
-/// Service responsible solely for rendering PDF documents (Single Responsibility per CR-02)
+/// Service responsible solely for rendering PDF documents (Single Responsibility per CR-02).
+/// Receives data that already belongs to one month; it never fetches anything.
 class ReportService {
   Future<Uint8List> generateMonthlyReportPdf({
     required String userName,
-    required List<WishlistItem> items,
-    required int totalSaved,
+    required DateTime month,
+    required List<PurchaseItem> purchases,
+    required List<WishlistItem> decidedItems,
   }) async {
     final pdf = pw.Document();
 
-    final boughtItems = items
+    final total = purchases.fold(0, (sum, p) => sum + p.amountVnd);
+    final boughtItems = decidedItems
         .where((i) => i.status == WishlistStatus.purchased)
         .toList();
-    final droppedItems = items
+    final skippedItems = decidedItems
         .where((i) => i.status == WishlistStatus.skipped)
         .toList();
-    final waitingItems = items
-        .where((i) => i.status == WishlistStatus.considering)
-        .toList();
+    final skippedValue = skippedItems.fold(
+      0,
+      (sum, i) => sum + (i.latestPriceVnd ?? 0),
+    );
 
     pdf.addPage(
       pw.Page(
@@ -54,7 +61,7 @@ class ReportService {
                       ),
                     ),
                     pw.Text(
-                      DateTime.now().toString().substring(0, 10),
+                      '${month.month}/${month.year}',
                       style: pw.TextStyle(
                         fontSize: 12,
                         color: PdfColor.fromHex('070E20'),
@@ -73,40 +80,34 @@ class ReportService {
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
-              pw.SizedBox(height: 8),
-              pw.Text(
-                'Tiet kiem thanh cong tu viec hoan mua: ${totalSaved.toStringAsFixed(0)} VND',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  color: PdfColor.fromHex('10B981'),
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
               pw.SizedBox(height: 16),
               pw.Divider(),
               pw.SizedBox(height: 16),
 
               // Summary Stats
               pw.Text(
-                'Thong ke quyet dinh:',
+                'Tong quan thang:',
                 style: const pw.TextStyle(
                   fontSize: 14,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
               pw.SizedBox(height: 8),
-              pw.Bullet(text: 'Tong so mon can nhac: ${items.length}'),
+              pw.Bullet(text: 'So khoan mua da ghi: ${purchases.length}'),
+              pw.Bullet(text: 'Tong da chi: ${formatVnd(total)}'),
               pw.Bullet(text: 'Mon da quyet dinh mua: ${boughtItems.length}'),
-              pw.Bullet(text: 'Mon da chu dong bo qua: ${droppedItems.length}'),
+              pw.Bullet(
+                text: 'Mon da quyet dinh khong mua: ${skippedItems.length}',
+              ),
               pw.Bullet(
                 text:
-                    'Mon dang trong thoi gian hoan tam ly: ${waitingItems.length}',
+                    'Gia tri mon da quyet dinh khong mua: ${formatVnd(skippedValue)}',
               ),
               pw.SizedBox(height: 20),
 
-              // Items Table
+              // Purchases Table
               pw.Text(
-                'Danh sach mon hang gan day:',
+                'Khoan mua trong thang:',
                 style: const pw.TextStyle(
                   fontSize: 14,
                   fontWeight: pw.FontWeight.bold,
@@ -114,13 +115,13 @@ class ReportService {
               ),
               pw.SizedBox(height: 8),
               pw.TableHelper.fromTextArray(
-                headers: ['Ten mon', 'Gia (VND)', 'Dong co', 'Trang thai'],
-                data: items.take(10).map((item) {
+                headers: ['Ngay', 'Ten', 'So tien', 'Dong co'],
+                data: purchases.map((p) {
                   return [
-                    item.title,
-                    item.latestPriceVnd?.toString() ?? '',
-                    item.displayMotive.label,
-                    item.status.label,
+                    formatDate(p.occurredAt),
+                    p.title,
+                    formatVnd(p.amountVnd),
+                    p.motive.label,
                   ];
                 }).toList(),
                 headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold),

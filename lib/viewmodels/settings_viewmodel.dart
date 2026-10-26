@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/user_profile.dart';
 import '../services/crashlytics_service.dart';
+import '../services/demo_data_service.dart';
 import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
 import '../services/user_service.dart';
@@ -15,11 +16,13 @@ class SettingsViewModel extends ChangeNotifier with DeferredNotify {
   final CrashlyticsService crashlyticsService;
   final NotificationService notificationService;
   final UserService userService;
+  final DemoDataService demoDataService;
 
   StreamSubscription<List<AppNotificationItem>>? _notifSubscription;
   StreamSubscription<UserSettings>? _settingsSubscription;
   String? _uid;
   UserSettings _settings = const UserSettings();
+  bool _isDemoBusy = false;
   List<AppNotificationItem> _notifications = [];
   bool _isRefreshingConfig = false;
 
@@ -28,6 +31,7 @@ class SettingsViewModel extends ChangeNotifier with DeferredNotify {
     required this.crashlyticsService,
     required this.notificationService,
     required this.userService,
+    required this.demoDataService,
   }) {
     _init();
   }
@@ -81,6 +85,37 @@ class SettingsViewModel extends ChangeNotifier with DeferredNotify {
     } catch (e) {
       debugPrint('updateSettings error: $e');
       return false;
+    }
+  }
+
+  /// Seeding or clearing is running
+  bool get isDemoBusy => _isDemoBusy;
+
+  /// Firebase Demo Area: writes demo purchases, wishlist, budget and reflection
+  Future<bool> seedDemoData() =>
+      _runDemo((uid) => demoDataService.seed(uid), 'seedDemoData');
+
+  /// Firebase Demo Area: deletes all of the user's data (keeps profile + budget groups)
+  Future<bool> clearAllData() =>
+      _runDemo((uid) => demoDataService.clearAll(uid), 'clearAllData');
+
+  Future<bool> _runDemo(
+    Future<void> Function(String uid) action,
+    String reason,
+  ) async {
+    final uid = _uid;
+    if (uid == null || _isDemoBusy) return false;
+    _isDemoBusy = true;
+    notifyListeners();
+    try {
+      await action(uid);
+      return true;
+    } catch (e, stack) {
+      await crashlyticsService.recordHandledError(e, stack, reason: reason);
+      return false;
+    } finally {
+      _isDemoBusy = false;
+      notifyListeners();
     }
   }
 

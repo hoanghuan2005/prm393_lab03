@@ -1,110 +1,167 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/month_key.dart';
+import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
 import '../services/report_service.dart';
-import '../services/storage_service.dart';
+import '../services/report_share_service.dart';
 import 'deferred_notify.dart';
 
-enum ReportStatus { initial, generating, uploading, success, error }
+enum ReportStatus { idle, generating, ready, shared, error }
 
-/// ViewModel managing Report Generation and Cloud Storage Upload
+/// Monthly PDF report: generated on the device and shared through the system share sheet
+/// (decision D7: no Cloud Storage). uid, user name and data come from the ProxyProvider.
 class ReportViewModel extends ChangeNotifier with DeferredNotify {
   final ReportService reportService;
-  final StorageService storageService;
+  final ReportShareService shareService;
   final AppAnalyticsService analyticsService;
 
-  ReportStatus _status = ReportStatus.initial;
-  double _uploadProgress = 0.0;
-  String? _downloadUrl;
+  ReportStatus _status = ReportStatus.idle;
   String? _errorMessage;
   String? _uid;
+  String _userName = '';
+  List<PurchaseItem> _purchases = const [];
+  List<WishlistItem> _wishlistItems = const [];
+
+  /// Last generated PDF; reused by "Thử lại" / "Xem trước" until the data changes
+  Uint8List? _bytes;
+  DateTime? _bytesMonth;
+  int _itemCount = 0;
 
   ReportViewModel({
     required this.reportService,
-    required this.storageService,
+    required this.shareService,
     required this.analyticsService,
   });
 
   ReportStatus get status => _status;
-  double get uploadProgress => _uploadProgress;
-  String? get downloadUrl => _downloadUrl;
   String? get errorMessage => _errorMessage;
+  bool get isBusy => _status == ReportStatus.generating;
 
   /// Called by the provider whenever the signed-in user changes; clears the last report
   void updateUid(String? uid) {
     if (uid == _uid) return;
     _uid = uid;
-    _status = ReportStatus.initial;
-    _uploadProgress = 0.0;
-    _downloadUrl = null;
-    _errorMessage = null;
+    _clear();
     notifyLater();
   }
 
-  /// Generate and upload report to Firebase Cloud Storage under per-user path
-  Future<bool> generateAndUploadReport({
+  /// Data from AuthViewModel / PurchaseViewModel / WishlistViewModel
+  void updateSources({
     required String userName,
-    required List<WishlistItem> items,
-    required int totalSaved,
-  }) async {
-    final userId = _uid;
-    if (userId == null) return false;
-    _status = ReportStatus.generating;
-    _uploadProgress = 0.0;
+    required List<PurchaseItem> purchases,
+    required List<WishlistItem> wishlistItems,
+  }) {
+    // Getters return fresh list copies, so compare contents (models implement ==)
+    final changed =
+        !listEquals(purchases, _purchases) ||
+        !listEquals(wishlistItems, _wishlistItems);
+    _userName = userName;
+    _purchases = purchases;
+    _wishlistItems = wishlistItems;
+    if (changed && _status != ReportStatus.generating) {
+      _bytes = null;
+      _bytesMonth = null;
+    }
+  }
+
+  void _clear() {
+    _status = ReportStatus.idle;
     _errorMessage = null;
-    _downloadUrl = null;
+    _bytes = null;
+    _bytesMonth = null;
+  }
+
+  static String fileNameFor(DateTime month) =>
+      'why-i-buy_${monthKey(month)}.pdf';
+
+  bool _sameMonth(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
+
+  /// Builds the PDF for [month] unless the same one is already in memory
+  Future<Uint8List?> _ensurePdf(DateTime month) async {
+    final cached = _bytes;
+    if (cached != null &&
+        _bytesMonth != null &&
+        _sameMonth(_bytesMonth!, month)) {
+      return cached;
+    }
+    _status = ReportStatus.generating;
+    _errorMessage = null;
     notifyListeners();
-
     try {
-      // 1. Generate PDF document bytes in memory
-      final pdfBytes = await reportService.generateMonthlyReportPdf(
-        userName: userName,
-        items: items,
-        totalSaved: totalSaved,
+      final purchases = _purchases
+          .where((p) => _sameMonth(p.occurredAt, month))
+          .toList();
+      final decided = _wishlistItems
+          .where((i) => i.decidedAt != null && _sameMonth(i.decidedAt!, month))
+          .toList();
+      final bytes = await reportService.generateMonthlyReportPdf(
+        userName: _userName,
+        month: month,
+        purchases: purchases,
+        decidedItems: decided,
       );
-
-      _status = ReportStatus.uploading;
+      _bytes = bytes;
+      _bytesMonth = month;
+      _itemCount = purchases.length + decided.length;
+      _status = ReportStatus.ready;
       notifyListeners();
+      return bytes;
+    } catch (e) {
+      debugPrint('Report generate error: $e');
+      _fail('Chưa tạo được báo cáo PDF. Bấm "Thử lại".');
+      return null;
+    }
+  }
 
-      // 2. Upload to Firebase Storage per-user path: reports/{uid}/summary_...
-      final fileName = 'summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final url = await storageService.uploadUserReport(
-        userId: userId,
-        fileName: fileName,
-        fileBytes: pdfBytes,
-        contentType: 'application/pdf',
-        onProgress: (progress) {
-          _uploadProgress = progress;
-          notifyListeners();
-        },
-      );
-
-      _downloadUrl = url;
-      _status = ReportStatus.success;
-
-      // 3. Log Analytics event per analytics-plan.md
+  /// Generates (or reuses) the PDF for [month] and opens the share sheet
+  Future<bool> generateAndShare(DateTime month) async {
+    if (_uid == null || isBusy) return false;
+    final bytes = await _ensurePdf(month);
+    if (bytes == null) return false;
+    try {
+      final shared = await shareService.sharePdf(bytes, fileNameFor(month));
+      if (!shared) {
+        _fail('Chưa chia sẻ được báo cáo. Bấm "Thử lại".');
+        return false;
+      }
+      _status = ReportStatus.shared;
+      notifyListeners();
       await analyticsService.logExportReport(
         fileFormat: 'pdf',
-        fileSizeKb: (pdfBytes.lengthInBytes / 1024).round(),
-        itemCount: items.length,
+        itemCount: _itemCount,
       );
-
-      notifyListeners();
       return true;
     } catch (e) {
-      _status = ReportStatus.error;
-      _errorMessage = 'Tải báo cáo lên Cloud Storage thất bại: $e';
-      notifyListeners();
+      debugPrint('Report share error: $e');
+      _fail('Chưa chia sẻ được báo cáo. Bấm "Thử lại".');
       return false;
     }
   }
 
+  /// Opens the print / preview dialog for [month]
+  Future<void> preview(DateTime month) async {
+    if (_uid == null || isBusy) return;
+    final bytes = await _ensurePdf(month);
+    if (bytes == null) return;
+    try {
+      await shareService.previewPdf(bytes);
+    } catch (e) {
+      debugPrint('Report preview error: $e');
+      _fail('Chưa mở được bản xem trước. Bấm "Thử lại".');
+    }
+  }
+
+  void _fail(String message) {
+    _status = ReportStatus.error;
+    _errorMessage = message;
+    notifyListeners();
+  }
+
   void reset() {
-    _status = ReportStatus.initial;
-    _uploadProgress = 0.0;
-    _downloadUrl = null;
-    _errorMessage = null;
+    _clear();
     notifyListeners();
   }
 }

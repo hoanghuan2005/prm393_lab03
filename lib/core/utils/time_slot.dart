@@ -1,13 +1,16 @@
 /// Part of the day a purchase happened in
 enum TimeSlot {
-  morning('Sáng'), // 05:00 – 10:59
-  noon('Trưa'), // 11:00 – 13:59
-  afternoon('Chiều'), // 14:00 – 17:59
-  evening('Tối'); // 18:00 – 04:59
+  morning('Sáng', '05:00 - 11:00'),
+  noon('Trưa', '11:00 - 14:00'),
+  afternoon('Chiều', '14:00 - 18:00'),
+  evening('Tối', '18:00 - 05:00');
 
   final String label;
 
-  const TimeSlot(this.label);
+  /// Hour range shown next to the label
+  final String rangeLabel;
+
+  const TimeSlot(this.label, this.rangeLabel);
 
   static TimeSlot fromHour(int hour) {
     if (hour >= 5 && hour < 11) return TimeSlot.morning;

@@ -59,8 +59,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           SnackBar(
             content: Text(
               !_selectedMotive.skipsCooldown
-                  ? 'Đã lưu vào danh sách cân nhắc. Bắt đầu hoãn tâm lý 3 ngày!'
-                  : 'Đã lưu vào danh sách cân nhắc!',
+                  ? 'Đã lưu vào danh sách cân nhắc. Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
+                  : 'Đã lưu vào danh sách cân nhắc.',
             ),
             backgroundColor: AppColors.success,
           ),
@@ -79,6 +79,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
     return Scaffold(
       appBar: AppBar(title: const Text('Thêm món cân nhắc')),
       body: SingleChildScrollView(
@@ -169,7 +170,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       const SizedBox(width: AppDimens.space12),
                       Expanded(
                         child: Text(
-                          'Động cơ cảm xúc / MXH sẽ kích hoạt khoảng hoãn tâm lý 3 ngày để bạn suy ngẫm trước khi thanh toán.',
+                          'Món này có $coolingOffDays ngày cân nhắc trước khi quyết định (mọi động cơ trừ Nhu cầu).',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.motiveEmotion,
                           ),

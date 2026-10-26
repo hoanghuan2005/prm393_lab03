@@ -71,7 +71,7 @@ class LoginScreen extends StatelessWidget {
                   horizontal: AppDimens.space16,
                 ),
                 child: Text(
-                  'Kiểm soát mua sắm bốc đồng với 8 động cơ tâm lý và khoảng hoãn thông minh.',
+                  'Ghi lại vì sao bạn mua, cho mỗi món thêm thời gian cân nhắc, rồi nhìn lại theo 8 động cơ.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium,
                 ),

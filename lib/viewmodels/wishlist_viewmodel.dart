@@ -72,6 +72,10 @@ class WishlistViewModel extends ChangeNotifier with DeferredNotify {
         .fold(0, (sum, item) => sum + (item.latestPriceVnd ?? 0));
   }
 
+  /// Items still being considered (shown on Trang chủ)
+  int get consideringCount =>
+      _allItems.where((i) => i.status == WishlistStatus.considering).length;
+
   /// Total items currently in psychological cooldown
   int get cooldownCount {
     return _allItems.where((item) => item.isInCooldown).length;

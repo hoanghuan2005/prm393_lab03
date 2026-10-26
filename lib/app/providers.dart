@@ -14,7 +14,7 @@ import '../services/purchase_service.dart';
 import '../services/reflection_service.dart';
 import '../services/remote_config_service.dart';
 import '../services/report_service.dart';
-import '../services/storage_service.dart';
+import '../services/report_share_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -64,12 +64,14 @@ class AppProviders extends StatelessWidget {
             modelName: () => remoteConfigService.aiInsightModel,
           ),
         ),
-        Provider<StorageService>(create: (_) => StorageService()),
         Provider<AppAnalyticsService>(create: (_) => AppAnalyticsService()),
         Provider<CrashlyticsService>.value(value: crashlyticsService),
         Provider<RemoteConfigService>.value(value: remoteConfigService),
         Provider<NotificationService>.value(value: notificationService),
         Provider<ReportService>(create: (_) => ReportService()),
+        Provider<ReportShareService>(
+          create: (_) => PrintingReportShareService(),
+        ),
 
         // ViewModels. Every ViewModel holding user data gets the uid from AuthViewModel
         // through a ProxyProvider (updateUid); widgets never assign it.
@@ -88,6 +90,7 @@ class AppProviders extends StatelessWidget {
             crashlyticsService: crashlyticsService,
             notificationService: notificationService,
             userService: context.read<UserService>(),
+            demoDataService: context.read<DemoDataService>(),
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
@@ -103,14 +106,6 @@ class AppProviders extends StatelessWidget {
           update: (_, auth, settings, vm) => vm!
             ..updateUid(auth.userId)
             ..updateCoolingOffDays(settings.coolingOffDays),
-        ),
-        ChangeNotifierProxyProvider<AuthViewModel, ReportViewModel>(
-          create: (context) => ReportViewModel(
-            reportService: context.read<ReportService>(),
-            storageService: context.read<StorageService>(),
-            analyticsService: context.read<AppAnalyticsService>(),
-          ),
-          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
         ChangeNotifierProxyProvider<AuthViewModel, PurchaseViewModel>(
           create: (context) => PurchaseViewModel(
@@ -146,6 +141,25 @@ class AppProviders extends StatelessWidget {
           update: (_, auth, purchaseVm, vm) => vm!
             ..updateUid(auth.userId)
             ..updateMonth(purchaseVm.selectedMonth),
+        ),
+        ChangeNotifierProxyProvider3<
+          AuthViewModel,
+          PurchaseViewModel,
+          WishlistViewModel,
+          ReportViewModel
+        >(
+          create: (context) => ReportViewModel(
+            reportService: context.read<ReportService>(),
+            shareService: context.read<ReportShareService>(),
+            analyticsService: context.read<AppAnalyticsService>(),
+          ),
+          update: (_, auth, purchaseVm, wishlistVm, vm) => vm!
+            ..updateUid(auth.userId)
+            ..updateSources(
+              userName: auth.displayName,
+              purchases: purchaseVm.allPurchases,
+              wishlistItems: wishlistVm.allItems,
+            ),
         ),
         // Góc nhìn / Chiêm nghiệm: recomputes stats whenever purchases, wishlist or month change
         ChangeNotifierProxyProvider2<

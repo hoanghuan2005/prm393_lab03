@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
-import '../models/buying_motive.dart';
+import '../core/utils/time_slot.dart';
+import '../models/budget_group.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -14,25 +15,18 @@ class PurchaseDetailScreen extends StatelessWidget {
 
   const PurchaseDetailScreen({super.key, required this.purchase});
 
-  String _getBehavioralInsight(BuyingMotive motive) {
-    switch (motive) {
-      case BuyingMotive.sale:
-        return 'Khoản mua do Khuyến mãi thường dễ bị kích thích bởi hiệu ứng sợ bỏ lỡ (FOMO). Hãy thử áp dụng quy tắc chờ 48 giờ cho lần săn sale kế tiếp.';
-      case BuyingMotive.emotion:
-        return 'Khoản mua mang tính giải tỏa Cảm xúc. Nhận diện được cảm xúc lúc mua sắm là bước đầu tiên để kiểm soát thói quen tiêu dùng bốc đồng.';
-      case BuyingMotive.social:
-        return 'Bạn đưa ra quyết định mua do Ảnh hưởng MXH. Hãy tự hỏi: món đồ này thực sự hữu ích với lối sống của bạn hay chỉ trông đẹp trên mạng?';
-      case BuyingMotive.ads:
-        return 'Món hàng này xuất phát từ Quảng cáo nhắm mục tiêu. Thuật toán cá nhân hóa rất giỏi tạo ra mong muốn tức thì.';
-      case BuyingMotive.convenience:
-        return 'Khoản chi Tiện lợi giúp tiết kiệm thời gian và công sức. Cân nhắc xem tính tiện lợi này có hoàn toàn xứng đáng với mức giá không.';
-      case BuyingMotive.want:
-        return 'Đây là một Mong muốn cá nhân. Đưa món đồ vào Wishlist 7 ngày là cách tốt nhất để xác thực mong muốn này có bền vững không.';
-      case BuyingMotive.need:
-        return 'Khoản chi Nhu cầu thiết yếu cho sinh hoạt hằng ngày. Bạn đang duy trì kỷ luật chi tiêu rất tốt.';
-      case BuyingMotive.other:
-        return 'Khoản chi phát sinh khác. Việc ghi chép đều đặn giúp bạn có cái nhìn tổng quan minh bạch về tài chính cá nhân.';
-    }
+  /// Describes the recorded data only (motive, time, budget group); no advice (D11)
+  String _describe(PurchaseItem item) {
+    final slot = TimeSlot.fromDateTime(item.occurredAt);
+    final group = defaultBudgetGroups
+        .firstWhere(
+          (g) => g.id == item.budgetGroupId,
+          orElse: () => defaultBudgetGroups.last,
+        )
+        .name;
+    return 'Bạn ghi khoản này với động cơ ${item.motive.label}, '
+        'vào buổi ${slot.label.toLowerCase()} lúc ${formatTime(item.occurredAt)}, '
+        'thuộc nhóm ngân sách $group.';
   }
 
   void _confirmDelete(BuildContext context) {
@@ -472,7 +466,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _getBehavioralInsight(item.motive),
+                  _describe(item),
                   style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.accentNeutral,

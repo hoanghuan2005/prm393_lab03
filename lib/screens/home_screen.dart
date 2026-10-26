@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -177,6 +178,24 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Stacked bar of the month's motives, widest first, in each motive's own color
+  List<Widget> _motiveSegments(Map<BuyingMotive, double> distribution) {
+    if (distribution.isEmpty) {
+      return [Expanded(child: Container(color: AppColors.surfaceVariant))];
+    }
+    final entries = distribution.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [
+      for (var i = 0; i < entries.length; i++) ...[
+        if (i > 0) const SizedBox(width: 2),
+        Expanded(
+          flex: (entries[i].value * 1000).round().clamp(1, 1000),
+          child: Container(color: entries[i].key.color),
+        ),
+      ],
+    ];
+  }
+
   // ==================== TỔNG QUAN TUẦN CARD ====================
   Widget _buildWeeklySummaryCard(
     BuildContext context,
@@ -347,31 +366,7 @@ class HomeScreen extends StatelessWidget {
             child: SizedBox(
               height: 7,
               child: Row(
-                children: [
-                  // Khuyến mãi (40% - Yellow)
-                  Expanded(
-                    flex: 40,
-                    child: Container(color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 2),
-                  // Tiện lợi (25% - Slate)
-                  Expanded(
-                    flex: 25,
-                    child: Container(color: AppColors.accentNeutral),
-                  ),
-                  const SizedBox(width: 2),
-                  // Mong muốn (20% - Dark)
-                  Expanded(
-                    flex: 20,
-                    child: Container(color: AppColors.chartStrong),
-                  ),
-                  const SizedBox(width: 2),
-                  // Nhu cầu (15% - Light gray)
-                  Expanded(
-                    flex: 15,
-                    child: Container(color: AppColors.outline),
-                  ),
-                ],
+                children: _motiveSegments(purchaseVm.motiveDistribution),
               ),
             ),
           ),
@@ -476,19 +471,19 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.bookmark_border_rounded,
               color: AppColors.onPrimary,
               size: 22,
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Danh sách mong muốn',
                     style: TextStyle(
                       fontSize: 15,
@@ -496,10 +491,10 @@ class HomeScreen extends StatelessWidget {
                       color: AppColors.onPrimary,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    '2 món đang cân nhắc',
-                    style: TextStyle(
+                    '${wishlistVm.consideringCount} món đang cân nhắc',
+                    style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textSecondary,
                     ),
@@ -507,7 +502,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textHint,
               size: 22,

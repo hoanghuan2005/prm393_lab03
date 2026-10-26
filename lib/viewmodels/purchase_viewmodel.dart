@@ -4,12 +4,22 @@ import 'package:flutter/foundation.dart';
 
 import '../core/errors/app_exception.dart';
 import '../core/utils/month_key.dart';
+import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
 import '../services/purchase_service.dart';
 import 'deferred_notify.dart';
+
+/// Count and total of the selected month's purchases in one part of the day
+class TimeSlotStat {
+  final TimeSlot slot;
+  final int count;
+  final int totalVnd;
+
+  const TimeSlotStat(this.slot, this.count, this.totalVnd);
+}
 
 /// ViewModel managing Purchases with real-time Firebase Cloud Firestore sync.
 /// The uid comes from AuthViewModel through ChangeNotifierProxyProvider ([updateUid]).
@@ -106,6 +116,21 @@ class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
   int get monthTotal =>
       monthPurchases.fold(0, (sum, item) => sum + item.amountVnd);
   int get monthCount => monthPurchases.length;
+
+  /// Selected month split by part of the day, in TimeSlot order
+  List<TimeSlotStat> get timeSlotStats {
+    final counts = <TimeSlot, int>{};
+    final totals = <TimeSlot, int>{};
+    for (final p in monthPurchases) {
+      final slot = TimeSlot.fromDateTime(p.occurredAt);
+      counts[slot] = (counts[slot] ?? 0) + 1;
+      totals[slot] = (totals[slot] ?? 0) + p.amountVnd;
+    }
+    return [
+      for (final slot in TimeSlot.values)
+        TimeSlotStat(slot, counts[slot] ?? 0, totals[slot] ?? 0),
+    ];
+  }
 
   /// Current calendar week, Monday 00:00 to Sunday 23:59 (independent of the selected month)
   List<PurchaseItem> get weekPurchases {

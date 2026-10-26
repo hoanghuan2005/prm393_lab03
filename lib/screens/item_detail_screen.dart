@@ -59,11 +59,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       if (success) {
         String msg = '';
         if (newStatus == WishlistStatus.skipped) {
-          msg = 'Tuyệt vời! Bạn vừa tránh được khoản chi lãng phí và tiết kiệm thành công.';
+          msg = 'Đã chuyển món sang Bỏ qua.';
         } else if (newStatus == WishlistStatus.purchased) {
-          msg = 'Đã đánh dấu mua thành công sau khi cân nhắc kỹ!';
+          msg = 'Đã đánh dấu mua thành công sau khi cân nhắc kỹ.';
         } else {
-          msg = 'Đã chuyển sang danh sách Chờ sale định kỳ!';
+          msg = 'Đã chuyển sang danh sách Chờ sale định kỳ.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -146,7 +146,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Đang trong khoảng hoãn 3 ngày',
+                            'Đang trong thời gian cân nhắc',
                             style: AppTextStyles.labelLarge.copyWith(
                               color: AppColors.motiveEmotion,
                             ),
@@ -178,7 +178,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // Button 1: Dropped (Save Money)
             AppButton(
-              title: 'Bỏ qua (Tiết kiệm tiền)',
+              title: 'Bỏ qua',
               icon: Icons.savings_outlined,
               isLoading: _isProcessing,
               onPressed: () => _handleDecision(WishlistStatus.skipped),

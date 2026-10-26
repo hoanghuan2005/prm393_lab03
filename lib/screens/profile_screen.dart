@@ -9,7 +9,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
 
-/// Screen Profile & Firebase Demo Area (Section 6)
+/// Screen Profile & Firebase Demo Area
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -95,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
-                'FIREBASE DEMO AREA (Section 6)',
+                'FIREBASE DEMO AREA',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
@@ -106,7 +106,7 @@ class ProfileScreen extends StatelessWidget {
 
             // Budget Management Section
             _buildSectionCard(
-              title: 'Ngân sách chi tiêu (Figma 31)',
+              title: 'Ngân sách chi tiêu',
               icon: Icons.account_balance_wallet_outlined,
               children: [
                 const Text(
@@ -124,6 +124,35 @@ class ProfileScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushNamed(context, AppRoutes.budget);
                   },
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space16),
+
+            // Demo data (never seeded automatically)
+            _buildSectionCard(
+              title: 'Dữ liệu demo',
+              icon: Icons.dataset_outlined,
+              children: [
+                Text(
+                  'Tạo khoảng 20 khoản mua, 6 món mong muốn, ngân sách tháng này và chiêm nghiệm tháng trước để thử các màn hình.',
+                  style: AppTextStyles.bodyMedium,
+                ),
+                const SizedBox(height: AppDimens.space12),
+                AppButton(
+                  title: 'Tạo lại dữ liệu demo',
+                  icon: Icons.auto_awesome_motion_outlined,
+                  isLoading: settingsVm.isDemoBusy,
+                  onPressed: () => _confirmSeed(context, settingsVm),
+                ),
+                const SizedBox(height: AppDimens.space8),
+                AppButton(
+                  title: 'Xoá toàn bộ dữ liệu của tôi',
+                  icon: Icons.delete_outline,
+                  variant: AppButtonVariant.danger,
+                  onPressed: settingsVm.isDemoBusy
+                      ? null
+                      : () => _confirmClear(context, settingsVm),
                 ),
               ],
             ),
@@ -161,7 +190,7 @@ class ProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Đã cập nhật cấu hình Remote Config mới nhất từ Firebase!',
+                            'Đã cập nhật cấu hình Remote Config mới nhất từ Firebase.',
                           ),
                         ),
                       );
@@ -194,7 +223,7 @@ class ProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard thành công!',
+                            'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard.',
                           ),
                           backgroundColor: AppColors.success,
                         ),
@@ -275,6 +304,83 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space24),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmSeed(
+    BuildContext context,
+    SettingsViewModel settingsVm,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Tạo lại dữ liệu demo?'),
+        content: const Text(
+          'Dữ liệu hiện tại của bạn sẽ được thay bằng dữ liệu demo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Tạo dữ liệu'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final done = await settingsVm.seedDemoData();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          done
+              ? 'Đã tạo dữ liệu demo.'
+              : 'Chưa tạo được dữ liệu demo. Thử lại sau ít phút.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmClear(
+    BuildContext context,
+    SettingsViewModel settingsVm,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.error),
+        title: const Text('Xoá toàn bộ dữ liệu?'),
+        content: const Text(
+          'Mọi khoản mua, món mong muốn, quyết định, ngân sách và chiêm nghiệm '
+          'sẽ bị xoá vĩnh viễn khỏi tài khoản. Không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Xoá tất cả'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final done = await settingsVm.clearAllData();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          done
+              ? 'Đã xoá toàn bộ dữ liệu.'
+              : 'Chưa xoá được dữ liệu. Thử lại sau ít phút.',
         ),
       ),
     );

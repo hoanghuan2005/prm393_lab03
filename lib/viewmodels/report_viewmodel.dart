@@ -4,11 +4,12 @@ import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
 import '../services/report_service.dart';
 import '../services/storage_service.dart';
+import 'deferred_notify.dart';
 
 enum ReportStatus { initial, generating, uploading, success, error }
 
 /// ViewModel managing Report Generation and Cloud Storage Upload
-class ReportViewModel extends ChangeNotifier {
+class ReportViewModel extends ChangeNotifier with DeferredNotify {
   final ReportService reportService;
   final StorageService storageService;
   final AppAnalyticsService analyticsService;
@@ -17,6 +18,7 @@ class ReportViewModel extends ChangeNotifier {
   double _uploadProgress = 0.0;
   String? _downloadUrl;
   String? _errorMessage;
+  String? _uid;
 
   ReportViewModel({
     required this.reportService,
@@ -29,13 +31,25 @@ class ReportViewModel extends ChangeNotifier {
   String? get downloadUrl => _downloadUrl;
   String? get errorMessage => _errorMessage;
 
+  /// Called by the provider whenever the signed-in user changes; clears the last report
+  void updateUid(String? uid) {
+    if (uid == _uid) return;
+    _uid = uid;
+    _status = ReportStatus.initial;
+    _uploadProgress = 0.0;
+    _downloadUrl = null;
+    _errorMessage = null;
+    notifyLater();
+  }
+
   /// Generate and upload report to Firebase Cloud Storage under per-user path
   Future<bool> generateAndUploadReport({
-    required String userId,
     required String userName,
     required List<WishlistItem> items,
     required int totalSaved,
   }) async {
+    final userId = _uid;
+    if (userId == null) return false;
     _status = ReportStatus.generating;
     _uploadProgress = 0.0;
     _errorMessage = null;

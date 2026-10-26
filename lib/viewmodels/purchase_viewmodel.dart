@@ -2,176 +2,82 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/app_exception.dart';
 import '../core/utils/month_key.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
+import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
 import '../services/purchase_service.dart';
+import 'deferred_notify.dart';
 
-/// ViewModel managing Purchases with real-time Firebase Cloud Firestore sync
-class PurchaseViewModel extends ChangeNotifier {
-  final PurchaseService? purchaseService;
+/// ViewModel managing Purchases with real-time Firebase Cloud Firestore sync.
+/// The uid comes from AuthViewModel through ChangeNotifierProxyProvider ([updateUid]).
+class PurchaseViewModel extends ChangeNotifier with DeferredNotify {
+  final PurchaseService purchaseService;
   final AppAnalyticsService? analyticsService;
 
   StreamSubscription<List<PurchaseItem>>? _purchasesSubscription;
-  StreamSubscription<Map<String, dynamic>?>? _budgetSubscription;
+  String? _uid;
   List<PurchaseItem> _purchases = [];
-  String _currentUserId = '';
+  UiState<List<PurchaseItem>> _state = const UiInitial();
   BuyingMotive? _selectedMotiveFilter;
-  DateTime _selectedMonth = DateTime(2026, 10, 1);
-  int _monthlyBudget = 2000000; // Default: 2.000.000 ₫
-  Map<String, int> _categoryBudgets = {
-    'Ăn uống': 500000,
-    'Thời trang': 600000,
-    'Công nghệ': 1000000,
-  };
-  bool _isSyncing = false;
+  DateTime _selectedMonth = _firstOfMonth(DateTime.now());
 
-  PurchaseViewModel({this.purchaseService, this.analyticsService}) {
-    _seedDefaultData();
-  }
+  PurchaseViewModel({required this.purchaseService, this.analyticsService});
 
-  bool get isSyncing => _isSyncing;
-  String get currentUserId => _currentUserId;
+  static DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
 
-  /// Initialize with realistic seed data exactly matching Figma "Why I Buy ver2"
-  void _seedDefaultData() {
-    _purchases = [
-      // Tháng 10/2026 (5 khoản - 817.000 ₫)
-      PurchaseItem(
-        id: 'seed-1',
-        title: 'Cơm tấm',
-        amountVnd: 40000,
-        motive: BuyingMotive.convenience,
-        occurredAt: DateTime(2026, 10, 11, 12, 15),
-        note: 'Trưa bận việc công ty nên ăn nhanh gần văn phòng',
-      ),
-      PurchaseItem(
-        id: 'seed-2',
-        title: 'Tai nghe Bluetooth',
-        amountVnd: 389000,
-        motive: BuyingMotive.sale,
-        occurredAt: DateTime(2026, 10, 10, 23, 40),
-        note: 'Săn sale lúc nửa đêm đợt flash sale giảm 35%',
-      ),
-      PurchaseItem(
-        id: 'seed-3',
-        title: 'Trà sữa nướng',
-        amountVnd: 45000,
-        motive: BuyingMotive.emotion,
-        occurredAt: DateTime(2026, 10, 10, 15, 30),
-        note: 'Buồn vì công việc nên muốn uống gì ngọt',
-      ),
-      PurchaseItem(
-        id: 'seed-4',
-        title: 'Sách Tâm lý học về tiền',
-        amountVnd: 143000,
-        motive: BuyingMotive.want,
-        occurredAt: DateTime(2026, 10, 9, 9, 20),
-        note: 'Thấy review hay trên diễn đàn đọc sách',
-      ),
-      PurchaseItem(
-        id: 'seed-5',
-        title: 'Áo khoác gió Uniqlo',
-        amountVnd: 200000,
-        motive: BuyingMotive.sale,
-        occurredAt: DateTime(2026, 10, 8, 19, 45),
-        note: 'Cửa hàng đang giảm giá cuối mùa',
-      ),
+  String? get uid => _uid;
 
-      // Tháng 9/2026 (Figma 06/07 tháng 9/2026)
-      PurchaseItem(
-        id: 'seed-sep-1',
-        title: 'Giày chạy bộ thể thao',
-        amountVnd: 1250000,
-        motive: BuyingMotive.need,
-        occurredAt: DateTime(2026, 9, 28, 16, 20),
-        note: 'Đổi giày mới để tập thể dục chuẩn bị giải chạy',
-      ),
-      PurchaseItem(
-        id: 'seed-sep-2',
-        title: 'Bàn phím cơ văn phòng',
-        amountVnd: 450000,
-        motive: BuyingMotive.want,
-        occurredAt: DateTime(2026, 9, 15, 10, 0),
-        note: 'Gõ êm tay hơn khi làm việc buổi tối',
-      ),
-      PurchaseItem(
-        id: 'seed-sep-3',
-        title: 'Cà phê & Bánh ngọt',
-        amountVnd: 85000,
-        motive: BuyingMotive.emotion,
-        occurredAt: DateTime(2026, 9, 5, 14, 30),
-        note: 'Hẹn bạn bè tâm sự cuối tuần',
-      ),
-    ];
-    notifyListeners();
-  }
+  /// Load state of all purchases of the signed-in user
+  UiState<List<PurchaseItem>> get state => _state;
 
-  /// Bind to user's Firestore purchases stream
-  void setUserId(String userId) {
-    if (_currentUserId == userId && _purchasesSubscription != null) return;
-    _currentUserId = userId;
+  /// Called by the provider whenever the signed-in user changes
+  void updateUid(String? uid) {
+    if (uid == _uid) return;
+    _uid = uid;
     _purchasesSubscription?.cancel();
-    _budgetSubscription?.cancel();
+    _purchasesSubscription = null;
+    _purchases = [];
+    _selectedMotiveFilter = null;
 
-    if (userId.isEmpty || purchaseService == null) {
+    if (uid == null) {
+      _state = const UiInitial();
+      notifyLater();
       return;
     }
 
-    _isSyncing = true;
-    notifyListeners();
-
-    _purchasesSubscription = purchaseService!
-        .streamUserPurchases(userId)
+    _state = const UiLoading();
+    notifyLater();
+    _purchasesSubscription = purchaseService
+        .watchPurchases(uid)
         .listen(
-          (cloudItems) {
-            _isSyncing = false;
-            if (cloudItems.isNotEmpty) {
-              _purchases = cloudItems;
-            } else if (_purchases.isEmpty) {
-              _seedDefaultData();
-            }
+          (items) {
+            _purchases = items;
+            _state = items.isEmpty
+                ? const UiEmpty(message: 'Chưa có khoản mua nào được ghi')
+                : UiSuccess(items);
             notifyListeners();
           },
-          onError: (err) {
-            _isSyncing = false;
-            debugPrint('Purchase Firestore stream error: $err');
+          onError: (Object error) {
+            _state = UiError(
+              message: error is AppException
+                  ? error.messageVi
+                  : AppException.unknown.messageVi,
+              onRetry: () => _retry(uid),
+            );
             notifyListeners();
           },
         );
+  }
 
-    _subscribeToBudget();
+  void _retry(String uid) {
+    _uid = null;
+    updateUid(uid);
   }
 
   String get currentMonthKey => monthKey(_selectedMonth);
-
-  void _subscribeToBudget() {
-    _budgetSubscription?.cancel();
-    if (_currentUserId.isEmpty || purchaseService == null) return;
-
-    _budgetSubscription = purchaseService!
-        .streamMonthlyBudget(_currentUserId, currentMonthKey)
-        .listen(
-          (data) {
-            if (data != null) {
-              if (data['monthlyLimit'] != null) {
-                _monthlyBudget = (data['monthlyLimit'] as num).toInt();
-              }
-              if (data['categoryBudgets'] != null) {
-                final catData = data['categoryBudgets'] as Map<String, dynamic>;
-                _categoryBudgets = catData.map(
-                  (k, v) => MapEntry(k, (v as num).toInt()),
-                );
-              }
-              notifyListeners();
-            }
-          },
-          onError: (err) {
-            debugPrint('Budget Firestore stream error: $err');
-          },
-        );
-  }
 
   List<PurchaseItem> get allPurchases => List.unmodifiable(_purchases);
 
@@ -190,127 +96,48 @@ class PurchaseViewModel extends ChangeNotifier {
 
   /// Filtered by both selected month and active motive filter
   List<PurchaseItem> get filteredPurchases {
-    return _purchases.where((item) {
-      final matchesMonth =
-          item.occurredAt.year == _selectedMonth.year &&
-          item.occurredAt.month == _selectedMonth.month;
-      if (!matchesMonth) return false;
-      if (_selectedMotiveFilter != null &&
-          item.motive != _selectedMotiveFilter) {
-        return false;
-      }
-      return true;
+    return monthPurchases.where((item) {
+      return _selectedMotiveFilter == null ||
+          item.motive == _selectedMotiveFilter;
     }).toList();
   }
 
-  /// Monthly total spent
-  int get weeklyTotal {
-    return monthPurchases.fold(0, (sum, item) => sum + item.amountVnd);
+  /// Selected month
+  int get monthTotal =>
+      monthPurchases.fold(0, (sum, item) => sum + item.amountVnd);
+  int get monthCount => monthPurchases.length;
+
+  /// Current calendar week, Monday 00:00 to Sunday 23:59 (independent of the selected month)
+  List<PurchaseItem> get weekPurchases {
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    final nextMonday = DateTime(monday.year, monday.month, monday.day + 7);
+    return _purchases
+        .where(
+          (p) =>
+              !p.occurredAt.isBefore(monday) &&
+              p.occurredAt.isBefore(nextMonday),
+        )
+        .toList();
   }
 
-  /// Monthly count
-  int get weeklyCount => monthPurchases.length;
-
-  /// Monthly budget settings & calculations
-  int get monthlyBudget => _monthlyBudget;
-  int get monthlySpent => weeklyTotal;
-  double get budgetProgress => _monthlyBudget > 0
-      ? (monthlySpent / _monthlyBudget).clamp(0.0, 1.0)
-      : 0.0;
-  bool get isBudgetExceeded =>
-      monthlySpent > _monthlyBudget && _monthlyBudget > 0;
-  int get budgetRemaining => _monthlyBudget - monthlySpent;
-
-  Map<String, int> get categoryBudgets => Map.unmodifiable(_categoryBudgets);
-
-  /// Calculate spending per category based on item names/motives for Figma 31
-  Map<String, int> get categorySpent {
-    final map = <String, int>{
-      'Ăn uống': 0,
-      'Thời trang': 0,
-      'Công nghệ': 0,
-      'Khác': 0,
-    };
-    for (final p in monthPurchases) {
-      final lower = p.title.toLowerCase();
-      if (lower.contains('cơm') ||
-          lower.contains('trà sữa') ||
-          lower.contains('cà phê') ||
-          lower.contains('bánh') ||
-          lower.contains('ăn') ||
-          lower.contains('uống') ||
-          lower.contains('nước')) {
-        map['Ăn uống'] = (map['Ăn uống'] ?? 0) + p.amountVnd;
-      } else if (lower.contains('áo') ||
-          lower.contains('quần') ||
-          lower.contains('giày') ||
-          lower.contains('dép') ||
-          lower.contains('uniqlo') ||
-          lower.contains('túi')) {
-        map['Thời trang'] = (map['Thời trang'] ?? 0) + p.amountVnd;
-      } else if (lower.contains('tai nghe') ||
-          lower.contains('bàn phím') ||
-          lower.contains('chuột') ||
-          lower.contains('máy') ||
-          lower.contains('điện thoại') ||
-          lower.contains('laptop') ||
-          lower.contains('loa')) {
-        map['Công nghệ'] = (map['Công nghệ'] ?? 0) + p.amountVnd;
-      } else {
-        map['Khác'] = (map['Khác'] ?? 0) + p.amountVnd;
-      }
-    }
-    return map;
-  }
-
-  /// Set and persist monthly budget + category budgets to Firestore
-  Future<void> setMonthlyBudget(
-    int amount, {
-    Map<String, int>? categoryBudgets,
-  }) async {
-    _monthlyBudget = amount;
-    if (categoryBudgets != null) {
-      _categoryBudgets = Map.from(categoryBudgets);
-    }
-    notifyListeners();
-
-    final monthKey = currentMonthKey;
-
-    if (purchaseService != null && _currentUserId.isNotEmpty) {
-      try {
-        await purchaseService!.saveMonthlyBudget(
-          userId: _currentUserId,
-          month: monthKey,
-          monthlyLimit: amount,
-          categoryBudgets: _categoryBudgets,
-        );
-      } catch (e) {
-        debugPrint('Firestore saveMonthlyBudget error: $e');
-      }
-    }
-
-    unawaited(
-      analyticsService?.logBudgetSet(amount: amount, month: monthKey) ??
-          Future<void>.value(),
-    );
-  }
+  int get weekTotal =>
+      weekPurchases.fold(0, (sum, item) => sum + item.amountVnd);
+  int get weekCount => weekPurchases.length;
 
   /// Month navigation
   void previousMonth() {
     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
-    _subscribeToBudget();
     notifyListeners();
   }
 
   void nextMonth() {
     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
-    _subscribeToBudget();
     notifyListeners();
   }
 
   void setSelectedMonth(DateTime month) {
-    _selectedMonth = DateTime(month.year, month.month, 1);
-    _subscribeToBudget();
+    _selectedMonth = _firstOfMonth(month);
     notifyListeners();
   }
 
@@ -329,39 +156,34 @@ class PurchaseViewModel extends ChangeNotifier {
     return result;
   }
 
-  /// Most frequent motive (Figma: Khuyến mãi (2/5), 40%)
-  String get dominantMotiveText {
-    final list = monthPurchases;
-    if (list.isEmpty) return 'Chưa có khoản chi';
-    final dist = motiveDistribution;
+  BuyingMotive? get _topMotive {
     BuyingMotive? topMotive;
     double maxRatio = -1;
-    for (final entry in dist.entries) {
+    for (final entry in motiveDistribution.entries) {
       if (entry.value > maxRatio) {
         maxRatio = entry.value;
         topMotive = entry.key;
       }
     }
-    if (topMotive == null) return '';
-    final percent = (maxRatio * 100).round();
-    return '$percent% do ${topMotive.label}';
+    return topMotive;
+  }
+
+  /// Most frequent motive (Figma: Khuyến mãi (2/5), 40%)
+  String get dominantMotiveText {
+    if (monthPurchases.isEmpty) return 'Chưa có khoản chi';
+    final top = _topMotive;
+    if (top == null) return '';
+    final percent = ((motiveDistribution[top] ?? 0) * 100).round();
+    return '$percent% do ${top.label}';
   }
 
   String get dominantMotiveSummary {
     final list = monthPurchases;
     if (list.isEmpty) return 'Chưa có khoản chi';
-    final dist = motiveDistribution;
-    BuyingMotive? topMotive;
-    double maxRatio = -1;
-    for (final entry in dist.entries) {
-      if (entry.value > maxRatio) {
-        maxRatio = entry.value;
-        topMotive = entry.key;
-      }
-    }
-    if (topMotive == null) return '';
-    final count = list.where((p) => p.motive == topMotive).length;
-    return 'Nhiều nhất: ${topMotive.label} ($count/${list.length})';
+    final top = _topMotive;
+    if (top == null) return '';
+    final count = list.where((p) => p.motive == top).length;
+    return 'Nhiều nhất: ${top.label} ($count/${list.length})';
   }
 
   void setMotiveFilter(BuyingMotive? motive) {
@@ -369,66 +191,42 @@ class PurchaseViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Add new purchase (Saves to Cloud Firestore + Local Cache + Analytics)
-  Future<PurchaseItem> addPurchase({
+  /// Saves a new purchase. The Firestore stream updates the list.
+  /// Returns null when there is no signed-in user or the write failed.
+  Future<PurchaseItem?> addPurchase({
     required String title,
     required int amount,
     required BuyingMotive motive,
     DateTime? dateTime,
     String? note,
   }) async {
-    final effectiveTime = dateTime ?? DateTime.now();
-    final effectiveUserId = _currentUserId.isNotEmpty
-        ? _currentUserId
-        : 'demo-user';
-
-    PurchaseItem newItem;
-
-    if (purchaseService != null && _currentUserId.isNotEmpty) {
-      try {
-        newItem = await purchaseService!.addPurchase(
-          userId: effectiveUserId,
+    final uid = _uid;
+    if (uid == null) return null;
+    try {
+      final saved = await purchaseService.add(
+        uid,
+        PurchaseItem(
+          id: '',
           title: title,
           amountVnd: amount,
           motive: motive,
-          occurredAt: effectiveTime,
+          occurredAt: dateTime ?? DateTime.now(),
           note: note,
-        );
-      } catch (e) {
-        debugPrint('Firestore addPurchase error, fallback to local: $e');
-        newItem = PurchaseItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: title,
-          amountVnd: amount,
-          motive: motive,
-          occurredAt: effectiveTime,
-          note: note,
-        );
-      }
-    } else {
-      newItem = PurchaseItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        amountVnd: amount,
-        motive: motive,
-        occurredAt: effectiveTime,
-        note: note,
+        ),
       );
+      unawaited(
+        analyticsService?.logPurchaseRecorded(
+              itemId: saved.id,
+              price: saved.amountVnd,
+              motive: saved.motive.key,
+            ) ??
+            Future<void>.value(),
+      );
+      return saved;
+    } catch (e) {
+      debugPrint('addPurchase error: $e');
+      return null;
     }
-
-    _purchases.insert(0, newItem);
-    notifyListeners();
-
-    unawaited(
-      analyticsService?.logPurchaseRecorded(
-            itemId: newItem.id,
-            price: newItem.amountVnd,
-            motive: newItem.motive.key,
-          ) ??
-          Future<void>.value(),
-    );
-
-    return newItem;
   }
 
   /// Update an existing purchase
@@ -440,56 +238,48 @@ class PurchaseViewModel extends ChangeNotifier {
     required DateTime dateTime,
     String? note,
   }) async {
+    final uid = _uid;
+    if (uid == null) return;
     final index = _purchases.indexWhere((p) => p.id == id);
-    if (index != -1) {
-      _purchases[index] = _purchases[index].copyWith(
-        title: title,
-        amountVnd: amount,
-        motive: motive,
-        occurredAt: dateTime,
-        note: note,
-      );
-      notifyListeners();
-    }
-
-    if (purchaseService != null &&
-        _currentUserId.isNotEmpty &&
-        !id.startsWith('seed-')) {
-      try {
-        await purchaseService!.updatePurchase(
-          purchaseId: id,
+    final base = index != -1
+        ? _purchases[index]
+        : PurchaseItem(
+            id: id,
+            title: title,
+            amountVnd: amount,
+            motive: motive,
+            occurredAt: dateTime,
+          );
+    try {
+      await purchaseService.update(
+        uid,
+        base.copyWith(
           title: title,
           amountVnd: amount,
           motive: motive,
           occurredAt: dateTime,
           note: note,
-        );
-      } catch (e) {
-        debugPrint('Firestore updatePurchase error: $e');
-      }
+        ),
+      );
+    } catch (e) {
+      debugPrint('updatePurchase error: $e');
     }
   }
 
   /// Delete a purchase
   Future<void> deletePurchase(String id) async {
-    _purchases.removeWhere((p) => p.id == id);
-    notifyListeners();
-
-    if (purchaseService != null &&
-        _currentUserId.isNotEmpty &&
-        !id.startsWith('seed-')) {
-      try {
-        await purchaseService!.deletePurchase(id);
-      } catch (e) {
-        debugPrint('Firestore deletePurchase error: $e');
-      }
+    final uid = _uid;
+    if (uid == null) return;
+    try {
+      await purchaseService.delete(uid, id);
+    } catch (e) {
+      debugPrint('deletePurchase error: $e');
     }
   }
 
   @override
   void dispose() {
     _purchasesSubscription?.cancel();
-    _budgetSubscription?.cancel();
     super.dispose();
   }
 }

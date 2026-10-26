@@ -2,17 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../models/user_profile.dart';
 import '../services/crashlytics_service.dart';
 import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
+import '../services/user_service.dart';
+import 'deferred_notify.dart';
 
 /// ViewModel managing Firebase Demo Area (Crashlytics, Remote Config, FCM notifications)
-class SettingsViewModel extends ChangeNotifier {
+class SettingsViewModel extends ChangeNotifier with DeferredNotify {
   final RemoteConfigService remoteConfigService;
   final CrashlyticsService crashlyticsService;
   final NotificationService notificationService;
+  final UserService userService;
 
   StreamSubscription<List<AppNotificationItem>>? _notifSubscription;
+  StreamSubscription<UserSettings>? _settingsSubscription;
+  String? _uid;
+  UserSettings _settings = const UserSettings();
   List<AppNotificationItem> _notifications = [];
   bool _isRefreshingConfig = false;
 
@@ -20,12 +27,20 @@ class SettingsViewModel extends ChangeNotifier {
     required this.remoteConfigService,
     required this.crashlyticsService,
     required this.notificationService,
+    required this.userService,
   }) {
     _init();
   }
 
+  /// users/{uid}.settings; defaults while signed out or not loaded
+  UserSettings get settings => _settings;
+
+  /// The user's own value when set, otherwise Remote Config `cooling_off_days`
+  int get coolingOffDays =>
+      _settings.coolingOffDays ?? remoteConfigService.coolingOffDays;
+  bool get isCoolingOffFromUser => _settings.coolingOffDays != null;
+
   // Remote Config Values
-  int get coolingOffDays => remoteConfigService.coolingOffDays;
   bool get enableAiInsight => remoteConfigService.enableAiInsight;
   int get maxWishlistItems => remoteConfigService.maxWishlistItems;
   bool get saleReminderEnabled => remoteConfigService.saleReminderEnabled;
@@ -40,6 +55,33 @@ class SettingsViewModel extends ChangeNotifier {
       _notifications = list;
       notifyListeners();
     });
+  }
+
+  /// Called by the provider whenever the signed-in user changes
+  void updateUid(String? uid) {
+    if (uid == _uid) return;
+    _uid = uid;
+    _settingsSubscription?.cancel();
+    _settingsSubscription = null;
+    _settings = const UserSettings();
+    notifyLater();
+    if (uid == null) return;
+    _settingsSubscription = userService.watchSettings(uid).listen((settings) {
+      _settings = settings;
+      notifyListeners();
+    }, onError: (Object e) => debugPrint('watchSettings error: $e'));
+  }
+
+  Future<bool> updateSettings(UserSettings settings) async {
+    final uid = _uid;
+    if (uid == null) return false;
+    try {
+      await userService.updateSettings(uid, settings);
+      return true;
+    } catch (e) {
+      debugPrint('updateSettings error: $e');
+      return false;
+    }
   }
 
   /// Live refresh Remote Config without rebuild
@@ -85,6 +127,7 @@ class SettingsViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _notifSubscription?.cancel();
+    _settingsSubscription?.cancel();
     super.dispose();
   }
 }

@@ -7,14 +7,13 @@ import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
 import '../services/analytics_service.dart';
-import '../services/remote_config_service.dart';
 import '../services/wishlist_service.dart';
+import 'deferred_notify.dart';
 
 /// ViewModel managing Wishlist items, motive filtering, search, and decisions
-class WishlistViewModel extends ChangeNotifier {
+class WishlistViewModel extends ChangeNotifier with DeferredNotify {
   final WishlistService wishlistService;
   final AppAnalyticsService analyticsService;
-  final RemoteConfigService remoteConfigService;
 
   StreamSubscription<List<WishlistItem>>? _itemsSubscription;
   List<WishlistItem> _allItems = [];
@@ -23,13 +22,19 @@ class WishlistViewModel extends ChangeNotifier {
   BuyingMotive? _selectedMotiveFilter;
   WishlistStatus? _selectedStatusFilter;
   String _searchQuery = '';
-  String _currentUserId = '';
+  String? _uid;
+
+  /// From SettingsViewModel: user setting, else Remote Config
+  int _coolingOffDays = 3;
 
   WishlistViewModel({
     required this.wishlistService,
     required this.analyticsService,
-    required this.remoteConfigService,
   });
+
+  int get coolingOffDays => _coolingOffDays;
+
+  void updateCoolingOffDays(int days) => _coolingOffDays = days;
 
   UiState<List<WishlistItem>> get state => _state;
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
@@ -72,26 +77,28 @@ class WishlistViewModel extends ChangeNotifier {
     return _allItems.where((item) => item.isInCooldown).length;
   }
 
-  /// Bind to user's Firestore stream
-  void setUserId(String userId) {
-    if (_currentUserId == userId && _itemsSubscription != null) return;
-    _currentUserId = userId;
+  /// Called by the provider whenever the signed-in user changes
+  void updateUid(String? uid) {
+    if (uid == _uid) return;
+    _uid = uid;
     _itemsSubscription?.cancel();
+    _itemsSubscription = null;
+    _allItems = [];
+    _selectedMotiveFilter = null;
+    _selectedStatusFilter = null;
+    _searchQuery = '';
 
-    if (userId.isEmpty) {
-      _allItems = [];
-      _state = const UiEmpty(
-        message: 'Vui lòng đăng nhập để xem danh sách cân nhắc.',
-      );
-      notifyListeners();
+    if (uid == null) {
+      _state = const UiInitial();
+      notifyLater();
       return;
     }
 
     _state = const UiLoading();
-    notifyListeners();
+    notifyLater();
 
     _itemsSubscription = wishlistService
-        .streamUserItems(userId)
+        .watchItems(uid)
         .listen(
           (items) {
             _allItems = items;
@@ -100,7 +107,10 @@ class WishlistViewModel extends ChangeNotifier {
           onError: (error) {
             _state = UiError(
               message: 'Không thể tải dữ liệu: $error',
-              onRetry: () => setUserId(userId),
+              onRetry: () {
+                _uid = null;
+                updateUid(uid);
+              },
             );
             notifyListeners();
           },
@@ -140,14 +150,15 @@ class WishlistViewModel extends ChangeNotifier {
     String? productUrl,
   }) async {
     try {
-      final coolingDays = remoteConfigService.coolingOffDays;
-      await wishlistService.addItem(
-        userId: _currentUserId,
+      final uid = _uid;
+      if (uid == null) return false;
+      await wishlistService.add(
+        uid,
         title: title,
         priceVnd: price,
         motive: motive,
         url: productUrl,
-        coolingOffDays: coolingDays,
+        coolingOffDays: _coolingOffDays,
       );
 
       await analyticsService.logAddToWishlist(
@@ -170,12 +181,31 @@ class WishlistViewModel extends ChangeNotifier {
     required int? price,
     String? note,
   }) async {
+    final uid = _uid;
+    if (uid == null) return false;
     try {
-      await wishlistService.updateItemStatus(
-        itemId: itemId,
-        newStatus: status,
-        note: note,
-      );
+      // TODO(decision flow): "Mua" should go through PurchaseService.buyFromWishlist
+      // once the record-purchase screen accepts a PurchaseDraft.
+      switch (status) {
+        case WishlistStatus.skipped:
+          await wishlistService.skip(uid, itemId);
+        case WishlistStatus.considering:
+          await wishlistService.setReview(
+            uid,
+            itemId,
+            DateTime.now().add(Duration(days: _coolingOffDays)),
+          );
+        case WishlistStatus.purchased:
+          final item = _allItems.firstWhere((i) => i.id == itemId);
+          await wishlistService.update(
+            uid,
+            item.copyWith(
+              status: WishlistStatus.purchased,
+              decidedAt: DateTime.now(),
+              note: note,
+            ),
+          );
+      }
 
       final savedAmount = status == WishlistStatus.skipped ? (price ?? 0) : 0;
       await analyticsService.logMakeDecision(

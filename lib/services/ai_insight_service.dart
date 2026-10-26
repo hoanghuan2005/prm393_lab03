@@ -1,70 +1,16 @@
 import 'dart:convert';
 
-import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/spending_insight.dart';
-
-/// Produces the raw JSON text for a prompt. Abstracted so tests can replace Gemini with a fake.
-abstract class InsightTextGenerator {
-  Future<String> generateJson({
-    required String systemInstruction,
-    required String prompt,
-    required List<String> cardIds,
-  });
-}
-
-/// Gemini through Firebase AI Logic: no API key is shipped in the app (spec 7.6)
-class FirebaseAiInsightGenerator implements InsightTextGenerator {
-  final String Function() modelName;
-
-  FirebaseAiInsightGenerator({required this.modelName});
-
-  @override
-  Future<String> generateJson({
-    required String systemInstruction,
-    required String prompt,
-    required List<String> cardIds,
-  }) async {
-    final model = FirebaseAI.googleAI().generativeModel(
-      model: modelName(),
-      systemInstruction: Content.system(systemInstruction),
-      generationConfig: GenerationConfig(
-        temperature: 0.4,
-        responseMimeType: 'application/json',
-        responseSchema: Schema.object(
-          properties: {
-            'summary': Schema.string(
-              description: 'Đoạn chiêm nghiệm tháng, 2-3 câu',
-            ),
-            'cards': Schema.array(
-              items: Schema.object(
-                properties: {
-                  'id': Schema.enumString(enumValues: cardIds),
-                  'title': Schema.string(),
-                  'body': Schema.string(),
-                },
-              ),
-            ),
-          },
-        ),
-      ),
-    );
-    final response = await model.generateContent([Content.text(prompt)]);
-    final text = response.text;
-    if (text == null || text.isEmpty) {
-      throw const FormatException('Empty AI response');
-    }
-    return text;
-  }
-}
+import 'ai_service.dart';
 
 /// Writes Góc nhìn / Chiêm nghiệm wording. Code computes every number; AI only phrases them.
 /// Any AI sentence with an unknown number or judgmental wording is replaced by the template.
 class AiInsightService {
-  final InsightTextGenerator generator;
+  final AiService generator;
   final Duration timeout;
 
   /// Successful reports keyed by [MonthlySpendingStats.cacheKey]; unchanged data is never re-sent

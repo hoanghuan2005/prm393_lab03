@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
-import '../viewmodels/purchase_viewmodel.dart';
+import '../viewmodels/budget_viewmodel.dart';
 
 /// Bottom Sheet for setting and adjusting monthly budget matching Figma "31 Ngân sách theo nhóm"
 class BudgetSettingSheet extends StatefulWidget {
@@ -29,8 +29,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
   @override
   void initState() {
     super.initState();
-    final purchaseVm = context.read<PurchaseViewModel>();
-    _amount = purchaseVm.monthlyBudget;
+    _amount = context.read<BudgetViewModel>().totalLimit;
     _controller = TextEditingController(text: formatVnd(_amount));
   }
 
@@ -58,8 +57,8 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final purchaseVm = context.watch<PurchaseViewModel>();
-    final spent = purchaseVm.monthlySpent;
+    final budgetVm = context.watch<BudgetViewModel>();
+    final spent = budgetVm.totalSpent;
     final remaining = _amount - spent;
     final isExceeded = remaining < 0;
 
@@ -264,7 +263,7 @@ class _BudgetSettingSheetState extends State<BudgetSettingSheet> {
                         final navigator = Navigator.of(context);
                         final messenger = ScaffoldMessenger.of(context);
                         setState(() => _isSaving = true);
-                        await purchaseVm.setMonthlyBudget(_amount);
+                        await budgetVm.setOverallLimit(_amount);
                         if (!mounted) return;
                         setState(() => _isSaving = false);
                         navigator.pop();

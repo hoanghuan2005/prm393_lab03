@@ -4,16 +4,56 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prm393_lab03/models/buying_motive.dart';
+import 'package:prm393_lab03/models/purchase_draft.dart';
+import 'package:prm393_lab03/models/purchase_item.dart';
+import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/screens/insights_screen.dart';
 import 'package:prm393_lab03/services/ai_insight_service.dart';
+import 'package:prm393_lab03/services/ai_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
+import 'package:prm393_lab03/services/purchase_service.dart';
 import 'package:prm393_lab03/services/remote_config_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/insights_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// The demo data PurchaseViewModel used to seed before B7 (10/2026 + 9/2026)
+final _purchases = [
+  _p('Cơm tấm', 40000, BuyingMotive.convenience, DateTime(2026, 10, 11, 12, 15)),
+  _p('Tai nghe Bluetooth', 389000, BuyingMotive.sale, DateTime(2026, 10, 10, 23, 40)),
+  _p('Trà sữa nướng', 45000, BuyingMotive.emotion, DateTime(2026, 10, 10, 15, 30)),
+  _p('Sách Tâm lý học về tiền', 143000, BuyingMotive.want, DateTime(2026, 10, 9, 9, 20)),
+  _p('Áo khoác gió Uniqlo', 200000, BuyingMotive.sale, DateTime(2026, 10, 8, 19, 45)),
+  _p('Giày chạy bộ thể thao', 1250000, BuyingMotive.need, DateTime(2026, 9, 28, 16, 20)),
+  _p('Bàn phím cơ văn phòng', 450000, BuyingMotive.want, DateTime(2026, 9, 15, 10, 0)),
+  _p('Cà phê & Bánh ngọt', 85000, BuyingMotive.emotion, DateTime(2026, 9, 5, 14, 30)),
+];
+
+PurchaseItem _p(String title, int amount, BuyingMotive motive, DateTime at) =>
+    PurchaseItem(id: title, title: title, amountVnd: amount, motive: motive, occurredAt: at);
+
+class _FakePurchaseService implements PurchaseService {
+  @override
+  Stream<List<PurchaseItem>> watchPurchases(String uid, {DateTime? from, DateTime? to}) =>
+      Stream.value(_purchases);
+
+  @override
+  Future<PurchaseItem> add(String uid, PurchaseItem purchase) => throw UnimplementedError();
+
+  @override
+  Future<void> update(String uid, PurchaseItem purchase) => throw UnimplementedError();
+
+  @override
+  Future<void> delete(String uid, String purchaseId) => throw UnimplementedError();
+
+  @override
+  Future<String> buyFromWishlist(String uid, WishlistItem item, PurchaseDraft draft) =>
+      throw UnimplementedError();
+}
 
 class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {
   @override
@@ -26,7 +66,7 @@ class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {
   String getString(String key) => '';
 }
 
-class _FakeGenerator implements InsightTextGenerator {
+class _FakeGenerator implements AiService {
   int calls = 0;
 
   @override
@@ -55,7 +95,8 @@ void main() {
     addTearDown(tester.view.reset);
 
     generator = _FakeGenerator();
-    final purchaseVm = PurchaseViewModel(); // seeded demo data for 10/2026
+    final purchaseVm = PurchaseViewModel(purchaseService: _FakePurchaseService())
+      ..setSelectedMonth(DateTime(2026, 10));
     final insightsVm = InsightsViewModel(
       aiInsightService: AiInsightService(generator: generator),
       remoteConfigService: RemoteConfigService(remoteConfig: _FakeRemoteConfig()),
@@ -63,7 +104,7 @@ void main() {
       crashlyticsService: CrashlyticsService(),
     );
     insightsVm.updateSources(
-      purchases: purchaseVm.allPurchases,
+      purchases: _purchases,
       wishlistItems: const [],
       month: purchaseVm.selectedMonth,
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/constants/app_constants.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
@@ -10,6 +11,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -278,6 +280,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
               const SizedBox(height: AppDimens.space16),
             ],
 
+            const _ReflectionForm(),
+            const SizedBox(height: AppDimens.space16),
+
             // Export Button
             AppButton(
               title: 'Xuất & Upload báo cáo PDF',
@@ -286,9 +291,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                   reportVm.status == ReportStatus.generating ||
                   reportVm.status == ReportStatus.uploading,
               onPressed: () async {
-                final userId = authVm.userId ?? 'anonymous_test';
                 await reportVm.generateAndUploadReport(
-                  userId: userId,
                   userName: authVm.displayName,
                   items: items,
                   totalSaved: totalSaved,
@@ -298,6 +301,140 @@ class MonthlyReflectionScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Mức độ hài lòng 1–5 + mục tiêu tháng sau (handoff 09), saved through ReflectionViewModel
+class _ReflectionForm extends StatefulWidget {
+  const _ReflectionForm();
+
+  @override
+  State<_ReflectionForm> createState() => _ReflectionFormState();
+}
+
+class _ReflectionFormState extends State<_ReflectionForm> {
+  final _goalController = TextEditingController();
+  String? _loadedMonth;
+
+  @override
+  void dispose() {
+    _goalController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save(ReflectionViewModel vm) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final ok = await vm.save(_goalController.text);
+    if (!mounted) return;
+    if (!ok) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Chưa lưu được chiêm nghiệm. Thử lại sau ít phút.'),
+        ),
+      );
+      return;
+    }
+    navigator.pop();
+    messenger.showSnackBar(
+      SnackBar(content: Text('Đã lưu chiêm nghiệm tháng ${vm.month.month}')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<ReflectionViewModel>();
+
+    // Fill the goal once per month with what was saved before
+    final monthLabel = formatMonthLabel(vm.month);
+    if (_loadedMonth != monthLabel && vm.saved != null) {
+      _loadedMonth = monthLabel;
+      _goalController.text = vm.saved!.goal ?? '';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppDimens.space16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppDimens.borderMedium,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mức độ hài lòng của bạn', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppDimens.space12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    ChoiceChip(
+                      label: Text('$i'),
+                      selected: vm.rating == i,
+                      onSelected: (_) => vm.selectRating(i),
+                      showCheckmark: false,
+                      shape: const CircleBorder(),
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceVariant,
+                      labelStyle: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.onPrimary,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppDimens.space8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Không hài lòng', style: AppTextStyles.labelMedium),
+                  Text('Rất hài lòng', style: AppTextStyles.labelMedium),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimens.space12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppDimens.space16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppDimens.borderMedium,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mục tiêu cho tháng ${vm.nextMonth.month}',
+                style: AppTextStyles.titleMedium,
+              ),
+              const SizedBox(height: AppDimens.space12),
+              TextField(
+                controller: _goalController,
+                maxLines: 3,
+                maxLength: AppConstants.noteMaxLength,
+                decoration: InputDecoration(
+                  hintText:
+                      'Một điều bạn muốn để ý trong tháng ${vm.nextMonth.month}',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDimens.space12),
+        AppButton(
+          title: 'Lưu chiêm nghiệm',
+          icon: Icons.check,
+          isLoading: vm.isSaving,
+          onPressed: vm.rating == null ? null : () => _save(vm),
+        ),
+      ],
     );
   }
 }

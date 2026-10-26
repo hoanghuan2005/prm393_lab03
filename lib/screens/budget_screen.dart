@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
 import '../widgets/month_picker_sheet.dart';
@@ -11,6 +12,15 @@ import '../widgets/month_picker_sheet.dart';
 /// Screen 31, 31a, 31b: Ngân sách theo nhóm from Figma "Why I Buy ver2"
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
+
+  static const Map<String, IconData> _groupIcons = {
+    'food': Icons.restaurant_rounded,
+    'fashion': Icons.checkroom_rounded,
+    'tech': Icons.devices_rounded,
+    'beauty': Icons.face_retouching_natural_rounded,
+    'study': Icons.school_rounded,
+    'other': Icons.more_horiz_rounded,
+  };
 
   void _showHelpDialog(BuildContext context) {
     showDialog(
@@ -52,33 +62,15 @@ class BudgetScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final purchaseVm = context.watch<PurchaseViewModel>();
-    final spent = purchaseVm.monthlySpent;
-    final budget = purchaseVm.monthlyBudget;
-    final progress = purchaseVm.budgetProgress;
-    final isExceeded = purchaseVm.isBudgetExceeded;
-    final categorySpent = purchaseVm.categorySpent;
-    final categoryBudgets = purchaseVm.categoryBudgets;
-
-    final categories = [
-      {
-        'name': 'Công nghệ',
-        'icon': Icons.devices_rounded,
-        'spent': categorySpent['Công nghệ'] ?? 0,
-        'budget': categoryBudgets['Công nghệ'] ?? 1000000,
-      },
-      {
-        'name': 'Thời trang',
-        'icon': Icons.checkroom_rounded,
-        'spent': categorySpent['Thời trang'] ?? 0,
-        'budget': categoryBudgets['Thời trang'] ?? 600000,
-      },
-      {
-        'name': 'Ăn uống',
-        'icon': Icons.restaurant_rounded,
-        'spent': categorySpent['Ăn uống'] ?? 0,
-        'budget': categoryBudgets['Ăn uống'] ?? 500000,
-      },
-    ];
+    final budgetVm = context.watch<BudgetViewModel>();
+    final spent = budgetVm.totalSpent;
+    final budget = budgetVm.totalLimit;
+    final progress = budgetVm.progress;
+    final isExceeded = budgetVm.isExceeded;
+    // Only groups that have a limit this month get a card
+    final groupsWithLimit = budgetVm.groups
+        .where((g) => budgetVm.limitFor(g.id) != null)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -149,12 +141,13 @@ class BudgetScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Category Cards
-                ...categories.map((cat) {
+                ...groupsWithLimit.map((group) {
                   return _buildCategoryCard(
-                    name: cat['name'] as String,
-                    icon: cat['icon'] as IconData,
-                    spent: cat['spent'] as int,
-                    catBudget: cat['budget'] as int,
+                    name: group.name,
+                    icon: _groupIcons[group.id] ?? Icons.more_horiz_rounded,
+                    spent: budgetVm.spentFor(group.id),
+                    catBudget: budgetVm.limitFor(group.id)!,
+                    available: budgetVm.available(group.id),
                   );
                 }),
 
@@ -467,6 +460,7 @@ class BudgetScreen extends StatelessWidget {
     required IconData icon,
     required int spent,
     required int catBudget,
+    int? available,
   }) {
     final progress = catBudget > 0 ? (spent / catBudget).clamp(0.0, 1.0) : 0.0;
     final isExceeded = spent > catBudget && catBudget > 0;
@@ -531,7 +525,8 @@ class BudgetScreen extends StatelessWidget {
           Text(
             isExceeded
                 ? 'Đã vượt ${formatVnd(spent - catBudget)} so với mốc nhóm. App không chặn mua.'
-                : 'Còn lại ${formatVnd(catBudget - spent)} trong nhóm này.',
+                : 'Còn lại ${formatVnd(catBudget - spent)}'
+                      '${available == null ? '' : ' · khả dụng cho danh sách chờ ${formatVnd(available)}'}.',
             style: const TextStyle(
               fontSize: 11.5,
               color: AppColors.textSecondary,

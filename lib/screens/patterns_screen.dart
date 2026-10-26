@@ -33,7 +33,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
       motiveCounts[p.motive] = (motiveCounts[p.motive] ?? 0) + 1;
     }
 
-    final totalSpent = purchaseVm.weeklyTotal;
+    final totalSpent = purchaseVm.monthTotal;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -183,7 +183,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${purchaseVm.weeklyCount} khoản đã ghi nhận',
+                        '${purchaseVm.monthCount} khoản đã ghi nhận',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textHint,

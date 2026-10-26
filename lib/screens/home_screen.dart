@@ -6,6 +6,7 @@ import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
@@ -181,6 +182,7 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     PurchaseViewModel purchaseVm,
   ) {
+    final budgetVm = context.watch<BudgetViewModel>();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -270,7 +272,7 @@ class HomeScreen extends StatelessWidget {
 
           // Big Amount: 817.000 ₫
           Text(
-            formatVnd(purchaseVm.weeklyTotal),
+            formatVnd(purchaseVm.monthTotal),
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -283,7 +285,7 @@ class HomeScreen extends StatelessWidget {
 
           // Subtitle: Tuần này: 5 khoản · 817.000 ₫
           Text(
-            'Tuần này: ${purchaseVm.weeklyCount} khoản · ${formatVnd(purchaseVm.weeklyTotal)}',
+            'Tuần này: ${purchaseVm.weekCount} khoản · ${formatVnd(purchaseVm.weekTotal)}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -406,7 +408,7 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           TextSpan(
                             text:
-                                '${formatVnd(purchaseVm.monthlySpent)} / ${formatVnd(purchaseVm.monthlyBudget)}',
+                                '${formatVnd(budgetVm.totalSpent)} / ${formatVnd(budgetVm.totalLimit)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.onPrimary,
@@ -422,17 +424,17 @@ class HomeScreen extends StatelessWidget {
                       vertical: 1.5,
                     ),
                     decoration: BoxDecoration(
-                      color: purchaseVm.isBudgetExceeded
+                      color: budgetVm.isExceeded
                           ? AppColors.surfaceVariant
                           : AppColors.successContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '${(purchaseVm.budgetProgress * 100).toInt()}%',
+                      '${(budgetVm.progress * 100).toInt()}%',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: purchaseVm.isBudgetExceeded
+                        color: budgetVm.isExceeded
                             ? AppColors.accentNeutral
                             : AppColors.onSuccessContainer,
                       ),

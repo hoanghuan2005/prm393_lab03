@@ -4,14 +4,15 @@ import 'firestore_fields.dart';
 
 /// Embedded map `settings` inside users/{uid}
 class UserSettings {
-  final int coolingOffDays;
+  /// null = the user has not chosen; callers fall back to Remote Config
+  final int? coolingOffDays;
 
   /// Hour of day (0–23) for the review reminder
   final int reminderHour;
   final bool notificationsEnabled;
 
   const UserSettings({
-    this.coolingOffDays = 3,
+    this.coolingOffDays,
     this.reminderHour = 20,
     this.notificationsEnabled = true,
   });
@@ -20,8 +21,7 @@ class UserSettings {
     const defaults = UserSettings();
     if (data == null) return defaults;
     return UserSettings(
-      coolingOffDays:
-          readInt(data['coolingOffDays']) ?? defaults.coolingOffDays,
+      coolingOffDays: readInt(data['coolingOffDays']),
       reminderHour: (readInt(data['reminderHour']) ?? defaults.reminderHour)
           .clamp(0, 23),
       notificationsEnabled: data['notificationsEnabled'] is bool
@@ -31,7 +31,7 @@ class UserSettings {
   }
 
   Map<String, dynamic> toMap() => {
-    'coolingOffDays': coolingOffDays,
+    if (coolingOffDays != null) 'coolingOffDays': coolingOffDays,
     'reminderHour': reminderHour,
     'notificationsEnabled': notificationsEnabled,
   };

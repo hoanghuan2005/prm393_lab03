@@ -189,6 +189,16 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
       if (!mounted) return;
       setState(() => _isSaving = false);
 
+      if (savedItem == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chưa lưu được khoản mua. Thử lại sau ít phút.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(

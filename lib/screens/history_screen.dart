@@ -7,6 +7,7 @@ import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/why_i_buy_logo.dart';
@@ -164,7 +165,7 @@ class HistoryScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 // 1. Monthly Budget Meter Card (Figma "31 Ngân sách theo nhóm")
-                _buildBudgetMeterCard(context, purchaseVm),
+                _buildBudgetMeterCard(context),
 
                 const SizedBox(height: 16),
 
@@ -296,14 +297,12 @@ class HistoryScreen extends StatelessWidget {
   }
 
   // ==================== BUDGET METER CARD (Figma 31) ====================
-  Widget _buildBudgetMeterCard(
-    BuildContext context,
-    PurchaseViewModel purchaseVm,
-  ) {
-    final spent = purchaseVm.monthlySpent;
-    final budget = purchaseVm.monthlyBudget;
-    final progress = purchaseVm.budgetProgress;
-    final isExceeded = purchaseVm.isBudgetExceeded;
+  Widget _buildBudgetMeterCard(BuildContext context) {
+    final budgetVm = context.watch<BudgetViewModel>();
+    final spent = budgetVm.totalSpent;
+    final budget = budgetVm.totalLimit;
+    final progress = budgetVm.progress;
+    final isExceeded = budgetVm.isExceeded;
 
     return Container(
       padding: const EdgeInsets.all(16),

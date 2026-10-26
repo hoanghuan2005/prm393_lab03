@@ -7,6 +7,7 @@ import 'package:prm393_lab03/models/spending_insight.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/models/wishlist_status.dart';
 import 'package:prm393_lab03/services/ai_insight_service.dart';
+import 'package:prm393_lab03/services/ai_service.dart';
 
 PurchaseItem _purchase(String title, int amount, BuyingMotive motive, DateTime at) => PurchaseItem(
       id: title,
@@ -16,7 +17,7 @@ PurchaseItem _purchase(String title, int amount, BuyingMotive motive, DateTime a
       occurredAt: at,
     );
 
-class _FakeGenerator implements InsightTextGenerator {
+class _FakeGenerator implements AiService {
   String response;
   Object? error;
   int calls = 0;

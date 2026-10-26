@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
+import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/user_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 /// ViewModel managing Authentication state & Google Sign-In
 class AuthViewModel extends ChangeNotifier {
   final AuthService authService;
+  final UserService userService;
+  final BudgetService budgetService;
   final AppAnalyticsService analyticsService;
   final CrashlyticsService crashlyticsService;
 
@@ -20,8 +24,13 @@ class AuthViewModel extends ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
 
+  /// Increments on every auth event so a slow setup for an old user cannot win
+  int _authEvent = 0;
+
   AuthViewModel({
     required this.authService,
+    required this.userService,
+    required this.budgetService,
     required this.analyticsService,
     required this.crashlyticsService,
   }) {
@@ -33,25 +42,61 @@ class AuthViewModel extends ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
   String? get errorMessage => _errorMessage;
   String get displayName => authService.displayName;
-  String? get userId => _currentUser?.uid;
+
+  /// uid handed to every user-data ViewModel; null until the user documents are ready
+  String? get userId =>
+      _status == AuthStatus.authenticated ? _currentUser?.uid : null;
 
   void _init() {
-    _currentUser = authService.currentUser;
-    _status = _currentUser != null
-        ? AuthStatus.authenticated
-        : AuthStatus.unauthenticated;
+    // authStateChanges emits the current user right away; AuthGate shows loading until then
+    _authSubscription = authService.authStateChanges.listen(_onAuthChanged);
+  }
 
-    _authSubscription = authService.authStateChanges.listen((User? user) {
-      _currentUser = user;
-      _status = user != null
-          ? AuthStatus.authenticated
-          : AuthStatus.unauthenticated;
-      if (user != null) {
-        analyticsService.setUserId(user.uid);
-        crashlyticsService.setUserId(user.uid);
-      }
+  Future<void> _onAuthChanged(User? user) async {
+    final event = ++_authEvent;
+    _currentUser = user;
+
+    if (user == null) {
+      _status = AuthStatus.unauthenticated;
       notifyListeners();
-    });
+      return;
+    }
+
+    _status = AuthStatus.loading;
+    notifyListeners();
+    unawaited(analyticsService.setUserId(user.uid));
+    unawaited(crashlyticsService.setUserId(user.uid));
+    await _prepareUserData(user);
+
+    if (event != _authEvent) return;
+    _status = AuthStatus.authenticated;
+    notifyListeners();
+  }
+
+  /// users/{uid} + default budget groups. Failures are logged and never block sign-in.
+  Future<void> _prepareUserData(User user) async {
+    try {
+      await userService.ensureUserDocument(
+        user.uid,
+        displayName: user.displayName,
+        isAnonymous: user.isAnonymous,
+      );
+    } catch (e, stack) {
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'ensureUserDocument failed',
+      );
+    }
+    try {
+      await budgetService.ensureDefaultGroups(user.uid);
+    } catch (e, stack) {
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'ensureDefaultGroups failed',
+      );
+    }
   }
 
   /// Sign In with Google
@@ -71,8 +116,6 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       await analyticsService.logLogin(method: 'google');
-      _status = AuthStatus.authenticated;
-      notifyListeners();
       return true;
     } on UnsupportedError {
       _status = AuthStatus.error;
@@ -102,8 +145,6 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await authService.signInAnonymously();
       await analyticsService.logLogin(method: 'guest');
-      _status = AuthStatus.authenticated;
-      notifyListeners();
       return true;
     } catch (e, stack) {
       _status = AuthStatus.error;

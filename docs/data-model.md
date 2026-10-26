@@ -1,0 +1,92 @@
+# Mô hình dữ liệu Firestore
+
+Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/ghi (`firestore.rules`). Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+
+## `users/{uid}` – `UserProfile` · ghi bởi `UserService`, `DemoDataService` (nhóm)
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+|:---|:---|:-:|:---|
+| `displayName` | string? | | — |
+| `isAnonymous` | bool | ✓ | — |
+| `createdAt` | timestamp | ✓ | server time khi tạo |
+| `settings.coolingOffDays` | int? | | null → dùng Remote Config `cooling_off_days` |
+| `settings.reminderHour` | int | | 0–23 (code), mặc định 20 |
+| `settings.notificationsEnabled` | bool | | mặc định true |
+
+## `purchases/{id}` – `PurchaseItem` · ghi bởi `PurchaseService`, `DemoDataService`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `title` | string | ✓ | 1–60 ký tự |
+| `amountVnd` | int | ✓ | 1 … 999.999.999 |
+| `motive` | string | ✓ | 1 trong 8 key: need, want, sale, emotion, social, convenience, ads, other |
+| `occurredAt` | timestamp | ✓ | là timestamp |
+| `note` | string? | | ≤ 200 ký tự |
+| `budgetGroupId` | string | ✓ | — (mặc định `other`) |
+| `wishlistItemId` | string? | | — (khi mua từ danh sách mong muốn) |
+| `usedDiscountCode` | bool | | — |
+| `createdAt`, `updatedAt` | timestamp | | — (server time) |
+
+## `wishlistItems/{id}` – `WishlistItem` · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `title` | string | ✓ | 1–60 ký tự |
+| `status` | string | ✓ | `considering` · `purchased` · `skipped` |
+| `motive` | string? | | null hoặc 1 trong 8 key |
+| `priority` | int | | 1–5 (mặc định 3) |
+| `latestPriceVnd` | int? | | null hoặc 1 … 999.999.999 |
+| `note` | string? | | ≤ 200 ký tự |
+| `url`, `budgetGroupId`, `purchaseId` | string? | | — |
+| `cooldownUntil`, `reviewAt`, `latestPriceAt`, `decidedAt` | timestamp? | | — |
+| `saveChannel` | string | | — (`manual` · `share` · `extension`) |
+| `createdAt`, `updatedAt` | timestamp | ✓ / | — |
+
+### `wishlistItems/{id}/priceSnapshots/{sid}` – `PriceSnapshot` · **chỉ thêm, không sửa**
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `amountVnd` | int | ✓ | 1 … 999.999.999 |
+| `observedAt` | timestamp | ✓ | là timestamp |
+| `source` | string | | — (`manual` · `demo`) |
+
+## `decisions/{id}` – `Decision` · **chỉ thêm, không sửa** · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `choice` | string | ✓ | `buy` · `wait` · `skip` · `undo` |
+| `itemId` | string | ✓ | — |
+| `at` | timestamp | ✓ | — (server time) |
+| `reviewAt` | timestamp? | | — (chỉ với `wait`) |
+
+## `budgetGroups/{groupId}` – `BudgetGroup` · ghi bởi `BudgetService.ensureDefaultGroups`, `DemoDataService`
+
+`name` (string), `order` (int). Rules không kiểm tra trường. 6 nhóm mặc định, id cố định: `food` Ăn uống · `fashion` Thời trang · `tech` Công nghệ · `beauty` Làm đẹp · `study` Học tập · `other` Khác.
+
+## `budgets/{yyyy-MM}` – `MonthlyBudget` · ghi bởi `BudgetService`, `DemoDataService`
+
+Id document phải khớp `^[0-9]{4}-[0-9]{2}$` (rules). Trường: `limits` (map `groupId → int`, chỉ giá trị > 0), `updatedAt`.
+
+## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
+
+Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`.
+
+## Index tổng hợp (`firestore.indexes.json`)
+
+| Collection | Trường |
+|:---|:---|
+| `wishlistItems` | `status` ↑, `createdAt` ↓ |
+| `decisions` | `itemId` ↑, `at` ↓ |
+| `purchases` | `budgetGroupId` ↑, `occurredAt` ↓ |
+
+Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems` theo `createdAt`, `budgetGroups` theo `order`) chỉ dùng index một trường; ba index trên được khai báo sẵn cho truy vấn lọc theo trạng thái / món / nhóm.
+
+## Quy tắc nghiệp vụ
+
+1. **Món mong muốn ≠ khoản mua.** `wishlistItems` là món đang cân nhắc; chỉ `purchases` được tính vào "đã chi" và ngân sách.
+2. **Mua từ danh sách mong muốn là một batch** (`PurchaseService.buyFromWishlist`): tạo purchase có `wishlistItemId`, đổi món sang `purchased` + `purchaseId` + `decidedAt` (xoá `reviewAt`), thêm decision `buy` – thành công hoặc thất bại cùng nhau.
+3. **"Chờ" chỉ đặt `reviewAt`** (+ decision `wait`); trạng thái vẫn là `considering`.
+4. **"Bỏ qua"** đổi trạng thái sang `skipped` + decision `skip`; hoàn tác ghi decision `undo`.
+5. **Giá chưa biết là `null`, không bao giờ lưu `0`.** Có giá thì mỗi lần ghi giá thêm một `priceSnapshot` và cập nhật `latestPriceVnd` / `latestPriceAt`.
+6. **Cooldown:** khi thêm món, `cooldownUntil = createdAt + coolingOffDays` trừ khi động cơ là Nhu cầu.
+7. **Lịch sử chỉ thêm:** `priceSnapshots` và `decisions` không sửa được (rules `update: false`).

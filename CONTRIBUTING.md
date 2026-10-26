@@ -30,15 +30,13 @@ Tài liệu này là quy ước làm việc chung của nhóm. Đọc một lầ
 Những đường dẫn sau do người phụ trách base quản lý. Cần thay đổi thì nhắn người phụ trách base, **không tự sửa**:
 
 - `lib/main.dart`
-- `lib/app/` *(có từ B3)*
-- `lib/core/` *(có từ B3)*
+- `lib/app/`
+- `lib/core/`
 - `lib/models/`
 - `lib/services/`
 - `lib/theme/`
-- `firestore.rules` *(có từ B2)*
+- `firestore.rules`, `firestore.indexes.json`
 - `pubspec.yaml` (kể cả thêm package)
-
-Các đường dẫn ghi "có từ B2/B3" chưa tồn tại ở thời điểm viết tài liệu này; quy tắc áp dụng ngay khi chúng được tạo.
 
 Hai file cấu hình Firebase **không ai được sửa**: `android/app/google-services.json`, `lib/firebase_options.dart`.
 
@@ -51,7 +49,11 @@ Hai file cấu hình Firebase **không ai được sửa**: `android/app/google-
 - Tiền là `int` VND; chưa có giá thì để `null`, không lưu `0`.
 - Câu chữ tiếng Việt có dấu, trung tính: không khen/chê, không "tiết kiệm được", không tô đỏ khi vượt ngân sách; Mua · Chờ · Bỏ qua ngang hàng.
 
-## 4. Checklist trước khi push
+Tài liệu cho người làm màn hình: [`docs/how-to-add-feature.md`](docs/how-to-add-feature.md) (từng bước thêm màn), [`docs/base-api.md`](docs/base-api.md) (service / ViewModel / widget dùng chung), [`docs/data-model.md`](docs/data-model.md), [`docs/architecture.md`](docs/architecture.md), [`docs/decisions.md`](docs/decisions.md).
+
+## 4. Checklist trước khi push (bắt buộc)
+
+Nhóm **không có CI** và **chưa viết test** (xem [`docs/decisions.md`](docs/decisions.md)), nên không có kiểm tra tự động nào chạy sau khi push. Checklist dưới đây là bắt buộc, mỗi người tự chạy trên máy trước mỗi lần push:
 
 - [ ] `git pull --rebase` đã chạy, không còn xung đột.
 - [ ] `dart format lib` đã chạy (không còn file nào bị đổi).

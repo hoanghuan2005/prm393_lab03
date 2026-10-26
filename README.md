@@ -1,6 +1,6 @@
 # Why I Buy – The Psychology of Money (PRM393 - Lab 3)
 
-Ứng dụng di động hỗ trợ quản lý chi tiêu và kiểm soát mua sắm bốc đồng (*Impulse Buying*) dựa trên triết lý cuốn sách *The Psychology of Money* của Morgan Housel. Dự án áp dụng kiến trúc **MVVM**, tích hợp toàn diện **Firebase Cloud Services**, kiểm thử tự động **Google ARTEMIS (E2E)** và thực hiện **AI Code Review**.
+Ứng dụng di động giúp người trẻ ghi lại vì sao mình mua, cân nhắc trước khi mua và nhìn lại thói quen chi tiêu, dựa trên cuốn *The Psychology of Money* của Morgan Housel. Dự án dùng kiến trúc **MVVM** (Provider), **8 dịch vụ Firebase** trên gói Spark, kịch bản E2E **Google ARTEMIS** và rà soát code có hỗ trợ AI.
 
 ---
 
@@ -15,10 +15,15 @@
 | Hạng mục | Đường dẫn tập tin / thư mục | Nội dung chính |
 |:---|:---|:---|
 | **Design Traceability** | [`docs/design-traceability.md`](docs/design-traceability.md) | Ánh xạ toàn bộ màn hình, flows, components từ Figma sang Flutter |
-| **Architecture Spec** | [`docs/architecture.md`](docs/architecture.md) | Phân tầng MVVM, sơ đồ tuần tự, ma trận ViewModels & Services |
-| **Analytics Plan** | [`docs/analytics-plan.md`](docs/analytics-plan.md) | Kế hoạch 7+ sự kiện Firebase Analytics (No PII) |
-| **Test Plan** | [`docs/test-plan.md`](docs/test-plan.md) | Kế hoạch 10+ E2E test cases bằng Google ARTEMIS |
-| **Code Review** | [`docs/code-review.md`](docs/code-review.md) | Biên bản đánh giá mã nguồn bằng AI và cam kết sửa lỗi |
+| **Architecture Spec** | [`docs/architecture.md`](docs/architecture.md) | Cây thư mục, sơ đồ phân tầng, ViewModel ↔ Service, luồng phiên đăng nhập |
+| **Quyết định nhóm** | [`docs/decisions.md`](docs/decisions.md) | Quyết định D1–D14 và các sai khác so với Lab 2 (màu, Storage, AI, kiểm thử) |
+| **Mô hình dữ liệu** | [`docs/data-model.md`](docs/data-model.md) | Collection `users/{uid}/...`, ràng buộc theo `firestore.rules`, index, quy tắc nghiệp vụ |
+| **API dùng chung** | [`docs/base-api.md`](docs/base-api.md) | Service, ViewModel, widget và hàm core dùng chung |
+| **Thêm tính năng** | [`docs/how-to-add-feature.md`](docs/how-to-add-feature.md) | Các bước thêm một màn mới, kèm ví dụ code |
+| **Design Tokens** | [`docs/design-tokens.md`](docs/design-tokens.md) | Màu, chữ, khoảng cách, tương phản |
+| **Analytics Plan** | [`docs/analytics-plan.md`](docs/analytics-plan.md) | 10 sự kiện Firebase Analytics (không PII), ViewModel gọi, quy ước Crashlytics |
+| **Test Plan** | [`docs/test-plan.md`](docs/test-plan.md) | 10 kịch bản E2E bằng Google ARTEMIS (chạy tay; không có CI, chưa có unit/widget test) |
+| **Code Review** | [`docs/code-review.md`](docs/code-review.md) | Biên bản đánh giá mã nguồn bằng AI và trạng thái xử lý |
 | **Remote Config** | [`firebase/remote-config-defaults.json`](firebase/remote-config-defaults.json) | Giá trị cấu hình mặc định (cooling-off days, AI feature flag) |
 | **E2E Tests** | [`e2e_test/`](e2e_test/) | Bộ kiểm thử tự động với Pytest & Google ARTEMIS |
 
@@ -46,7 +51,7 @@
 | 7 | Firebase AI Logic | `firebase_ai` | Viết câu nhận xét ở màn Góc nhìn / Chiêm nghiệm tháng (code tính số, AI chỉ viết câu) |
 | 8 | App Check | `firebase_app_check` | Bảo vệ lời gọi Firebase AI Logic — cài debug token theo mục 4.1.1 |
 
-Nhóm **không** dùng Cloud Storage và Realtime Database. Báo cáo PDF được tạo trên máy (`pdf`) và chia sẻ bằng package `printing`.
+Nhóm **không** dùng Cloud Storage (cần gói Blaze – xem D7 trong [`docs/decisions.md`](docs/decisions.md)) và Realtime Database. Báo cáo PDF được tạo trên máy (`pdf`) và chia sẻ bằng package `printing`.
 
 ---
 

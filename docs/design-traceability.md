@@ -27,8 +27,8 @@ Hệ thống triển khai đầy đủ các màn hình được quy định từ
 | 4 | Danh sách Smart Wishlist | `01 Smart Wishlist` | `/wishlist` | `WishlistScreen` | `WishlistService` (Firestore) | Planned |
 | 5 | Chi tiết món & Thẻ quyết định | `03 Chi tiết món` | `/item-detail` | `ItemDetailScreen` | `WishlistService` (Firestore) | Planned |
 | 6 | Thêm món mới (Form / Quét link) | `04 Thêm món` | `/add-item` | `AddItemScreen` | User Input / Firestore | Planned |
-| 7 | Góc nhìn & Nhận định AI | `08 Góc nhìn (có AI)` | `/ai-insights` | `AiInsightsScreen` | `AiService` (Gemini API) | Planned |
-| 8 | Chiêm nghiệm tháng & Xuất PDF | `09 Chiêm nghiệm` | `/reflection` | `MonthlyReflectionScreen` | `ReportService` / `StorageService` | Planned |
+| 7 | Góc nhìn & Nhận định AI | `08 Góc nhìn (có AI)` | Tab 4 (`MainNavigationScreen`) | `InsightsScreen` | `InsightsViewModel` → `AiInsightService` (Gemini qua Firebase AI Logic) | Implemented |
+| 8 | Chiêm nghiệm tháng & Xuất PDF | `09 Chiêm nghiệm` | Nút "Xem chiêm nghiệm tháng" trong Góc nhìn | `MonthlyReflectionScreen` | `InsightsViewModel`, `ReportService` / `StorageService` | Implemented |
 | 9 | Cá nhân & Firebase Demo Area | `Flow 7 Cá nhân` | `/profile` | `ProfileScreen` | `AuthService`, Remote Config, FCM, Crashlytics | Planned |
 
 ---
@@ -107,3 +107,6 @@ Tuân thủ quy định tại Mục 3 của Lab 3: Mọi sai lệch giữa Figma
 | **DEV-01** | `LoginScreen` & `ProfileScreen` | Bổ sung màn hình Sign-In với Google và màn Profile chứa Firebase Demo Area | Figma ban đầu tập trung vào Flow mua sắm; theo yêu cầu mục 6 của Lab 3, cần có Sign-In phân luồng và Firebase Demo Area (FCM, Crashlytics, Remote Config). |
 | **DEV-02** | `ItemDetailScreen` | Đổi cách hiển thị thời gian Cooldown từ text tĩnh sang bộ đếm thời gian động `StreamBuilder` | Để người dùng quan sát được thời gian chờ giảm dần chính xác theo thời gian thực. |
 | **DEV-03** | `MonthlyReflectionScreen` | Bổ sung nút Xuất PDF và hiển thị tiến trình Upload lên Firebase Cloud Storage | Đáp ứng yêu cầu Lab 3: tạo ít nhất 1 file và upload lên Cloud Storage theo đường dẫn per-user (`reports/{uid}/...`). |
+| **DEV-04** | `InsightsScreen`, `MonthlyReflectionScreen` | Gọi Gemini qua **Firebase AI Logic** (gói `firebase_ai`) thay vì Cloud Functions như đặc tả mục 7.6 | Cloud Functions cần gói Blaze, đặc tả xếp vào GĐ3. Firebase AI Logic chạy được trên gói Spark và vẫn đúng nguyên tắc "không để khóa API trong app". Các nguyên tắc còn lại giữ nguyên: code tính mọi con số, AI trả JSON theo schema, câu có số lạ hoặc từ phán xét bị thay bằng câu mẫu, lưu đệm theo dữ liệu đầu vào, người dùng tắt được AI, công tắc từ xa `enable_ai_insight`, đổi model qua `ai_insight_model`. |
+| **DEV-06** | Firebase AI Logic / App Check | Firebase AI Logic **bắt buộc App Check**. Android: Play Integrity (bản release cài từ Google Play), debug provider khi build debug hoặc khi build kèm debug token. Web: Fraud Defense (reCAPTCHA Enterprise). Windows: chỉ có debug provider | App chưa phát hành qua Google Play nên APK cài qua QR không qua được Play Integrity. Cả nhóm dùng chung một debug token đăng ký trên Console, đặt trong `assets/local/app_check.json` (git bỏ qua; app tự đọc khi khởi động, không cần cờ build). Windows gọi AI là cách không chính thức (`firebase_ai` không liệt kê Windows). |
+| **DEV-05** | `InsightsScreen` | Mỗi thẻ có nhãn "AI" hoặc "Câu mẫu"; AI chỉ chạy khi tháng có ít nhất 3 khoản mua | Minh bạch nguồn câu chữ và nói rõ khi thiếu dữ liệu (đặc tả mục 7.7). Trên Windows, AI chỉ chạy khi build kèm debug token App Check; nếu không thì dùng câu mẫu. |

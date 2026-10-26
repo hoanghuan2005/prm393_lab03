@@ -33,6 +33,7 @@ class WishlistViewModel extends ChangeNotifier {
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
   ItemStatus? get selectedStatusFilter => _selectedStatusFilter;
   String get searchQuery => _searchQuery;
+  List<WishlistItem> get allItems => List.unmodifiable(_allItems);
 
   /// Filtered items based on active motive, status, and search query
   List<WishlistItem> get filteredItems {

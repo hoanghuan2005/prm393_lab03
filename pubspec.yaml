@@ -49,6 +49,9 @@ dependencies:
   firebase_remote_config: ^7.0.0
   pdf: ^3.13.1
   firebase_database: ^13.0.0
+  firebase_ai: ^5.1.0
+  shared_preferences: ^2.5.6
+  firebase_app_check: ^0.5.1
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +74,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Local, git-ignored files such as the App Check debug token (assets/local/app_check.json)
+  assets:
+    - assets/local/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

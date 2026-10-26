@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import 'history_screen.dart';
@@ -33,13 +34,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         context.read<WishlistViewModel>().setUserId(authVm.userId!);
         context.read<PurchaseViewModel>().setUserId(authVm.userId!);
       }
+      context.read<InsightsViewModel>().setVisible(_currentIndex == _insightsTabIndex);
     });
   }
+
+  static const int _insightsTabIndex = 3;
 
   void _navigateToTab(int index) {
     setState(() {
       _currentIndex = index;
     });
+    // AI wording is only requested while Góc nhìn is on screen
+    context.read<InsightsViewModel>().setVisible(index == _insightsTabIndex);
   }
 
   @override
@@ -89,7 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }) {
     final isSelected = _currentIndex == index;
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => _navigateToTab(index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

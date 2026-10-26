@@ -46,3 +46,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# App Check debug token (per team, registered in Firebase console; never commit)
+app_check.local.json
+/assets/local/*
+!/assets/local/.gitkeep

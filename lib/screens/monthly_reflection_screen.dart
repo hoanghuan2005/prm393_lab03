@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/buying_motive.dart';
+import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/insight_source_chip.dart';
+import 'insights_screen.dart';
 
 /// Screen 09: Monthly Reflection & Cloud Storage PDF Export
 class MonthlyReflectionScreen extends StatelessWidget {
@@ -19,10 +22,13 @@ class MonthlyReflectionScreen extends StatelessWidget {
     final authVm = context.watch<AuthViewModel>();
     final wishlistVm = context.watch<WishlistViewModel>();
     final reportVm = context.watch<ReportViewModel>();
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final insightsVm = context.watch<InsightsViewModel>();
 
     final items = wishlistVm.filteredItems;
     final totalSaved = wishlistVm.totalSavedAmount;
+    final stats = insightsVm.stats;
+    final report = insightsVm.report;
+    final motiveCounts = {for (final m in stats?.motives ?? const <MotiveStat>[]) m.motive: m.count};
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +39,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Month Header Card
+            // Month Header Card: totals computed by code, reflection written by AI or template
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppDimens.space20),
@@ -45,36 +51,78 @@ class MonthlyReflectionScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Tổng kết chiêm nghiệm tâm lý',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: AppDimens.space8),
-                  Text(
-                    'Số tiền bạn đã giữ lại trong túi nhờ kiềm chế bốc đồng:',
-                    style: AppTextStyles.bodyMedium,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          stats == null ? 'Chiêm nghiệm tháng' : 'Tháng ${stats.month}/${stats.year}',
+                          style: AppTextStyles.titleMedium,
+                        ),
+                      ),
+                      if (report != null) InsightSourceChip(fromAi: report.summaryFromAi),
+                    ],
                   ),
                   const SizedBox(height: AppDimens.space12),
                   Text(
-                    currencyFormatter.format(totalSaved),
+                    MonthlySpendingStats.formatVnd(stats?.totalSpent ?? 0),
                     style: AppTextStyles.headlineLarge.copyWith(
                       color: AppColors.onPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  Text(
+                    'Tổng đã chi từ ${stats?.purchaseCount ?? 0} khoản mua bạn đã ghi',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                  const SizedBox(height: AppDimens.space16),
+                  if (insightsVm.isGenerating) ...[
+                    const LinearProgressIndicator(minHeight: 3),
+                    const SizedBox(height: AppDimens.space8),
+                  ],
+                  Text(
+                    report?.summary ?? 'Chưa có dữ liệu cho tháng này.',
+                    style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
+                  ),
+                  if (insightsVm.fallbackReason != null) ...[
+                    const SizedBox(height: AppDimens.space8),
+                    Text(
+                      InsightsScreen.fallbackMessage(insightsVm.fallbackReason!),
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: AppDimens.space24),
+            const SizedBox(height: AppDimens.space16),
 
-            // Motives breakdown
+            // Neutral metric (spec 7.8): never presented as money saved
+            if (stats != null && stats.skippedCount > 0) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppDimens.space16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppDimens.borderMedium,
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Text(
+                  'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
+                  'tổng giá đã ghi ${MonthlySpendingStats.formatVnd(stats.skippedValue)}.',
+                  style: AppTextStyles.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: AppDimens.space16),
+            ],
+            const SizedBox(height: AppDimens.space8),
+
+            // Motives breakdown of recorded purchases in the selected month
             Text(
               'Phân bổ 8 động cơ mua sắm',
               style: AppTextStyles.titleLarge,
             ),
             const SizedBox(height: AppDimens.space8),
             Text(
-              'Xem các món bạn cân nhắc thường xuất phát từ lý do nào:',
+              'Số khoản mua trong tháng theo động cơ bạn đã ghi:',
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: AppDimens.space16),
@@ -84,7 +132,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
               spacing: AppDimens.space8,
               runSpacing: AppDimens.space8,
               children: BuyingMotive.values.map((motive) {
-                final count = items.where((i) => i.motive == motive).length;
+                final count = motiveCounts[motive] ?? 0;
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space8),
                   decoration: BoxDecoration(

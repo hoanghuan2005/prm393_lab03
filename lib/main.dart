@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import 'firebase/firebase_setup.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'services/ai_insight_service.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/crashlytics_service.dart';
 import 'services/notification_service.dart';
+import 'services/preferences_service.dart';
 import 'services/purchase_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/report_service.dart';
@@ -14,6 +16,7 @@ import 'services/storage_service.dart';
 import 'services/wishlist_service.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
+import 'viewmodels/insights_viewmodel.dart';
 import 'viewmodels/purchase_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
@@ -45,6 +48,12 @@ void main() async {
   final storageService = StorageService();
   final analyticsService = AppAnalyticsService();
   final reportService = ReportService();
+  final preferencesService = PreferencesService();
+  final aiInsightService = AiInsightService(
+    generator: FirebaseAiInsightGenerator(
+      modelName: () => remoteConfigService.aiInsightModel,
+    ),
+  );
 
   runApp(
     MultiProvider(
@@ -94,6 +103,21 @@ void main() async {
             purchaseService: purchaseService,
             analyticsService: analyticsService,
           ),
+        ),
+        // Góc nhìn / Chiêm nghiệm: recomputes stats whenever purchases, wishlist or month change
+        ChangeNotifierProxyProvider2<PurchaseViewModel, WishlistViewModel, InsightsViewModel>(
+          create: (_) => InsightsViewModel(
+            aiInsightService: aiInsightService,
+            remoteConfigService: remoteConfigService,
+            preferencesService: preferencesService,
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, purchaseVm, wishlistVm, insightsVm) => insightsVm!
+            ..updateSources(
+              purchases: purchaseVm.allPurchases,
+              wishlistItems: wishlistVm.allItems,
+              month: purchaseVm.selectedMonth,
+            ),
         ),
       ],
       child: const WhyIBuyApp(),

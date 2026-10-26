@@ -58,6 +58,17 @@ flutter pub get
 flutter run
 ```
 
+### 4.1.1. Bật nhận xét AI (Góc nhìn, Chiêm nghiệm tháng) — làm 1 lần mỗi máy
+Firebase AI Logic yêu cầu App Check. Nhóm dùng chung một debug token (hỏi trưởng nhóm, **không đưa lên git**):
+
+1. Tạo file `assets/local/app_check.json`:
+   ```json
+   { "APP_CHECK_DEBUG_TOKEN": "<token nhóm>" }
+   ```
+2. Chạy bình thường (`flutter run`, F5, `flutter build apk`). App tự đọc token khi khởi động; log in `AppCheck debug token: found`.
+
+Không có file thì app vẫn chạy, Góc nhìn hiện câu mẫu thay cho lời nhận xét AI. Không phát hành công khai bản build có chứa token.
+
 ### 4.2. Chạy bộ kiểm thử E2E ARTEMIS
 ```bash
 cd prm393_lab03/e2e_test

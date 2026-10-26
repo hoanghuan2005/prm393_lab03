@@ -16,6 +16,7 @@ class RemoteConfigService {
   static const String keyEnableAiInsight = 'enable_ai_insight';
   static const String keyMaxWishlistItems = 'max_wishlist_items_shown';
   static const String keySaleReminderEnabled = 'sale_reminder_enabled';
+  static const String keyAiInsightModel = 'ai_insight_model';
 
   /// In-app default values matching firebase/remote-config-defaults.json.
   /// Also served directly on platforms without Remote Config (web/Windows).
@@ -24,6 +25,7 @@ class RemoteConfigService {
     keyEnableAiInsight: true,
     keyMaxWishlistItems: 20,
     keySaleReminderEnabled: true,
+    keyAiInsightModel: 'gemini-3.5-flash-lite',
   };
 
   bool get _isSupported => _injectedConfig != null || PlatformSupport.isMobile;
@@ -64,6 +66,12 @@ class RemoteConfigService {
 
   /// Whether sale reminders are enabled
   bool get saleReminderEnabled => _getBool(keySaleReminderEnabled);
+
+  /// Gemini model used for Góc nhìn wording; switchable from the console when a model is retired
+  String get aiInsightModel {
+    final value = _isSupported ? _remoteConfig.getString(keyAiInsightModel) : '';
+    return value.isNotEmpty ? value : defaults[keyAiInsightModel] as String;
+  }
 
   int _getInt(String key) =>
       _isSupported ? _remoteConfig.getInt(key) : defaults[key] as int;

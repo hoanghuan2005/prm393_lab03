@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../firebase_options.dart';
+import 'app_check_setup.dart';
 import '../services/crashlytics_service.dart';
 import '../services/notification_service.dart';
 import '../services/remote_config_service.dart';
@@ -21,6 +22,13 @@ class FirebaseSetup {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // 1b. App Check (required by Firebase AI Logic). Failure only disables AI wording.
+    try {
+      await AppCheckSetup.activate();
+    } catch (e) {
+      debugPrint('AppCheck activate error: $e');
+    }
 
     // 2. Setup Crashlytics error handlers
     crashlyticsService.initCrashlyticsHandlers();

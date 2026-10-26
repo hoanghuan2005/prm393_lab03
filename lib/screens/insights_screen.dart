@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/month_picker_sheet.dart';
+import '../widgets/insight_source_chip.dart';
+import '../widgets/states/empty_view.dart';
 import '../widgets/why_i_buy_logo.dart';
+import 'monthly_reflection_screen.dart';
 
-/// Screen 08: Góc nhìn from Figma "Why I Buy ver2"
+/// Screen 08: Góc nhìn (có AI) from Figma "Why I Buy ver2".
+/// Numbers come from code; AI only rewrites the sentences (spec 7.6).
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final insightsVm = context.watch<InsightsViewModel>();
+    final purchaseVm = context.watch<PurchaseViewModel>();
+    final stats = insightsVm.stats;
+    final report = insightsVm.report;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FB),
       appBar: AppBar(
@@ -29,205 +43,254 @@ class InsightsScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Banner introducing mindfulness
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFFCE6), Color(0xFFFEF3C7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.auto_awesome, color: Color(0xFFD97706), size: 28),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Quan sát từ dữ liệu của bạn',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.onPrimary,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Không phán xét, không chấm điểm. Đây là những mô hình chi tiêu tự nhiên được ghi nhận tuần này.',
-                        style: TextStyle(fontSize: 12.5, color: Color(0xFF47667B)),
-                      ),
-                    ],
-                  ),
+      body: RefreshIndicator(
+        onRefresh: () => insightsVm.refresh(force: true),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildMonthSelector(context, purchaseVm),
+            const SizedBox(height: 12),
+            _buildAiStatusCard(insightsVm),
+            const SizedBox(height: 20),
+            if (stats == null || report == null || !stats.hasPurchases)
+              const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: EmptyView(
+                  title: 'Chưa có khoản mua nào trong tháng',
+                  subtitle: 'Khi bạn ghi khoản mua kèm động cơ, Góc nhìn sẽ tổng hợp lại ở đây.',
+                  icon: Icons.lightbulb_outline_rounded,
                 ),
+              )
+            else ...[
+              for (final card in report.cards) ...[
+                _InsightCardView(card: card),
+                const SizedBox(height: 16),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Observation Card 1: Mua sắm nửa đêm
-          _buildInsightCard(
-            title: 'Khung giờ nhạy cảm: Nửa đêm',
-            tag: 'Khuyến mãi • 23:40',
-            tagColor: const Color(0xFFD97706),
-            tagBg: const Color(0xFFFEF3C7),
-            content:
-                'Khoản chi lớn nhất tuần là Tai nghe Bluetooth (389.000 ₫) vào lúc 23:40. Nghiên cứu tâm lý hành vi cho thấy sau 22h, thùy trán giảm khả năng ức chế xung lực, dễ kích hoạt hành vi săn sale nhanh.',
-            recommendation: 'Thử nghiệm: Đặt quy tắc "Thêm vào Wishlist và chờ đến 9h sáng hôm sau".',
-            icon: Icons.nightlight_round,
-            iconColor: const Color(0xFF6366F1),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Observation Card 2: 40% do Khuyến mãi
-          _buildInsightCard(
-            title: 'Động cơ chính: Khuyến mãi (40%)',
-            tag: '2/5 khoản mua',
-            tagColor: const Color(0xFF0284C7),
-            tagBg: const Color(0xFFE0F2FE),
-            content:
-                'Bạn đã chi 589.000 ₫ tuần này xuất phát từ động cơ giảm giá hoặc ưu đãi tặng kèm. Hãy tự hỏi: "Nếu món này giữ nguyên giá gốc, mình có chủ động tìm mua không?".',
-            recommendation: 'Mẹo: Bạn tiết kiệm được 100% nếu không mua món đồ giảm giá 50%.',
-            icon: Icons.local_offer_outlined,
-            iconColor: const Color(0xFFD97706),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Observation Card 3: Chi tiêu cảm xúc
-          _buildInsightCard(
-            title: 'Khoản chi xoa dịu cảm xúc',
-            tag: 'Trà sữa nướng • 45.000 ₫',
-            tagColor: const Color(0xFF7C3AED),
-            tagBg: const Color(0xFFEDE9FE),
-            content:
-                'Ghi nhận: "Buồn vì công việc nên muốn uống gì ngọt". Mua sắm để tự thưởng hoặc giải tỏa là hoàn toàn bình thường khi bạn có chủ đích và nhận thức rõ động cơ.',
-            recommendation: 'Tốt lắm! Bạn đã trung thực nhận diện cảm xúc thay vì tự lừa dối đó là "nhu cầu".',
-            icon: Icons.sentiment_satisfied_alt_rounded,
-            iconColor: const Color(0xFF7C3AED),
-          ),
-        ],
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const MonthlyReflectionScreen()),
+                ),
+                icon: const Icon(Icons.auto_stories_outlined, size: 18),
+                label: const Text('Xem chiêm nghiệm tháng'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.onPrimary,
+                  minimumSize: const Size.fromHeight(48),
+                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInsightCard({
-    required String title,
-    required String tag,
-    required Color tagColor,
-    required Color tagBg,
-    required String content,
-    required String recommendation,
-    required IconData icon,
-    required Color iconColor,
-  }) {
+  Widget _buildMonthSelector(BuildContext context, PurchaseViewModel purchaseVm) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 20, color: iconColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded, color: Color(0xFF47667B)),
+            tooltip: 'Tháng trước',
+            onPressed: purchaseVm.previousMonth,
+          ),
+          Flexible(
+            child: InkWell(
+              onTap: () async {
+                final picked = await MonthPickerSheet.show(context, purchaseVm.selectedMonth);
+                if (picked != null) purchaseVm.setSelectedMonth(picked);
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: tagBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                    const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.onPrimary),
+                    const SizedBox(width: 8),
+                    Flexible(
                       child: Text(
-                        tag,
-                        style: TextStyle(
-                          fontSize: 11,
+                        'Tháng ${purchaseVm.selectedMonth.month}/${purchaseVm.selectedMonth.year}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: tagColor,
+                          color: AppColors.onPrimary,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded, color: Color(0xFF47667B)),
+            tooltip: 'Tháng sau',
+            onPressed: purchaseVm.nextMonth,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiStatusCard(InsightsViewModel vm) {
+    final reason = vm.fallbackReason;
+    final String status;
+    if (vm.isGenerating) {
+      status = 'Đang viết nhận xét từ số liệu của bạn...';
+    } else if (reason != null) {
+      status = fallbackMessage(reason);
+    } else if (vm.report?.source == InsightSource.ai) {
+      status = 'Lời nhận xét do AI viết lại từ số liệu app đã tính. AI không tạo ra con số mới.';
+    } else {
+      status = 'Đang hiện câu mẫu từ số liệu đã ghi.';
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFCE6), Color(0xFFFEF3C7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFFB45309), size: 24),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Nhận xét bằng AI',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+              ),
+              Switch(
+                value: vm.canToggleAi && vm.userAiEnabled,
+                onChanged: vm.canToggleAi ? vm.setUserAiEnabled : null,
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 36, right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (vm.isGenerating) ...[
+                  const LinearProgressIndicator(minHeight: 3),
+                  const SizedBox(height: 8),
+                ],
+                Text(
+                  status,
+                  style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF374151)),
+                ),
+                if (reason == InsightFallbackReason.aiFailed && !vm.isGenerating)
+                  TextButton.icon(
+                    onPressed: () => vm.refresh(force: true),
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Thử lại'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.onPrimary,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(48, 48),
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Chỉ gửi số liệu đã tổng hợp, động cơ và tên khoản lớn nhất. Không gửi ghi chú hay link.',
+                  style: TextStyle(fontSize: 12, height: 1.35, color: Color(0xFF47667B)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String fallbackMessage(InsightFallbackReason reason) {
+    switch (reason) {
+      case InsightFallbackReason.notEnoughData:
+        return 'Cần ít nhất $kMinPurchasesForAi khoản mua trong tháng để AI nhận xét. Đang hiện câu mẫu từ số liệu.';
+      case InsightFallbackReason.userTurnedOff:
+        return 'Bạn đã tắt AI. Đang hiện câu mẫu từ số liệu.';
+      case InsightFallbackReason.disabledRemotely:
+        return 'Tính năng AI đang tạm tắt. Đang hiện câu mẫu từ số liệu.';
+      case InsightFallbackReason.unsupportedPlatform:
+        return 'AI chưa hỗ trợ trên nền tảng này. Đang hiện câu mẫu từ số liệu.';
+      case InsightFallbackReason.aiFailed:
+        return 'Chưa nhận được nhận xét hợp lệ từ AI. Đang hiện câu mẫu từ số liệu.';
+    }
+  }
+}
+
+class _InsightCardView extends StatelessWidget {
+  final InsightCard card;
+
+  const _InsightCardView({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = card.kind.color;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(card.kind.icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  card.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InsightSourceChip(fromAi: card.fromAi),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            content,
-            style: const TextStyle(
-              fontSize: 13.5,
-              height: 1.45,
-              color: Color(0xFF374151),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFF3F4F6)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.lightbulb_rounded, size: 16, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    recommendation,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF47667B),
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            card.body,
+            style: const TextStyle(fontSize: 14, height: 1.45, color: Color(0xFF374151)),
           ),
         ],
       ),

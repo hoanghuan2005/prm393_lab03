@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../app/app.dart';
 import '../services/review_reminder_service.dart';
+import '../services/share_intent_service.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import 'history_screen.dart';
@@ -36,6 +37,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       if (context.read<ReviewReminderService>().consumeLaunchedFromReminder()) {
         openReviewDueList();
       }
+      // App was started by sharing text/link from another app (Shopee, Lazada, Browser...)
+      final initialShareData =
+          context.read<ShareIntentService>().consumeInitialData();
+      if (initialShareData != null) {
+        openAddItemWithSharedData(initialShareData);
+      }
     });
   }
 
@@ -51,6 +58,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final screens = [
       HomeScreen(onNavigateTab: _navigateToTab),
       const HistoryScreen(),
@@ -68,9 +76,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: Scaffold(
         body: IndexedStack(index: _currentIndex, children: screens),
         bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
           ),
           child: SafeArea(
             child: SizedBox(
@@ -79,30 +87,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildNavItem(
+                    context: context,
                     index: 0,
                     label: 'Trang chủ',
                     icon: Icons.home_outlined,
                     activeIcon: Icons.home_rounded,
                   ),
                   _buildNavItem(
+                    context: context,
                     index: 1,
                     label: 'Lịch sử',
                     icon: Icons.format_list_bulleted_rounded,
                     activeIcon: Icons.format_list_bulleted_rounded,
                   ),
                   _buildNavItem(
+                    context: context,
                     index: 2,
                     label: 'Mô hình',
                     icon: Icons.bar_chart_rounded,
                     activeIcon: Icons.bar_chart_rounded,
                   ),
                   _buildNavItem(
+                    context: context,
                     index: 3,
                     label: 'Góc nhìn',
                     icon: Icons.lightbulb_outline_rounded,
                     activeIcon: Icons.lightbulb_rounded,
                   ),
                   _buildNavItem(
+                    context: context,
                     index: 4,
                     label: 'Cá nhân',
                     icon: Icons.person_outline_rounded,
@@ -118,12 +131,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required int index,
     required String label,
     required IconData icon,
     required IconData activeIcon,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isSelected = _currentIndex == index;
+
+    final selectedColor = isDark ? AppColors.primary : AppColors.onPrimary;
+    final unselectedColor = isDark
+        ? const Color(0xFF64748B)
+        : AppColors.navInactive;
+
     return InkWell(
       onTap: () => _navigateToTab(index),
       child: Column(
@@ -133,7 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Icon(
             isSelected ? activeIcon : icon,
             size: 24,
-            color: isSelected ? AppColors.onPrimary : AppColors.navInactive,
+            color: isSelected ? selectedColor : unselectedColor,
           ),
           const SizedBox(height: 3),
           Text(
@@ -141,7 +163,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? AppColors.onPrimary : AppColors.navInactive,
+              color: isSelected ? selectedColor : unselectedColor,
             ),
           ),
         ],

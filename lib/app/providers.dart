@@ -16,6 +16,7 @@ import '../services/remote_config_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import '../services/review_reminder_service.dart';
+import '../services/share_intent_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -25,6 +26,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
 /// All services and ViewModels of the app.
@@ -37,6 +39,7 @@ class AppProviders extends StatelessWidget {
   final RemoteConfigService remoteConfigService;
   final NotificationService notificationService;
   final ReviewReminderService reviewReminderService;
+  final ShareIntentService? shareIntentService;
   final Widget child;
 
   const AppProviders({
@@ -45,6 +48,7 @@ class AppProviders extends StatelessWidget {
     required this.remoteConfigService,
     required this.notificationService,
     required this.reviewReminderService,
+    this.shareIntentService,
     required this.child,
   });
 
@@ -72,10 +76,16 @@ class AppProviders extends StatelessWidget {
         Provider<RemoteConfigService>.value(value: remoteConfigService),
         Provider<NotificationService>.value(value: notificationService),
         Provider<ReviewReminderService>.value(value: reviewReminderService),
+        Provider<ShareIntentService>.value(
+          value: shareIntentService ?? ShareIntentService(),
+        ),
         Provider<ReportService>(create: (_) => ReportService()),
         Provider<ReportShareService>(
           create: (_) => PrintingReportShareService(),
         ),
+
+        // Theme management with persistence
+        ChangeNotifierProvider(create: (_) => ThemeViewModel()),
 
         // ViewModels. Every ViewModel holding user data gets the uid from AuthViewModel
         // through a ProxyProvider (updateUid); widgets never assign it.

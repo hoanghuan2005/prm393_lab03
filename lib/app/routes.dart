@@ -32,6 +32,19 @@ class ItemDetailArgs {
   const ItemDetailArgs(this.item);
 }
 
+/// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
+class AddItemArgs {
+  final WishlistItem? existing;
+  final String? initialTitle;
+  final String? initialUrl;
+
+  const AddItemArgs({
+    this.existing,
+    this.initialTitle,
+    this.initialUrl,
+  });
+}
+
 /// Arguments for [AppRoutes.purchaseDetail]
 class PurchaseDetailArgs {
   final PurchaseItem purchase;
@@ -85,9 +98,17 @@ class AppRoutes {
       ),
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
-      wishlistAdd => const AddItemScreen(),
+      wishlistAdd => AddItemScreen(
+        initialTitle: args is AddItemArgs ? args.initialTitle : null,
+        initialUrl: args is AddItemArgs ? args.initialUrl : null,
+      ),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,
+      ),
+      wishlistEdit when args is AddItemArgs => AddItemScreen(
+        existing: args.existing,
+        initialTitle: args.initialTitle,
+        initialUrl: args.initialUrl,
       ),
       itemDetail when args is ItemDetailArgs => ItemDetailScreen(
         item: args.item,

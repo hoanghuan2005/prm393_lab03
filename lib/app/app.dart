@@ -6,11 +6,12 @@ import '../screens/main_navigation_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/pending_writes.dart';
-import '../theme/app_colors.dart';
+import '../services/share_intent_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
 import 'routes.dart';
@@ -26,6 +27,19 @@ void openReviewDueList() {
   appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
 }
 
+/// Opens AddItemScreen with shared product title & url (from Android Share Sheet)
+void openAddItemWithSharedData(SharedItemData data) {
+  final context = appNavigatorKey.currentContext;
+  if (context == null) return;
+  appNavigatorKey.currentState?.pushNamed(
+    AppRoutes.wishlistAdd,
+    arguments: AddItemArgs(
+      initialTitle: data.title,
+      initialUrl: data.url,
+    ),
+  );
+}
+
 class WhyIBuyApp extends StatelessWidget {
   const WhyIBuyApp({super.key});
 
@@ -33,12 +47,15 @@ class WhyIBuyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final analyticsService = context.read<AppAnalyticsService>();
     final crashlyticsService = context.read<CrashlyticsService>();
+    final themeVm = context.watch<ThemeViewModel>();
 
     return MaterialApp(
       navigatorKey: appNavigatorKey,
       title: 'Why I Buy',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeVm.themeMode,
       navigatorObservers: [
         ...analyticsService.navigatorObservers,
         crashlyticsService.screenObserver,
@@ -64,6 +81,7 @@ class _PendingWritesFrame extends StatelessWidget {
       listenable: PendingWrites.instance,
       builder: (context, _) {
         final count = PendingWrites.instance.count;
+        final theme = Theme.of(context);
         return Column(
           children: [
             // Always two children, so the Navigator below keeps its element
@@ -71,7 +89,7 @@ class _PendingWritesFrame extends StatelessWidget {
               const SizedBox.shrink()
             else
               Material(
-                color: AppColors.surfaceVariant,
+                color: theme.colorScheme.surfaceContainerHighest,
                 child: SafeArea(
                   bottom: false,
                   child: Semantics(
@@ -83,17 +101,19 @@ class _PendingWritesFrame extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.cloud_off_outlined,
                             size: 18,
-                            color: AppColors.accentNeutral,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: AppDimens.space8),
                           Expanded(
                             child: Text(
                               'Đang chờ mạng · $count thay đổi đã lưu trên máy, '
                               'sẽ tự đồng bộ khi có mạng.',
-                              style: AppTextStyles.labelMedium,
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
                           ),
                         ],

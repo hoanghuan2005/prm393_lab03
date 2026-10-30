@@ -18,8 +18,15 @@ import '../widgets/motive_chip.dart';
 /// With [existing] it edits that item; the price is then changed with "Cập nhật giá" instead.
 class AddItemScreen extends StatefulWidget {
   final WishlistItem? existing;
+  final String? initialTitle;
+  final String? initialUrl;
 
-  const AddItemScreen({super.key, this.existing});
+  const AddItemScreen({
+    super.key,
+    this.existing,
+    this.initialTitle,
+    this.initialUrl,
+  });
 
   @override
   State<AddItemScreen> createState() => _AddItemScreenState();
@@ -46,6 +53,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _urlController.text = item.url ?? '';
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
+    } else {
+      if (widget.initialTitle != null && widget.initialTitle!.isNotEmpty) {
+        _titleController.text = widget.initialTitle!;
+      }
+      if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
+        _urlController.text = widget.initialUrl!;
+      }
     }
   }
 

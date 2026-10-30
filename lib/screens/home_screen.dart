@@ -8,6 +8,7 @@ import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
@@ -23,25 +24,30 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final purchaseVm = context.watch<PurchaseViewModel>();
     final wishlistVm = context.watch<WishlistViewModel>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         titleSpacing: 16,
-        title: const Row(
+        title: Row(
           children: [
-            WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            SizedBox(width: 8),
+            WhyIBuyLogo(
+              size: 26,
+              color: isDark ? AppColors.primary : AppColors.onPrimary,
+            ),
+            const SizedBox(width: 8),
             Text(
               'Trang chủ',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.onPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ],
@@ -52,9 +58,9 @@ class HomeScreen extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.bookmark_outline_rounded,
-                  color: AppColors.onPrimary,
+                  color: isDark ? AppColors.primary : AppColors.onPrimary,
                   size: 24,
                 ),
                 tooltip: 'Danh sách mong muốn',
@@ -121,12 +127,12 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Greeting
-                const Text(
+                Text(
                   'Chào bạn,',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.onPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
 
@@ -184,9 +190,16 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Stacked bar of the month's motives, widest first, in each motive's own color
-  List<Widget> _motiveSegments(Map<BuyingMotive, double> distribution) {
+  List<Widget> _motiveSegments(BuildContext context, Map<BuyingMotive, double> distribution) {
+    final theme = Theme.of(context);
     if (distribution.isEmpty) {
-      return [Expanded(child: Container(color: AppColors.surfaceVariant))];
+      return [
+        Expanded(
+          child: Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
+        ),
+      ];
     }
     final entries = distribution.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -201,22 +214,25 @@ class HomeScreen extends StatelessWidget {
     ];
   }
 
-  // ==================== TỔNG QUAN TUẦN CARD ====================
+  // ==================== TỔNG QUAN THÁNG CARD ====================
   Widget _buildMonthSummaryCard(
     BuildContext context,
     PurchaseViewModel purchaseVm,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final budgetVm = context.watch<BudgetViewModel>();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: theme.dividerColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -225,28 +241,28 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Let the period selector wrap on narrow screens and larger text.
+          // Period selector row
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             spacing: AppDimens.space8,
             runSpacing: AppDimens.space8,
             children: [
-              const Row(
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 14,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
                     'TỔNG QUAN THÁNG',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -268,7 +284,7 @@ class HomeScreen extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
@@ -276,17 +292,17 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Text(
                         formatMonthLabel(purchaseVm.selectedMonth),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.onPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 2),
-                      const Icon(
+                      Icon(
                         Icons.arrow_drop_down_rounded,
                         size: 16,
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
@@ -297,27 +313,27 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Big Amount: 817.000 ₫
+          // Big Amount
           Text(
             formatVnd(purchaseVm.monthTotal),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
-              color: AppColors.accentNeutral,
+              color: isDark ? AppColors.primary : AppColors.accentNeutral,
               letterSpacing: -0.5,
             ),
           ),
 
           const SizedBox(height: 4),
 
-          // Same period as the big amount; "Tuần này" only while viewing the current month
+          // Count text
           Text(
             '${purchaseVm.monthCount} khoản trong tháng'
             '${purchaseVm.isCurrentMonthSelected ? ' · Tuần này: ${purchaseVm.weekCount} khoản (${formatVnd(purchaseVm.weekTotal)})' : ''}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
 
@@ -327,9 +343,9 @@ class HomeScreen extends StatelessWidget {
           Text.rich(
             TextSpan(
               text: 'Nhiều nhất: ',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               children: [
                 TextSpan(
@@ -337,9 +353,9 @@ class HomeScreen extends StatelessWidget {
                     'Nhiều nhất: ',
                     '',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -354,16 +370,19 @@ class HomeScreen extends StatelessWidget {
             spacing: AppDimens.space8,
             runSpacing: AppDimens.space4,
             children: [
-              const Text(
+              Text(
                 'Động cơ chính',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               Text(
                 purchaseVm.dominantMotiveText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.onPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -377,14 +396,14 @@ class HomeScreen extends StatelessWidget {
             child: SizedBox(
               height: 7,
               child: Row(
-                children: _motiveSegments(purchaseVm.motiveDistribution),
+                children: _motiveSegments(context, purchaseVm.motiveDistribution),
               ),
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, color: AppColors.surfaceVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, color: theme.dividerColor),
           ),
 
           // Monthly Budget Quick View
@@ -397,35 +416,34 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 15,
-                    color: AppColors.accentNeutral,
+                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text.rich(
                       TextSpan(
                         text: 'Ngân sách tháng: ',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         children: [
                           TextSpan(
                             text: budgetVm.totalLimit > 0
                                 ? '${formatVnd(budgetVm.limitedSpent)} / ${formatVnd(budgetVm.totalLimit)}'
                                 : 'chưa đặt',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.onPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  // No percentage without a limit (it would read as a green "0%")
                   if (budgetVm.totalLimit > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -434,8 +452,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: budgetVm.isExceeded
-                            ? AppColors.surfaceVariant
-                            : AppColors.successContainer,
+                            ? (isDark
+                                ? const Color(0xFF451A1A)
+                                : AppColors.surfaceVariant)
+                            : (isDark
+                                ? const Color(0xFF064E3B)
+                                : AppColors.successContainer),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -444,16 +466,20 @@ class HomeScreen extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: budgetVm.isExceeded
-                              ? AppColors.accentNeutral
-                              : AppColors.onSuccessContainer,
+                              ? (isDark
+                                  ? const Color(0xFFFCA5A5)
+                                  : AppColors.accentNeutral)
+                              : (isDark
+                                  ? const Color(0xFF6EE7B7)
+                                  : AppColors.onSuccessContainer),
                         ),
                       ),
                     ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     size: 16,
-                    color: AppColors.textHint,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
@@ -469,6 +495,9 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     WishlistViewModel wishlistVm,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, AppRoutes.wishlist);
@@ -477,15 +506,15 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: theme.dividerColor, width: 1),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.bookmark_border_rounded,
-              color: AppColors.onPrimary,
+              color: isDark ? AppColors.primary : AppColors.onPrimary,
               size: 22,
             ),
             const SizedBox(width: 14),
@@ -493,29 +522,29 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Danh sách mong muốn',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.onPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${wishlistVm.consideringCount} món đang cân nhắc'
                     '${wishlistVm.reviewDueCount > 0 ? ' · ${wishlistVm.reviewDueCount} cần xem lại' : ''}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.textHint,
+              color: theme.colorScheme.onSurfaceVariant,
               size: 22,
             ),
           ],
@@ -529,6 +558,8 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     PurchaseViewModel purchaseVm,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final recentList = purchaseVm.recentPurchases;
 
     return Column(
@@ -537,13 +568,13 @@ class HomeScreen extends StatelessWidget {
         // Section Header: Khoản mua gần đây [3]    Xem tất cả >
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Khoản mua gần đây',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.onPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -551,15 +582,15 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
                 '${recentList.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -572,20 +603,20 @@ class HomeScreen extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Text(
                     'Xem tất cả',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.accentNeutral,
+                      color: isDark ? AppColors.primary : AppColors.accentNeutral,
                     ),
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: AppColors.accentNeutral,
+                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
                   ),
                 ],
               ),
@@ -598,18 +629,18 @@ class HomeScreen extends StatelessWidget {
         // Purchases Card Container
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: theme.dividerColor, width: 1),
           ),
           child: recentList.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'Chưa có khoản mua nào trong tháng này. Bấm "Ghi khoản mua" để bắt đầu.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 )
@@ -621,9 +652,9 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         _buildPurchaseRow(context, item),
                         if (!isLast)
-                          const Divider(
+                          Divider(
                             height: 1,
-                            color: AppColors.surfaceVariant,
+                            color: theme.dividerColor,
                           ),
                       ],
                     );
@@ -635,6 +666,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildPurchaseRow(BuildContext context, PurchaseItem item) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final motivePalette = MotiveColors.of(context).paletteOf(item.motive);
+
     return InkWell(
       onTap: () {
         Navigator.pushNamed(
@@ -652,13 +687,13 @@ class HomeScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: motivePalette.background,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 item.motive.icon,
                 size: 20,
-                color: AppColors.accentNeutral,
+                color: motivePalette.foreground,
               ),
             ),
             const SizedBox(width: 12),
@@ -670,10 +705,10 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.onPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -688,7 +723,7 @@ class HomeScreen extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: item.motive.backgroundColor,
+                          color: motivePalette.background,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -697,7 +732,7 @@ class HomeScreen extends StatelessWidget {
                             Icon(
                               item.motive.icon,
                               size: 11,
-                              color: item.motive.color,
+                              color: motivePalette.foreground,
                             ),
                             const SizedBox(width: 3),
                             Text(
@@ -705,7 +740,7 @@ class HomeScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: item.motive.color,
+                                color: motivePalette.foreground,
                               ),
                             ),
                           ],
@@ -715,9 +750,9 @@ class HomeScreen extends StatelessWidget {
                       // Timestamp
                       Text(
                         item.formattedTime,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textHint,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -729,10 +764,10 @@ class HomeScreen extends StatelessWidget {
             // Trailing Amount: e.g. 40.000 ₫
             Text(
               formatVnd(item.amountVnd),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.accentNeutral,
+                color: isDark ? AppColors.primary : AppColors.accentNeutral,
               ),
             ),
           ],

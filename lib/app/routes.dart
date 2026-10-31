@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/purchase_item.dart';
+import '../models/sale_event.dart';
 import '../models/wishlist_item.dart';
 import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
@@ -16,6 +17,7 @@ import '../screens/patterns_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
+import '../screens/sale_screens.dart';
 import '../screens/wishlist_screen.dart';
 
 /// Arguments for [AppRoutes.shell]
@@ -54,6 +56,13 @@ class RecordPurchaseArgs {
   }) : assert(existingPurchase == null || wishlistItem == null);
 }
 
+/// Arguments for [AppRoutes.saleList] and [AppRoutes.salePlan]
+class SaleArgs {
+  final SaleEvent sale;
+
+  const SaleArgs(this.sale);
+}
+
 /// Every named route in the app. Screens navigate only through these names.
 class AppRoutes {
   AppRoutes._();
@@ -73,6 +82,11 @@ class AppRoutes {
   static const patterns = '/patterns';
   static const reflection = '/reflection';
   static const profile = '/profile';
+
+  /// Lịch sale (screen 26), "Danh sách cho đợt sale" and "Lập kế hoạch cho đợt sale"
+  static const sales = '/sales';
+  static const saleList = '/sales/list';
+  static const salePlan = '/sales/plan';
 
   /// Debug builds only (shared widget catalogue)
   static const widgetGallery = '/dev/widgets';
@@ -109,6 +123,9 @@ class AppRoutes {
       patterns => const PatternsScreen(),
       reflection => const MonthlyReflectionScreen(),
       profile => const ProfileScreen(),
+      sales => const SaleCalendarScreen(),
+      saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
+      salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),
       widgetGallery when kDebugMode => const WidgetGalleryScreen(),
       _ => null,
     };

@@ -45,6 +45,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
         title: const Text('Smart Wishlist'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.event_outlined),
+            tooltip: 'Lịch sale',
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.sales),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Thêm món',
             onPressed: () {

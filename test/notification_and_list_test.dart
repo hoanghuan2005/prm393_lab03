@@ -28,7 +28,7 @@ void main() {
         bool sale = true,
       }) => NotificationRoute.targetFor(data, saleRemindersEnabled: sale);
 
-      expect(target({'type': 'sale'}), NotificationTarget.saleConsidering);
+      expect(target({'type': 'sale'}), NotificationTarget.saleList);
       expect(target({'type': 'sale'}, sale: false), NotificationTarget.none);
       expect(target({'type': 'review'}), NotificationTarget.reviewDue);
       expect(target({'type': 'reflection'}), NotificationTarget.reflection);

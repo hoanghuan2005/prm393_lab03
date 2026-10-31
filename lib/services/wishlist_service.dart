@@ -33,6 +33,9 @@ abstract interface class WishlistService {
   /// New price snapshot + latestPriceVnd/latestPriceAt
   Future<void> addPrice(String uid, String itemId, int amountVnd);
 
+  /// "Giá lúc lưu": the first recorded price snapshot; null when there is none
+  Future<int?> firstPrice(String uid, String itemId);
+
   /// "Chờ": reviewAt + decision wait
   Future<void> setReview(String uid, String itemId, DateTime reviewAt);
 
@@ -107,6 +110,17 @@ class FirestoreWishlistService implements WishlistService {
     }
     await awaitWrite(batch.commit());
     return item;
+  });
+
+  @override
+  Future<int?> firstPrice(String uid, String itemId) => guard(() async {
+    final snapshots = await _paths
+        .priceSnapshots(uid, itemId)
+        .orderBy('observedAt')
+        .limit(1)
+        .get();
+    if (snapshots.docs.isEmpty) return null;
+    return PriceSnapshot.fromFirestore(snapshots.docs.first).amountVnd;
   });
 
   @override

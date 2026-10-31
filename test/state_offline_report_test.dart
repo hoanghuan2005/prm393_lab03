@@ -302,6 +302,13 @@ class _NoAi implements AiService {
     required String prompt,
     required AiChoiceSchema schema,
   }) => throw UnimplementedError('Not used by Góc nhìn');
+
+  @override
+  Future<String> generateFields({
+    required String systemInstruction,
+    required String prompt,
+    required List<String> fields,
+  }) => throw UnimplementedError('Not used here');
 }
 
 /// Every sentence the template (AI off/failed) shows

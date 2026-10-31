@@ -20,6 +20,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | | `Future<WishlistItem> add(String uid, {required String title, BuyingMotive? motive, int? priceVnd, String? url, String? note, String? budgetGroupId, int priority, SaveChannel saveChannel, required int coolingOffDays})` | Thêm món; có giá thì tạo kèm 1 priceSnapshot; cooldown trừ động cơ Nhu cầu |
 | | `Future<void> update(String uid, WishlistItem item)` | Sửa món |
 | | `Future<void> addPrice(String uid, String itemId, int amountVnd)` | Snapshot giá mới + `latestPriceVnd` |
+| | `Future<int?> firstPrice(String uid, String itemId)` | "Giá lúc lưu": snapshot giá đầu tiên (tín hiệu S3 của Decision Card) |
 | | `Future<void> setReview(String uid, String itemId, DateTime reviewAt)` | "Chờ": đặt `reviewAt` + decision `wait` |
 | | `Future<void> skip(String uid, String itemId)` / `undoSkip(...)` | "Bỏ qua" / hoàn tác + decision `skip` / `undo` |
 | | `Future<void> delete(String uid, String itemId)` | Xoá món và các priceSnapshot |
@@ -37,14 +38,15 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | Lớp | Hàm chính | Mô tả |
 |:---|:---|:---|
 | `AuthService` | `authStateChanges`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In |
-| `AiService` → `FirebaseAiService` | `Future<String> generateJson({required String systemInstruction, required String prompt, required List<String> cardIds})`, `Future<String> generateChoice({required String systemInstruction, required String prompt, required AiChoiceSchema schema})` | Nơi duy nhất gọi `firebase_ai` (Gemini). `generateChoice` chỉ cho model chọn trong các giá trị liệt kê, không viết chữ |
+| `AiService` → `FirebaseAiService` | `Future<String> generateJson({required String systemInstruction, required String prompt, required List<String> cardIds})`, `Future<String> generateChoice({required String systemInstruction, required String prompt, required AiChoiceSchema schema})`, `Future<String> generateFields({required String systemInstruction, required String prompt, required List<String> fields})` | Nơi duy nhất gọi `firebase_ai` (Gemini). `generateChoice` chỉ cho model chọn trong các giá trị liệt kê, không viết chữ |
+| `AiDecisionService` | `Future<String?> reasonFor(DecisionAssessment)` | Một câu lý do cho nhãn Decision Card; bỏ câu có số lạ hoặc từ cấm (AI tính năng 2) |
 | `AiSuggestionService` | `Future<String?> suggestGroup(String title, List<BudgetGroup> groups)`, `Future<Set<String>> pickDuplicates(String title, List<DuplicateCandidate> candidates)` | Gợi ý nhóm ngân sách và món có thể trùng; bỏ giá trị lạ, nhớ kết quả theo tên món |
 | `AiInsightService` | `InsightReport buildTemplateReport(MonthlySpendingStats)`, `Future<InsightReport> generate(MonthlySpendingStats)` | Câu nhận định Góc nhìn / Chiêm nghiệm; kiểm tra câu AI, rơi về câu mẫu |
 | `ReportService` | `Future<Uint8List> generateMonthlyReportPdf({required String userName, required DateTime month, required List<PurchaseItem> purchases, required List<WishlistItem> decidedItems})` | Dựng PDF tháng |
 | `ReportShareService` → `PrintingReportShareService` | `Future<bool> sharePdf(Uint8List bytes, String fileName)`, `Future<bool> previewPdf(Uint8List bytes)` | Chia sẻ / xem trước PDF (package `printing`) |
 | `AppAnalyticsService` | `logLogin`, `logLogout`, `logSearch`, `logAddToWishlist`, `logViewItemDetail`, `logMakeDecision`, `logPurchaseRecorded`, `logBudgetSet`, `logExportReport`, `logClickSaleReminder`, `setUserId` | Chỉ dùng hằng trong `analytics_events.dart`; xem [`analytics-plan.md`](analytics-plan.md) |
 | `CrashlyticsService` | `recordHandledError(error, stack, {reason, customKeys})`, `setUserId(uid)`, `setCustomKey`, `screenObserver` | Ghi lỗi; key `screen` theo route |
-| `RemoteConfigService` | `coolingOffDays`, `enableAiInsight`, `maxWishlistItems`, `saleReminderEnabled`, `aiInsightModel`, `enableAiSuggestions`, `fetchAndActivate()` | Cấu hình từ xa |
+| `RemoteConfigService` | `coolingOffDays`, `enableAiInsight`, `maxWishlistItems`, `saleReminderEnabled`, `aiInsightModel`, `enableAiSuggestions`, `saleCalendarJson`, `fetchAndActivate()` | Cấu hình từ xa |
 | `NotificationService` | `initialize({onNotificationOpened})`, `isPermissionGranted()`, `requestPermissionFromUser()`, `receivedNotifications`, `notificationsStream`, `clearReceived()` | FCM. Chạm thông báo gọi `openFromNotification` (`lib/app/app.dart`), mở màn theo custom data `type` (`NotificationRoute`) |
 | `PreferencesService` | `getAiInsightEnabled()`, `setAiInsightEnabled(bool)` | Bật/tắt AI trên máy (SharedPreferences) |
 
@@ -61,6 +63,7 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 | `ReflectionViewModel` | `state`, `month`, `nextMonth`, `saved`, `rating`, `selectRating(int)`, `save(goal)`, `isSaving` |
 | `ReportViewModel` | `status` (`idle`→`generating`→`ready`→`shared` / `error`), `generateAndShare(month)`, `preview(month)`, `fileNameFor(month)` |
 | `InsightsViewModel` | `stats`, `report`, `isGenerating`, `fallbackReason`, `userAiEnabled`, `setVisible(bool)`, `refresh()`, `setUserAiEnabled(bool)` |
+| `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadSavedPrice(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult` |
 | `ItemSuggestionViewModel` | `suggestGroup(title, groups)` → `GroupSuggestion?`, `findDuplicates(title, {excludeItemId, budgetGroupId})` → `List<DuplicateMatch>`, `updateSources(purchases, wishlistItems)` |
 | `SettingsViewModel` | `settings`, `coolingOffDays` (của người dùng, không có thì Remote Config), `updateSettings`, `seedDemoData()`, `clearAllData()`, `refreshRemoteConfig()`, `notifications` |
 

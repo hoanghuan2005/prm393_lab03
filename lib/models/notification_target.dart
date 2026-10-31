@@ -1,10 +1,11 @@
 /// Where a tapped push notification leads. Set in the FCM message's custom data
 /// (Firebase Console → Messaging → Additional options → Custom data):
 /// `type` = `sale` | `review` | `reflection`; for a sale also
-/// `sale_type` = `double_day` | `mid_month` | `payday`.
+/// `sale_type` = `double_day` | `mid_month` | `payday` and optionally `sale_id`
+/// (the day, `yyyy-MM-dd`, as in Remote Config `sale_calendar`).
 enum NotificationTarget {
-  /// Wishlist filtered to "Đang cân nhắc", to look at items before a sale
-  saleConsidering,
+  /// "Danh sách cho đợt sale" (spec 8.2): the sale in `sale_id`, else the next one
+  saleList,
 
   /// Wishlist filtered to "Cần xem lại"
   reviewDue,
@@ -21,6 +22,7 @@ class NotificationRoute {
 
   static const String typeKey = 'type';
   static const String saleTypeKey = 'sale_type';
+  static const String saleIdKey = 'sale_id';
 
   static const String typeSale = 'sale';
   static const String typeReview = 'review';
@@ -35,7 +37,7 @@ class NotificationRoute {
     Map<String, dynamic> data, {
     required bool saleRemindersEnabled,
   }) => switch (data[typeKey]) {
-    typeSale when saleRemindersEnabled => NotificationTarget.saleConsidering,
+    typeSale when saleRemindersEnabled => NotificationTarget.saleList,
     typeReview => NotificationTarget.reviewDue,
     typeReflection => NotificationTarget.reflection,
     _ => NotificationTarget.none,

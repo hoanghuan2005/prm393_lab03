@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
 import '../services/ai_service.dart';
 import '../services/ai_suggestion_service.dart';
@@ -21,6 +22,7 @@ import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -194,6 +196,31 @@ class AppProviders extends StatelessWidget {
                 wishlistItems: wishlistVm.allItems,
                 month: purchaseVm.selectedMonth,
               ),
+        ),
+        // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
+        ChangeNotifierProxyProvider4<
+          AuthViewModel,
+          PurchaseViewModel,
+          WishlistViewModel,
+          BudgetViewModel,
+          DecisionSupportViewModel
+        >(
+          create: (context) => DecisionSupportViewModel(
+            budgetService: context.read<BudgetService>(),
+            wishlistService: context.read<WishlistService>(),
+            aiDecisionService: AiDecisionService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+          ),
+          update: (_, auth, purchaseVm, wishlistVm, budgetVm, vm) => vm!
+            ..updateUid(auth.userId)
+            ..updateSources(
+              purchases: purchaseVm.allPurchases,
+              wishlistItems: wishlistVm.allItems,
+              groups: budgetVm.groups,
+            ),
         ),
         // Thêm món / Ghi khoản mua / Chi tiết món: budget group and possible duplicates
         ChangeNotifierProxyProvider2<

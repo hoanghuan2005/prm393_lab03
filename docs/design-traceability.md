@@ -30,12 +30,15 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | 7 | Cá nhân & Firebase Demo Area | `10` | Tab 5 · `/profile` | `ProfileScreen` | `AuthViewModel`, `SettingsViewModel` | Implemented |
 | 8 | Danh sách mong muốn | `11` | `/wishlist` | `WishlistScreen` | `WishlistViewModel` | Implemented |
 | 9 | Thêm món mong muốn | `12` | `/wishlist/add` | `AddItemScreen` | `WishlistViewModel` | Implemented |
-| 10 | Chi tiết món mong muốn | `13` | `/wishlist/detail` | `ItemDetailScreen` | `WishlistViewModel` | Implemented |
+| 10 | Chi tiết món mong muốn + Decision Card | `13`, `20` | `/wishlist/detail` | `ItemDetailScreen`, `DecisionCardPanel` | `WishlistViewModel`, `DecisionSupportViewModel` | Implemented (nhãn 7.4, lý do AI) |
 | 11 | Ghi khoản mua (2 bước) | `03`, `04` | `/purchase/record` | `RecordPurchaseScreen` | `PurchaseViewModel` | Implemented |
 | 12 | Chi tiết khoản mua | `05` | `/purchase/detail` | `PurchaseDetailScreen` | `PurchaseViewModel` | Implemented |
 | 13 | Ngân sách theo nhóm | `31` | `/budget` | `BudgetScreen` | `BudgetViewModel`, `PurchaseViewModel` | Implemented (một tổng + thẻ nhóm) |
 | 14 | Chiêm nghiệm tháng & PDF | `09` | `/reflection` | `MonthlyReflectionScreen` | `ReflectionViewModel`, `ReportViewModel`, `InsightsViewModel` | Implemented |
 | 15 | Widget Gallery | – | `/dev/widgets` (chỉ debug) | `WidgetGalleryScreen` | – | Implemented |
+| 16 | Lịch sale | `26` | `/sales` (nút lịch ở Wishlist) | `SaleCalendarScreen` | `DecisionSupportViewModel` (Remote Config `sale_calendar`) | Implemented |
+| 17 | Danh sách cho đợt sale | `26.2`, `26.3` | `/sales/list` | `SaleListScreen` | `DecisionSupportViewModel` | Implemented |
+| 18 | Lập kế hoạch cho đợt sale | – (đặc tả 7.5) | `/sales/plan` | `SalePlanScreen` | `DecisionSupportViewModel` → `SalePlanner` | Implemented |
 
 ---
 
@@ -49,10 +52,10 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 * **Lỗi**: lỗi Firebase được đổi thành câu tiếng Việt; khi mất mạng, Firestore giữ thay đổi trên máy và đồng bộ khi có mạng lại.
 
 ### Flow 2: Quyết định Mua · Chờ · Bỏ qua
-1. `ItemDetailScreen` (mở từ danh sách) hiện giá và ngày ghi giá, động cơ, thời gian cân nhắc còn lại, khối "Bạn đã có món tương tự" nếu có, rồi ba nút cùng kiểu và cùng cỡ: Mua · Chờ · Bỏ qua.
+1. `ItemDetailScreen` (mở từ danh sách) hiện giá và ngày ghi giá, động cơ, thời gian cân nhắc còn lại, khối "Bạn đã có món tương tự" nếu có, rồi **Decision Card**: nhãn theo Rules Engine v1 (đặc tả 7.4, `DecisionRules`), một câu lý do (AI hoặc câu mẫu), các tín hiệu S1–S8 có dữ liệu. Bên dưới là ba nút cùng kiểu và cùng cỡ: Mua · Chờ · Bỏ qua.
 2. Mỗi lựa chọn chỉ báo thành công sau khi ghi xong; khi lỗi, màn hình giữ nguyên và cho thử lại.
    * **Mua**: mở `RecordPurchaseScreen` điền sẵn tên, giá, nhóm của món; người dùng nhập số tiền thực chi. `PurchaseService.buyFromWishlist` ghi một batch: tạo khoản mua có `wishlistItemId`, đổi món sang "Đã mua" kèm `purchaseId`, ghi decision `buy`. Xong thì mở Chi tiết khoản mua.
-   * **Chờ**: `ReviewDateSheet` cho chọn ngày xem lại (hết thời gian cân nhắc, sau 7 ngày hoặc tự chọn). `WishlistViewModel.wait` đặt `reviewAt` (09:00) và ghi decision `wait`; món vẫn "Đang cân nhắc". Trên Android, app xin quyền thông báo ngay sau đó và hẹn thông báo "Đến hẹn xem lại"; mọi nền tảng có mục "Cần xem lại" trong danh sách.
+   * **Chờ**: `ReviewDateSheet` cho chọn ngày xem lại (hết thời gian cân nhắc, sau 7 ngày, đến đợt sale đã xác nhận kế tiếp, hoặc tự chọn). `WishlistViewModel.wait` đặt `reviewAt` (09:00) và ghi decision `wait`; món vẫn "Đang cân nhắc". Trên Android, app xin quyền thông báo ngay sau đó và hẹn thông báo "Đến hẹn xem lại"; mọi nền tảng có mục "Cần xem lại" trong danh sách.
    * **Bỏ qua**: `WishlistViewModel.skip` đổi trạng thái sang "Bỏ qua" và ghi decision `skip`, rồi quay về danh sách với SnackBar `Đã bỏ qua "<tên món>".` có nút "Hoàn tác" trong 5 giây. Sau này vẫn "Cân nhắc lại" được (`reconsider`, decision `undo`).
 3. Firestore stream cập nhật danh sách ngay. Xoá một khoản mua đã liên kết sẽ đưa món về "Đang cân nhắc" ([`data-model.md`](data-model.md), quy tắc 4a).
 
@@ -91,3 +94,4 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | **DEV-06** | Firebase AI Logic / App Check | Firebase AI Logic **bắt buộc App Check**. Android: Play Integrity (bản release cài từ Google Play), debug provider khi build debug hoặc khi build kèm debug token. Web: Fraud Defense (reCAPTCHA Enterprise). Windows: chỉ có debug provider | App chưa phát hành qua Google Play nên APK cài qua QR không qua được Play Integrity. Cả nhóm dùng chung một debug token đăng ký trên Console, đặt trong `assets/local/app_check.json` (git bỏ qua; app tự đọc khi khởi động, không cần cờ build). Windows gọi AI là cách không chính thức (`firebase_ai` không liệt kê Windows). |
 | **DEV-07** | Toàn app | Màu chủ đạo vàng `#FFDE02` thay indigo `#2E4A9E` | Quyết định nhóm – xem [`decisions.md`](decisions.md), [`design-tokens.md`](design-tokens.md). |
 | **DEV-08** | `AddItemScreen`, `RecordPurchaseScreen`, `ItemDetailScreen` | Thêm gợi ý nhóm ngân sách ("Gợi ý nhóm: …", chạm mới áp dụng) và khối "Bạn đã có món tương tự" (khoản mua 30 ngày gần đây, món đang cân nhắc) | Tính năng AI 3 và 4 của đặc tả. Code đoán trước, AI chỉ chọn trong danh sách; gợi ý có nhãn "AI" khi do AI chọn, không chặn hay khuyên quyết định. |
+| **DEV-09** | `ItemDetailScreen`, `SaleCalendarScreen`, `SaleListScreen`, `SalePlanScreen` | Decision Card có nhãn Rules Engine v1 và câu lý do (AI tính năng 2); thêm Lịch sale, "Danh sách cho đợt sale" và "Lập kế hoạch cho đợt sale" (bài toán cái túi 0/1, ba phương án) | Đặc tả 7.4, 7.5, 7.6, 8.2. Khác đặc tả: chưa có Hồ sơ mua sắm nên không có S5 "Đồ đang có" và nhánh "xác nhận trùng" của nhãn 5; gói mua tính `gia` = 0 vì không đọc lịch sử giá; "Giữ lại nhiều hơn" dùng tối đa 50% phần khả dụng (giả định của nhóm); nhắc 20:00 trước đợt sale cần Cloud Functions nên chưa làm, thông báo đẩy gửi tay từ Console. |

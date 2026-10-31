@@ -42,6 +42,13 @@ class _FakeAi implements AiService {
     if (error != null) throw error!;
     return response;
   }
+
+  @override
+  Future<String> generateFields({
+    required String systemInstruction,
+    required String prompt,
+    required List<String> fields,
+  }) => throw UnimplementedError('Not used here');
 }
 
 class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {

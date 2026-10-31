@@ -4,5 +4,6 @@
   "max_wishlist_items_shown": 20,
   "sale_reminder_enabled": true,
   "ai_insight_model": "gemini-3.5-flash-lite",
-  "enable_ai_suggestions": true
+  "enable_ai_suggestions": true,
+  "sale_calendar": "[{\"date\":\"2026-11-11\",\"name\":\"11.11\",\"type\":\"double_day\",\"confirmed\":true}]"
 }

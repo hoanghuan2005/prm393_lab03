@@ -10,9 +10,11 @@ import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/decision_card_panel.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/price_update_sheet.dart';
@@ -84,6 +86,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       context,
       defaultDays: vm.coolingOffDays,
       current: item.reviewAt,
+      sale: context.read<DecisionSupportViewModel?>()?.nextConfirmedSale,
     );
     if (reviewAt == null || !mounted) return;
     final ok = await _run((vm) => vm.wait(item, reviewAt));
@@ -392,6 +395,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: AppDimens.space16),
+            if (canDecide) DecisionCardPanel(item: item),
 
             if (needsPurchase) ...[
               Text(

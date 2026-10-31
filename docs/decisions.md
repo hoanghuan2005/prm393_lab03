@@ -18,6 +18,7 @@ Bảng D1–D14 gốc trong kế hoạch base chưa được gửi vào repo. B�
 | Mất mạng | Bật bộ nhớ đệm Firestore; ghi quá 5 giây chưa xác nhận thì coi là đã lưu trên máy và hiện "Đang chờ mạng". | [`data-model.md`](data-model.md) – quy tắc 8 |
 | Thông báo | Chỉ xin quyền khi người dùng bấm "Bật thông báo" hoặc sau khi chọn "Chờ". Chạm thông báo FCM mở màn theo custom data `type`. | [`test-plan.md`](test-plan.md) – TC-09 |
 | AI | Code tính số; AI chỉ viết lời hoặc chọn trong danh sách; lỗi thì dùng câu mẫu. | Mục 2 – AI |
+| Decision Card và sale | Nhãn theo Rules Engine v1 (đặc tả 7.4), không có "Nên mua"; lịch sale lấy từ Remote Config `sale_calendar` (đã xác nhận / dự kiến); gói mua chỉ chạy khi người dùng bấm. | [`design-traceability.md`](design-traceability.md) – DEV-09 |
 
 ## 2. Sai khác so với thiết kế Lab 2 (deviation)
 
@@ -31,6 +32,8 @@ Nhóm không dùng Cloud Storage for Firebase vì từ 30/10/2024 dịch vụ n�
 Dùng Firebase AI Logic (`firebase_ai`) với Gemini Developer API (bậc miễn phí, chạy được trên gói Spark), được bảo vệ bằng App Check. Tên model lấy từ Remote Config `ai_insight_model`. Số liệu do code tính (`MonthlySpendingStats`); AI chỉ viết câu nhận định. Câu AI có số lạ hoặc từ ngữ bị cấm sẽ được thay bằng câu mẫu (`AiInsightService`). Mọi lời gọi `firebase_ai` nằm trong `AiService` (`lib/services/ai_service.dart`).
 
 Gợi ý khi thêm món (tính năng AI 3 và 4) dùng cùng nguyên tắc: code trả lời trước (bảng từ khoá cho nhóm ngân sách, so từ trong tên cho món trùng), chỉ hỏi AI khi code không chắc, và AI chỉ được **chọn** trong danh sách code đưa ra (schema enum) nên không thể bịa nhóm, bịa món hay viết câu phán xét. Gợi ý không bao giờ tự áp dụng; người dùng phải chạm. Ăn uống không tính là trùng (đồ dùng hết). Bật/tắt bằng Remote Config `enable_ai_suggestions` và cùng công tắc "Dùng AI" ở Góc nhìn.
+
+Lý do cho nhãn Decision Card (tính năng AI 2): nhãn và mọi con số do `DecisionRules` tính; AI viết một câu từ dữ liệu tối thiểu (tên món, giá, nhóm, động cơ, số đã tính; không gửi link). Câu có số không nằm trong dữ liệu hoặc có từ cấm bị bỏ và thay bằng câu mẫu theo nhãn. Dùng chung cờ `enable_ai_suggestions` và công tắc "Dùng AI".
 
 ### Kiểm thử
 Repo có bộ test tự động (`flutter test`, hiện 118 test) dùng Firestore giả lập (`fake_cloud_firestore`) và dịch vụ giả, không gọi Firebase thật. Chưa có CI; trước khi push, mỗi người chạy `dart format lib`, `flutter analyze`, `flutter test` và chạy thử theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Kiểm thử đầu cuối trên Android theo [`test-plan.md`](test-plan.md).

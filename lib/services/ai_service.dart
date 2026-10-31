@@ -29,6 +29,13 @@ abstract interface class AiService {
     required String prompt,
     required AiChoiceSchema schema,
   });
+
+  /// A JSON object with exactly these string [fields] (e.g. one Decision Card reason)
+  Future<String> generateFields({
+    required String systemInstruction,
+    required String prompt,
+    required List<String> fields,
+  });
 }
 
 /// Gemini through Firebase AI Logic: no API key is shipped in the app (spec 7.6)
@@ -80,6 +87,20 @@ class FirebaseAiService implements AiService {
         for (final e in schema.manyOf.entries)
           e.key: Schema.array(items: Schema.enumString(enumValues: e.value)),
       },
+    ),
+  );
+
+  @override
+  Future<String> generateFields({
+    required String systemInstruction,
+    required String prompt,
+    required List<String> fields,
+  }) => _generate(
+    systemInstruction: systemInstruction,
+    prompt: prompt,
+    temperature: 0.4,
+    schema: Schema.object(
+      properties: {for (final f in fields) f: Schema.string()},
     ),
   );
 

@@ -15,6 +15,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
 import 'routes.dart';
@@ -48,14 +49,25 @@ void openFromNotification(Map<String, dynamic> data) {
         .saleReminderEnabled,
   );
   switch (target) {
-    case NotificationTarget.saleConsidering:
+    case NotificationTarget.saleList:
       unawaited(
         context.read<AppAnalyticsService>().logClickSaleReminder(
           NotificationRoute.saleTypeOf(data),
         ),
       );
-      context.read<WishlistViewModel>().showConsidering();
-      appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
+      final sales = context.read<DecisionSupportViewModel>();
+      final sale =
+          sales.saleById(data[NotificationRoute.saleIdKey] as String?) ??
+          sales.upcomingSales.firstOrNull;
+      if (sale != null) {
+        appNavigatorKey.currentState?.pushNamed(
+          AppRoutes.saleList,
+          arguments: SaleArgs(sale),
+        );
+      } else {
+        context.read<WishlistViewModel>().showConsidering();
+        appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
+      }
     case NotificationTarget.reviewDue:
       openReviewDueList();
     case NotificationTarget.reflection:

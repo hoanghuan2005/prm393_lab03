@@ -20,6 +20,12 @@ class RemoteConfigService {
   static const String keySaleReminderEnabled = 'sale_reminder_enabled';
   static const String keyAiInsightModel = 'ai_insight_model';
   static const String keyEnableAiSuggestions = 'enable_ai_suggestions';
+  static const String keySaleCalendar = 'sale_calendar';
+
+  /// Announced sales (spec 8.2); the team keeps this list in the console. 11.11 is the
+  /// spec's confirmed example; other days of the public pattern appear as "dự kiến".
+  static const String defaultSaleCalendar =
+      '[{"date":"2026-11-11","name":"11.11","type":"double_day","confirmed":true}]';
 
   /// In-app default values matching firebase/remote-config-defaults.json.
   /// Also served directly on platforms without Remote Config (web/Windows).
@@ -30,6 +36,7 @@ class RemoteConfigService {
     keySaleReminderEnabled: true,
     keyAiInsightModel: 'gemini-3.5-flash-lite',
     keyEnableAiSuggestions: true,
+    keySaleCalendar: defaultSaleCalendar,
   };
 
   bool get _isSupported =>
@@ -72,6 +79,12 @@ class RemoteConfigService {
 
   /// AI help when adding an item (budget group, possible duplicates)
   bool get enableAiSuggestions => _getBool(keyEnableAiSuggestions);
+
+  /// JSON list of sales for Lịch sale (see SaleCalendar.parse)
+  String get saleCalendarJson {
+    final value = _isSupported ? _remoteConfig.getString(keySaleCalendar) : '';
+    return value.trim().isNotEmpty ? value : defaultSaleCalendar;
+  }
 
   /// Maximum wishlist items to show
   int get maxWishlistItems => _getInt(keyMaxWishlistItems);

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/ai_insight_service.dart';
 import '../services/ai_service.dart';
+import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
@@ -21,6 +22,7 @@ import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
@@ -191,6 +193,25 @@ class AppProviders extends StatelessWidget {
                 wishlistItems: wishlistVm.allItems,
                 month: purchaseVm.selectedMonth,
               ),
+        ),
+        // Thêm món / Ghi khoản mua / Chi tiết món: budget group and possible duplicates
+        ChangeNotifierProxyProvider2<
+          PurchaseViewModel,
+          WishlistViewModel,
+          ItemSuggestionViewModel
+        >(
+          create: (context) => ItemSuggestionViewModel(
+            aiSuggestionService: AiSuggestionService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+          ),
+          update: (_, purchaseVm, wishlistVm, vm) => vm!
+            ..updateSources(
+              purchases: purchaseVm.allPurchases,
+              wishlistItems: wishlistVm.allItems,
+            ),
         ),
       ],
       child: child,

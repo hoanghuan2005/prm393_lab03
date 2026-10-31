@@ -34,6 +34,13 @@ class _FakeGenerator implements AiService {
     if (error != null) throw error!;
     return response;
   }
+
+  @override
+  Future<String> generateChoice({
+    required String systemInstruction,
+    required String prompt,
+    required AiChoiceSchema schema,
+  }) => throw UnimplementedError('Not used by Góc nhìn');
 }
 
 void main() {

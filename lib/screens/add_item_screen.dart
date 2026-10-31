@@ -12,6 +12,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 
 /// Screen 04: Add Item Screen from Figma "Why I Buy".
@@ -141,6 +142,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 validator: Validators.validateTitle,
               ),
               const SizedBox(height: AppDimens.space16),
+              if (!_isEdit)
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _titleController,
+                  builder: (_, value, _) => DuplicateHint(
+                    title: value.text,
+                    budgetGroupId: _budgetGroupId,
+                  ),
+                ),
 
               // Price Input (new items only; an edit changes the price via "Cập nhật giá")
               if (!_isEdit) ...[
@@ -165,31 +174,47 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: AppDimens.space16),
 
-              // Budget group: prefilled when the item is bought later
-              DropdownButtonFormField<String?>(
+              // Budget group: prefilled when the item is bought later. Re-keyed by value
+              // so an applied suggestion shows in the field.
+              KeyedSubtree(
                 key: const ValueKey('wishlist-budget-group'),
-                initialValue: groups.any((g) => g.id == _budgetGroupId)
-                    ? _budgetGroupId
-                    : null,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nhóm ngân sách (không bắt buộc)',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Chưa chọn'),
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey('wishlist-budget-group-$_budgetGroupId'),
+                  initialValue: groups.any((g) => g.id == _budgetGroupId)
+                      ? _budgetGroupId
+                      : null,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nhóm ngân sách (không bắt buộc)',
                   ),
-                  for (final group in groups)
-                    DropdownMenuItem<String?>(
-                      value: group.id,
-                      child: Text(group.name),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Chưa chọn'),
                     ),
-                ],
-                onChanged: _isSaving
-                    ? null
-                    : (value) => setState(() => _budgetGroupId = value),
+                    for (final group in groups)
+                      DropdownMenuItem<String?>(
+                        value: group.id,
+                        child: Text(group.name),
+                      ),
+                  ],
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _budgetGroupId = value),
+                ),
               ),
+              // Only while no group is chosen; the user's own choice is never second-guessed
+              if (_budgetGroupId == null)
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _titleController,
+                  builder: (_, value, _) => BudgetGroupSuggestion(
+                    title: value.text,
+                    groups: groups,
+                    selectedGroupId: _budgetGroupId,
+                    enabled: !_isSaving,
+                    onApply: (id) => setState(() => _budgetGroupId = id),
+                  ),
+                ),
               const SizedBox(height: AppDimens.space24),
 
               // Motive Selection Header

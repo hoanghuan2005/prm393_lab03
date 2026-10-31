@@ -295,6 +295,13 @@ class _NoAi implements AiService {
     required String prompt,
     required List<String> cardIds,
   }) => throw UnimplementedError();
+
+  @override
+  Future<String> generateChoice({
+    required String systemInstruction,
+    required String prompt,
+    required AiChoiceSchema schema,
+  }) => throw UnimplementedError('Not used by Góc nhìn');
 }
 
 /// Every sentence the template (AI off/failed) shows

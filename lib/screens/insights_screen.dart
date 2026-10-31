@@ -207,7 +207,7 @@ class InsightsScreen extends StatelessWidget {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Nhận xét bằng AI',
+                  'Dùng AI',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -272,7 +272,7 @@ class InsightsScreen extends StatelessWidget {
       case InsightFallbackReason.notEnoughData:
         return 'Cần ít nhất $kMinPurchasesForAi khoản mua trong tháng để AI nhận xét. Đang hiện câu mẫu từ số liệu.';
       case InsightFallbackReason.userTurnedOff:
-        return 'Bạn đã tắt AI. Đang hiện câu mẫu từ số liệu.';
+        return 'Bạn đã tắt AI (cả gợi ý nhóm và món tương tự khi thêm món). Đang hiện câu mẫu từ số liệu.';
       case InsightFallbackReason.disabledRemotely:
         return 'Tính năng AI đang tạm tắt. Đang hiện câu mẫu từ số liệu.';
       case InsightFallbackReason.unsupportedPlatform:

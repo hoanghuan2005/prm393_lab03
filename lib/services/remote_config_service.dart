@@ -19,6 +19,7 @@ class RemoteConfigService {
   static const String keyMaxWishlistItems = 'max_wishlist_items_shown';
   static const String keySaleReminderEnabled = 'sale_reminder_enabled';
   static const String keyAiInsightModel = 'ai_insight_model';
+  static const String keyEnableAiSuggestions = 'enable_ai_suggestions';
 
   /// In-app default values matching firebase/remote-config-defaults.json.
   /// Also served directly on platforms without Remote Config (web/Windows).
@@ -28,6 +29,7 @@ class RemoteConfigService {
     keyMaxWishlistItems: 20,
     keySaleReminderEnabled: true,
     keyAiInsightModel: 'gemini-3.5-flash-lite',
+    keyEnableAiSuggestions: true,
   };
 
   bool get _isSupported =>
@@ -67,6 +69,9 @@ class RemoteConfigService {
 
   /// Feature flag for AI Insights screen / card
   bool get enableAiInsight => _getBool(keyEnableAiInsight);
+
+  /// AI help when adding an item (budget group, possible duplicates)
+  bool get enableAiSuggestions => _getBool(keyEnableAiSuggestions);
 
   /// Maximum wishlist items to show
   int get maxWishlistItems => _getInt(keyMaxWishlistItems);

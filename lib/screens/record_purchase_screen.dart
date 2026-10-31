@@ -19,6 +19,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/item_suggestions.dart';
 
 /// Shared Android/web form. Wishlist items are only changed by a successful save.
 class RecordPurchaseScreen extends StatefulWidget {
@@ -50,6 +51,9 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   late DateTime _occurredAt;
   late BuyingMotive _motive;
   late String _budgetGroupId;
+
+  /// The group came from the user, an existing purchase or the wishlist item: no suggestion
+  late bool _groupChosen;
   late bool _usedDiscountCode;
   int _step = 1;
   bool _isSaving = false;
@@ -74,6 +78,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     _motive = purchase?.motive ?? item?.displayMotive ?? BuyingMotive.emotion;
     _budgetGroupId =
         purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
+    _groupChosen = purchase != null || item?.budgetGroupId != null;
     _usedDiscountCode = purchase?.usedDiscountCode ?? false;
   }
 
@@ -428,21 +433,45 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             ),
           ),
           const SizedBox(height: AppDimens.space16),
-          DropdownButtonFormField<String>(
+          // Re-keyed by value so an applied suggestion shows in the field
+          KeyedSubtree(
             key: const ValueKey('purchase-budget-group'),
-            initialValue: _budgetGroupId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
-            items: [
-              for (final group in groups)
-                DropdownMenuItem(value: group.id, child: Text(group.name)),
-            ],
-            onChanged: enabled
-                ? (value) {
-                    if (value != null) setState(() => _budgetGroupId = value);
-                  }
-                : null,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('purchase-budget-group-$_budgetGroupId'),
+              initialValue: _budgetGroupId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
+              items: [
+                for (final group in groups)
+                  DropdownMenuItem(value: group.id, child: Text(group.name)),
+              ],
+              onChanged: enabled
+                  ? (value) {
+                      if (value != null) {
+                        setState(() {
+                          _budgetGroupId = value;
+                          _groupChosen = true;
+                        });
+                      }
+                    }
+                  : null,
+            ),
           ),
+          // A new manual purchase starts on "Khác"; edits and wishlist purchases keep their group
+          if (!_groupChosen)
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _titleController,
+              builder: (_, value, _) => BudgetGroupSuggestion(
+                title: value.text,
+                groups: groups,
+                selectedGroupId: _budgetGroupId,
+                enabled: enabled,
+                onApply: (id) => setState(() {
+                  _budgetGroupId = id;
+                  _groupChosen = true;
+                }),
+              ),
+            ),
           const SizedBox(height: AppDimens.space16),
           OutlinedButton.icon(
             onPressed: enabled ? _pickDateTime : null,

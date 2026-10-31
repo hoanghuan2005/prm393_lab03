@@ -21,6 +21,8 @@ Nhóm không dùng Cloud Storage for Firebase vì từ 30/10/2024 dịch vụ n�
 ### AI
 Dùng Firebase AI Logic (`firebase_ai`) với Gemini Developer API (bậc miễn phí, chạy được trên gói Spark), được bảo vệ bằng App Check. Tên model lấy từ Remote Config `ai_insight_model`. Số liệu do code tính (`MonthlySpendingStats`); AI chỉ viết câu nhận định. Câu AI có số lạ hoặc từ ngữ bị cấm sẽ được thay bằng câu mẫu (`AiInsightService`). Mọi lời gọi `firebase_ai` nằm trong `AiService` (`lib/services/ai_service.dart`).
 
+Gợi ý khi thêm món (tính năng AI 3 và 4) dùng cùng nguyên tắc: code trả lời trước (bảng từ khoá cho nhóm ngân sách, so từ trong tên cho món trùng), chỉ hỏi AI khi code không chắc, và AI chỉ được **chọn** trong danh sách code đưa ra (schema enum) nên không thể bịa nhóm, bịa món hay viết câu phán xét. Gợi ý không bao giờ tự áp dụng; người dùng phải chạm. Ăn uống không tính là trùng (đồ dùng hết). Bật/tắt bằng Remote Config `enable_ai_suggestions` và cùng công tắc "Dùng AI" ở Góc nhìn.
+
 ### Kiểm thử
 Lab 3 chưa có unit test / widget test viết mới và không có CI. Trước khi push, mỗi người tự chạy `dart format lib`, `flutter analyze` và chạy thử trên máy theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Thư mục `test/` chỉ còn các test có sẵn từ trước, không mở rộng thêm.
 

@@ -13,6 +13,7 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/review_date_sheet.dart';
@@ -372,6 +373,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
               const SizedBox(height: AppDimens.space20),
             ],
+
+            if (canDecide)
+              DuplicateHint(
+                title: item.title,
+                excludeItemId: item.id,
+                budgetGroupId: item.budgetGroupId,
+              ),
 
             // Decision Card (Why I Buy Core)
             Text(

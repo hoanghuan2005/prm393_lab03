@@ -38,7 +38,7 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | 15 | Widget Gallery | – | `/dev/widgets` (chỉ debug) | `WidgetGalleryScreen` | – | Implemented |
 | 16 | Lịch sale | `26` | `/sales` (nút lịch ở Wishlist) | `SaleCalendarScreen` | `DecisionSupportViewModel` (Remote Config `sale_calendar`) | Implemented |
 | 17 | Danh sách cho đợt sale | `26.2`, `26.3` | `/sales/list` | `SaleListScreen` | `DecisionSupportViewModel` | Implemented |
-| 18 | Lập kế hoạch cho đợt sale | – (đặc tả 7.5) | `/sales/plan` | `SalePlanScreen` | `DecisionSupportViewModel` → `SalePlanner` | Implemented |
+| 18 | Lập kế hoạch cho đợt sale | – (đặc tả 7.5) | `/sales/plan` | `SalePlanScreen` | `DecisionSupportViewModel` → `SalePlanner`, `AiDecisionService` | Implemented (lời giải thích AI tính năng 5) |
 
 ---
 

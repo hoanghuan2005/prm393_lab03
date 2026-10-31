@@ -39,7 +39,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 |:---|:---|:---|
 | `AuthService` | `authStateChanges`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In |
 | `AiService` → `FirebaseAiService` | `Future<String> generateJson({required String systemInstruction, required String prompt, required List<String> cardIds})`, `Future<String> generateChoice({required String systemInstruction, required String prompt, required AiChoiceSchema schema})`, `Future<String> generateFields({required String systemInstruction, required String prompt, required List<String> fields})` | Nơi duy nhất gọi `firebase_ai` (Gemini). `generateChoice` chỉ cho model chọn trong các giá trị liệt kê, không viết chữ |
-| `AiDecisionService` | `Future<String?> reasonFor(DecisionAssessment)` | Một câu lý do cho nhãn Decision Card; bỏ câu có số lạ hoặc từ cấm (AI tính năng 2) |
+| `AiDecisionService` | `Future<String?> reasonFor(DecisionAssessment)`, `Future<Map<PlanOption, String>> explainPlans(SalePlanResult)` | Một câu lý do cho nhãn Decision Card (AI tính năng 2); 1–2 câu cho mỗi phương án gói mua, một lần gọi cho cả ba (AI tính năng 5). Câu có số lạ hoặc từ cấm bị bỏ |
 | `AiSuggestionService` | `Future<String?> suggestGroup(String title, List<BudgetGroup> groups)`, `Future<Set<String>> pickDuplicates(String title, List<DuplicateCandidate> candidates)` | Gợi ý nhóm ngân sách và món có thể trùng; bỏ giá trị lạ, nhớ kết quả theo tên món |
 | `AiInsightService` | `InsightReport buildTemplateReport(MonthlySpendingStats)`, `Future<InsightReport> generate(MonthlySpendingStats)` | Câu nhận định Góc nhìn / Chiêm nghiệm; kiểm tra câu AI, rơi về câu mẫu |
 | `ReportService` | `Future<Uint8List> generateMonthlyReportPdf({required String userName, required DateTime month, required List<PurchaseItem> purchases, required List<WishlistItem> decidedItems})` | Dựng PDF tháng |
@@ -63,7 +63,7 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 | `ReflectionViewModel` | `state`, `month`, `nextMonth`, `saved`, `rating`, `selectRating(int)`, `save(goal)`, `isSaving` |
 | `ReportViewModel` | `status` (`idle`→`generating`→`ready`→`shared` / `error`), `generateAndShare(month)`, `preview(month)`, `fileNameFor(month)` |
 | `InsightsViewModel` | `stats`, `report`, `isGenerating`, `fallbackReason`, `userAiEnabled`, `setVisible(bool)`, `refresh()`, `setUserAiEnabled(bool)` |
-| `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadSavedPrice(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult` |
+| `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadSavedPrice(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult`, `explainPlans(result)` → câu AI hoặc câu mẫu cho từng phương án |
 | `ItemSuggestionViewModel` | `suggestGroup(title, groups)` → `GroupSuggestion?`, `findDuplicates(title, {excludeItemId, budgetGroupId})` → `List<DuplicateMatch>`, `updateSources(purchases, wishlistItems)` |
 | `SettingsViewModel` | `settings`, `coolingOffDays` (của người dùng, không có thì Remote Config), `updateSettings`, `seedDemoData()`, `clearAllData()`, `refreshRemoteConfig()`, `notifications` |
 

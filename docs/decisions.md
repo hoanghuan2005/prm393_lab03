@@ -35,6 +35,8 @@ Gợi ý khi thêm món (tính năng AI 3 và 4) dùng cùng nguyên tắc: code
 
 Lý do cho nhãn Decision Card (tính năng AI 2): nhãn và mọi con số do `DecisionRules` tính; AI viết một câu từ dữ liệu tối thiểu (tên món, giá, nhóm, động cơ, số đã tính; không gửi link). Câu có số không nằm trong dữ liệu hoặc có từ cấm bị bỏ và thay bằng câu mẫu theo nhãn. Dùng chung cờ `enable_ai_suggestions` và công tắc "Dùng AI".
 
+Giải thích gói mua (tính năng AI 5): khi người dùng mở "Lập kế hoạch cho đợt sale", app gọi AI một lần cho cả ba phương án; mỗi phương án được kiểm tra riêng (số lạ, từ cấm, ≤ 250 ký tự), phương án nào bị loại thì giữ câu mẫu "Gồm N món, tổng …, dùng khoảng X% phần khả dụng; còn lại …".
+
 ### Kiểm thử
 Repo có bộ test tự động (`flutter test`, hiện 118 test) dùng Firestore giả lập (`fake_cloud_firestore`) và dịch vụ giả, không gọi Firebase thật. Chưa có CI; trước khi push, mỗi người chạy `dart format lib`, `flutter analyze`, `flutter test` và chạy thử theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Kiểm thử đầu cuối trên Android theo [`test-plan.md`](test-plan.md).
 

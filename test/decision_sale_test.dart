@@ -492,6 +492,15 @@ void main() {
     expect(find.text('Kế hoạch cho 11.11'), findsOneWidget);
     expect(find.text('Cân bằng'), findsOneWidget);
     expect(find.text('Giữ lại nhiều hơn'), findsOneWidget);
+    // AI off on this platform: every plan keeps its template explanation
+    await tester.pumpAndSettle();
+    expect(find.text('Câu mẫu'), findsNWidgets(3));
+    expect(
+      find.text(
+        'Gồm 1 món, tổng 420.000 ₫, dùng khoảng 47% phần khả dụng; còn lại 480.000 ₫.',
+      ),
+      findsNWidgets(3),
+    );
     expect(find.text('• Tai nghe Sony · 420.000 ₫'), findsNWidgets(3));
     expect(AppRoutes.salePlan, '/sales/plan');
   });
@@ -554,4 +563,94 @@ void main() {
       }
     },
   );
+
+  group('AI feature 5: explaining the sale plans', () {
+    final plans = SalePlanner.plan(
+      items: [
+        WishlistItem(
+          id: 'k',
+          title: 'Bàn phím',
+          motive: BuyingMotive.want,
+          budgetGroupId: 'tech',
+          latestPriceVnd: 500000,
+          createdAt: _now.subtract(const Duration(days: 10)),
+        ),
+      ],
+      groups: defaultBudgetGroups,
+      available: {'tech': 1000000},
+      now: _now,
+    );
+    final balanced = plans.plans.first;
+
+    test('the template only uses numbers code computed', () {
+      expect(
+        balanced.templateExplanation,
+        'Gồm 1 món, tổng 500.000 ₫, dùng khoảng 50% phần khả dụng; còn lại 500.000 ₫.',
+      );
+      expect(balanced.allowedNumbers, containsAll([1, 500000, 1000000, 50]));
+    });
+
+    test('each plan is checked on its own; a bad one keeps its template', () {
+      final raw = jsonEncode({
+        'balanced': 'Phương án xếp Bàn phím 500.000 ₫ vào phần khả dụng 1.000.000 ₫, còn lại 500.000 ₫.',
+        'needsFirst': 'Giá sẽ giảm 20% nên chờ thêm.',
+        'keepMore': 'Bạn chắc chắn nên mua ngay.',
+      });
+      final parsed = AiDecisionService.parsePlans(raw, plans.plans);
+      expect(parsed.keys, [PlanOption.balanced]);
+      expect(AiDecisionService.parsePlans('not json', plans.plans), isEmpty);
+    });
+
+    test(
+      'view model: AI where accepted, template elsewhere or when AI fails',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final h = PurchaseHarness();
+        final ai = _FakeAi()
+          ..response = jsonEncode({
+            'balanced': 'Phương án xếp Bàn phím 500.000 ₫, còn lại 500.000 ₫ trong phần khả dụng.',
+          });
+        final vm = DecisionSupportViewModel(
+          budgetService: h.budgetService,
+          wishlistService: FirestoreWishlistService(h.db),
+          aiDecisionService: AiDecisionService(generator: ai),
+          remoteConfigService: RemoteConfigService(
+            remoteConfig: _FakeRemoteConfig(),
+          ),
+          preferencesService: PreferencesService(),
+          platformSupportsAi: () => true,
+          now: () => _now,
+        );
+        addTearDown(vm.dispose);
+        addTearDown(h.dispose);
+
+        final explained = await vm.explainPlans(plans);
+        expect(explained[PlanOption.balanced]?.fromAi, isTrue);
+        expect(explained[PlanOption.needsFirst]?.fromAi, isFalse);
+        expect(
+          explained[PlanOption.keepMore]?.text,
+          plans.plans.last.templateExplanation,
+        );
+        expect(ai.calls, 1, reason: 'one request for all three plans');
+
+        ai.error = Exception('offline');
+        final other = SalePlanner.plan(
+          items: [
+            WishlistItem(
+              id: 'm',
+              title: 'Chuột',
+              budgetGroupId: 'tech',
+              latestPriceVnd: 300000,
+              createdAt: _now,
+            ),
+          ],
+          groups: defaultBudgetGroups,
+          available: {'tech': 1000000},
+          now: _now,
+        );
+        final failed = await vm.explainPlans(other);
+        expect(failed.values.every((r) => !r.fromAi), isTrue);
+      },
+    );
+  });
 }

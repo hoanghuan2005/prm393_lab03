@@ -247,6 +247,26 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     );
   }
 
+  /// AI feature 5: 1–2 sentences per plan; the template wherever AI is off or rejected
+  Future<Map<PlanOption, DecisionReason>> explainPlans(
+    SalePlanResult result,
+  ) async {
+    final explanations = {
+      for (final p in result.plans)
+        p.option: DecisionReason(p.templateExplanation, fromAi: false),
+    };
+    if (result.isEmpty || !await _aiAllowed()) return explanations;
+    try {
+      final fromAi = await aiDecisionService.explainPlans(result);
+      for (final e in fromAi.entries) {
+        explanations[e.key] = DecisionReason(e.value, fromAi: true);
+      }
+    } catch (e) {
+      debugPrint('AI plan explanation unavailable: $e');
+    }
+    return explanations;
+  }
+
   @override
   void dispose() {
     _budgetSubscription?.cancel();

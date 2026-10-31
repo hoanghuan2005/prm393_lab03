@@ -11,6 +11,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/insight_source_chip.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/wishlist_card.dart';
 
@@ -192,8 +193,15 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
   void initState() {
     super.initState();
     // Computed once here, not in build: the plan only changes when the user asks again
-    _result = context.read<DecisionSupportViewModel>().plan();
+    final vm = context.read<DecisionSupportViewModel>();
+    _result = vm.plan();
+    // AI feature 5: templates first, AI wording replaces them when it arrives
+    vm.explainPlans(_result).then((explanations) {
+      if (mounted) setState(() => _explanations = explanations);
+    });
   }
+
+  Map<PlanOption, DecisionReason>? _explanations;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +226,13 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
               onAction: () => Navigator.pushNamed(context, AppRoutes.budget),
             )
           else
-            for (final plan in _result.plans) _PlanCard(plan: plan),
+            for (final plan in _result.plans)
+              _PlanCard(
+                plan: plan,
+                explanation:
+                    _explanations?[plan.option] ??
+                    DecisionReason(plan.templateExplanation, fromAi: false),
+              ),
           if (_result.excluded.isNotEmpty) ...[
             const SizedBox(height: AppDimens.space8),
             Text('Chưa đưa vào gói', style: AppTextStyles.titleMedium),
@@ -240,8 +254,9 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
 
 class _PlanCard extends StatelessWidget {
   final SalePlan plan;
+  final DecisionReason explanation;
 
-  const _PlanCard({required this.plan});
+  const _PlanCard({required this.plan, required this.explanation});
 
   @override
   Widget build(BuildContext context) {
@@ -260,6 +275,13 @@ class _PlanCard extends StatelessWidget {
           Text(plan.option.title, style: AppTextStyles.titleLarge),
           const SizedBox(height: AppDimens.space4),
           Text(plan.option.description, style: AppTextStyles.bodyMedium),
+          const SizedBox(height: AppDimens.space8),
+          Semantics(
+            liveRegion: true,
+            child: Text(explanation.text, style: AppTextStyles.bodyLarge),
+          ),
+          const SizedBox(height: AppDimens.space4),
+          InsightSourceChip(fromAi: explanation.fromAi),
           const SizedBox(height: AppDimens.space8),
           Text(
             '${plan.itemCount} món · ${formatVnd(plan.total)} '

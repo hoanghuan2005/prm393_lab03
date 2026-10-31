@@ -1,5 +1,7 @@
+import '../core/formatters/money_format.dart';
 import 'budget_group.dart';
 import 'buying_motive.dart';
+import 'spending_insight.dart';
 import 'wishlist_item.dart';
 
 /// Three ways to fit considered items into each group's "phần khả dụng" (spec 7.5).
@@ -62,6 +64,64 @@ class SalePlan {
   int get total => groups.fold(0, (sum, g) => sum + g.total);
   int get available => groups.fold(0, (sum, g) => sum + g.available);
   int get itemCount => groups.fold(0, (sum, g) => sum + g.chosen.length);
+  int get left => available - total;
+
+  /// Share of the available amount this plan uses; null when nothing is available
+  int? get percentUsed =>
+      available > 0 ? (total * 100 / available).round() : null;
+
+  /// Shown when AI is off, unavailable or writes something not allowed (spec 7.6)
+  String get templateExplanation => itemCount == 0
+      ? 'Không có món nào vừa phần khả dụng theo cách xếp này.'
+      : 'Gồm $itemCount món, tổng ${formatVnd(total)}, dùng khoảng '
+            '$percentUsed% phần khả dụng; còn lại ${formatVnd(left)}.';
+
+  /// Numbers already computed by code; AI only puts them into words
+  Map<String, dynamic> toPromptData() => {
+    'phuongAn': option.title,
+    'cachXep': option.description,
+    'soMon': itemCount,
+    'tongText': formatVnd(total),
+    'khaDungText': formatVnd(available),
+    'conLaiText': formatVnd(left),
+    'phanTramDung': ?percentUsed,
+    'nhom': [
+      for (final g in groups)
+        {
+          'ten': g.group.name,
+          'khaDungText': formatVnd(g.available),
+          'tongText': formatVnd(g.total),
+          'mon': [
+            for (final i in g.chosen)
+              {'ten': i.title, 'giaText': formatVnd(i.latestPriceVnd)},
+          ],
+        },
+    ],
+  };
+
+  /// Every integer an AI explanation of this plan may contain
+  Set<int> get allowedNumbers => {
+    0,
+    itemCount,
+    total,
+    available,
+    left,
+    ?percentUsed,
+    // "một nửa" may be written as 50%
+    if (option == PlanOption.keepMore) 50,
+    for (final g in groups) ...[
+      g.total,
+      g.available,
+      g.left,
+      g.capacity,
+      g.chosen.length,
+      ...MonthlySpendingStats.extractNumbers(g.group.name),
+      for (final i in g.chosen) ...[
+        ?i.latestPriceVnd,
+        ...MonthlySpendingStats.extractNumbers(i.title),
+      ],
+    ],
+  };
 }
 
 class SalePlanResult {

@@ -42,19 +42,19 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 ## 3. Luồng người dùng
 
 ### Flow 1: Lưu món mong muốn
-1. `AddItemScreen`: nhập tên (bắt buộc, ≤ 60), giá (tuỳ chọn), link (tuỳ chọn), chọn 1 trong 8 động cơ.
+1. `AddItemScreen`: nhập tên (bắt buộc, ≤ 60), giá (tuỳ chọn, ô tiền VND có dấu chấm và ₫), link (tuỳ chọn), nhóm ngân sách (tuỳ chọn, có chip "Gợi ý nhóm: …"), chọn 1 trong 8 động cơ. Nếu đã có khoản mua 30 ngày gần đây hoặc món đang cân nhắc giống món mới, hiện khối "Bạn đã có món tương tự" (DEV-08).
 2. `WishlistViewModel.addItem` → `WishlistService.add`: lưu món; có giá thì tạo kèm `priceSnapshot`; đặt `cooldownUntil` trừ động cơ Nhu cầu.
 3. Món hiện trong danh sách với trạng thái "Đang cân nhắc".
 * **Không nhập giá**: `latestPriceVnd = null`, thẻ hiện "Chưa có giá".
 * **Lỗi**: lỗi Firebase được đổi thành câu tiếng Việt; khi mất mạng, Firestore giữ thay đổi trên máy và đồng bộ khi có mạng lại.
 
 ### Flow 2: Quyết định Mua · Chờ · Bỏ qua
-1. `ItemDetailScreen` (mở từ danh sách) hiện giá, động cơ, thời gian cân nhắc còn lại.
-2. `WishlistViewModel.updateDecision`:
-   * **Mua**: đổi trạng thái sang "Đã mua" (`WishlistService.update`). `PurchaseService.buyFromWishlist` (batch tạo khoản mua) đã có ở service nhưng màn hình chưa dùng.
-   * **Chờ**: `WishlistService.setReview` đặt `reviewAt = hôm nay + coolingOffDays` và ghi decision `wait`.
-   * **Bỏ qua**: `WishlistService.skip` đổi trạng thái sang "Bỏ qua" và ghi decision `skip`.
-3. Firestore stream cập nhật danh sách ngay.
+1. `ItemDetailScreen` (mở từ danh sách) hiện giá và ngày ghi giá, động cơ, thời gian cân nhắc còn lại, khối "Bạn đã có món tương tự" nếu có, rồi ba nút cùng kiểu và cùng cỡ: Mua · Chờ · Bỏ qua.
+2. Mỗi lựa chọn chỉ báo thành công sau khi ghi xong; khi lỗi, màn hình giữ nguyên và cho thử lại.
+   * **Mua**: mở `RecordPurchaseScreen` điền sẵn tên, giá, nhóm của món; người dùng nhập số tiền thực chi. `PurchaseService.buyFromWishlist` ghi một batch: tạo khoản mua có `wishlistItemId`, đổi món sang "Đã mua" kèm `purchaseId`, ghi decision `buy`. Xong thì mở Chi tiết khoản mua.
+   * **Chờ**: `ReviewDateSheet` cho chọn ngày xem lại (hết thời gian cân nhắc, sau 7 ngày hoặc tự chọn). `WishlistViewModel.wait` đặt `reviewAt` (09:00) và ghi decision `wait`; món vẫn "Đang cân nhắc". Trên Android, app xin quyền thông báo ngay sau đó và hẹn thông báo "Đến hẹn xem lại"; mọi nền tảng có mục "Cần xem lại" trong danh sách.
+   * **Bỏ qua**: `WishlistViewModel.skip` đổi trạng thái sang "Bỏ qua" và ghi decision `skip`, rồi quay về danh sách với SnackBar `Đã bỏ qua "<tên món>".` có nút "Hoàn tác" trong 5 giây. Sau này vẫn "Cân nhắc lại" được (`reconsider`, decision `undo`).
+3. Firestore stream cập nhật danh sách ngay. Xoá một khoản mua đã liên kết sẽ đưa món về "Đang cân nhắc" ([`data-model.md`](data-model.md), quy tắc 4a).
 
 ### Flow 3: Chiêm nghiệm tháng và báo cáo PDF
 1. Từ Góc nhìn → "Xem chiêm nghiệm tháng" (`/reflection`).

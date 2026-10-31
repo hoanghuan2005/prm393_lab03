@@ -61,6 +61,44 @@ class WishlistViewModel extends ChangeNotifier
 
   void updateCoolingOffDays(int days) => _coolingOffDays = days;
 
+  /// Remote Config `max_wishlist_items_shown`: items listed before "Xem thêm"
+  int _maxShown = 20;
+  bool _showAll = false;
+  bool _disposed = false;
+
+  int get maxShown => _maxShown;
+
+  /// Fed by the ProxyProvider during build, so the redraw is deferred
+  void updateMaxShown(int value) {
+    final next = value < 1 ? 1 : value;
+    if (next == _maxShown) return;
+    _maxShown = next;
+    Future.microtask(() {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  /// The part of [items] the list shows; all of it after "Xem thêm"
+  List<WishlistItem> visibleOf(List<WishlistItem> items) =>
+      _showAll || items.length <= _maxShown
+      ? items
+      : items.sublist(0, _maxShown);
+
+  void showAllItems() {
+    _showAll = true;
+    notifyListeners();
+  }
+
+  /// Sale reminder tapped: the items still being considered, nothing else filtered
+  void showConsidering() {
+    _searchQuery = '';
+    _selectedMotiveFilter = null;
+    _reviewDueOnly = false;
+    _selectedStatusFilter = WishlistStatus.considering;
+    _showAll = false;
+    _updateFilteredState();
+  }
+
   UiState<List<WishlistItem>> get state => _state;
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
   WishlistStatus? get selectedStatusFilter => _selectedStatusFilter;
@@ -163,6 +201,7 @@ class WishlistViewModel extends ChangeNotifier
   /// Set search query and log analytics event
   void setSearchQuery(String query) {
     _searchQuery = query;
+    _showAll = false;
     _updateFilteredState();
 
     if (query.trim().isNotEmpty) {
@@ -178,12 +217,14 @@ class WishlistViewModel extends ChangeNotifier
   /// Toggle motive filter
   void setMotiveFilter(BuyingMotive? motive) {
     _selectedMotiveFilter = (_selectedMotiveFilter == motive) ? null : motive;
+    _showAll = false;
     _updateFilteredState();
   }
 
   /// Show only items whose review date has arrived
   void setReviewDueFilter(bool enabled) {
     _reviewDueOnly = enabled;
+    _showAll = false;
     _updateFilteredState();
   }
 
@@ -232,6 +273,7 @@ class WishlistViewModel extends ChangeNotifier
   /// Toggle status filter
   void setStatusFilter(WishlistStatus? status) {
     _selectedStatusFilter = (_selectedStatusFilter == status) ? null : status;
+    _showAll = false;
     _updateFilteredState();
   }
 
@@ -409,6 +451,7 @@ class WishlistViewModel extends ChangeNotifier
 
   @override
   void dispose() {
+    _disposed = true;
     _itemsSubscription?.cancel();
     super.dispose();
   }

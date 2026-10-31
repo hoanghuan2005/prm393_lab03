@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/app.dart';
 import '../app/routes.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
@@ -316,6 +317,8 @@ class ProfileScreen extends StatelessWidget {
                       final notif = settingsVm.notifications[index];
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
+                        // Same screen as tapping the system notification
+                        onTap: () => openFromNotification(notif.data),
                         leading: const Icon(
                           Icons.mark_email_unread_outlined,
                           color: AppColors.info,

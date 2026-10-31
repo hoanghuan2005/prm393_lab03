@@ -36,6 +36,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       if (context.read<ReviewReminderService>().consumeLaunchedFromReminder()) {
         openReviewDueList();
       }
+      // App opened by tapping a push notification, or tapped while signed out
+      openPendingNotification();
     });
   }
 

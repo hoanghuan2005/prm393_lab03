@@ -77,6 +77,16 @@ class WishlistItem {
   Duration get remainingCooldown =>
       isInCooldown ? cooldownUntil!.difference(DateTime.now()) : Duration.zero;
 
+  /// Short countdown, rounded up: a 3-day item saved a minute ago reads "3 ngày", not "2 ngày"
+  String get remainingCooldownLabel {
+    final minutes = remainingCooldown.inMinutes;
+    if (minutes >= Duration.minutesPerDay) {
+      return '${(minutes / Duration.minutesPerDay).ceil()} ngày';
+    }
+    final hours = (minutes / Duration.minutesPerHour).ceil();
+    return '${hours < 1 ? 1 : hours} giờ';
+  }
+
   /// User chose "Chờ" and the review date has not come yet
   bool get isWaiting =>
       status == WishlistStatus.considering &&

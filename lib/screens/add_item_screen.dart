@@ -10,6 +10,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
+import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/item_suggestions.dart';
@@ -153,13 +154,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
               // Price Input (new items only; an edit changes the price via "Cập nhật giá")
               if (!_isEdit) ...[
-                AppTextField(
-                  label: 'Giá dự kiến (VND, không bắt buộc)',
+                // Same VND field as Ghi khoản mua: "389.000" grouping, "₫", empty = unknown price
+                AmountField(
+                  key: const ValueKey('wishlist-price'),
+                  label: 'Giá dự kiến (không bắt buộc)',
                   hint: 'Để trống nếu chưa biết giá',
                   controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  prefixIcon: Icons.attach_money,
-                  validator: Validators.validateOptionalAmount,
+                  optional: true,
+                  enabled: !_isSaving,
                 ),
                 const SizedBox(height: AppDimens.space16),
               ],

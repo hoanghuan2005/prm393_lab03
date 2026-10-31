@@ -81,9 +81,7 @@ class WishlistCard extends StatelessWidget {
 
   Widget _buildStatusBadge() {
     if (item.isInCooldown) {
-      final hours = item.remainingCooldown.inHours;
-      final days = item.remainingCooldown.inDays;
-      final timeText = days > 0 ? '$days ngày hoãn' : '$hours giờ hoãn';
+      final timeText = '${item.remainingCooldownLabel} hoãn';
 
       return Container(
         padding: const EdgeInsets.symmetric(

@@ -17,12 +17,16 @@ Future<void> main() async {
   // after Firebase is initialized.
   final crashlyticsService = CrashlyticsService();
   final remoteConfigService = RemoteConfigService();
-  final notificationService = NotificationService();
+  final notificationService = NotificationService(
+    saleRemindersEnabled: () => remoteConfigService.saleReminderEnabled,
+  );
 
   await FirebaseSetup.initialize(
     crashlyticsService: crashlyticsService,
     remoteConfigService: remoteConfigService,
     notificationService: notificationService,
+    // A tapped push notification opens its screen (waits for sign-in if needed)
+    onNotificationOpened: openFromNotification,
   );
 
   // Local "Đến hẹn xem lại" notifications (Android/iOS only; no-op elsewhere)

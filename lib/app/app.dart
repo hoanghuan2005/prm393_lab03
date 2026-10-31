@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/notification_target.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_navigation_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/pending_writes.dart';
+import '../services/remote_config_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -24,6 +28,48 @@ void openReviewDueList() {
   if (context == null || context.read<AuthViewModel>().userId == null) return;
   context.read<WishlistViewModel>().setReviewDueFilter(true);
   appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
+}
+
+/// A notification tapped before the app or the user was ready (app was closed, signed out)
+Map<String, dynamic>? _pendingNotification;
+
+/// Opens the screen a tapped push notification points to (FCM custom data `type`).
+/// Waits until [MainNavigationScreen] is shown when the user is not signed in yet.
+void openFromNotification(Map<String, dynamic> data) {
+  final context = appNavigatorKey.currentContext;
+  if (context == null || context.read<AuthViewModel>().userId == null) {
+    _pendingNotification = data;
+    return;
+  }
+  final target = NotificationRoute.targetFor(
+    data,
+    saleRemindersEnabled: context
+        .read<RemoteConfigService>()
+        .saleReminderEnabled,
+  );
+  switch (target) {
+    case NotificationTarget.saleConsidering:
+      unawaited(
+        context.read<AppAnalyticsService>().logClickSaleReminder(
+          NotificationRoute.saleTypeOf(data),
+        ),
+      );
+      context.read<WishlistViewModel>().showConsidering();
+      appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
+    case NotificationTarget.reviewDue:
+      openReviewDueList();
+    case NotificationTarget.reflection:
+      appNavigatorKey.currentState?.pushNamed(AppRoutes.reflection);
+    case NotificationTarget.none:
+      break;
+  }
+}
+
+/// Called once the signed-in shell is on screen
+void openPendingNotification() {
+  final data = _pendingNotification;
+  _pendingNotification = null;
+  if (data != null) openFromNotification(data);
 }
 
 class WhyIBuyApp extends StatelessWidget {

@@ -45,7 +45,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | `AppAnalyticsService` | `logLogin`, `logLogout`, `logSearch`, `logAddToWishlist`, `logViewItemDetail`, `logMakeDecision`, `logPurchaseRecorded`, `logBudgetSet`, `logExportReport`, `logClickSaleReminder`, `setUserId` | Chỉ dùng hằng trong `analytics_events.dart`; xem [`analytics-plan.md`](analytics-plan.md) |
 | `CrashlyticsService` | `recordHandledError(error, stack, {reason, customKeys})`, `setUserId(uid)`, `setCustomKey`, `screenObserver` | Ghi lỗi; key `screen` theo route |
 | `RemoteConfigService` | `coolingOffDays`, `enableAiInsight`, `maxWishlistItems`, `saleReminderEnabled`, `aiInsightModel`, `enableAiSuggestions`, `fetchAndActivate()` | Cấu hình từ xa |
-| `NotificationService` | `initialize(...)`, `receivedNotifications`, `notificationsStream` | FCM |
+| `NotificationService` | `initialize({onNotificationOpened})`, `isPermissionGranted()`, `requestPermissionFromUser()`, `receivedNotifications`, `notificationsStream`, `clearReceived()` | FCM. Chạm thông báo gọi `openFromNotification` (`lib/app/app.dart`), mở màn theo custom data `type` (`NotificationRoute`) |
 | `PreferencesService` | `getAiInsightEnabled()`, `setAiInsightEnabled(bool)` | Bật/tắt AI trên máy (SharedPreferences) |
 
 ## 2. ViewModels (`lib/viewmodels/`)
@@ -56,8 +56,8 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 |:---|:---|
 | `AuthViewModel` | `status`, `userId` (null tới khi xong ensure*), `displayName`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()` |
 | `PurchaseViewModel` | `state`, `selectedMonth`, `previousMonth()`, `nextMonth()`, `setSelectedMonth()`, `monthPurchases`, `filteredPurchases`, `monthTotal`/`monthCount`, `weekTotal`/`weekCount`, `timeSlotStats`, `motiveDistribution`, `addPurchase(...)`, `updatePurchase(...)`, `deletePurchase(id)`, `actionError` |
-| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `coolingOffDays`, `addItem(...)`, `updateDecision(...)`, `onItemViewed(item)`, `actionError` |
-| `BudgetViewModel` | `state`, `groups`, `limits`, `limitFor(id)`, `spentByGroup`, `spentFor(id)`, `totalLimit`, `totalSpent`, `progress`, `isExceeded`, `available(id)`, `bufferFor(id)`, `hasEnoughHistory`, `daysLeftInMonth`, `setGroupLimit(id, limit)`, `setOverallLimit(amount)` |
+| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `reviewDueCount`, `setReviewDueFilter`, `coolingOffDays`, `addItem(...)`, `updateDetails(...)`, `updatePrice(...)`, `deleteItem(...)`, `wait(item, reviewAt)`, `skip(item)`, `reconsider(item)`, `onItemViewed(item)`, `maxShown`/`updateMaxShown` (Remote Config `max_wishlist_items_shown`), `visibleOf(items)`, `showAllItems()`, `showConsidering()`, `actionError` |
+| `BudgetViewModel` | `state`, `groups`, `limits`, `limitFor(id)`, `spentByGroup`, `spentFor(id)`, `totalLimit`, `totalSpent`, `limitedSpent` (chỉ các nhóm có hạn mức), `unlimitedSpent`, `progress`, `isExceeded`, `remaining`, `isBudgetLoaded`, `available(id)`, `bufferFor(id)`, `hasEnoughHistory`, `daysLeftInMonth`, `setGroupLimit(id, limit)`, `setGroupLimits(changes)` |
 | `ReflectionViewModel` | `state`, `month`, `nextMonth`, `saved`, `rating`, `selectRating(int)`, `save(goal)`, `isSaving` |
 | `ReportViewModel` | `status` (`idle`→`generating`→`ready`→`shared` / `error`), `generateAndShare(month)`, `preview(month)`, `fileNameFor(month)` |
 | `InsightsViewModel` | `stats`, `report`, `isGenerating`, `fallbackReason`, `userAiEnabled`, `setVisible(bool)`, `refresh()`, `setUserAiEnabled(bool)` |

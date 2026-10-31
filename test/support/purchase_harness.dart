@@ -42,6 +42,12 @@ class TestAnalytics extends Fake implements AppAnalyticsService {
   }
 
   @override
+  Future<void> logAddToWishlist({
+    required String motive,
+    required int? priceVnd,
+  }) async {}
+
+  @override
   Future<void> logViewItemDetail({
     required String motive,
     required int daysInCooldown,

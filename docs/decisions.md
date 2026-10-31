@@ -1,14 +1,23 @@
-# Quyết định của nhóm (D1–D14)
+# Quyết định của nhóm
 
 Các quyết định đã chốt cho Lab 3. Muốn đổi một quyết định thì cả nhóm thống nhất trước, cập nhật bảng này rồi mới sửa code.
 
 ## 1. Bảng quyết định
 
-<!-- TODO(B14): dán bảng D1–D14 từ mục 0 của kế hoạch base vào đây (chưa nhận được nội dung). -->
+Bảng D1–D14 gốc trong kế hoạch base chưa được gửi vào repo. Bảng dưới ghi các quyết định **đã thực hiện trong code**; khi có bảng gốc, nhóm đối chiếu và đánh lại mã. Riêng D7 (Cloud Storage) đã có mã từ trước.
 
-| Mã | Quyết định | Ghi chú |
+| Chủ đề | Quyết định | Xem thêm |
 |:---|:---|:---|
-| D1–D14 | *Chưa điền – chờ bảng từ mục 0 của kế hoạch base.* | |
+| Kiến trúc | MVVM + Provider. Màn hình chỉ gọi ViewModel; mọi lời gọi Firebase nằm trong `lib/services/`. | [`architecture.md`](architecture.md) |
+| Nền tảng | Android là sản phẩm chính; web và Windows chạy cùng code. Tính năng không có SDK trên một nền tảng thì dùng giá trị mặc định hoặc cách thay thế. | [`data-model.md`](data-model.md) – Khác biệt giữa các nền tảng |
+| Gói Firebase | Gói Spark, không dùng Cloud Storage (D7). | Mục 2 bên dưới |
+| Dữ liệu | Mọi dữ liệu nằm dưới `users/{uid}/…`; rules chỉ cho chủ sở hữu đọc/ghi. | [`firestore.rules`](../firestore.rules), [`data-model.md`](data-model.md) |
+| Wishlist và chi tiêu | Món mong muốn không phải khoản chi; chỉ khoản mua tính vào "đã chi". Giá chưa biết lưu `null`, không bao giờ hiện 0 ₫. | [`data-model.md`](data-model.md) – quy tắc 1, 5 |
+| Quyết định | Mua · Chờ · Bỏ qua ngang hàng; "Chờ" chỉ đặt ngày xem lại, không phải trạng thái riêng. | [`design-traceability.md`](design-traceability.md) – Flow 2 |
+| Ngân sách | Hạn mức theo nhóm; tổng tháng bằng tổng các nhóm; phần khả dụng theo đặc tả 7.1. | [`data-model.md`](data-model.md) |
+| Mất mạng | Bật bộ nhớ đệm Firestore; ghi quá 5 giây chưa xác nhận thì coi là đã lưu trên máy và hiện "Đang chờ mạng". | [`data-model.md`](data-model.md) – quy tắc 8 |
+| Thông báo | Chỉ xin quyền khi người dùng bấm "Bật thông báo" hoặc sau khi chọn "Chờ". Chạm thông báo FCM mở màn theo custom data `type`. | [`test-plan.md`](test-plan.md) – TC-09 |
+| AI | Code tính số; AI chỉ viết lời hoặc chọn trong danh sách; lỗi thì dùng câu mẫu. | Mục 2 – AI |
 
 ## 2. Sai khác so với thiết kế Lab 2 (deviation)
 
@@ -24,7 +33,7 @@ Dùng Firebase AI Logic (`firebase_ai`) với Gemini Developer API (bậc miễn
 Gợi ý khi thêm món (tính năng AI 3 và 4) dùng cùng nguyên tắc: code trả lời trước (bảng từ khoá cho nhóm ngân sách, so từ trong tên cho món trùng), chỉ hỏi AI khi code không chắc, và AI chỉ được **chọn** trong danh sách code đưa ra (schema enum) nên không thể bịa nhóm, bịa món hay viết câu phán xét. Gợi ý không bao giờ tự áp dụng; người dùng phải chạm. Ăn uống không tính là trùng (đồ dùng hết). Bật/tắt bằng Remote Config `enable_ai_suggestions` và cùng công tắc "Dùng AI" ở Góc nhìn.
 
 ### Kiểm thử
-Lab 3 chưa có unit test / widget test viết mới và không có CI. Trước khi push, mỗi người tự chạy `dart format lib`, `flutter analyze` và chạy thử trên máy theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Thư mục `test/` chỉ còn các test có sẵn từ trước, không mở rộng thêm.
+Repo có bộ test tự động (`flutter test`, hiện 118 test) dùng Firestore giả lập (`fake_cloud_firestore`) và dịch vụ giả, không gọi Firebase thật. Chưa có CI; trước khi push, mỗi người chạy `dart format lib`, `flutter analyze`, `flutter test` và chạy thử theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Kiểm thử đầu cuối trên Android theo [`test-plan.md`](test-plan.md).
 
 ### Đăng nhập và dữ liệu
 - Đăng nhập bằng Google hoặc chế độ Khách (Firebase Anonymous Auth).

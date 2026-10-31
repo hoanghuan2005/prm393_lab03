@@ -113,7 +113,8 @@ class AppProviders extends StatelessWidget {
           ),
           update: (_, auth, settings, vm) => vm!
             ..updateUid(auth.userId)
-            ..updateCoolingOffDays(settings.coolingOffDays),
+            ..updateCoolingOffDays(settings.coolingOffDays)
+            ..updateMaxShown(settings.maxWishlistItems),
         ),
         ChangeNotifierProxyProvider<AuthViewModel, PurchaseViewModel>(
           create: (context) => PurchaseViewModel(

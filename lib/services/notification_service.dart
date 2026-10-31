@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../firebase/platform_support.dart';
+import '../models/notification_target.dart';
 
 /// App notification model to keep an in-app list of received messages
 class AppNotificationItem {
@@ -38,7 +39,15 @@ class NotificationService {
   final _notificationsStreamController =
       StreamController<List<AppNotificationItem>>.broadcast();
 
-  NotificationService({FirebaseMessaging? fcm}) : _injectedFcm = fcm;
+  /// Remote Config `sale_reminder_enabled`; while off, sale messages are not kept in the
+  /// in-app list and a tap on one only opens the app
+  final bool Function() _saleRemindersEnabled;
+
+  NotificationService({
+    FirebaseMessaging? fcm,
+    bool Function()? saleRemindersEnabled,
+  }) : _injectedFcm = fcm,
+       _saleRemindersEnabled = saleRemindersEnabled ?? (() => true);
 
   List<AppNotificationItem> get receivedNotifications =>
       List.unmodifiable(_receivedNotifications);
@@ -50,7 +59,7 @@ class NotificationService {
   /// right after the user chooses "Chờ" or taps "Bật thông báo" in Cá nhân (spec A-09).
   /// Asking on launch would spend Android's limited prompts and may get a web site blocked.
   Future<void> initialize({
-    Function(RemoteMessage message)? onNotificationOpened,
+    void Function(Map<String, dynamic> data)? onNotificationOpened,
   }) async {
     if (!PlatformSupport.supportsMessaging) {
       debugPrint(
@@ -74,14 +83,14 @@ class NotificationService {
         debugPrint(
           'FCM Foreground message received: ${message.notification?.title}',
         );
-        _recordNotification(message);
+        recordNotification(message);
       });
 
       // 4. Background notification opened listener
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         debugPrint('FCM Notification tapped to open app: ${message.data}');
-        _recordNotification(message);
-        onNotificationOpened?.call(message);
+        recordNotification(message);
+        onNotificationOpened?.call(message.data);
       });
 
       // 5. Terminated state notification tap
@@ -90,8 +99,8 @@ class NotificationService {
         debugPrint(
           'FCM App opened from terminated message: ${initialMessage.data}',
         );
-        _recordNotification(initialMessage);
-        onNotificationOpened?.call(initialMessage);
+        recordNotification(initialMessage);
+        onNotificationOpened?.call(initialMessage.data);
       }
 
       // On web getToken itself would open the browser prompt; wait for the user's click
@@ -134,7 +143,13 @@ class NotificationService {
     }
   }
 
-  void _recordNotification(RemoteMessage message) {
+  /// Adds a message to the in-app list ("Thông báo đã nhận" in Cá nhân)
+  @visibleForTesting
+  void recordNotification(RemoteMessage message) {
+    if (NotificationRoute.isSale(message.data) && !_saleRemindersEnabled()) {
+      debugPrint('FCM sale reminder ignored: sale_reminder_enabled is off');
+      return;
+    }
     final item = AppNotificationItem(
       id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       title: message.notification?.title ?? 'Thông báo Why I Buy',

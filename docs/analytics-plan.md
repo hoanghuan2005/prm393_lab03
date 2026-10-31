@@ -25,11 +25,11 @@
 | 3 | `search` | `query_length` (int), `result_count` (int) | `WishlistViewModel.setSearchQuery` – mỗi lần ô tìm kiếm khác rỗng | Người dùng có dùng tìm kiếm trong danh sách mong muốn không, và có hay gặp kết quả rỗng không? |
 | 4 | `add_to_wishlist` | `motive` (string, key động cơ), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.addItem` – lưu món thành công | Món được lưu thường gắn với động cơ nào, ở khoảng giá nào, và bao nhiêu món được lưu khi chưa biết giá? |
 | 5 | `view_item_detail` | `motive` (string), `days_in_cooldown` (int, số ngày từ lúc lưu) | `WishlistViewModel.onItemViewed` – mở Chi tiết món | Người dùng mở lại món sau bao nhiêu ngày, với động cơ nào? |
-| 6 | `make_decision` | `decision` (string: `buy` · `wait` · `skip`), `motive` (string), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.updateDecision` – bấm Mua / Chờ / Bỏ qua thành công | Mua · Chờ · Bỏ qua phân bố thế nào theo động cơ và khoảng giá? |
+| 6 | `make_decision` | `decision` (string: `buy` · `wait` · `skip`), `motive` (string), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.wait` / `skip` (decision `wait` / `skip`) và `PurchaseViewModel` khi lưu khoản mua từ Wishlist (decision `buy`) – sau khi ghi thành công | Mua · Chờ · Bỏ qua phân bố thế nào theo động cơ và khoảng giá? |
 | 7 | `purchase_recorded` | `motive` (string), `amount_bucket` (string), `budget_group` (string, id nhóm) | `PurchaseViewModel.addPurchase` – ghi khoản mua thành công | Khoản mua được ghi thuộc động cơ và nhóm ngân sách nào, ở khoảng tiền nào? |
-| 8 | `budget_set` | `budget_group` (string, id nhóm), `amount_bucket` (string), `month` (string `yyyy-MM`) | `BudgetViewModel.setGroupLimit` – đặt hạn mức > 0 thành công | Người dùng đặt hạn mức cho nhóm nào, ở mức nào? |
+| 8 | `budget_set` | `budget_group` (string, id nhóm), `amount_bucket` (string), `month` (string `yyyy-MM`) | `BudgetViewModel.setGroupLimits` – lưu thành công, mỗi nhóm có hạn mức > 0 một sự kiện | Người dùng đặt hạn mức cho nhóm nào, ở mức nào? |
 | 9 | `export_report` | `file_format` (string: `pdf`), `item_count` (int: khoản mua + món đã quyết định trong tháng) | `ReportViewModel.generateAndShare` – chia sẻ PDF thành công | Có bao nhiêu người xuất và chia sẻ báo cáo tháng, báo cáo thường có bao nhiêu mục? |
-| 10 | `click_sale_reminder` | `sale_type` (string: `double_day` · `mid_month` · `payday`) | Chưa có ViewModel gọi – dành cho luồng mở thông báo nhắc sale (FCM) | Nhắc nhở đợt sale nào được mở nhiều nhất? |
+| 10 | `click_sale_reminder` | `sale_type` (string: `double_day` · `mid_month` · `payday`) | `openFromNotification` (`lib/app/app.dart`) – chạm thông báo FCM có custom data `type` = `sale` khi Remote Config `sale_reminder_enabled` bật; `sale_type` lạ được ghi là `other` | Nhắc nhở đợt sale nào được mở nhiều nhất? |
 
 ---
 

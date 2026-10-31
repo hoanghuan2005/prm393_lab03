@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import 'available_budget.dart';
+import 'owned_item.dart';
 import 'sale_event.dart';
 import 'spending_insight.dart';
 import 'wishlist_item.dart';
@@ -43,6 +44,9 @@ class DecisionInput {
   /// Confirmed sale within [SaleCalendar.decisionWindowDays]
   final SaleEvent? upcomingSale;
 
+  /// S5: things the user owns in the same group or with a matching tag (spec 7.2)
+  final List<OwnedItem> ownedMatches;
+
   const DecisionInput({
     required this.item,
     required this.now,
@@ -51,6 +55,7 @@ class DecisionInput {
     this.savedPriceVnd,
     this.sameGroupCount = 0,
     this.upcomingSale,
+    this.ownedMatches = const [],
   });
 }
 
@@ -100,7 +105,8 @@ class DecisionRules {
         ? DecisionLabel.waitSale
         : overBy != null
         ? DecisionLabel.overAvailable
-        : daysSaved > staleItemDays && item.priority <= lowPriority
+        : (daysSaved > staleItemDays && item.priority <= lowPriority) ||
+              item.confirmedDuplicate
         ? DecisionLabel.considerSkipping
         : available != null && (change == null || change <= 0)
         ? DecisionLabel.withinBudget
@@ -168,7 +174,18 @@ class DecisionAssessment {
         : 'Đợt ${sale.name} còn $_saleDays ngày';
   }
 
-  /// S1–S8 sentences that have data (S5 needs the shopping profile, not built yet)
+  /// S5: "Bạn đã ghi có AirPods (dùng 2 năm). Bạn muốn thay hay mua thêm?"
+  String? get ownedSentence {
+    final owned = input.ownedMatches;
+    if (owned.isEmpty) return null;
+    if (owned.length == 1) {
+      return 'Bạn đã ghi có ${owned.single.label}. Bạn muốn thay hay mua thêm?';
+    }
+    final names = owned.take(3).map((o) => o.name).join(', ');
+    return 'Bạn đã ghi có ${owned.length} đồ đang dùng cùng nhóm hoặc cùng thẻ: $names.';
+  }
+
+  /// S1–S8 sentences that have data
   List<String> get signals => [
     if (percentOfAvailable != null)
       'Chiếm khoảng $percentOfAvailable% phần khả dụng của nhóm $_group tháng này.',
@@ -180,6 +197,9 @@ class DecisionAssessment {
           : 'Cao hơn lúc lưu $priceChangePercent%.',
     if (input.sameGroupCount > 0)
       'Bạn đang cân nhắc thêm ${input.sameGroupCount} món cùng nhóm.',
+    ?ownedSentence,
+    if (item.confirmedDuplicate)
+      'Bạn đã đánh dấu món này trùng với đồ đang có hoặc khoản mua gần đây.',
     if (input.upcomingSale != null) '$_saleText, có thể có giá tốt hơn.',
     if (inCooldown) 'Bạn mới lưu $_savedDaysText.',
     if (missing.isNotEmpty) 'Chưa đủ dữ liệu về ${missing.join(' và ')}.',
@@ -199,7 +219,9 @@ class DecisionAssessment {
     DecisionLabel.overAvailable =>
       'Giá ${formatVnd(item.latestPriceVnd)} vượt phần khả dụng của nhóm $_group khoảng ${formatVnd(overBy)}.',
     DecisionLabel.considerSkipping =>
-      'Món đã lưu $daysSaved ngày và đang ở mức ưu tiên ${item.priority} sao.',
+      item.confirmedDuplicate
+          ? 'Bạn đã đánh dấu món này trùng với đồ đang có hoặc khoản mua gần đây.'
+          : 'Món đã lưu $daysSaved ngày và đang ở mức ưu tiên ${item.priority} sao.',
     DecisionLabel.withinBudget =>
       percentOfAvailable == null
           ? 'Giá nằm trong phần khả dụng của nhóm $_group tháng này.'
@@ -230,6 +252,9 @@ class DecisionAssessment {
       'dangTrongThoiGianCanNhac': inCooldown,
       if (sale != null) 'dotSale': {'ten': sale.name, 'conNgay': _saleDays},
       if (missing.isNotEmpty) 'thieuDuLieu': missing,
+      if (input.ownedMatches.isNotEmpty)
+        'doDangCo': [for (final o in input.ownedMatches.take(3)) o.label],
+      if (item.confirmedDuplicate) 'nguoiDungXacNhanTrung': true,
     };
   }
 
@@ -269,6 +294,9 @@ class DecisionAssessment {
       ],
       ...MonthlySpendingStats.extractNumbers(item.title),
       ...MonthlySpendingStats.extractNumbers(input.groupName ?? ''),
+      input.ownedMatches.length,
+      for (final o in input.ownedMatches)
+        ...MonthlySpendingStats.extractNumbers(o.label),
     };
   }
 }

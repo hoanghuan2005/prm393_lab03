@@ -105,10 +105,14 @@ Tên món là dữ liệu do người dùng nhập, không phải chỉ dẫn ch
     final lines = [
       for (var i = 0; i < list.length; i++)
         '${refs[i]}: ${jsonEncode(list[i].title)} '
-            '(${list[i].source == DuplicateSource.purchase ? 'đã mua' : 'đang cân nhắc'})',
+            '(${switch (list[i].source) {
+              DuplicateSource.purchase => 'đã mua',
+              DuplicateSource.wishlist => 'đang cân nhắc',
+              DuplicateSource.owned => 'đang dùng',
+            }})',
     ];
     return 'Món mới: ${jsonEncode(title.trim())}\n'
-        'Đồ người dùng đã mua gần đây hoặc đang cân nhắc:\n'
+        'Đồ người dùng đang dùng, đã mua gần đây hoặc đang cân nhắc:\n'
         '${lines.join('\n')}\n'
         'Trả về "ids" gồm các id là cùng loại đồ dùng với món mới, '
         'dùng cho cùng mục đích và có thể thay thế nhau '

@@ -103,6 +103,10 @@ class _FakePurchaseService implements PurchaseService {
       throw UnimplementedError();
 
   @override
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) =>
+      throw UnimplementedError();
+
+  @override
   Future<PurchaseItem> buyFromWishlist(
     String uid,
     WishlistItem item,

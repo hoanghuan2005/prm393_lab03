@@ -18,6 +18,7 @@ Bảng D1–D14 gốc trong kế hoạch base chưa được gửi vào repo. B�
 | Mất mạng | Bật bộ nhớ đệm Firestore; ghi quá 5 giây chưa xác nhận thì coi là đã lưu trên máy và hiện "Đang chờ mạng". | [`data-model.md`](data-model.md) – quy tắc 8 |
 | Thông báo | Chỉ xin quyền khi người dùng bấm "Bật thông báo" hoặc sau khi chọn "Chờ". Chạm thông báo FCM mở màn theo custom data `type`. | [`test-plan.md`](test-plan.md) – TC-09 |
 | AI | Code tính số; AI chỉ viết lời hoặc chọn trong danh sách; lỗi thì dùng câu mẫu. | Mục 2 – AI |
+| Hồ sơ và mức hài lòng | Đồ đang dùng, phong cách, thương hiệu do người dùng tự ghi (không lấy lịch sử Shopee); mức hài lòng 1–5 sao hỏi sau 7 ngày, có "Bỏ qua", dùng cho Góc nhìn và gói mua. | [`data-model.md`](data-model.md) – `ownedItems`, `purchases` |
 | Decision Card và sale | Nhãn theo Rules Engine v1 (đặc tả 7.4), không có "Nên mua"; lịch sale lấy từ Remote Config `sale_calendar` (đã xác nhận / dự kiến); gói mua chỉ chạy khi người dùng bấm. | [`design-traceability.md`](design-traceability.md) – DEV-09 |
 
 ## 2. Sai khác so với thiết kế Lab 2 (deviation)

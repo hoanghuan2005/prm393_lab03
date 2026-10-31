@@ -8,6 +8,7 @@ service cloud.firestore {
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
     function validMoney(v) { return v is int && v > 0 && v <= 999999999; }
     function optionalNote() { return !('note' in d()) || d().note == null || (d().note is string && d().note.size() <= 200); }
+    function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
       allow read, write: if isOwner(uid);
@@ -15,7 +16,8 @@ service cloud.firestore {
       match /purchases/{id} {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && validTitle() && validMoney(d().amountVnd)
-          && validMotive(d().motive) && d().occurredAt is timestamp && optionalNote();
+          && validMotive(d().motive) && d().occurredAt is timestamp && optionalNote()
+          && optionalStars('satisfaction');
       }
 
       match /wishlistItems/{id} {
@@ -41,6 +43,15 @@ service cloud.firestore {
       }
 
       match /budgetGroups/{id} { allow read, write: if isOwner(uid); }
+
+      // Shopping profile (spec 7.2): things the user owns, typed by the user
+      match /ownedItems/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && d().name is string && d().name.size() > 0 && d().name.size() <= 60
+          && d().tags is list && d().tags.size() <= 8
+          && (!('note' in d()) || d().note == null || (d().note is string && d().note.size() <= 100));
+      }
 
       match /budgets/{month} {
         allow read, delete: if isOwner(uid);

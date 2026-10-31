@@ -6,6 +6,7 @@ import '../models/sale_event.dart';
 import '../models/wishlist_item.dart';
 import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
+import '../screens/compare_items_screen.dart';
 import '../screens/dev/widget_gallery_screen.dart';
 import '../screens/history_screen.dart';
 import '../screens/insights_screen.dart';
@@ -18,6 +19,7 @@ import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
 import '../screens/sale_screens.dart';
+import '../screens/shopping_profile_screen.dart';
 import '../screens/wishlist_screen.dart';
 
 /// Arguments for [AppRoutes.shell]
@@ -74,6 +76,9 @@ class AppRoutes {
   static const wishlistAdd = '/wishlist/add';
   static const wishlistEdit = '/wishlist/edit';
   static const itemDetail = '/wishlist/detail';
+
+  /// A-15: items of the same budget group side by side (args: [ItemDetailArgs])
+  static const wishlistCompare = '/wishlist/compare';
   static const recordPurchase = '/purchase/record';
   static const purchaseDetail = '/purchase/detail';
   static const history = '/history';
@@ -82,6 +87,9 @@ class AppRoutes {
   static const patterns = '/patterns';
   static const reflection = '/reflection';
   static const profile = '/profile';
+
+  /// Hồ sơ mua sắm (screen 24, spec 7.2)
+  static const shoppingProfile = '/profile/shopping';
 
   /// Lịch sale (screen 26), "Danh sách cho đợt sale" and "Lập kế hoạch cho đợt sale"
   static const sales = '/sales';
@@ -123,6 +131,10 @@ class AppRoutes {
       patterns => const PatternsScreen(),
       reflection => const MonthlyReflectionScreen(),
       profile => const ProfileScreen(),
+      shoppingProfile => const ShoppingProfileScreen(),
+      wishlistCompare when args is ItemDetailArgs => CompareItemsScreen(
+        item: args.item,
+      ),
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),

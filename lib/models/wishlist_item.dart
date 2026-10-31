@@ -44,6 +44,10 @@ class WishlistItem {
   final DateTime? updatedAt;
   final DateTime? decidedAt;
 
+  /// The user confirmed this is the same as something owned or bought in the last
+  /// 30 days (Decision Card label 5, spec 7.4)
+  final bool confirmedDuplicate;
+
   const WishlistItem({
     required this.id,
     required this.title,
@@ -62,6 +66,7 @@ class WishlistItem {
     required this.createdAt,
     this.updatedAt,
     this.decidedAt,
+    this.confirmedDuplicate = false,
   });
 
   bool get hasPrice => latestPriceVnd != null;
@@ -130,6 +135,7 @@ class WishlistItem {
       createdAt: readDate(data['createdAt']) ?? DateTime.now(),
       updatedAt: readDate(data['updatedAt']),
       decidedAt: readDate(data['decidedAt']),
+      confirmedDuplicate: data['confirmedDuplicate'] == true,
     );
   }
 
@@ -151,6 +157,7 @@ class WishlistItem {
       'createdAt': Timestamp.fromDate(createdAt),
       if (updatedAt != null) 'updatedAt': toTimestamp(updatedAt),
       'decidedAt': toTimestamp(decidedAt),
+      'confirmedDuplicate': confirmedDuplicate,
     };
   }
 
@@ -172,6 +179,7 @@ class WishlistItem {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? decidedAt,
+    bool? confirmedDuplicate,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -191,6 +199,7 @@ class WishlistItem {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       decidedAt: decidedAt ?? this.decidedAt,
+      confirmedDuplicate: confirmedDuplicate ?? this.confirmedDuplicate,
     );
   }
 
@@ -214,7 +223,8 @@ class WishlistItem {
           other.note == note &&
           other.createdAt == createdAt &&
           other.updatedAt == updatedAt &&
-          other.decidedAt == decidedAt;
+          other.decidedAt == decidedAt &&
+          other.confirmedDuplicate == confirmedDuplicate;
 
   @override
   int get hashCode => Object.hash(
@@ -235,5 +245,6 @@ class WishlistItem {
     createdAt,
     updatedAt,
     decidedAt,
+    confirmedDuplicate,
   );
 }

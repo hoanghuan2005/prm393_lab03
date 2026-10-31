@@ -12,6 +12,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | | `Stream<UserSettings> watchSettings(String uid)` | Cài đặt người dùng (mặc định khi chưa có document) |
 | | `Future<void> updateSettings(String uid, UserSettings settings)` | Ghi đè `settings` (merge) |
 | `PurchaseService` → `FirestorePurchaseService` | `Stream<List<PurchaseItem>> watchPurchases(String uid, {DateTime? from, DateTime? to})` | Khoản mua mới nhất trước, lọc khoảng thời gian ở server |
+| | `Future<void> setSatisfaction(String uid, String purchaseId, int? stars)` | A-16: 1–5 sao, hoặc `null` = "Bỏ qua" |
 | | `Future<PurchaseItem> add(String uid, PurchaseItem purchase)` | Thêm, trả về bản có id |
 | | `Future<void> update(String uid, PurchaseItem purchase)` | Sửa (giữ `createdAt`) |
 | | `Future<void> delete(String uid, String purchaseId)` | Xoá |
@@ -20,7 +21,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | | `Future<WishlistItem> add(String uid, {required String title, BuyingMotive? motive, int? priceVnd, String? url, String? note, String? budgetGroupId, int priority, SaveChannel saveChannel, required int coolingOffDays})` | Thêm món; có giá thì tạo kèm 1 priceSnapshot; cooldown trừ động cơ Nhu cầu |
 | | `Future<void> update(String uid, WishlistItem item)` | Sửa món |
 | | `Future<void> addPrice(String uid, String itemId, int amountVnd)` | Snapshot giá mới + `latestPriceVnd` |
-| | `Future<int?> firstPrice(String uid, String itemId)` | "Giá lúc lưu": snapshot giá đầu tiên (tín hiệu S3 của Decision Card) |
+| | `Future<List<PriceSnapshot>> priceHistory(String uid, String itemId)` | Mọi lần ghi giá, mới nhất trước (A-14; S3 so với lần đầu) |
 | | `Future<void> setReview(String uid, String itemId, DateTime reviewAt)` | "Chờ": đặt `reviewAt` + decision `wait` |
 | | `Future<void> skip(String uid, String itemId)` / `undoSkip(...)` | "Bỏ qua" / hoàn tác + decision `skip` / `undo` |
 | | `Future<void> delete(String uid, String itemId)` | Xoá món và các priceSnapshot |
@@ -28,6 +29,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | | `Future<void> ensureDefaultGroups(String uid)` | Tạo 6 nhóm mặc định khi chưa có nhóm nào |
 | | `Stream<MonthlyBudget> watchMonthlyBudget(String uid, String monthKey)` | Hạn mức tháng (rỗng khi chưa có) |
 | | `Future<void> setGroupLimit(String uid, String monthKey, String groupId, int? limit)` | Đặt hạn mức; `null` / ≤ 0 = bỏ |
+| `ShoppingProfileService` → `FirestoreShoppingProfileService` | `watchOwnedItems(uid)`, `saveOwnedItem(uid, item)`, `deleteOwnedItem(uid, id)`, `watchTags(uid)`, `saveTags(uid, tags)` | Hồ sơ mua sắm (đặc tả 7.2) |
 | `ReflectionService` → `FirestoreReflectionService` | `Stream<Reflection?> watch(String uid, String monthKey)` / `Future<void> save(String uid, Reflection r)` | Chiêm nghiệm tháng |
 | `DemoDataService` → `FirestoreDemoDataService` | `Future<void> seed(String uid)` / `Future<void> clearAll(String uid)` | Thay dữ liệu bằng bộ demo / xoá mọi dữ liệu (giữ hồ sơ + nhóm) |
 | `FirestorePaths` | `purchases(uid)`, `wishlistItem(uid, id)`, `priceSnapshots(uid, itemId)`, `decisions(uid)`, `budgetGroups(uid)`, `budget(uid, monthKey)`, `reflection(uid, monthKey)`, … | Nơi duy nhất viết chuỗi đường dẫn Firestore |
@@ -57,13 +59,14 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 | ViewModel | Thành phần chính |
 |:---|:---|
 | `AuthViewModel` | `status`, `userId` (null tới khi xong ensure*), `displayName`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()` |
-| `PurchaseViewModel` | `state`, `selectedMonth`, `previousMonth()`, `nextMonth()`, `setSelectedMonth()`, `monthPurchases`, `filteredPurchases`, `monthTotal`/`monthCount`, `weekTotal`/`weekCount`, `timeSlotStats`, `motiveDistribution`, `addPurchase(...)`, `updatePurchase(...)`, `deletePurchase(id)`, `actionError` |
-| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `reviewDueCount`, `setReviewDueFilter`, `coolingOffDays`, `addItem(...)`, `updateDetails(...)`, `updatePrice(...)`, `deleteItem(...)`, `wait(item, reviewAt)`, `skip(item)`, `reconsider(item)`, `onItemViewed(item)`, `maxShown`/`updateMaxShown` (Remote Config `max_wishlist_items_shown`), `visibleOf(items)`, `showAllItems()`, `showConsidering()`, `actionError` |
+| `PurchaseViewModel` | `state`, `selectedMonth`, `previousMonth()`, `nextMonth()`, `setSelectedMonth()`, `monthPurchases`, `filteredPurchases`, `monthTotal`/`monthCount`, `weekTotal`/`weekCount`, `timeSlotStats`, `motiveDistribution`, `addPurchase(...)`, `updatePurchase(...)`, `deletePurchase(id)`, `satisfactionDue()`, `rateSatisfaction(purchase, stars)`, `actionError` |
+| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `reviewDueCount`, `setReviewDueFilter`, `coolingOffDays`, `addItem(...)`, `updateDetails(...)`, `updatePrice(...)`, `deleteItem(...)`, `wait(item, reviewAt)`, `skip(item)`, `reconsider(item)`, `setConfirmedDuplicate(item, value)`, `onItemViewed(item)`, `maxShown`/`updateMaxShown` (Remote Config `max_wishlist_items_shown`), `visibleOf(items)`, `showAllItems()`, `showConsidering()`, `actionError` |
 | `BudgetViewModel` | `state`, `groups`, `limits`, `limitFor(id)`, `spentByGroup`, `spentFor(id)`, `totalLimit`, `totalSpent`, `limitedSpent` (chỉ các nhóm có hạn mức), `unlimitedSpent`, `progress`, `isExceeded`, `remaining`, `isBudgetLoaded`, `available(id)`, `bufferFor(id)`, `hasEnoughHistory`, `daysLeftInMonth`, `setGroupLimit(id, limit)`, `setGroupLimits(changes)` |
 | `ReflectionViewModel` | `state`, `month`, `nextMonth`, `saved`, `rating`, `selectRating(int)`, `save(goal)`, `isSaving` |
 | `ReportViewModel` | `status` (`idle`→`generating`→`ready`→`shared` / `error`), `generateAndShare(month)`, `preview(month)`, `fileNameFor(month)` |
 | `InsightsViewModel` | `stats`, `report`, `isGenerating`, `fallbackReason`, `userAiEnabled`, `setVisible(bool)`, `refresh()`, `setUserAiEnabled(bool)` |
-| `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadSavedPrice(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult`, `explainPlans(result)` → câu AI hoặc câu mẫu cho từng phương án |
+| `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadPriceHistory(item)`, `priceInsightsFor(item)`, `sameGroupItems(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult`, `explainPlans(result)` → câu AI hoặc câu mẫu cho từng phương án |
+| `ShoppingProfileViewModel` | `state`, `ownedItems`, `tags`, `matchesFor(title, budgetGroupId)`, `saveOwnedItem(...)`, `deleteOwnedItem(item)`, `saveTags(...)`, `actionError` |
 | `ItemSuggestionViewModel` | `suggestGroup(title, groups)` → `GroupSuggestion?`, `findDuplicates(title, {excludeItemId, budgetGroupId})` → `List<DuplicateMatch>`, `updateSources(purchases, wishlistItems)` |
 | `SettingsViewModel` | `settings`, `coolingOffDays` (của người dùng, không có thì Remote Config), `updateSettings`, `seedDemoData()`, `clearAllData()`, `refreshRemoteConfig()`, `notifications` |
 

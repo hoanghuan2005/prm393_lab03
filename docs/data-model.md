@@ -12,6 +12,7 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `settings.coolingOffDays` | int? | | null → dùng Remote Config `cooling_off_days` |
 | `settings.reminderHour` | int | | 0–23 (code), mặc định 20 |
 | `settings.notificationsEnabled` | bool | | mặc định true |
+| `shoppingStyles`, `favoriteBrands` | string[] | | Hồ sơ mua sắm (đặc tả 7.2): phong cách, thương hiệu hay dùng; ≤ 8 thẻ (code) |
 
 ## `purchases/{id}` – `PurchaseItem` · ghi bởi `PurchaseService`, `DemoDataService`
 
@@ -26,6 +27,9 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `wishlistItemId` | string? | | — (khi mua từ danh sách mong muốn) |
 | `usedDiscountCode` | bool | | — |
 | `createdAt`, `updatedAt` | timestamp | | — (server time) |
+| `satisfaction` | int? | | null hoặc 1–5 (rules) – mức hài lòng, hỏi sau 7 ngày (A-16) |
+| `satisfactionSkipped` | bool | | người dùng chọn "Bỏ qua"; không hỏi lại |
+| `satisfactionAt` | timestamp? | | server time khi trả lời |
 
 ## `wishlistItems/{id}` – `WishlistItem` · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
 
@@ -40,6 +44,7 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `url`, `budgetGroupId`, `purchaseId` | string? | | — |
 | `cooldownUntil`, `reviewAt`, `latestPriceAt`, `decidedAt` | timestamp? | | — |
 | `saveChannel` | string | | — (`manual` · `share` · `extension`) |
+| `confirmedDuplicate` | bool | | người dùng xác nhận trùng với đồ đang có / khoản mua gần đây (nhãn 5 của Decision Card) |
 | `createdAt`, `updatedAt` | timestamp | ✓ / | — |
 
 ### `wishlistItems/{id}/priceSnapshots/{sid}` – `PriceSnapshot` · **chỉ thêm, không sửa**
@@ -70,6 +75,20 @@ Id document phải khớp `^[0-9]{4}-[0-9]{2}$` (rules). Trường: `limits` (ma
 Không lưu tổng riêng: **tổng ngân sách tháng = tổng `limits`**, nên không thể thấp hơn tổng các nhóm. Sheet ngân sách lưu mọi nhóm thay đổi trong một lần ghi (`BudgetService.setGroupLimits`).
 
 Phần khả dụng cho danh sách mong muốn (`AvailableBudget`, đặc tả 7.1): `max(0, hạn mức − đã chi − dự phòng) × 90%`; dự phòng = chi trung bình mỗi ngày của nhóm trong tối đa 90 ngày gần nhất (không tính khoản mua từ danh sách mong muốn) × số ngày còn lại của tháng; bằng 0 khi người dùng có dưới 30 ngày dữ liệu. Có dưới 90 ngày dữ liệu thì chia cho số ngày thực có.
+
+## `ownedItems/{id}` – `OwnedItem` · ghi bởi `ShoppingProfileService`
+
+"Đồ đang dùng" trong Hồ sơ mua sắm (đặc tả 7.2, A-12). Người dùng tự nhập; không lấy lịch sử mua Shopee.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `name` | string | ✓ | 1–60 ký tự |
+| `tags` | string[] | ✓ | ≤ 8 thẻ |
+| `note` | string? | | ≤ 100 ký tự |
+| `budgetGroupId` | string? | | — |
+| `createdAt`, `updatedAt` | timestamp | | — |
+
+Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xuất hiện trong tên món) và làm ứng viên "món có thể trùng".
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 

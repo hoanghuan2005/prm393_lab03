@@ -5,6 +5,8 @@ import '../app/app.dart';
 import '../services/review_reminder_service.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/satisfaction_dialog.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
 import 'insights_screen.dart';
@@ -23,12 +25,18 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
+  late final PurchaseViewModel _purchaseVm = context.read<PurchaseViewModel>();
+
+  /// A-16: at most one satisfaction question per app session
+  bool _askedSatisfaction = false;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _purchaseVm.addListener(_onPurchasesChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onPurchasesChanged();
       context.read<InsightsViewModel>().setVisible(
         _currentIndex == _insightsTabIndex,
       );
@@ -39,6 +47,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // App opened by tapping a push notification, or tapped while signed out
       openPendingNotification();
     });
+  }
+
+  /// Purchases arrive from Firestore after the shell is shown; ask once one is due,
+  /// and only while the shell itself is on screen (never over a form)
+  void _onPurchasesChanged() {
+    if (_askedSatisfaction) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _askedSatisfaction) return;
+      if (ModalRoute.of(context)?.isCurrent != true) return;
+      final due = _purchaseVm.satisfactionDue();
+      if (due == null) return;
+      _askedSatisfaction = true;
+      SatisfactionDialog.ask(context, due);
+    });
+  }
+
+  @override
+  void dispose() {
+    _purchaseVm.removeListener(_onPurchasesChanged);
+    super.dispose();
   }
 
   static const int _insightsTabIndex = 3;

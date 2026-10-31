@@ -1,6 +1,7 @@
 import '../core/formatters/money_format.dart';
 import 'budget_group.dart';
 import 'buying_motive.dart';
+import 'purchase_item.dart';
 import 'spending_insight.dart';
 import 'wishlist_item.dart';
 
@@ -152,27 +153,51 @@ class SalePlanner {
     BuyingMotive.ads: 0.3,
   };
 
-  /// Spec 7.7: satisfaction by motive is not collected yet, so hopGu uses 0.6
+  /// hopGu = (average stars − 1) ÷ 4 for motives with ≥ 2 rated purchases (spec 7.5);
+  /// otherwise 0.6 (spec 7.7)
   static const double defaultFit = 0.6;
+
+  /// hopGu by motive from the stars given to past purchases (A-16)
+  static Map<BuyingMotive, double> fitByMotive(List<PurchaseItem> purchases) {
+    final ratings = <BuyingMotive, List<int>>{};
+    for (final p in purchases) {
+      final stars = p.satisfaction;
+      if (stars != null) (ratings[p.motive] ??= []).add(stars);
+    }
+    return {
+      for (final e in ratings.entries)
+        if (e.value.length >= 2)
+          e.key: (e.value.fold(0, (a, b) => a + b) / e.value.length - 1) / 4,
+    };
+  }
 
   /// diem = 0,30·uuTien + 0,25·dongCo + 0,20·gia + 0,10·daCho + 0,15·hopGu.
   /// gia (discount against a comparable earlier price) is 0: the plan does not read
   /// price history. Never shown to the user (spec 7.5).
-  static double score(WishlistItem item, DateTime now) {
+  static double score(
+    WishlistItem item,
+    DateTime now, {
+    Map<BuyingMotive, double> fitByMotive = const {},
+  }) {
     final priority = (item.priority - 1) / 4;
     final motive = motiveFactor[item.displayMotive] ?? 0.5;
     final daysSaved = now.difference(item.createdAt).inDays;
     final waited = daysSaved >= 7 ? 1.0 : daysSaved / 7;
-    return 0.30 * priority + 0.25 * motive + 0.10 * waited + 0.15 * defaultFit;
+    final fit = fitByMotive[item.displayMotive] ?? defaultFit;
+    return 0.30 * priority + 0.25 * motive + 0.10 * waited + 0.15 * fit;
   }
 
-  static double _value(PlanOption option, WishlistItem item, DateTime now) =>
-      switch (option) {
-        PlanOption.needsFirst =>
-          0.7 * (motiveFactor[item.displayMotive] ?? 0.5) +
-              0.3 * (item.priority - 1) / 4,
-        _ => score(item, now),
-      };
+  static double _value(
+    PlanOption option,
+    WishlistItem item,
+    DateTime now,
+    Map<BuyingMotive, double> fitByMotive,
+  ) => switch (option) {
+    PlanOption.needsFirst =>
+      0.7 * (motiveFactor[item.displayMotive] ?? 0.5) +
+          0.3 * (item.priority - 1) / 4,
+    _ => score(item, now, fitByMotive: fitByMotive),
+  };
 
   /// [items]: items still being considered. [available]: groupId → this month's
   /// "phần khả dụng", only for groups with a limit.
@@ -181,6 +206,7 @@ class SalePlanner {
     required List<BudgetGroup> groups,
     required Map<String, int> available,
     required DateTime now,
+    Map<BuyingMotive, double> fitByMotive = const {},
   }) {
     final excluded = <WishlistItem, PlanExclusion>{};
     final byGroup = <String, List<WishlistItem>>{};
@@ -210,6 +236,7 @@ class SalePlanner {
                   candidates,
                   available[group.id]!,
                   now,
+                  fitByMotive,
                 ),
           ],
         ),
@@ -223,6 +250,7 @@ class SalePlanner {
     List<WishlistItem> candidates,
     int available,
     DateTime now,
+    Map<BuyingMotive, double> fitByMotive,
   ) {
     // Always one option that leaves part of the available amount unused (spec 7.5)
     final capacity = option == PlanOption.keepMore ? available ~/ 2 : available;
@@ -231,7 +259,7 @@ class SalePlanner {
     ];
     final values = [
       for (final i in candidates)
-        (_value(option, i, now) * 1000).round().clamp(1, 1 << 30),
+        (_value(option, i, now, fitByMotive) * 1000).round().clamp(1, 1 << 30),
     ];
     final chosen = knapsack(weights, values, capacity ~/ unitVnd);
     return PlanGroup(

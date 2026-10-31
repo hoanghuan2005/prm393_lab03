@@ -18,6 +18,7 @@ import '../services/remote_config_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import '../services/review_reminder_service.dart';
+import '../services/shopping_profile_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -29,6 +30,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
+import '../viewmodels/shopping_profile_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
 /// All services and ViewModels of the app.
@@ -66,6 +68,9 @@ class AppProviders extends StatelessWidget {
           create: (_) => FirestoreReflectionService(),
         ),
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
+        Provider<ShoppingProfileService>(
+          create: (_) => FirestoreShoppingProfileService(),
+        ),
         Provider<AiService>(
           create: (_) => FirebaseAiService(
             modelName: () => remoteConfigService.aiInsightModel,
@@ -197,12 +202,21 @@ class AppProviders extends StatelessWidget {
                 month: purchaseVm.selectedMonth,
               ),
         ),
+        // Hồ sơ mua sắm: owned items, style, brands (spec 7.2)
+        ChangeNotifierProxyProvider<AuthViewModel, ShoppingProfileViewModel>(
+          create: (context) => ShoppingProfileViewModel(
+            service: context.read<ShoppingProfileService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
         // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
-        ChangeNotifierProxyProvider4<
+        ChangeNotifierProxyProvider5<
           AuthViewModel,
           PurchaseViewModel,
           WishlistViewModel,
           BudgetViewModel,
+          ShoppingProfileViewModel,
           DecisionSupportViewModel
         >(
           create: (context) => DecisionSupportViewModel(
@@ -214,18 +228,21 @@ class AppProviders extends StatelessWidget {
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
           ),
-          update: (_, auth, purchaseVm, wishlistVm, budgetVm, vm) => vm!
-            ..updateUid(auth.userId)
-            ..updateSources(
-              purchases: purchaseVm.allPurchases,
-              wishlistItems: wishlistVm.allItems,
-              groups: budgetVm.groups,
-            ),
+          update: (_, auth, purchaseVm, wishlistVm, budgetVm, profileVm, vm) =>
+              vm!
+                ..updateUid(auth.userId)
+                ..updateSources(
+                  purchases: purchaseVm.allPurchases,
+                  wishlistItems: wishlistVm.allItems,
+                  groups: budgetVm.groups,
+                  ownedItems: profileVm.ownedItems,
+                ),
         ),
         // Thêm món / Ghi khoản mua / Chi tiết món: budget group and possible duplicates
-        ChangeNotifierProxyProvider2<
+        ChangeNotifierProxyProvider3<
           PurchaseViewModel,
           WishlistViewModel,
+          ShoppingProfileViewModel,
           ItemSuggestionViewModel
         >(
           create: (context) => ItemSuggestionViewModel(
@@ -235,11 +252,12 @@ class AppProviders extends StatelessWidget {
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
           ),
-          update: (_, purchaseVm, wishlistVm, vm) => vm!
-            ..updateSources(
-              purchases: purchaseVm.allPurchases,
-              wishlistItems: wishlistVm.allItems,
-            ),
+          update: (_, purchaseVm, wishlistVm, profileVm, vm) =>
+              vm!..updateSources(
+                purchases: purchaseVm.allPurchases,
+                wishlistItems: wishlistVm.allItems,
+                ownedItems: profileVm.ownedItems,
+              ),
         ),
       ],
       child: child,

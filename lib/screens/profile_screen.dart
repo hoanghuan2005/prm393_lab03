@@ -134,6 +134,29 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
+            // Shopping profile (spec 7.2): owned items, style, brands
+            SectionCard(
+              title: 'Hồ sơ mua sắm',
+              icon: Icons.inventory_2_outlined,
+              children: [
+                Text(
+                  'Ghi đồ đang dùng, phong cách và thương hiệu hay dùng để Thẻ '
+                  'Quyết Định nhắc khi bạn cân nhắc món cùng loại. Tất cả tùy chọn.',
+                  style: AppTextStyles.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  key: const ValueKey('open-shopping-profile'),
+                  title: 'Mở hồ sơ mua sắm',
+                  variant: AppButtonVariant.secondary,
+                  icon: Icons.chevron_right_rounded,
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.shoppingProfile),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space16),
+
             // Demo data (never seeded automatically)
             SectionCard(
               title: 'Dữ liệu demo',

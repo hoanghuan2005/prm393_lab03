@@ -463,6 +463,32 @@ class PurchaseViewModel extends ChangeNotifier
     }
   }
 
+  /// A-16: the most recent purchase whose satisfaction question is due (7–30 days old)
+  PurchaseItem? satisfactionDue({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    for (final p in _purchases) {
+      if (p.isSatisfactionDue(at)) return p;
+    }
+    return null;
+  }
+
+  /// [stars] 1–5, or null for "Bỏ qua" (not asked again)
+  Future<bool> rateSatisfaction(PurchaseItem purchase, int? stars) async {
+    final uid = _uid;
+    if (uid == null) {
+      _actionError = 'Vui lòng đăng nhập để lưu mức hài lòng.';
+      return false;
+    }
+    try {
+      await purchaseService.setSatisfaction(uid, purchase.id, stars);
+      _actionError = null;
+      return true;
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'rateSatisfaction');
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _writeToken = null;

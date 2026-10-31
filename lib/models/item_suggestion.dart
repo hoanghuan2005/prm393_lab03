@@ -80,7 +80,7 @@ class GroupSuggestion {
   const GroupSuggestion({required this.groupId, required this.fromAi});
 }
 
-enum DuplicateSource { purchase, wishlist }
+enum DuplicateSource { purchase, wishlist, owned }
 
 /// Something the user already bought (last 30 days) or is already considering
 class DuplicateCandidate {

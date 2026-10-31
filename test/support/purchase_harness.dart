@@ -112,6 +112,12 @@ class ControlledPurchaseService implements PurchaseService {
     await _beforeWrite();
     return delegate.delete(uid, purchaseId);
   }
+
+  @override
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) async {
+    await _beforeWrite();
+    return delegate.setSatisfaction(uid, purchaseId, stars);
+  }
 }
 
 class PurchaseHarness {

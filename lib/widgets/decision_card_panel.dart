@@ -16,7 +16,10 @@ import 'insight_source_chip.dart';
 class DecisionCardPanel extends StatefulWidget {
   final WishlistItem item;
 
-  const DecisionCardPanel({super.key, required this.item});
+  /// Label 5: mark the item as (not) a duplicate of something owned or bought
+  final ValueChanged<bool>? onSetDuplicate;
+
+  const DecisionCardPanel({super.key, required this.item, this.onSetDuplicate});
 
   @override
   State<DecisionCardPanel> createState() => _DecisionCardPanelState();
@@ -42,7 +45,7 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
 
   void _loadSavedPrice() {
     final vm = context.read<DecisionSupportViewModel?>();
-    if (vm != null) vm.loadSavedPrice(widget.item);
+    if (vm != null) vm.loadPriceHistory(widget.item);
   }
 
   /// A new assessment (price, budget, sale changed) asks for a new sentence
@@ -123,6 +126,35 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
           Wrap(
             spacing: AppDimens.space8,
             children: [
+              // A-15
+              if (assessment.input.sameGroupCount > 0)
+                TextButton.icon(
+                  key: const ValueKey('compare-same-group'),
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.wishlistCompare,
+                    arguments: ItemDetailArgs(widget.item),
+                  ),
+                  icon: const Icon(Icons.compare_arrows_rounded, size: 18),
+                  label: Text(
+                    'So sánh ${assessment.input.sameGroupCount + 1} món cùng nhóm',
+                  ),
+                ),
+              // S5 + label 5: confirm or undo "trùng với đồ đang có"
+              if (widget.onSetDuplicate case final setDuplicate?)
+                if (widget.item.confirmedDuplicate)
+                  TextButton.icon(
+                    onPressed: () => setDuplicate(false),
+                    icon: const Icon(Icons.undo_rounded, size: 18),
+                    label: const Text('Bỏ đánh dấu trùng'),
+                  )
+                else if (assessment.input.ownedMatches.isNotEmpty)
+                  TextButton.icon(
+                    key: const ValueKey('confirm-owned-duplicate'),
+                    onPressed: () => setDuplicate(true),
+                    icon: const Icon(Icons.done_all_rounded, size: 18),
+                    label: const Text('Trùng với đồ đang có'),
+                  ),
               if (sale != null)
                 TextButton.icon(
                   onPressed: () => Navigator.pushNamed(

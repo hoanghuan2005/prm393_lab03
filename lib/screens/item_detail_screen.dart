@@ -17,6 +17,7 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/decision_card_panel.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/undo_snack_bar.dart';
@@ -146,6 +147,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   label: 'Thử lại',
                   onPressed: () => _undoSkip(vm, messenger, item),
                 ),
+        ),
+      );
+  }
+
+  /// Decision Card label 5 (spec 7.4): the user marks the item as (not) a duplicate
+  Future<void> _setDuplicate(WishlistItem item, bool value) async {
+    final ok = await _run((vm) => vm.setConfirmedDuplicate(item, value));
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            value
+                ? 'Đã đánh dấu món trùng với đồ bạn đã có.'
+                : 'Đã bỏ đánh dấu trùng.',
+          ),
+          behavior: SnackBarBehavior.floating,
         ),
       );
   }
@@ -335,6 +354,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
             const SizedBox(height: AppDimens.space20),
 
+            // A-14: every recorded price, compared only when it makes sense (spec 6.5)
+            if (item.hasPrice) PriceHistoryPanel(item: item),
+
             // Psychological Cooldown Box
             if (item.isInCooldown) ...[
               Container(
@@ -382,6 +404,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 title: item.title,
                 excludeItemId: item.id,
                 budgetGroupId: item.budgetGroupId,
+                onConfirmDuplicate: item.confirmedDuplicate
+                    ? null
+                    : () => _setDuplicate(item, true),
               ),
 
             // Decision Card (Why I Buy Core)
@@ -395,7 +420,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: AppDimens.space16),
-            if (canDecide) DecisionCardPanel(item: item),
+            if (canDecide)
+              DecisionCardPanel(
+                item: item,
+                onSetDuplicate: (value) => _setDuplicate(item, value),
+              ),
 
             if (needsPurchase) ...[
               Text(

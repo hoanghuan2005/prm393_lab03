@@ -284,6 +284,7 @@ class WishlistViewModel extends ChangeNotifier
     required BuyingMotive motive,
     String? productUrl,
     String? budgetGroupId,
+    int priority = WishlistItem.defaultPriority,
   }) async {
     try {
       final uid = _uid;
@@ -298,6 +299,7 @@ class WishlistViewModel extends ChangeNotifier
         motive: motive,
         url: productUrl,
         budgetGroupId: budgetGroupId,
+        priority: priority,
         coolingOffDays: _coolingOffDays,
       );
 
@@ -338,7 +340,7 @@ class WishlistViewModel extends ChangeNotifier
     reason: 'reconsider',
   );
 
-  /// Title, link, motive and budget group. The price is changed with [updatePrice]
+  /// Title, link, motive, budget group and priority. The price is changed with [updatePrice]
   /// so every price keeps its own snapshot and date.
   Future<bool> updateDetails(
     WishlistItem item, {
@@ -346,6 +348,7 @@ class WishlistViewModel extends ChangeNotifier
     String? url,
     BuyingMotive? motive,
     String? budgetGroupId,
+    int? priority,
   }) {
     // Built field by field: copyWith cannot clear an optional value such as the link
     final updated = WishlistItem(
@@ -353,7 +356,7 @@ class WishlistViewModel extends ChangeNotifier
       title: title.trim(),
       url: url == null || url.trim().isEmpty ? null : url.trim(),
       motive: motive,
-      priority: item.priority,
+      priority: priority ?? item.priority,
       status: item.status,
       cooldownUntil: item.cooldownUntil,
       reviewAt: item.reviewAt,
@@ -365,6 +368,7 @@ class WishlistViewModel extends ChangeNotifier
       note: item.note,
       createdAt: item.createdAt,
       decidedAt: item.decidedAt,
+      confirmedDuplicate: item.confirmedDuplicate,
     );
     return _writeItem(
       item,
@@ -372,6 +376,17 @@ class WishlistViewModel extends ChangeNotifier
       reason: 'updateDetails',
     );
   }
+
+  /// Decision Card: the user says this item is (not) the same as something they have
+  Future<bool> setConfirmedDuplicate(WishlistItem item, bool value) =>
+      _writeItem(
+        item,
+        (uid) => wishlistService.update(
+          uid,
+          item.copyWith(confirmedDuplicate: value),
+        ),
+        reason: 'setConfirmedDuplicate',
+      );
 
   /// New price snapshot dated now (also fills in a price that was unknown)
   Future<bool> updatePrice(WishlistItem item, int amountVnd) => _writeItem(

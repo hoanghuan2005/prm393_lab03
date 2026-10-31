@@ -38,6 +38,10 @@ class FirestorePaths {
   DocumentReference<JsonMap> budget(String uid, String monthKey) =>
       budgets(uid).doc(monthKey);
 
+  /// "Đồ đang dùng" of the shopping profile (spec 7.2)
+  CollectionReference<JsonMap> ownedItems(String uid) =>
+      user(uid).collection('ownedItems');
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

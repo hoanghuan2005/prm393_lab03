@@ -141,11 +141,15 @@ class DuplicateHint extends StatefulWidget {
   final String? excludeItemId;
   final String? budgetGroupId;
 
+  /// Decision Card label 5: lets the user confirm the item is a duplicate
+  final VoidCallback? onConfirmDuplicate;
+
   const DuplicateHint({
     super.key,
     required this.title,
     this.excludeItemId,
     this.budgetGroupId,
+    this.onConfirmDuplicate,
   });
 
   @override
@@ -169,13 +173,16 @@ class _DuplicateHintState
         budgetGroupId: widget.budgetGroupId,
       );
 
-  static String _detail(DuplicateCandidate c) =>
-      c.source == DuplicateSource.purchase
-      ? 'đã mua ${formatDate(c.date)} · ${formatVnd(c.amountVnd)}'
-      // An unknown price is left out, never shown as 0 ₫
-      : c.amountVnd == null
-      ? 'đang cân nhắc'
-      : 'đang cân nhắc · ${formatVnd(c.amountVnd)}';
+  static String _detail(DuplicateCandidate c) => switch (c.source) {
+    DuplicateSource.purchase =>
+      'đã mua ${formatDate(c.date)} · ${formatVnd(c.amountVnd)}',
+    // An unknown price is left out, never shown as 0 ₫
+    DuplicateSource.wishlist =>
+      c.amountVnd == null
+          ? 'đang cân nhắc'
+          : 'đang cân nhắc · ${formatVnd(c.amountVnd)}',
+    DuplicateSource.owned => 'đang dùng',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +236,13 @@ class _DuplicateHintState
               'Thông tin để bạn đối chiếu, không ảnh hưởng tới lựa chọn.',
               style: AppTextStyles.labelMedium,
             ),
+            if (widget.onConfirmDuplicate case final confirm?)
+              TextButton.icon(
+                key: const ValueKey('confirm-duplicate'),
+                onPressed: confirm,
+                icon: const Icon(Icons.done_all_rounded, size: 18),
+                label: const Text('Món này trùng với đồ tôi đã có'),
+              ),
           ],
         ),
       ),

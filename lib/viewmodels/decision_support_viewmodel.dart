@@ -7,6 +7,9 @@ import '../firebase/platform_support.dart';
 import '../models/available_budget.dart';
 import '../models/budget_group.dart';
 import '../models/decision_rules.dart';
+import '../models/owned_item.dart';
+import '../models/price_insights.dart';
+import '../models/price_snapshot.dart';
 import '../models/purchase_item.dart';
 import '../models/sale_event.dart';
 import '../models/sale_plan.dart';
@@ -45,9 +48,10 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
   List<PurchaseItem> _purchases = const [];
   List<WishlistItem> _items = const [];
   List<BudgetGroup> _groups = const [];
+  List<OwnedItem> _ownedItems = const [];
 
-  /// itemId|latestPriceAt → first recorded price
-  final Map<String, int?> _savedPrices = {};
+  /// itemId|latestPriceAt → recorded prices; loaded once per latest price
+  final Map<String, List<PriceSnapshot>?> _histories = {};
 
   DecisionSupportViewModel({
     required this.budgetService,
@@ -66,7 +70,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
   void updateUid(String? uid) {
     if (uid == _uid) return;
     _uid = uid;
-    _savedPrices.clear();
+    _histories.clear();
     _subscribeBudget();
   }
 
@@ -97,10 +101,12 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     required List<PurchaseItem> purchases,
     required List<WishlistItem> wishlistItems,
     required List<BudgetGroup> groups,
+    List<OwnedItem> ownedItems = const [],
   }) {
     _purchases = purchases;
     _items = wishlistItems;
     _groups = groups;
+    _ownedItems = ownedItems;
     if (_uid != null && monthKey(now) != _budgetMonth) _subscribeBudget();
     notifyLater();
   }
@@ -179,7 +185,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
         now: now,
         groupName: groupName(groupId),
         available: availableFor(groupId),
-        savedPriceVnd: _savedPrices[_priceKey(item)],
+        savedPriceVnd: priceInsightsFor(item)?.saved?.amountVnd,
         sameGroupCount: groupId == null
             ? 0
             : _items
@@ -191,25 +197,48 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
                   )
                   .length,
         upcomingSale: saleForDecision,
+        ownedMatches: [
+          for (final o in _ownedItems)
+            if (o.matches(title: item.title, budgetGroupId: groupId)) o,
+        ],
       ),
     );
+  }
+
+  /// A-15: items still being considered in the item's group, the item itself first
+  List<WishlistItem> sameGroupItems(WishlistItem item) {
+    final groupId = item.budgetGroupId;
+    if (groupId == null) return [item];
+    return [
+      item,
+      for (final i in consideringItems)
+        if (i.id != item.id && i.budgetGroupId == groupId) i,
+    ];
   }
 
   static String _priceKey(WishlistItem item) =>
       '${item.id}|${item.latestPriceAt?.millisecondsSinceEpoch}';
 
-  /// Loads "giá lúc lưu" once per price; the card redraws with S3 when it arrives
-  Future<void> loadSavedPrice(WishlistItem item) async {
+  /// A-14: price history of [item]; null until [loadPriceHistory] has finished
+  PriceInsights? priceInsightsFor(WishlistItem item) {
+    final history = _histories[_priceKey(item)];
+    return history == null ? null : PriceInsights(history, now: now);
+  }
+
+  /// Loads the history once per latest price; the card and the history redraw when it
+  /// arrives (S3 compares with the first record, "giá lúc lưu")
+  Future<void> loadPriceHistory(WishlistItem item) async {
     final uid = _uid;
     final key = _priceKey(item);
     if (uid == null || item.latestPriceVnd == null) return;
-    if (_savedPrices.containsKey(key)) return;
-    _savedPrices[key] = null;
+    if (_histories.containsKey(key)) return;
+    _histories[key] = null;
     try {
-      _savedPrices[key] = await wishlistService.firstPrice(uid, item.id);
+      _histories[key] = await wishlistService.priceHistory(uid, item.id);
       if (!isDisposed) notifyListeners();
     } catch (e) {
-      debugPrint('Saved price unavailable: $e');
+      _histories.remove(key);
+      debugPrint('Price history unavailable: $e');
     }
   }
 
@@ -244,6 +273,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
       groups: _groups,
       available: available,
       now: now,
+      fitByMotive: SalePlanner.fitByMotive(_purchases),
     );
   }
 

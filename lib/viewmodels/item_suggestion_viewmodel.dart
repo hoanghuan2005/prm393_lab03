@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../firebase/platform_support.dart';
 import '../models/budget_group.dart';
 import '../models/item_suggestion.dart';
+import '../models/owned_item.dart';
 import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
@@ -30,6 +31,7 @@ class ItemSuggestionViewModel extends ChangeNotifier {
 
   List<PurchaseItem> _purchases = const [];
   List<WishlistItem> _wishlistItems = const [];
+  List<OwnedItem> _ownedItems = const [];
 
   ItemSuggestionViewModel({
     required this.aiSuggestionService,
@@ -45,9 +47,11 @@ class ItemSuggestionViewModel extends ChangeNotifier {
   void updateSources({
     required List<PurchaseItem> purchases,
     required List<WishlistItem> wishlistItems,
+    List<OwnedItem> ownedItems = const [],
   }) {
     _purchases = purchases;
     _wishlistItems = wishlistItems;
+    _ownedItems = ownedItems;
   }
 
   /// Same switches as Góc nhìn: platform, Remote Config and the user's AI setting
@@ -133,7 +137,8 @@ class ItemSuggestionViewModel extends ChangeNotifier {
     return matches.take(maxShown).toList();
   }
 
-  /// Purchases of the last [recentDays] days and items still being considered, newest first
+  /// Things owned (shopping profile), purchases of the last [recentDays] days and items
+  /// still being considered, newest first
   @visibleForTesting
   List<DuplicateCandidate> candidates({String? excludeItemId}) {
     final since = _now().subtract(const Duration(days: recentDays));
@@ -161,6 +166,15 @@ class ItemSuggestionViewModel extends ChangeNotifier {
             date: w.createdAt,
             budgetGroupId: w.budgetGroupId,
             amountVnd: w.latestPriceVnd,
+          ),
+      for (final o in _ownedItems)
+        if (o.budgetGroupId != consumableGroupId)
+          DuplicateCandidate(
+            id: 'owned:${o.id}',
+            title: o.name,
+            source: DuplicateSource.owned,
+            date: o.createdAt,
+            budgetGroupId: o.budgetGroupId,
           ),
     ];
     list.sort((a, b) => b.date.compareTo(a.date));

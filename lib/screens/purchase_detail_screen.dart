@@ -9,6 +9,7 @@ import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/satisfaction_dialog.dart';
 
 /// Screen 05: Chi tiết khoản mua from Figma "Why I Buy ver2"
 class PurchaseDetailScreen extends StatelessWidget {
@@ -140,6 +141,11 @@ class PurchaseDetailScreen extends StatelessWidget {
 
                     // Card 3: Behavioral Insight
                     _buildBehavioralCard(currentItem),
+
+                    const SizedBox(height: 16),
+
+                    // A-16: how the purchase turned out, 1–5 stars
+                    _SatisfactionCard(purchase: currentItem),
                   ],
                 ),
               ),
@@ -510,6 +516,64 @@ class PurchaseDetailScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Stars given 7 days after the purchase (A-16); can be given or changed any time here
+class _SatisfactionCard extends StatelessWidget {
+  final PurchaseItem purchase;
+
+  const _SatisfactionCard({required this.purchase});
+
+  @override
+  Widget build(BuildContext context) {
+    final stars = purchase.satisfaction;
+    return Container(
+      key: const ValueKey('purchase-satisfaction'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mức hài lòng',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Semantics(
+                  label: stars == null ? 'Chưa chấm' : '$stars trên 5 sao',
+                  child: ExcludeSemantics(
+                    child: Text(
+                      stars == null
+                          ? (purchase.satisfactionSkipped
+                                ? 'Bạn đã bỏ qua câu hỏi này'
+                                : 'Chưa chấm')
+                          : '★' * stars + '☆' * (5 - stars),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: AppColors.motiveSale,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => SatisfactionDialog.ask(context, purchase),
+            child: Text(stars == null ? 'Chấm' : 'Sửa'),
+          ),
+        ],
       ),
     );
   }

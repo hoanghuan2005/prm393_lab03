@@ -29,24 +29,28 @@ class SectionCard extends StatelessWidget {
         borderRadius: AppDimens.borderLarge,
         border: Border.all(color: AppColors.divider),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: AppColors.onPrimary, size: 20),
-                const SizedBox(width: AppDimens.space8),
+      // Own Material so ListTile ink in [children] shows above the card's colour
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: AppColors.onPrimary, size: 20),
+                  const SizedBox(width: AppDimens.space8),
+                ],
+                Expanded(child: Text(title, style: AppTextStyles.titleMedium)),
+                ?action,
               ],
-              Expanded(child: Text(title, style: AppTextStyles.titleMedium)),
-              ?action,
-            ],
-          ),
-          const SizedBox(height: AppDimens.space12),
-          const Divider(),
-          const SizedBox(height: AppDimens.space12),
-          ...children,
-        ],
+            ),
+            const SizedBox(height: AppDimens.space12),
+            const Divider(),
+            const SizedBox(height: AppDimens.space12),
+            ...children,
+          ],
+        ),
       ),
     );
   }

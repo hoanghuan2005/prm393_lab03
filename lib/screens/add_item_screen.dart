@@ -35,6 +35,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
   String? _budgetGroupId;
+  int _priority = WishlistItem.defaultPriority;
   bool _isSaving = false;
 
   bool get _isEdit => widget.existing != null;
@@ -48,6 +49,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _urlController.text = item.url ?? '';
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
+      _priority = item.priority;
     }
   }
 
@@ -76,6 +78,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             url: url,
             motive: _selectedMotive,
             budgetGroupId: _budgetGroupId,
+            priority: _priority,
           )
         : await wishlistVm.addItem(
             title: _titleController.text.trim(),
@@ -83,6 +86,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             motive: _selectedMotive,
             productUrl: url.isNotEmpty ? url : null,
             budgetGroupId: _budgetGroupId,
+            priority: _priority,
           );
 
     if (mounted) {
@@ -218,6 +222,28 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   ),
                 ),
               const SizedBox(height: AppDimens.space24),
+
+              // Priority (1–5 stars): used by "So sánh" and the sale plan (spec 7.5)
+              Text('Mức ưu tiên', style: AppTextStyles.titleMedium),
+              Row(
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    IconButton(
+                      key: ValueKey('priority-$i'),
+                      tooltip: '$i sao',
+                      onPressed: _isSaving
+                          ? null
+                          : () => setState(() => _priority = i),
+                      icon: Icon(
+                        i <= _priority
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: AppColors.motiveSale,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppDimens.space16),
 
               // Motive Selection Header
               Text(

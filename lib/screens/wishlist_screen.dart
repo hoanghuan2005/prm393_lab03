@@ -10,6 +10,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/buy_intent_section.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/error_view.dart';
@@ -153,6 +154,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
           ),
           const SizedBox(height: AppDimens.space8),
           const Divider(),
+
+          // Marked "Mua" in the Chrome extension, waiting for the purchase form
+          const BuyIntentSection(),
 
           // Items Content
           Expanded(child: _buildBodyContent(context, wishlistVm)),

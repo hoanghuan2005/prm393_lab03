@@ -27,13 +27,28 @@ service cloud.firestore {
           && (!('motive' in d()) || d().motive == null || validMotive(d().motive))
           && (!('priority' in d()) || (d().priority is int && d().priority >= 1 && d().priority <= 5))
           && (!('latestPriceVnd' in d()) || d().latestPriceVnd == null || validMoney(d().latestPriceVnd))
-          && optionalNote();
+          && optionalNote()
+          // Chrome extension fields; only the app's purchase batch marks an item purchased
+          && (!('variantLabel' in d()) || d().variantLabel == null || (d().variantLabel is string && d().variantLabel.size() <= 60))
+          && (!('buyIntentAt' in d()) || d().buyIntentAt == null || d().buyIntentAt is timestamp)
+          && (d().status != 'purchased' || ('purchaseId' in d() && d().purchaseId is string));
 
         match /priceSnapshots/{sid} {
           allow read, delete: if isOwner(uid);
-          allow create: if isOwner(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp;
+          allow create: if isOwner(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
+            && (!('source' in d()) || d().source in ['manual','demo','extensionPage'])
+            && (!('priceType' in d()) || d().priceType in ['single','range','flash','afterVoucher']);
           allow update: if false;
         }
+      }
+
+      // Chrome extension linked with this account: created pending by the extension,
+      // approved / rejected / revoked on the phone (the extension may revoke itself)
+      match /extensionSessions/{sid} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && d().status == 'pending'
+          && d().deviceLabel is string && d().deviceLabel.size() > 0 && d().deviceLabel.size() <= 60;
+        allow update: if isOwner(uid) && d().status in ['pending','approved','rejected','revoked'];
       }
 
       match /decisions/{id} {

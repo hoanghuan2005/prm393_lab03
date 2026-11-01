@@ -43,6 +43,9 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | 21 | Lịch sử giá | `22.3` | Trong Chi tiết món | `PriceHistoryPanel` | `DecisionSupportViewModel` → `WishlistService.priceHistory` | Implemented |
 | 22 | Hỏi mức hài lòng (hộp thoại) | `27` | Tự hiện ở màn chính; nút "Chấm/Sửa" ở Chi tiết khoản mua | `SatisfactionDialog` | `PurchaseViewModel` → `PurchaseService.setSatisfaction` | Implemented (27.1, 27.2 bằng SnackBar) |
 | 18 | Lập kế hoạch cho đợt sale | – (đặc tả 7.5) | `/sales/plan` | `SalePlanScreen` | `DecisionSupportViewModel` → `SalePlanner`, `AiDecisionService` | Implemented (lời giải thích AI tính năng 5) |
+| 23 | Duyệt liên kết extension (hộp thoại) | `25f` | Tự hiện ở màn chính khi extension xin liên kết | `ExtensionApprovalDialog` | `ExtensionLinkViewModel` → `ExtensionSessionService` | Implemented (đăng nhập Google thay mã 6 số – [`decisions.md`](decisions.md)) |
+| 24 | Thiết bị đã liên kết | X4 | Trong Cá nhân | `LinkedDevicesSection` | `ExtensionLinkViewModel` | Implemented (Huỷ liên kết → EXT-8 trên extension) |
+| 25 | Định mua từ máy tính | X3 | Đầu danh sách Wishlist | `BuyIntentSection` | `WishlistViewModel.buyIntentItems` → `PurchaseService.buyFromWishlist` / `WishlistService.clearBuyIntent` | Implemented |
 
 ---
 

@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/demo_data_service.dart';
+import '../services/extension_session_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
 import '../services/purchase_service.dart';
@@ -24,6 +25,7 @@ import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
+import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -68,6 +70,9 @@ class AppProviders extends StatelessWidget {
           create: (_) => FirestoreReflectionService(),
         ),
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
+        Provider<ExtensionSessionService>(
+          create: (_) => FirestoreExtensionSessionService(),
+        ),
         Provider<ShoppingProfileService>(
           create: (_) => FirestoreShoppingProfileService(),
         ),
@@ -258,6 +263,14 @@ class AppProviders extends StatelessWidget {
                 wishlistItems: wishlistVm.allItems,
                 ownedItems: profileVm.ownedItems,
               ),
+        ),
+        // Chrome extension linking: approval dialog and "Thiết bị đã liên kết"
+        ChangeNotifierProxyProvider<AuthViewModel, ExtensionLinkViewModel>(
+          create: (context) => ExtensionLinkViewModel(
+            service: context.read<ExtensionSessionService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
       ],
       child: child,

@@ -8,8 +8,9 @@ enum PriceFreshness { fresh, dated, stale }
 
 /// "Lịch sử giá và so sánh" of one item (spec A-14, 6.5, 8.3).
 ///
-/// The app only records single prices typed by the user for one item, with no price
-/// type or variant, so every snapshot of the item is treated as comparable. Prices go
+/// Prices typed in the app and single / range / Flash Sale prices read by the Chrome
+/// extension are compared (a range by its lowest price); "Sau voucher" prices are only
+/// listed, never compared (handoff 9.1). Prices go
 /// up or down only against a fresh latest price.
 class PriceInsights {
   static const int freshDays = 3;
@@ -29,10 +30,20 @@ class PriceInsights {
     : history = [...snapshots]
         ..sort((a, b) => b.observedAt.compareTo(a.observedAt));
 
-  PriceSnapshot? get latest => history.isEmpty ? null : history.first;
+  /// Snapshots used for comparisons, newest first
+  List<PriceSnapshot> get comparable =>
+      history.where((s) => s.priceType != PriceType.afterVoucher).toList();
+
+  PriceSnapshot? get latest {
+    final list = comparable;
+    return list.isEmpty ? null : list.first;
+  }
 
   /// "Giá lúc lưu": the first record
-  PriceSnapshot? get saved => history.isEmpty ? null : history.last;
+  PriceSnapshot? get saved {
+    final list = comparable;
+    return list.isEmpty ? null : list.last;
+  }
 
   static PriceFreshness freshnessOf(PriceSnapshot s, DateTime now) =>
       freshnessAt(s.observedAt, now);
@@ -56,15 +67,16 @@ class PriceInsights {
   /// fresh and there are two records to compare
   int? get changeSinceSavedPercent {
     final last = latest, first = saved;
-    if (last == null || first == null || history.length < 2) return null;
+    if (last == null || first == null || comparable.length < 2) return null;
     if (first.amountVnd <= 0) return null;
     if (freshnessOf(last, now) != PriceFreshness.fresh) return null;
     return ((last.amountVnd - first.amountVnd) * 100 / first.amountVnd).round();
   }
 
   PriceSnapshot? get lowest {
-    if (history.length < lowestMinRecords) return null;
-    return history.reduce((a, b) => b.amountVnd < a.amountVnd ? b : a);
+    final list = comparable;
+    if (list.length < lowestMinRecords) return null;
+    return list.reduce((a, b) => b.amountVnd < a.amountVnd ? b : a);
   }
 
   /// Short label next to a price: "Mới", "Ghi ngày 26/10/2026", "Cũ · 12/10/2026"
@@ -83,7 +95,7 @@ class PriceInsights {
       else if (change != null && change > 0)
         'Cao hơn lúc lưu $change%.',
       if (last != null &&
-          history.length >= 2 &&
+          comparable.length >= 2 &&
           freshnessOf(last, now) != PriceFreshness.fresh)
         'Giá mới nhất không còn mới nên chưa so với lúc lưu.',
       if (low != null)

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/price_insights.dart';
+import '../models/price_snapshot.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -80,9 +81,15 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                     ),
                   ),
                   Text(
-                    formatVnd(s.amountVnd),
+                    s.isRange
+                        ? '${formatVnd(s.minVnd)} – ${formatVnd(s.maxVnd)}'
+                        : formatVnd(s.amountVnd),
                     style: AppTextStyles.titleMedium,
                   ),
+                  if (_tagFor(s) case final tag?) ...[
+                    const SizedBox(width: AppDimens.space8),
+                    Text(tag, style: AppTextStyles.labelMedium),
+                  ],
                   if (index == 0) ...[
                     const SizedBox(width: AppDimens.space8),
                     Text(
@@ -95,11 +102,20 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
             ),
           const SizedBox(height: AppDimens.space4),
           Text(
-            'Giá do bạn tự ghi cho món này; app không theo dõi giá trên Shopee.',
+            'Giá do bạn tự ghi hoặc lưu từ extension; app không theo dõi giá trên Shopee.',
             style: AppTextStyles.labelMedium,
           ),
         ],
       ),
     );
+  }
+
+  /// Extension prices: "Sau voucher" is a personal reference, an unread-back page price
+  /// is "Chưa xác nhận"
+  static String? _tagFor(PriceSnapshot s) {
+    if (s.priceType == PriceType.afterVoucher) return 'Sau voucher';
+    if (!s.confirmed) return 'Chưa xác nhận';
+    if (s.priceType == PriceType.flash) return 'Flash Sale';
+    return null;
   }
 }

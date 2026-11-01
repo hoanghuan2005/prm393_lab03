@@ -47,6 +47,9 @@ abstract interface class WishlistService {
 
   /// Deletes the item and its price snapshots (decisions stay as history)
   Future<void> delete(String uid, String itemId);
+
+  /// "Chưa mua": drops the "Mua" intent set in the Chrome extension; the item stays considering
+  Future<void> clearBuyIntent(String uid, String itemId);
 }
 
 class FirestoreWishlistService implements WishlistService {
@@ -199,6 +202,16 @@ class FirestoreWishlistService implements WishlistService {
     batch.delete(_paths.wishlistItem(uid, itemId));
     await awaitWrite(batch.commit());
   });
+
+  @override
+  Future<void> clearBuyIntent(String uid, String itemId) => guard(
+    () => awaitWrite(
+      _paths.wishlistItem(uid, itemId).update({
+        'buyIntentAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    ),
+  );
 
   void _addDecision(
     WriteBatch batch,

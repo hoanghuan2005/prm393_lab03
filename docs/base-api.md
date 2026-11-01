@@ -25,6 +25,8 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | | `Future<void> setReview(String uid, String itemId, DateTime reviewAt)` | "Chờ": đặt `reviewAt` + decision `wait` |
 | | `Future<void> skip(String uid, String itemId)` / `undoSkip(...)` | "Bỏ qua" / hoàn tác + decision `skip` / `undo` |
 | | `Future<void> delete(String uid, String itemId)` | Xoá món và các priceSnapshot |
+| | `Future<void> clearBuyIntent(String uid, String itemId)` | "Chưa mua": xoá `buyIntentAt` (ý định Mua từ extension), món vẫn Đang cân nhắc |
+| `ExtensionSessionService` → `FirestoreExtensionSessionService` | `watchSessions(uid)`, `approve(uid, id)`, `reject(uid, id)`, `revoke(uid, id)` | Liên kết extension Chrome (`extensionSessions`) |
 | `BudgetService` → `FirestoreBudgetService` | `Stream<List<BudgetGroup>> watchGroups(String uid)` | Nhóm ngân sách theo `order` |
 | | `Future<void> ensureDefaultGroups(String uid)` | Tạo 6 nhóm mặc định khi chưa có nhóm nào |
 | | `Stream<MonthlyBudget> watchMonthlyBudget(String uid, String monthKey)` | Hạn mức tháng (rỗng khi chưa có) |
@@ -60,13 +62,14 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 |:---|:---|
 | `AuthViewModel` | `status`, `userId` (null tới khi xong ensure*), `displayName`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()` |
 | `PurchaseViewModel` | `state`, `selectedMonth`, `previousMonth()`, `nextMonth()`, `setSelectedMonth()`, `monthPurchases`, `filteredPurchases`, `monthTotal`/`monthCount`, `weekTotal`/`weekCount`, `timeSlotStats`, `motiveDistribution`, `addPurchase(...)`, `updatePurchase(...)`, `deletePurchase(id)`, `satisfactionDue()`, `rateSatisfaction(purchase, stars)`, `actionError` |
-| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `reviewDueCount`, `setReviewDueFilter`, `coolingOffDays`, `addItem(...)`, `updateDetails(...)`, `updatePrice(...)`, `deleteItem(...)`, `wait(item, reviewAt)`, `skip(item)`, `reconsider(item)`, `setConfirmedDuplicate(item, value)`, `onItemViewed(item)`, `maxShown`/`updateMaxShown` (Remote Config `max_wishlist_items_shown`), `visibleOf(items)`, `showAllItems()`, `showConsidering()`, `actionError` |
+| `WishlistViewModel` | `state`, `allItems`, `filteredItems`, `setSearchQuery`, `setMotiveFilter`, `setStatusFilter`, `consideringCount`, `reviewDueCount`, `setReviewDueFilter`, `coolingOffDays`, `addItem(...)`, `updateDetails(...)`, `updatePrice(...)`, `deleteItem(...)`, `wait(item, reviewAt)`, `skip(item)`, `reconsider(item)`, `setConfirmedDuplicate(item, value)`, `buyIntentItems`, `clearBuyIntent(item)`, `onItemViewed(item)`, `maxShown`/`updateMaxShown` (Remote Config `max_wishlist_items_shown`), `visibleOf(items)`, `showAllItems()`, `showConsidering()`, `actionError` |
 | `BudgetViewModel` | `state`, `groups`, `limits`, `limitFor(id)`, `spentByGroup`, `spentFor(id)`, `totalLimit`, `totalSpent`, `limitedSpent` (chỉ các nhóm có hạn mức), `unlimitedSpent`, `progress`, `isExceeded`, `remaining`, `isBudgetLoaded`, `available(id)`, `bufferFor(id)`, `hasEnoughHistory`, `daysLeftInMonth`, `setGroupLimit(id, limit)`, `setGroupLimits(changes)` |
 | `ReflectionViewModel` | `state`, `month`, `nextMonth`, `saved`, `rating`, `selectRating(int)`, `save(goal)`, `isSaving` |
 | `ReportViewModel` | `status` (`idle`→`generating`→`ready`→`shared` / `error`), `generateAndShare(month)`, `preview(month)`, `fileNameFor(month)` |
 | `InsightsViewModel` | `stats`, `report`, `isGenerating`, `fallbackReason`, `userAiEnabled`, `setVisible(bool)`, `refresh()`, `setUserAiEnabled(bool)` |
 | `DecisionSupportViewModel` | `assess(item)` → `DecisionAssessment` (nhãn, tín hiệu, câu mẫu), `reasonFor(assessment)` → `DecisionReason`, `loadPriceHistory(item)`, `priceInsightsFor(item)`, `sameGroupItems(item)`, `availableFor(groupId)` (ngân sách **tháng hiện tại**), `upcomingSales`, `nextConfirmedSale`, `consideringItems`, `plan()` → `SalePlanResult`, `explainPlans(result)` → câu AI hoặc câu mẫu cho từng phương án |
 | `ShoppingProfileViewModel` | `state`, `ownedItems`, `tags`, `matchesFor(title, budgetGroupId)`, `saveOwnedItem(...)`, `deleteOwnedItem(item)`, `saveTags(...)`, `actionError` |
+| `ExtensionLinkViewModel` | `pendingSession` (yêu cầu chờ < 5 phút), `unpromptedPending`, `markPrompted(id)`, `linkedSessions`, `approve(s)`, `reject(s)`, `revoke(s)`, `actionError` |
 | `ItemSuggestionViewModel` | `suggestGroup(title, groups)` → `GroupSuggestion?`, `findDuplicates(title, {excludeItemId, budgetGroupId})` → `List<DuplicateMatch>`, `updateSources(purchases, wishlistItems)` |
 | `SettingsViewModel` | `settings`, `coolingOffDays` (của người dùng, không có thì Remote Config), `updateSettings`, `seedDemoData()`, `clearAllData()`, `refreshRemoteConfig()`, `notifications` |
 
@@ -88,6 +91,7 @@ ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)`
 | `AppButton` | `AppButton({required title, required onPressed, variant, isLoading, icon, width})` | Nút primary / secondary / danger |
 | `AppTextField` | `AppTextField({label, hint, controller, onChanged, validator, keyboardType, …})` | Ô nhập chữ |
 | `WishlistCard` · `InsightSourceChip` · `WhyIBuyLogo` | `WishlistCard({required item, required onTap})` · `InsightSourceChip({required fromAi})` · `WhyIBuyLogo({size, color})` | Thẻ món · nhãn AI/Câu mẫu · logo |
+| `ExtensionApprovalDialog.ask` · `LinkedDevicesSection` · `BuyIntentSection` | `Future<bool?> ask(context, session)` · `LinkedDevicesSection()` · `BuyIntentSection()` | Hỏi "Cho phép … liên kết?" · "Thiết bị đã liên kết" ở Cá nhân · "Định mua từ máy tính" ở Wishlist |
 | `MonthPickerSheet.show` · `BudgetSettingSheet.show` | `Future<DateTime?> show(context, initialDate)` · `Future<void> show(context)` | Chọn tháng · đặt ngân sách tổng |
 
 Xem mẫu trực quan: Profile → "Widget Gallery (debug)" (chỉ bản debug).

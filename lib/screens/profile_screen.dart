@@ -12,6 +12,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/linked_devices_section.dart';
 import '../widgets/section_card.dart';
 
 /// Screen Profile & Firebase Demo Area
@@ -155,6 +156,10 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: AppDimens.space16),
+
+            // Chrome extension linked with this account (approved on this phone)
+            const LinkedDevicesSection(),
             const SizedBox(height: AppDimens.space16),
 
             // Demo data (never seeded automatically)

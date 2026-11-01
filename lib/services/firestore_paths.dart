@@ -42,6 +42,12 @@ class FirestorePaths {
   CollectionReference<JsonMap> ownedItems(String uid) =>
       user(uid).collection('ownedItems');
 
+  /// Chrome extensions signed in with this account (pending → approved on the phone)
+  CollectionReference<JsonMap> extensionSessions(String uid) =>
+      user(uid).collection('extensionSessions');
+  DocumentReference<JsonMap> extensionSession(String uid, String sessionId) =>
+      extensionSessions(uid).doc(sessionId);
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../services/review_reminder_service.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/extension_approval_dialog.dart';
 import '../widgets/satisfaction_dialog.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
@@ -26,6 +28,8 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
   late final PurchaseViewModel _purchaseVm = context.read<PurchaseViewModel>();
+  late final ExtensionLinkViewModel _extensionVm = context
+      .read<ExtensionLinkViewModel>();
 
   /// A-16: at most one satisfaction question per app session
   bool _askedSatisfaction = false;
@@ -35,8 +39,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _purchaseVm.addListener(_onPurchasesChanged);
+    _extensionVm.addListener(_onExtensionSessionsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _onPurchasesChanged();
+      _onExtensionSessionsChanged();
       context.read<InsightsViewModel>().setVisible(
         _currentIndex == _insightsTabIndex,
       );
@@ -63,9 +69,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
+  /// A Chrome extension asks to link: ask once per request, only while the shell is on screen
+  void _onExtensionSessionsChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+      final pending = _extensionVm.unpromptedPending;
+      if (pending == null) return;
+      _extensionVm.markPrompted(pending.id);
+      final approved = await ExtensionApprovalDialog.ask(context, pending);
+      if (approved == null || !mounted) return;
+      final ok = approved
+          ? await _extensionVm.approve(pending)
+          : await _extensionVm.reject(pending);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            !ok
+                ? _extensionVm.actionError ?? 'Đã có lỗi, vui lòng thử lại.'
+                : approved
+                ? 'Đã liên kết ${pending.deviceLabel}.'
+                : 'Đã từ chối ${pending.deviceLabel}.',
+          ),
+        ),
+      );
+    });
+  }
+
   @override
   void dispose() {
     _purchaseVm.removeListener(_onPurchasesChanged);
+    _extensionVm.removeListener(_onExtensionSessionsChanged);
     super.dispose();
   }
 

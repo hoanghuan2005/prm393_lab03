@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import 'motive_chip.dart';
+import 'product_image.dart';
 
 /// Reusable Wishlist Item Card conforming to Figma specs
 class WishlistCard extends StatelessWidget {
@@ -39,6 +40,10 @@ class WishlistCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (ProductImage.canShow(item.imageUrl)) ...[
+                      ProductImage(url: item.imageUrl),
+                      const SizedBox(width: AppDimens.space12),
+                    ],
                     Expanded(
                       child: Text(
                         item.title,
@@ -61,6 +66,15 @@ class WishlistCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (item.variantLabel != null) ...[
+                  const SizedBox(height: AppDimens.space4),
+                  Text(
+                    'Phân loại: ${item.variantLabel}',
+                    style: AppTextStyles.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: AppDimens.space12),
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
@@ -68,6 +82,7 @@ class WishlistCard extends StatelessWidget {
                   runSpacing: AppDimens.space8,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
+                    if (item.isFromExtension) fromExtensionChip(),
                     _buildStatusBadge(),
                   ],
                 ),
@@ -131,7 +146,14 @@ class WishlistCard extends StatelessWidget {
     );
   }
 
-  Widget _badge({
+  /// "Từ máy tính": saved with the Chrome extension (saveChannel extension)
+  static Widget fromExtensionChip() => _badge(
+    icon: Icons.computer_rounded,
+    text: 'Từ máy tính',
+    color: AppColors.textSecondary,
+  );
+
+  static Widget _badge({
     required IconData icon,
     required String text,
     Color color = AppColors.accentNeutral,

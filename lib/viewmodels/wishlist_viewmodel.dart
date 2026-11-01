@@ -110,6 +110,12 @@ class WishlistViewModel extends ChangeNotifier
   List<WishlistItem> get reviewDueItems =>
       _allItems.where((i) => i.isReviewDue).toList();
   int get reviewDueCount => reviewDueItems.length;
+
+  /// "Định mua từ máy tính": marked "Mua" in the Chrome extension, waiting for the
+  /// purchase to be recorded here. Oldest intent first.
+  List<WishlistItem> get buyIntentItems =>
+      _allItems.where((i) => i.hasBuyIntent).toList()
+        ..sort((a, b) => a.buyIntentAt!.compareTo(b.buyIntentAt!));
   bool get reviewDueOnly => _reviewDueOnly;
 
   /// Filtered items based on active motive, status, and search query
@@ -369,6 +375,11 @@ class WishlistViewModel extends ChangeNotifier
       createdAt: item.createdAt,
       decidedAt: item.decidedAt,
       confirmedDuplicate: item.confirmedDuplicate,
+      productKey: item.productKey,
+      variantLabel: item.variantLabel,
+      modelId: item.modelId,
+      imageUrl: item.imageUrl,
+      buyIntentAt: item.buyIntentAt,
     );
     return _writeItem(
       item,
@@ -393,6 +404,13 @@ class WishlistViewModel extends ChangeNotifier
     item,
     (uid) => wishlistService.addPrice(uid, item.id, amountVnd),
     reason: 'updatePrice',
+  );
+
+  /// "Chưa mua" on an item marked "Mua" in the Chrome extension
+  Future<bool> clearBuyIntent(WishlistItem item) => _writeItem(
+    item,
+    (uid) => wishlistService.clearBuyIntent(uid, item.id),
+    reason: 'clearBuyIntent',
   );
 
   /// Removes the item and its price history; a purchase made from it stays in Lịch sử

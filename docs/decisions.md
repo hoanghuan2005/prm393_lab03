@@ -20,6 +20,7 @@ Bảng D1–D14 gốc trong kế hoạch base chưa được gửi vào repo. B�
 | AI | Code tính số; AI chỉ viết lời hoặc chọn trong danh sách; lỗi thì dùng câu mẫu. | Mục 2 – AI |
 | Hồ sơ và mức hài lòng | Đồ đang dùng, phong cách, thương hiệu do người dùng tự ghi (không lấy lịch sử Shopee); mức hài lòng 1–5 sao hỏi sau 7 ngày, có "Bỏ qua", dùng cho Góc nhìn và gói mua. | [`data-model.md`](data-model.md) – `ownedItems`, `purchases` |
 | Decision Card và sale | Nhãn theo Rules Engine v1 (đặc tả 7.4), không có "Nên mua"; lịch sale lấy từ Remote Config `sale_calendar` (đã xác nhận / dự kiến); gói mua chỉ chạy khi người dùng bấm. | [`design-traceability.md`](design-traceability.md) – DEV-09 |
+| Extension Chrome | Extension đăng nhập Google cùng tài khoản và đọc/ghi thẳng Firestore; liên kết bằng một phiên `pending` được **duyệt trên điện thoại** thay cho mã 6 số (X4); không có backend, chạy trên gói Spark. Nút "Mua" trên extension chỉ ghi `buyIntentAt`; khoản mua luôn ghi trong app. | Mục 2 – Extension Chrome |
 
 ## 2. Sai khác so với thiết kế Lab 2 (deviation)
 
@@ -43,4 +44,12 @@ Repo có bộ test tự động (`flutter test`, hiện 118 test) dùng Firestor
 
 ### Đăng nhập và dữ liệu
 - Đăng nhập bằng Google hoặc chế độ Khách (Firebase Anonymous Auth).
-- Bỏ các trường thuộc giai đoạn sau: `productKey`, `priceType`, `revision`. Cấu trúc dữ liệu hiện tại: [`data-model.md`](data-model.md).
+- Bỏ trường `revision` (extension so phiên bản bằng `updatedAt`). `productKey` và `priceType` được thêm lại cho extension Chrome. Cấu trúc dữ liệu hiện tại: [`data-model.md`](data-model.md).
+
+### Extension Chrome
+Handoff X4 đề xuất liên kết bằng mã 6 số và token do server cấp. Nhóm không có backend (Cloud Functions cần gói Blaze), nên:
+- Extension đăng nhập Google bằng Firebase Auth (cùng `uid` với app) rồi đọc/ghi thẳng `users/{uid}/...`; `firestore.rules` vẫn chỉ cho chủ tài khoản.
+- Bước "duyệt trên điện thoại" (25f) giữ nguyên ý: extension tạo `extensionSessions/{id}` trạng thái `pending`; app đang mở hiện hộp thoại "Cho phép … liên kết?"; Đồng ý → `approved`. Yêu cầu quá 5 phút bị bỏ qua. Huỷ liên kết ở Cá nhân → `revoked`, extension về chưa liên kết (EXT-8).
+- Không còn mã 6 số và giới hạn 5 lần sai.
+- "Mua · mở form trên điện thoại" chỉ ghi `buyIntentAt`; món hiện ở mục "Định mua từ máy tính" của Wishlist, khoản mua vẫn qua `buyFromWishlist` (xoá `buyIntentAt`). Extension không bao giờ đặt `purchased` (rules bắt buộc `purchaseId`).
+- Giá "Sau voucher" chỉ để tham khảo: hiện trong Lịch sử giá nhưng không làm giá chính, không dùng để so sánh.

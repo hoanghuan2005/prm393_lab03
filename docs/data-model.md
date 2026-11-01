@@ -46,6 +46,12 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `saveChannel` | string | | — (`manual` · `share` · `extension`) |
 | `confirmedDuplicate` | bool | | người dùng xác nhận trùng với đồ đang có / khoản mua gần đây (nhãn 5 của Decision Card) |
 | `createdAt`, `updatedAt` | timestamp | ✓ / | — |
+| `productKey`, `modelId`, `imageUrl` | string? | | — (extension Chrome: `shopee:<shopId>:<itemId>`, mã phân loại, ảnh) |
+| `variantLabel` | string? | | null hoặc ≤ 60 ký tự (tên phân loại đã chọn) |
+| `buyIntentAt` | timestamp? | | null hoặc timestamp – đã bấm "Mua" trên extension, chờ app ghi khoản mua |
+| *(khi `status == purchased`)* | | | rules bắt buộc có `purchaseId` (string) |
+
+App chỉ ghi các trường extension khi có giá trị, nên sửa món trong app không xoá chúng. `buyIntentAt` được xoá khi ghi khoản mua (`buyFromWishlist`) hoặc bấm "Chưa mua" (`clearBuyIntent`).
 
 ### `wishlistItems/{id}/priceSnapshots/{sid}` – `PriceSnapshot` · **chỉ thêm, không sửa**
 
@@ -53,7 +59,24 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 |:---|:---|:-:|:---|
 | `amountVnd` | int | ✓ | 1 … 999.999.999 |
 | `observedAt` | timestamp | ✓ | là timestamp |
-| `source` | string | | — (`manual` · `demo`) |
+| `source` | string | | nếu có: `manual` · `demo` · `extensionPage` |
+| `priceType` | string | | nếu có: `single` (mặc định) · `range` · `flash` · `afterVoucher` |
+| `minVnd`, `maxVnd`, `originalVnd` | int? | | — (khoảng giá: `amountVnd` = `minVnd`; giá gạch ngang) |
+| `confirmation` | string | | — `userConfirmed` (mặc định) · `unconfirmed` (giá đọc từ trang, chưa xác nhận) |
+| `variantLabel` | string? | | — |
+
+Giá `afterVoucher` không cập nhật `latestPriceVnd` và không dùng để so sánh (`PriceInsights.comparable`).
+
+## `extensionSessions/{id}` – `ExtensionSession` · tạo bởi extension Chrome, duyệt bởi `ExtensionSessionService`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `deviceLabel` | string | ✓ | 1–60 ký tự (khi tạo) |
+| `status` | string | ✓ | tạo: `pending`; sửa: `pending` · `approved` · `rejected` · `revoked` |
+| `createdAt`, `updatedAt` | timestamp | | — |
+| `approvedAt` | timestamp? | | — (server time khi Đồng ý) |
+
+Yêu cầu `pending` quá 5 phút coi như hết hạn (app không hỏi nữa).
 
 ## `decisions/{id}` – `Decision` · **chỉ thêm, không sửa** · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
 

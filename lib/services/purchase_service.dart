@@ -246,6 +246,8 @@ class FirestorePurchaseService implements PurchaseService {
         'purchaseId': purchaseRef.id,
         'decidedAt': FieldValue.serverTimestamp(),
         'reviewAt': null,
+        // The extension's "Mua" intent is fulfilled by this purchase
+        'buyIntentAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
       })
       // Decisions are create-only in firestore.rules. A competing batch for

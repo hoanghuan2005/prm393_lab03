@@ -19,8 +19,10 @@ import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
+import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/undo_snack_bar.dart';
+import '../widgets/wishlist_card.dart';
 
 /// Screen 03: Item Detail & Decision Card from Figma "Why I Buy"
 class ItemDetailScreen extends StatefulWidget {
@@ -309,7 +311,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (ProductImage.canShow(item.imageUrl)) ...[
+                    Center(
+                      child: ProductImage(
+                        url: item.imageUrl,
+                        size: 160,
+                        borderRadius: AppDimens.borderLarge,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimens.space16),
+                  ],
                   Text(item.title, style: AppTextStyles.headlineMedium),
+                  if (item.variantLabel != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Phân loại: ${item.variantLabel}',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(item.latestPriceVnd),
@@ -343,6 +362,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      if (item.isFromExtension)
+                        WishlistCard.fromExtensionChip(),
                       Text(
                         'Lưu ngày: ${formatDate(item.createdAt)}',
                         style: AppTextStyles.labelMedium,

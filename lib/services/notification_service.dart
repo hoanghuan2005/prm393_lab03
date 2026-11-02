@@ -4,24 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../firebase/platform_support.dart';
+import '../models/app_notification_item.dart';
 import '../models/notification_target.dart';
-
-/// App notification model to keep an in-app list of received messages
-class AppNotificationItem {
-  final String id;
-  final String title;
-  final String body;
-  final DateTime receivedAt;
-  final Map<String, dynamic> data;
-
-  const AppNotificationItem({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.receivedAt,
-    required this.data,
-  });
-}
 
 /// Top-level background message handler for FCM
 @pragma('vm:entry-point')
@@ -155,7 +139,12 @@ class NotificationService {
       title: message.notification?.title ?? 'Thông báo Why I Buy',
       body: message.notification?.body ?? '',
       receivedAt: DateTime.now(),
-      data: message.data,
+      data: {
+        for (final entry in message.data.entries)
+          if (entry.value != null) entry.key: '${entry.value}',
+      },
+      // Placeholder until each listener passes its own source
+      source: NotificationSource.foreground,
     );
     _receivedNotifications.insert(0, item);
     _notificationsStreamController.add(

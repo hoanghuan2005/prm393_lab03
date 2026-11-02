@@ -23,6 +23,9 @@ enum NotificationSource {
     }
     return background;
   }
+
+  /// True for the two "tapped" sources, the only values allowed in `openedVia`
+  bool get isTap => this == tapBackground || this == tapTerminated;
 }
 
 /// A received push notification, kept for the in-app list ("Thông báo đã nhận")
@@ -34,7 +37,14 @@ class AppNotificationItem {
 
   /// FCM custom data; FCM always sends string values
   final Map<String, String> data;
+
+  /// How the message arrived; a tap source only when it was not stored before the tap
   final NotificationSource source;
+
+  /// Set when the user tapped a message that was already stored (tapBackground or
+  /// tapTerminated only)
+  final NotificationSource? openedVia;
+  final DateTime? openedAt;
 
   const AppNotificationItem({
     required this.id,
@@ -43,7 +53,22 @@ class AppNotificationItem {
     required this.receivedAt,
     required this.data,
     required this.source,
+    this.openedVia,
+    this.openedAt,
   });
+
+  /// Copy marked as opened by [via] at [at]; other fields unchanged
+  AppNotificationItem markOpened(NotificationSource via, DateTime at) =>
+      AppNotificationItem(
+        id: id,
+        title: title,
+        body: body,
+        receivedAt: receivedAt,
+        data: data,
+        source: source,
+        openedVia: via,
+        openedAt: at,
+      );
 
   /// `receivedAt` is stored as UTC milliseconds since epoch
   Map<String, dynamic> toJson() => {
@@ -53,6 +78,8 @@ class AppNotificationItem {
     'receivedAt': receivedAt.toUtc().millisecondsSinceEpoch,
     'data': data,
     'source': source.key,
+    if (openedVia != null) 'openedVia': openedVia!.key,
+    if (openedAt != null) 'openedAt': openedAt!.toUtc().millisecondsSinceEpoch,
   };
 
   /// Null when `id` is missing or `receivedAt` is not a valid timestamp. Never throws.
@@ -64,6 +91,14 @@ class AppNotificationItem {
       final rawData = json['data'];
       final title = json['title'];
       final body = json['body'];
+      // Older entries have neither field; anything invalid is treated as not opened
+      final openedVia = NotificationSource.values
+          .where((s) => s.isTap && s.key == json['openedVia'])
+          .firstOrNull;
+      final openedAtRaw = json['openedAt'];
+      final openedAt = openedVia != null && openedAtRaw is int
+          ? DateTime.fromMillisecondsSinceEpoch(openedAtRaw)
+          : null;
       return AppNotificationItem(
         id: id,
         title: title is String ? title : '',
@@ -78,6 +113,8 @@ class AppNotificationItem {
               }
             : const {},
         source: NotificationSource.fromKey(json['source']),
+        openedVia: openedAt != null ? openedVia : null,
+        openedAt: openedAt,
       );
     } catch (_) {
       // e.g. a timestamp outside DateTime's range

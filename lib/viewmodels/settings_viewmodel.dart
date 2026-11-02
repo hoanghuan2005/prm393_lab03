@@ -272,7 +272,7 @@ class SettingsViewModel extends ChangeNotifier
   void updateUid(String? uid) {
     if (uid == _uid) return;
     // Leaving an account (not the first sign-in, whose launch message must survive)
-    if (_uid != null) notificationService.clearReceived();
+    if (_uid != null) unawaited(notificationService.clearReceived());
     _uid = uid;
     _settingsSubscription?.cancel();
     _settingsSubscription = null;

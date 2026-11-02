@@ -9,10 +9,10 @@ class InMemoryNotificationHistoryStore implements NotificationHistoryStore {
   Future<List<AppNotificationItem>> load() async => List.of(_items);
 
   @override
-  Future<bool> add(AppNotificationItem item) async {
-    final (merged, added) = mergeHistory(_items, item);
+  Future<HistoryChange> add(AppNotificationItem item) async {
+    final (merged, change) = mergeHistory(_items, item);
     _items = merged;
-    return added;
+    return change;
   }
 
   @override

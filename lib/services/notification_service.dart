@@ -43,8 +43,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       message,
       NotificationSource.background,
     );
-    final added = await SharedPrefsNotificationHistoryStore().add(item);
-    if (added) debugPrint('FCM background message saved: ${item.id}');
+    final change = await SharedPrefsNotificationHistoryStore().add(item);
+    if (change == HistoryChange.added) {
+      debugPrint('FCM background message saved: ${item.id}');
+    }
   } catch (e) {
     debugPrint('FCM background message not saved: $e');
   }
@@ -56,22 +58,46 @@ class NotificationService {
   final FirebaseMessaging? _injectedFcm;
   FirebaseMessaging get _fcm => _injectedFcm ?? FirebaseMessaging.instance;
 
-  final List<AppNotificationItem> _receivedNotifications = [];
+  /// On-device history, shared with the background handler's isolate
+  final NotificationHistoryStore _historyStore;
+
+  /// Everything in the store, newest first (sale messages included)
+  List<AppNotificationItem> _receivedNotifications = [];
   final _notificationsStreamController =
       StreamController<List<AppNotificationItem>>.broadcast();
 
-  /// Remote Config `sale_reminder_enabled`; while off, sale messages are not kept in the
-  /// in-app list and a tap on one only opens the app
+  /// Serializes store writes from this isolate (each add is read–merge–write).
+  /// Never completes with an error, so one failed step does not block the next.
+  Future<void> _storeQueue = Future.value();
+
+  Future<void> _enqueue(Future<void> Function() step) {
+    return _storeQueue = _storeQueue.then((_) => step()).catchError((Object e) {
+      debugPrint('NotificationService history error: $e');
+    });
+  }
+
+  /// Remote Config `sale_reminder_enabled`; while off, sale messages are hidden from the
+  /// in-app list (still stored) and a tap on one only opens the app
   final bool Function() _saleRemindersEnabled;
 
   NotificationService({
     FirebaseMessaging? fcm,
     bool Function()? saleRemindersEnabled,
+    NotificationHistoryStore? historyStore,
   }) : _injectedFcm = fcm,
-       _saleRemindersEnabled = saleRemindersEnabled ?? (() => true);
+       _saleRemindersEnabled = saleRemindersEnabled ?? (() => true),
+       _historyStore = historyStore ?? SharedPrefsNotificationHistoryStore();
 
-  List<AppNotificationItem> get receivedNotifications =>
-      List.unmodifiable(_receivedNotifications);
+  /// Filtered here rather than when saving: the background isolate stores every
+  /// message without reading Remote Config
+  List<AppNotificationItem> get receivedNotifications {
+    final showSales = _saleRemindersEnabled();
+    return List.unmodifiable(
+      _receivedNotifications.where(
+        (item) => showSales || !NotificationRoute.isSale(item.data),
+      ),
+    );
+  }
 
   Stream<List<AppNotificationItem>> get notificationsStream =>
       _notificationsStreamController.stream;
@@ -88,6 +114,9 @@ class NotificationService {
       );
       return;
     }
+    // Show what was saved earlier (background handler, previous launches), even
+    // without notification permission
+    await reload();
     try {
       final current = await _fcm.getNotificationSettings();
       debugPrint('FCM permission: ${current.authorizationStatus}');
@@ -104,13 +133,15 @@ class NotificationService {
         debugPrint(
           'FCM Foreground message received: ${message.notification?.title}',
         );
-        recordNotification(message);
+        unawaited(recordNotification(message, NotificationSource.foreground));
       });
 
       // 4. Background notification opened listener
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         debugPrint('FCM Notification tapped to open app: ${message.data}');
-        recordNotification(message);
+        unawaited(
+          recordNotification(message, NotificationSource.tapBackground),
+        );
         onNotificationOpened?.call(message.data);
       });
 
@@ -120,7 +151,9 @@ class NotificationService {
         debugPrint(
           'FCM App opened from terminated message: ${initialMessage.data}',
         );
-        recordNotification(initialMessage);
+        unawaited(
+          recordNotification(initialMessage, NotificationSource.tapTerminated),
+        );
         onNotificationOpened?.call(initialMessage.data);
       }
 
@@ -164,36 +197,39 @@ class NotificationService {
     }
   }
 
-  /// Adds a message to the in-app list ("Thông báo đã nhận" in Cá nhân)
-  @visibleForTesting
-  void recordNotification(RemoteMessage message) {
-    if (NotificationRoute.isSale(message.data) && !_saleRemindersEnabled()) {
-      debugPrint('FCM sale reminder ignored: sale_reminder_enabled is off');
-      return;
-    }
-    final item = AppNotificationItem(
-      id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: message.notification?.title ?? 'Thông báo Why I Buy',
-      body: message.notification?.body ?? '',
-      receivedAt: DateTime.now(),
-      data: {
-        for (final entry in message.data.entries)
-          if (entry.value != null) entry.key: '${entry.value}',
-      },
-      // Placeholder until each listener passes its own source
-      source: NotificationSource.foreground,
-    );
-    _receivedNotifications.insert(0, item);
-    _notificationsStreamController.add(
-      List.unmodifiable(_receivedNotifications),
-    );
+  /// Reads the stored history into memory and publishes it
+  Future<void> reload() async {
+    _receivedNotifications = await _historyStore.load();
+    _publish();
   }
 
-  /// Forgets messages received in the previous session (sign-out / account switch)
-  void clearReceived() {
-    if (_receivedNotifications.isEmpty) return;
-    _receivedNotifications.clear();
-    _notificationsStreamController.add(const []);
+  /// Saves a message to the history ("Thông báo đã nhận" in Cá nhân), then reloads.
+  /// A message already stored (same id, e.g. saved by the background handler and
+  /// then tapped) is not added again; a tap only marks it as opened.
+  @visibleForTesting
+  Future<void> recordNotification(
+    RemoteMessage message,
+    NotificationSource source,
+  ) {
+    final item = notificationItemFromMessage(message, source);
+    return _enqueue(() async {
+      await _historyStore.add(item);
+      await reload();
+    });
+  }
+
+  /// Forgets the stored history (sign-out / account switch)
+  Future<void> clearReceived() {
+    return _enqueue(() async {
+      await _historyStore.clear();
+      _receivedNotifications = [];
+      _publish();
+    });
+  }
+
+  void _publish() {
+    if (_notificationsStreamController.isClosed) return;
+    _notificationsStreamController.add(receivedNotifications);
   }
 
   void dispose() {

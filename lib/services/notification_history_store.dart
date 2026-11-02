@@ -8,6 +8,18 @@ import '../models/app_notification_item.dart';
 /// Most notifications kept on the device
 const int maxNotificationHistory = 50;
 
+/// What [mergeHistory] / [NotificationHistoryStore.add] did with an item
+enum HistoryChange {
+  /// New id, inserted
+  added,
+
+  /// Id already stored; the stored item was marked as opened
+  updated,
+
+  /// Id already stored and nothing changed (or the write failed)
+  unchanged,
+}
+
 /// On-device history of received push notifications ("Thông báo đã nhận").
 /// Implementations never throw: they may run in the background isolate,
 /// where Crashlytics is not available.
@@ -15,8 +27,8 @@ abstract interface class NotificationHistoryStore {
   /// Newest first
   Future<List<AppNotificationItem>> load();
 
-  /// False when an item with the same id is already stored (or the write failed)
-  Future<bool> add(AppNotificationItem item);
+  /// See [mergeHistory]. [HistoryChange.unchanged] also when the write failed.
+  Future<HistoryChange> add(AppNotificationItem item);
 
   Future<void> clear();
 }
@@ -45,17 +57,30 @@ List<AppNotificationItem> parseHistory(String? raw) {
 
 /// Adds [item] unless its id is already in [existing] (the stored one wins).
 /// Result is newest first and at most [max] long.
+/// Same id: when [item] is a tap and the stored one was never opened, the stored one
+/// is replaced in place by a copy marked opened ([now], default the current time);
+/// otherwise nothing changes.
 /// Assumes [existing] is already normalized (it comes from [parseHistory]): on a
-/// duplicate id it is returned as is, without re-sorting.
-(List<AppNotificationItem>, bool added) mergeHistory(
+/// duplicate id it is not re-sorted, and when unchanged it is returned as is.
+(List<AppNotificationItem>, HistoryChange) mergeHistory(
   List<AppNotificationItem> existing,
   AppNotificationItem item, {
   int max = maxNotificationHistory,
+  DateTime? now,
 }) {
-  if (existing.any((e) => e.id == item.id)) return (existing, false);
+  final index = existing.indexWhere((e) => e.id == item.id);
+  if (index >= 0) {
+    final stored = existing[index];
+    if (!item.source.isTap || stored.openedVia != null) {
+      return (existing, HistoryChange.unchanged);
+    }
+    final updated = List.of(existing)
+      ..[index] = stored.markOpened(item.source, now ?? DateTime.now());
+    return (updated, HistoryChange.updated);
+  }
   final merged = [item, ...existing]
     ..sort((a, b) => b.receivedAt.compareTo(a.receivedAt));
-  return (merged.take(max).toList(), true);
+  return (merged.take(max).toList(), HistoryChange.added);
 }
 
 /// Stored as one JSON string under [storageKey]. Uses [SharedPreferencesAsync]
@@ -83,19 +108,19 @@ class SharedPrefsNotificationHistoryStore implements NotificationHistoryStore {
   }
 
   @override
-  Future<bool> add(AppNotificationItem item) async {
+  Future<HistoryChange> add(AppNotificationItem item) async {
     try {
       final existing = parseHistory(await _store.getString(storageKey));
-      final (merged, added) = mergeHistory(existing, item);
-      if (!added) return false;
+      final (merged, change) = mergeHistory(existing, item);
+      if (change == HistoryChange.unchanged) return change;
       await _store.setString(
         storageKey,
         jsonEncode([for (final e in merged) e.toJson()]),
       );
-      return true;
+      return change;
     } catch (e) {
       debugPrint('NotificationHistory: add failed: $e');
-      return false;
+      return HistoryChange.unchanged;
     }
   }
 

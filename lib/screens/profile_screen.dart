@@ -427,9 +427,18 @@ class ProfileScreen extends StatelessWidget {
                           notif.title,
                           style: AppTextStyles.titleMedium,
                         ),
-                        subtitle: Text(
-                          notif.body,
-                          style: AppTextStyles.bodyMedium,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(notif.body, style: AppTextStyles.bodyMedium),
+                            if (notif.openedVia != null)
+                              Text(
+                                'Đã mở',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },

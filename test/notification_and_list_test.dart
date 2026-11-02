@@ -2,21 +2,38 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prm393_lab03/models/app_notification_item.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
 import 'package:prm393_lab03/models/notification_target.dart';
 import 'package:prm393_lab03/models/ui_state.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/models/wishlist_status.dart';
 import 'package:prm393_lab03/screens/add_item_screen.dart';
+import 'package:prm393_lab03/services/notification_history_store.dart';
 import 'package:prm393_lab03/services/notification_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/viewmodels/wishlist_viewmodel.dart';
 
+import 'support/in_memory_notification_history_store.dart';
 import 'support/purchase_harness.dart';
 
 Future<void> _settle() async {
   for (var i = 0; i < 20; i++) {
     await Future<void>.delayed(Duration.zero);
+  }
+}
+
+/// Throws on the first add only, like a store that broke its own contract
+class _FailOnceStore extends InMemoryNotificationHistoryStore {
+  var _failed = false;
+
+  @override
+  Future<HistoryChange> add(AppNotificationItem item) {
+    if (!_failed) {
+      _failed = true;
+      throw StateError('disk full');
+    }
+    return super.add(item);
   }
 }
 
@@ -46,27 +63,129 @@ void main() {
     });
 
     test(
-      'with sale reminders off, sale messages stay out of the in-app list',
-      () {
+      'with sale reminders off, sale messages stay stored but hidden',
+      () async {
         var enabled = false;
+        final store = InMemoryNotificationHistoryStore();
         final service = NotificationService(
           saleRemindersEnabled: () => enabled,
+          historyStore: store,
         );
-        service.recordNotification(
-          const RemoteMessage(messageId: 's1', data: {'type': 'sale'}),
+        await service.recordNotification(
+          RemoteMessage(
+            messageId: 's1',
+            sentTime: DateTime(2026, 11, 2, 9),
+            data: const {'type': 'sale'},
+          ),
+          NotificationSource.foreground,
         );
-        service.recordNotification(
-          const RemoteMessage(messageId: 'r1', data: {'type': 'review'}),
+        await service.recordNotification(
+          RemoteMessage(
+            messageId: 'r1',
+            sentTime: DateTime(2026, 11, 2, 10),
+            data: const {'type': 'review'},
+          ),
+          NotificationSource.foreground,
         );
+        expect((await store.load()).map((n) => n.id), ['r1', 's1']);
         expect(service.receivedNotifications.map((n) => n.id), ['r1']);
 
         enabled = true;
-        service.recordNotification(
-          const RemoteMessage(messageId: 's2', data: {'type': 'sale'}),
-        );
-        expect(service.receivedNotifications.map((n) => n.id), ['s2', 'r1']);
+        expect(service.receivedNotifications.map((n) => n.id), ['r1', 's1']);
       },
     );
+  });
+
+  group('Notification history (on-device store)', () {
+    final sentTime = DateTime(2026, 11, 2, 20);
+    RemoteMessage message(String id, {Map<String, dynamic> data = const {}}) =>
+        RemoteMessage(messageId: id, sentTime: sentTime, data: data);
+
+    test('foreground message saved with source foreground', () async {
+      final store = InMemoryNotificationHistoryStore();
+      final service = NotificationService(historyStore: store);
+      final published = service.notificationsStream.first;
+
+      await service.recordNotification(
+        message('f1'),
+        NotificationSource.foreground,
+      );
+
+      final stored = (await store.load()).single;
+      expect(stored.id, 'f1');
+      expect(stored.source, NotificationSource.foreground);
+      expect(stored.receivedAt, sentTime);
+      expect(service.receivedNotifications.single.id, 'f1');
+      expect((await published).single.id, 'f1');
+    });
+
+    test('tap on a message the background handler saved → still one', () async {
+      final store = InMemoryNotificationHistoryStore();
+      await store.add(
+        notificationItemFromMessage(
+          message('x'),
+          NotificationSource.background,
+        ),
+      );
+      final service = NotificationService(historyStore: store);
+
+      await service.recordNotification(
+        message('x'),
+        NotificationSource.tapBackground,
+      );
+
+      expect(service.receivedNotifications, hasLength(1));
+      expect(
+        service.receivedNotifications.single.source,
+        NotificationSource.background,
+      );
+      expect(await store.load(), hasLength(1));
+    });
+
+    test('a new service on the same store sees old messages', () async {
+      final store = InMemoryNotificationHistoryStore();
+      await NotificationService(historyStore: store)
+          .recordNotification(message('old'), NotificationSource.foreground);
+
+      final restarted = NotificationService(historyStore: store);
+      expect(restarted.receivedNotifications, isEmpty);
+      await restarted.reload();
+      expect(restarted.receivedNotifications.single.id, 'old');
+    });
+
+    test('a failed step in the queue does not block the next ones', () async {
+      final store = _FailOnceStore();
+      final service = NotificationService(historyStore: store);
+
+      await service.recordNotification(
+        message('a'),
+        NotificationSource.foreground,
+      );
+      await service.recordNotification(
+        message('b'),
+        NotificationSource.foreground,
+      );
+      expect(service.receivedNotifications.single.id, 'b');
+
+      await service.clearReceived();
+      expect(await store.load(), isEmpty);
+    });
+
+    test('clearReceived empties the store and the list', () async {
+      final store = InMemoryNotificationHistoryStore();
+      final service = NotificationService(historyStore: store);
+      await service.recordNotification(
+        message('a'),
+        NotificationSource.foreground,
+      );
+      final published = service.notificationsStream.first;
+
+      await service.clearReceived();
+
+      expect(await store.load(), isEmpty);
+      expect(service.receivedNotifications, isEmpty);
+      expect(await published, isEmpty);
+    });
   });
 
   group('Remote Config max_wishlist_items_shown', () {

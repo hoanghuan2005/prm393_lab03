@@ -50,8 +50,34 @@ class SaleEvent {
       '${d.day.toString().padLeft(2, '0')}';
 }
 
+/// Spec 8.2: "chỉ đợt lớn" or "mọi đợt", and it can be turned off
+enum SaleReminderLevel {
+  off('off', 'Tắt'),
+  bigOnly('big_only', 'Chỉ đợt lớn'),
+  all('all', 'Mọi đợt');
+
+  final String key;
+  final String label;
+
+  const SaleReminderLevel(this.key, this.label);
+
+  static SaleReminderLevel fromKey(String? key) => SaleReminderLevel.values
+      .firstWhere((l) => l.key == key, orElse: () => SaleReminderLevel.bigOnly);
+}
+
+/// One local "Nhắc đợt sale" notification
+class SaleReminder {
+  final SaleEvent sale;
+  final DateTime at;
+
+  const SaleReminder({required this.sale, required this.at});
+}
+
 class SaleCalendar {
   SaleCalendar._();
+
+  /// Spec 8.2: 20:00 the evening before a confirmed sale (outside the 22:00–08:00 quiet hours)
+  static const int reminderHour = 20;
 
   /// How far ahead "Lịch sale" looks
   static const int horizonDays = 60;
@@ -135,6 +161,24 @@ class SaleCalendar {
       byDay[SaleEvent.dayId(e.date)] = e;
     }
     return byDay.values.toList()..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  /// Confirmed sales whose reminder (the evening before) is still ahead. Only
+  /// confirmed sales are pushed; "Chỉ đợt lớn" keeps the double days (11.11, 12.12…).
+  static List<SaleReminder> remindersFor(
+    List<SaleEvent> events,
+    SaleReminderLevel level,
+    DateTime now,
+  ) {
+    if (level == SaleReminderLevel.off) return const [];
+    return [
+      for (final e in events)
+        if (e.confirmed &&
+            (level == SaleReminderLevel.all || e.type == SaleType.doubleDay))
+          if (DateTime(e.date.year, e.date.month, e.date.day - 1, reminderHour)
+              case final at when at.isAfter(now))
+            SaleReminder(sale: e, at: at),
+    ];
   }
 
   /// First confirmed sale from today, optionally within [withinDays]

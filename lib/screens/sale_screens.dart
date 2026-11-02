@@ -63,6 +63,8 @@ class SaleCalendarScreen extends StatelessWidget {
             style: AppTextStyles.bodyMedium,
           ),
           const SizedBox(height: AppDimens.space16),
+          const _SaleReminderSetting(),
+          const SizedBox(height: AppDimens.space16),
           if (sales.isEmpty)
             const EmptyView(
               title: 'Chưa có đợt sale nào trong 60 ngày tới',
@@ -306,6 +308,75 @@ class _PlanCard extends StatelessWidget {
                 '• ${item.title} · ${formatVnd(item.latestPriceVnd)}',
                 style: AppTextStyles.bodyMedium,
               ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "Nhắc trước đợt sale" (spec 8.2): Tắt · Chỉ đợt lớn · Mọi đợt
+class _SaleReminderSetting extends StatelessWidget {
+  const _SaleReminderSetting();
+
+  Future<void> _select(BuildContext context, SaleReminderLevel level) async {
+    final vm = context.read<DecisionSupportViewModel>();
+    final messenger = ScaffoldMessenger.of(context);
+    final granted = await vm.setSaleReminderLevel(level);
+    final which = level == SaleReminderLevel.bigOnly
+        ? 'các đợt lớn'
+        : 'mọi đợt';
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            level == SaleReminderLevel.off
+                ? 'Đã tắt nhắc đợt sale.'
+                : granted
+                ? 'Sẽ nhắc lúc 20:00 tối trước $which đã xác nhận.'
+                : 'Chưa được phép gửi thông báo. Bạn có thể bật trong Cài đặt của điện thoại.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<DecisionSupportViewModel>();
+    return Container(
+      key: const ValueKey('sale-reminder-setting'),
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Nhắc trước đợt sale', style: AppTextStyles.titleMedium),
+          const SizedBox(height: AppDimens.space4),
+          Text(
+            vm.supportsSaleReminders
+                ? 'Một thông báo lúc 20:00 tối trước đợt đã xác nhận, chỉ khi '
+                      'danh sách còn món đang cân nhắc.'
+                : 'Thông báo nhắc chỉ có trên điện thoại. Ở đây bạn xem lịch '
+                      'bên dưới.',
+            style: AppTextStyles.bodyMedium,
+          ),
+          if (vm.supportsSaleReminders) ...[
+            const SizedBox(height: AppDimens.space12),
+            SegmentedButton<SaleReminderLevel>(
+              showSelectedIcon: false,
+              segments: [
+                for (final level in SaleReminderLevel.values)
+                  ButtonSegment(value: level, label: Text(level.label)),
+              ],
+              selected: {vm.saleReminderLevel},
+              onSelectionChanged: (s) => _select(context, s.first),
+            ),
           ],
         ],
       ),

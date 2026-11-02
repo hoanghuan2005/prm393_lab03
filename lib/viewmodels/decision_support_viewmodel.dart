@@ -19,6 +19,7 @@ import '../services/ai_decision_service.dart';
 import '../services/budget_service.dart';
 import '../services/preferences_service.dart';
 import '../services/remote_config_service.dart';
+import '../services/review_reminder_service.dart';
 import '../services/wishlist_service.dart';
 import 'deferred_notify.dart';
 
@@ -39,6 +40,9 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
   final AiDecisionService aiDecisionService;
   final RemoteConfigService remoteConfigService;
   final PreferencesService preferencesService;
+
+  /// Local "Nhắc đợt sale" notifications (Android/iOS); null in tests that skip them
+  final ReviewReminderService? reminderService;
   final bool Function() _platformSupportsAi;
   final DateTime Function() _now;
 
@@ -59,11 +63,14 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     required this.aiDecisionService,
     required this.remoteConfigService,
     required this.preferencesService,
+    this.reminderService,
     bool Function()? platformSupportsAi,
     DateTime Function()? now,
   }) : _platformSupportsAi =
            platformSupportsAi ?? (() => PlatformSupport.supportsFirebaseAi),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now {
+    _loadSaleReminderLevel();
+  }
 
   DateTime get now => _now();
 
@@ -72,6 +79,8 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     _uid = uid;
     _histories.clear();
     _subscribeBudget();
+    // Signed out: the previous account's sale reminders must not fire
+    if (uid == null) _syncSaleReminders();
   }
 
   /// Month whose limits are loaded; a new month (app left open overnight) re-subscribes
@@ -108,7 +117,81 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     _groups = groups;
     _ownedItems = ownedItems;
     if (_uid != null && monthKey(now) != _budgetMonth) _subscribeBudget();
+    _syncSaleReminders();
     notifyLater();
+  }
+
+  // ---------- Nhắc đợt sale (spec 8.2, A-13) ----------
+
+  SaleReminderLevel _saleReminderLevel = SaleReminderLevel.bigOnly;
+
+  /// Reminders already handed to the plugin; the same list is not scheduled twice
+  String? _scheduledSaleKey;
+
+  SaleReminderLevel get saleReminderLevel => _saleReminderLevel;
+
+  /// Local notifications exist on Android/iOS only; elsewhere Lịch sale is the fallback
+  bool get supportsSaleReminders => reminderService?.isSupported ?? false;
+
+  Future<void> _loadSaleReminderLevel() async {
+    _saleReminderLevel = SaleReminderLevel.fromKey(
+      await preferencesService.getSaleReminderLevel(),
+    );
+    if (isDisposed) return;
+    _scheduledSaleKey = null;
+    _syncSaleReminders();
+    notifyListeners();
+  }
+
+  /// Saves the level; a level other than "Tắt" asks for notification permission
+  /// (from the user's tap). Returns false when the permission was refused.
+  Future<bool> setSaleReminderLevel(SaleReminderLevel level) async {
+    _saleReminderLevel = level;
+    notifyListeners();
+    await preferencesService.setSaleReminderLevel(level.key);
+    var granted = true;
+    final reminders = reminderService;
+    if (level != SaleReminderLevel.off &&
+        reminders != null &&
+        reminders.isSupported) {
+      granted = await reminders.requestPermission();
+    }
+    _scheduledSaleKey = null;
+    _syncSaleReminders();
+    return granted;
+  }
+
+  /// One notification at 20:00 the evening before each confirmed sale, only while
+  /// the list has items being considered: "Mai là 11.11. Bạn có 3 món trong danh sách."
+  @visibleForTesting
+  List<({String saleId, String saleType, String body, DateTime at})>
+  plannedSaleReminders() {
+    final count = _uid == null ? 0 : consideringItems.length;
+    if (count == 0 || !remoteConfigService.saleReminderEnabled) return const [];
+    return [
+      for (final r in SaleCalendar.remindersFor(
+        upcomingSales,
+        _saleReminderLevel,
+        now,
+      ))
+        (
+          saleId: r.sale.id,
+          saleType: r.sale.type.key,
+          body:
+              'Mai là ${r.sale.name}. Bạn có $count món trong danh sách. Mở xem nhé?',
+          at: r.at,
+        ),
+    ];
+  }
+
+  void _syncSaleReminders() {
+    final reminders = reminderService;
+    if (reminders == null || !reminders.isSupported) return;
+    final planned = plannedSaleReminders();
+    final key = planned.map((r) => '${r.saleId}|${r.body}').join(';');
+    if (key == _scheduledSaleKey) return;
+    _scheduledSaleKey = key;
+    unawaited(reminders.scheduleSaleReminders(planned));
   }
 
   List<BudgetGroup> get groups => _groups;

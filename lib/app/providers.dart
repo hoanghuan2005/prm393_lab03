@@ -253,6 +253,7 @@ class AppProviders extends StatelessWidget {
             ),
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
+            reminderService: reviewReminderService,
           ),
           update: (_, auth, purchaseVm, wishlistVm, budgetVm, profileVm, vm) =>
               vm!

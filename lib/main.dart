@@ -35,6 +35,8 @@ Future<void> main() async {
   await reviewReminderService.initialize(
     onOpen: openReviewDueList,
     onOpenDaily: openRecordPurchase,
+    // Same route as a sale push: "Danh sách cho đợt sale" + click_sale_reminder
+    onOpenSale: openFromNotification,
   );
 
   runApp(

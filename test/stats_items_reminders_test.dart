@@ -40,7 +40,18 @@ class FakeReminders implements ReviewReminderService {
   Future<void> initialize({
     VoidCallback? onOpen,
     VoidCallback? onOpenDaily,
+    void Function(Map<String, dynamic> data)? onOpenSale,
   }) async {}
+
+  /// Sale reminders handed over by the last sync
+  List<({String saleId, String saleType, String body, DateTime at})>
+  saleReminders = const [];
+
+  @override
+  Future<void> scheduleSaleReminders(
+    List<({String saleId, String saleType, String body, DateTime at})>
+    reminders,
+  ) async => saleReminders = reminders;
 
   @override
   bool consumeLaunchedFromReminder() => false;

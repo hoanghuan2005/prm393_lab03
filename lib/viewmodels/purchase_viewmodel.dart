@@ -108,6 +108,9 @@ class PurchaseViewModel extends ChangeNotifier
   List<PurchaseItem> _purchases = [];
   UiState<List<PurchaseItem>> _state = const UiInitial();
   BuyingMotive? _selectedMotiveFilter;
+
+  /// Spec A-10: only purchases recorded from a Wishlist item
+  bool _fromWishlistOnly = false;
   DateTime _selectedMonth = _firstOfMonth(DateTime.now());
 
   PurchaseViewModel({
@@ -136,6 +139,7 @@ class PurchaseViewModel extends ChangeNotifier
     _purchasesSubscription = null;
     _purchases = [];
     _selectedMotiveFilter = null;
+    _fromWishlistOnly = false;
 
     if (uid == null) {
       _state = const UiInitial();
@@ -179,6 +183,11 @@ class PurchaseViewModel extends ChangeNotifier
   List<PurchaseItem> get recentPurchases => monthPurchases.take(3).toList();
 
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
+  bool get fromWishlistOnly => _fromWishlistOnly;
+
+  /// Any of the Lịch sử filters is on
+  bool get hasActiveFilter =>
+      _selectedMotiveFilter != null || _fromWishlistOnly;
   DateTime get selectedMonth => _selectedMonth;
 
   /// Purchases belonging to currently selected month
@@ -189,11 +198,12 @@ class PurchaseViewModel extends ChangeNotifier
     }).toList();
   }
 
-  /// Filtered by both selected month and active motive filter
+  /// Filtered by the selected month, the motive filter and "Mua từ Wishlist"
   List<PurchaseItem> get filteredPurchases {
     return monthPurchases.where((item) {
-      return _selectedMotiveFilter == null ||
-          item.motive == _selectedMotiveFilter;
+      return (_selectedMotiveFilter == null ||
+              item.motive == _selectedMotiveFilter) &&
+          (!_fromWishlistOnly || item.wishlistItemId != null);
     }).toList();
   }
 
@@ -297,6 +307,18 @@ class PurchaseViewModel extends ChangeNotifier
 
   void setMotiveFilter(BuyingMotive? motive) {
     _selectedMotiveFilter = motive;
+    notifyListeners();
+  }
+
+  void setFromWishlistOnly(bool value) {
+    _fromWishlistOnly = value;
+    notifyListeners();
+  }
+
+  /// "Tất cả": every filter off
+  void clearFilters() {
+    _selectedMotiveFilter = null;
+    _fromWishlistOnly = false;
     notifyListeners();
   }
 

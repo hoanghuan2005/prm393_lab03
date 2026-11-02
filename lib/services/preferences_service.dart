@@ -7,6 +7,7 @@ class PreferencesService {
   static const String _keyDailyReminderEnabled = 'daily_reminder_enabled';
   static const String _keyDailyReminderMinutes = 'daily_reminder_minutes';
   static const String _keyDailyReminderOffered = 'daily_reminder_offered';
+  static const String _keySaleReminderLevel = 'sale_reminder_level';
 
   /// 21:00, the time shown on screen 05a
   static const int defaultDailyReminderMinutes = 21 * 60;
@@ -42,6 +43,16 @@ class PreferencesService {
 
   Future<void> setDailyReminderOffered() =>
       _write((p) => p.setBool(_keyDailyReminderOffered, true));
+
+  /// "Nhắc đợt sale" (spec 8.2): `off` · `big_only` (default) · `all`. Stored on this
+  /// device, like every local notification setting.
+  Future<String> getSaleReminderLevel() => _read(
+    (p) => p.getString(_keySaleReminderLevel) ?? 'big_only',
+    'big_only',
+  );
+
+  Future<void> setSaleReminderLevel(String level) =>
+      _write((p) => p.setString(_keySaleReminderLevel, level));
 
   Future<T> _read<T>(T Function(SharedPreferences) read, T fallback) async {
     try {

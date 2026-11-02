@@ -204,13 +204,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       currentPriceAt: item.latestPriceAt,
     );
     if (amount == null || !mounted) return;
+    final confirmed = amount == item.latestPriceVnd;
     final ok = await _run((vm) => vm.updatePrice(item, amount));
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('Đã lưu giá ${formatVnd(amount)}.'),
+          content: Text(
+            confirmed
+                ? 'Đã xác nhận giá ${formatVnd(amount)} hôm nay.'
+                : 'Đã lưu giá ${formatVnd(amount)}.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );

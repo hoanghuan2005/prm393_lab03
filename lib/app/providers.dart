@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
+import '../services/ai_pre_purchase_service.dart';
 import '../services/ai_service.dart';
 import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
@@ -30,6 +31,7 @@ import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
+import '../viewmodels/pre_purchase_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
@@ -96,6 +98,15 @@ class AppProviders extends StatelessWidget {
           create: (_) => FileSaverDataExportService(),
         ),
         Provider<FeedbackService>(create: (_) => FirestoreFeedbackService()),
+        ChangeNotifierProvider(
+          create: (context) => PrePurchaseViewModel(
+            aiService: AiPrePurchaseService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+          ),
+        ),
 
         // ViewModels. Every ViewModel holding user data gets the uid from AuthViewModel
         // through a ProxyProvider (updateUid); widgets never assign it.

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/legal_texts.dart';
+import '../models/buying_motive.dart';
+import '../models/pre_purchase_check.dart';
 import '../models/purchase_item.dart';
 import '../models/sale_event.dart';
 import '../models/wishlist_item.dart';
@@ -18,6 +20,8 @@ import '../screens/main_navigation_screen.dart';
 import '../screens/monthly_reflection_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/patterns_screen.dart';
+import '../screens/pre_purchase_result_screen.dart';
+import '../screens/pre_purchase_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
@@ -51,15 +55,26 @@ class PurchaseDetailArgs {
 class RecordPurchaseArgs {
   final int? initialAmount;
   final String? initialTitle;
+
+  /// Pre-selected motive, e.g. from "Trước khi mua" → "Vẫn mua"
+  final BuyingMotive? initialMotive;
   final PurchaseItem? existingPurchase;
   final WishlistItem? wishlistItem;
 
   const RecordPurchaseArgs({
     this.initialAmount,
     this.initialTitle,
+    this.initialMotive,
     this.existingPurchase,
     this.wishlistItem,
   }) : assert(existingPurchase == null || wishlistItem == null);
+}
+
+/// Arguments for [AppRoutes.prePurchaseResult]
+class PrePurchaseArgs {
+  final PrePurchaseAnswers answers;
+
+  const PrePurchaseArgs(this.answers);
 }
 
 /// Arguments for [AppRoutes.saleList] and [AppRoutes.salePlan]
@@ -100,6 +115,10 @@ class AppRoutes {
   static const saleList = '/sales/list';
   static const salePlan = '/sales/plan';
 
+  /// Flow 9 "Trước khi mua": questions (14–16), then AI analysis and result (17–18)
+  static const prePurchase = '/before-buy';
+  static const prePurchaseResult = '/before-buy/result';
+
   /// Screen 05a "Xin quyền thông báo" (returns true when the reminder was turned on)
   static const reminderPermission = '/reminder/permission';
 
@@ -129,6 +148,7 @@ class AppRoutes {
       recordPurchase => RecordPurchaseScreen(
         initialAmount: args is RecordPurchaseArgs ? args.initialAmount : null,
         initialTitle: args is RecordPurchaseArgs ? args.initialTitle : null,
+        initialMotive: args is RecordPurchaseArgs ? args.initialMotive : null,
         existingPurchase: args is RecordPurchaseArgs
             ? args.existingPurchase
             : null,
@@ -150,6 +170,10 @@ class AppRoutes {
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),
+      prePurchase => const PrePurchaseScreen(),
+      prePurchaseResult when args is PrePurchaseArgs => PrePurchaseResultScreen(
+        answers: args.answers,
+      ),
       reminderPermission => const ReminderPermissionScreen(),
       feedback => const FeedbackScreen(),
       terms => const InfoTextScreen(document: LegalTexts.terms),

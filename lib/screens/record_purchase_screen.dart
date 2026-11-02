@@ -28,6 +28,7 @@ import '../widgets/item_suggestions.dart';
 class RecordPurchaseScreen extends StatefulWidget {
   final int? initialAmount;
   final String? initialTitle;
+  final BuyingMotive? initialMotive;
   final PurchaseItem? existingPurchase;
   final WishlistItem? wishlistItem;
 
@@ -35,6 +36,7 @@ class RecordPurchaseScreen extends StatefulWidget {
     super.key,
     this.initialAmount,
     this.initialTitle,
+    this.initialMotive,
     this.existingPurchase,
     this.wishlistItem,
   }) : assert(existingPurchase == null || wishlistItem == null);
@@ -78,7 +80,11 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         purchase?.title ?? item?.title ?? widget.initialTitle ?? '';
     _noteController.text = purchase?.note ?? item?.note ?? '';
     _occurredAt = purchase?.occurredAt ?? DateTime.now();
-    _motive = purchase?.motive ?? item?.displayMotive ?? BuyingMotive.emotion;
+    _motive =
+        purchase?.motive ??
+        item?.displayMotive ??
+        widget.initialMotive ??
+        BuyingMotive.emotion;
     _budgetGroupId =
         purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
     _groupChosen = purchase != null || item?.budgetGroupId != null;

@@ -24,6 +24,10 @@ import 'routes.dart';
 /// Lets code outside the widget tree (a tapped notification) navigate
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Shows SnackBars from outside a screen (FCM message while the app is open)
+final GlobalKey<ScaffoldMessengerState> appScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 /// Opens the Wishlist filtered to "Cần xem lại" (tapped review reminder)
 void openReviewDueList() {
   final context = appNavigatorKey.currentContext;
@@ -103,6 +107,7 @@ class WhyIBuyApp extends StatelessWidget {
     return AppLifecycleBridge(
       child: MaterialApp(
         navigatorKey: appNavigatorKey,
+        scaffoldMessengerKey: appScaffoldMessengerKey,
         title: 'Why I Buy',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

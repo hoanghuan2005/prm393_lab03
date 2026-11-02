@@ -65,6 +65,8 @@ class NotificationService {
   List<AppNotificationItem> _receivedNotifications = [];
   final _notificationsStreamController =
       StreamController<List<AppNotificationItem>>.broadcast();
+  final _foregroundController =
+      StreamController<AppNotificationItem>.broadcast();
 
   /// Serializes store writes from this isolate (each add is read–merge–write).
   /// Never completes with an error, so one failed step does not block the next.
@@ -102,6 +104,14 @@ class NotificationService {
   Stream<List<AppNotificationItem>> get notificationsStream =>
       _notificationsStreamController.stream;
 
+  /// Messages received while the app is open (Android shows nothing by itself then),
+  /// after they are saved. Sale messages hidden by `sale_reminder_enabled` are skipped.
+  Stream<AppNotificationItem> get foregroundMessages =>
+      _foregroundController.stream;
+
+  /// Current Remote Config `sale_reminder_enabled`
+  bool get saleRemindersEnabled => _saleRemindersEnabled();
+
   /// Initialize FCM and register listeners. Permission is never asked here: it is asked
   /// right after the user chooses "Chờ" or taps "Bật thông báo" in Cá nhân (spec A-09).
   /// Asking on launch would spend Android's limited prompts and may get a web site blocked.
@@ -133,7 +143,7 @@ class NotificationService {
         debugPrint(
           'FCM Foreground message received: ${message.notification?.title}',
         );
-        unawaited(recordNotification(message, NotificationSource.foreground));
+        unawaited(handleForegroundMessage(message));
       });
 
       // 4. Background notification opened listener
@@ -218,6 +228,18 @@ class NotificationService {
     });
   }
 
+  /// `onMessage`: saves the message, then announces it on [foregroundMessages]
+  @visibleForTesting
+  Future<void> handleForegroundMessage(RemoteMessage message) async {
+    await recordNotification(message, NotificationSource.foreground);
+    final item = notificationItemFromMessage(
+      message,
+      NotificationSource.foreground,
+    );
+    if (NotificationRoute.isSale(item.data) && !_saleRemindersEnabled()) return;
+    if (!_foregroundController.isClosed) _foregroundController.add(item);
+  }
+
   /// Forgets the stored history (sign-out / account switch)
   Future<void> clearReceived() {
     return _enqueue(() async {
@@ -234,5 +256,6 @@ class NotificationService {
 
   void dispose() {
     _notificationsStreamController.close();
+    _foregroundController.close();
   }
 }

@@ -339,6 +339,8 @@ class SettingsViewModel extends ChangeNotifier
 
     try {
       await remoteConfigService.fetchAndActivate();
+      // Re-filter the list for sale_reminder_enabled now, not on the next message
+      unawaited(notificationService.reload());
     } catch (e) {
       debugPrint('Error refreshing remote config: $e');
     } finally {

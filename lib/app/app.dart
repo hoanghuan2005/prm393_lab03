@@ -18,6 +18,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
+import 'app_lifecycle_bridge.dart';
 import 'routes.dart';
 
 /// Lets code outside the widget tree (a tapped notification) navigate
@@ -99,18 +100,20 @@ class WhyIBuyApp extends StatelessWidget {
     final analyticsService = context.read<AppAnalyticsService>();
     final crashlyticsService = context.read<CrashlyticsService>();
 
-    return MaterialApp(
-      navigatorKey: appNavigatorKey,
-      title: 'Why I Buy',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      navigatorObservers: [
-        ...analyticsService.navigatorObservers,
-        crashlyticsService.screenObserver,
-      ],
-      home: const AuthGate(),
-      onGenerateRoute: AppRoutes.onGenerateRoute,
-      builder: (context, child) => _PendingWritesFrame(child: child!),
+    return AppLifecycleBridge(
+      child: MaterialApp(
+        navigatorKey: appNavigatorKey,
+        title: 'Why I Buy',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        navigatorObservers: [
+          ...analyticsService.navigatorObservers,
+          crashlyticsService.screenObserver,
+        ],
+        home: const AuthGate(),
+        onGenerateRoute: AppRoutes.onGenerateRoute,
+        builder: (context, child) => _PendingWritesFrame(child: child!),
+      ),
     );
   }
 }

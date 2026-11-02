@@ -3,6 +3,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/utils/purchase_csv.dart';
+import 'package:prm393_lab03/models/app_notification_item.dart';
 import 'package:prm393_lab03/models/budget_group.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
@@ -20,6 +21,8 @@ import 'package:prm393_lab03/viewmodels/settings_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/in_memory_notification_history_store.dart';
+
 class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {
   @override
   bool getBool(String key) => true;
@@ -29,6 +32,24 @@ class _FakeRemoteConfig extends Fake implements FirebaseRemoteConfig {
 
   @override
   String getString(String key) => '';
+}
+
+/// `sale_reminder_enabled` changes only when fetchAndActivate runs
+class _SwitchableRemoteConfig extends _FakeRemoteConfig {
+  bool saleReminders = false;
+  bool _next = false;
+
+  void publish({required bool saleReminders}) => _next = saleReminders;
+
+  @override
+  bool getBool(String key) =>
+      key == RemoteConfigService.keySaleReminderEnabled ? saleReminders : true;
+
+  @override
+  Future<bool> fetchAndActivate() async {
+    saleReminders = _next;
+    return true;
+  }
 }
 
 class _FakeReminders implements ReviewReminderService {
@@ -193,12 +214,15 @@ void main() {
     late _FakeReminders reminders;
     late _FakeExport export;
 
-    SettingsViewModel build() => SettingsViewModel(
-      remoteConfigService: RemoteConfigService(
-        remoteConfig: _FakeRemoteConfig(),
-      ),
+    SettingsViewModel build({
+      RemoteConfigService? remoteConfig,
+      NotificationService? notifications,
+    }) => SettingsViewModel(
+      remoteConfigService:
+          remoteConfig ??
+          RemoteConfigService(remoteConfig: _FakeRemoteConfig()),
       crashlyticsService: CrashlyticsService(),
-      notificationService: NotificationService(),
+      notificationService: notifications ?? NotificationService(),
       userService: FirestoreUserService(db),
       demoDataService: FirestoreDemoDataService(db),
       reminderService: reminders,
@@ -219,6 +243,38 @@ void main() {
       db = FakeFirebaseFirestore();
       reminders = _FakeReminders();
       export = _FakeExport();
+    });
+
+    test('refreshing Remote Config re-filters sale messages at once', () async {
+      final fake = _SwitchableRemoteConfig();
+      final remoteConfig = RemoteConfigService(remoteConfig: fake);
+      final store = InMemoryNotificationHistoryStore();
+      await store.add(
+        AppNotificationItem(
+          id: 's1',
+          title: 'Sắp tới đợt sale',
+          body: '',
+          receivedAt: DateTime(2026, 11, 2, 20),
+          data: const {'type': 'sale'},
+          source: NotificationSource.background,
+        ),
+      );
+      final notifications = NotificationService(
+        historyStore: store,
+        saleRemindersEnabled: () => remoteConfig.saleReminderEnabled,
+      );
+      await notifications.reload();
+      final vm = build(
+        remoteConfig: remoteConfig,
+        notifications: notifications,
+      );
+      await settle();
+      expect(vm.notifications, isEmpty);
+
+      fake.publish(saleReminders: true);
+      await vm.refreshRemoteConfig();
+      await settle();
+      expect(vm.notifications.map((n) => n.id), ['s1']);
     });
 
     test('05a is offered once, and not when the reminder is already on', () async {

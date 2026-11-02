@@ -9,8 +9,10 @@ import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
 import '../services/extension_session_service.dart';
+import '../services/feedback_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
 import '../services/purchase_service.dart';
@@ -90,6 +92,10 @@ class AppProviders extends StatelessWidget {
         Provider<ReportShareService>(
           create: (_) => PrintingReportShareService(),
         ),
+        Provider<DataExportService>(
+          create: (_) => FileSaverDataExportService(),
+        ),
+        Provider<FeedbackService>(create: (_) => FirestoreFeedbackService()),
 
         // ViewModels. Every ViewModel holding user data gets the uid from AuthViewModel
         // through a ProxyProvider (updateUid); widgets never assign it.
@@ -109,6 +115,10 @@ class AppProviders extends StatelessWidget {
             notificationService: notificationService,
             userService: context.read<UserService>(),
             demoDataService: context.read<DemoDataService>(),
+            reminderService: reviewReminderService,
+            preferencesService: PreferencesService(),
+            exportService: context.read<DataExportService>(),
+            feedbackService: context.read<FeedbackService>(),
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),

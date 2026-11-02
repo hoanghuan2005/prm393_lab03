@@ -59,6 +59,14 @@ service cloud.firestore {
 
       match /budgetGroups/{id} { allow read, write: if isOwner(uid); }
 
+      // "Gửi góp ý" (Cá nhân → Hỗ trợ & thông tin): written once, never edited
+      match /feedback/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && d().message is string && d().message.size() > 0 && d().message.size() <= 1000;
+        allow update: if false;
+      }
+
       // Shopping profile (spec 7.2): things the user owns, typed by the user
       match /ownedItems/{id} {
         allow read, delete: if isOwner(uid);

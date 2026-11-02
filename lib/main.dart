@@ -29,9 +29,13 @@ Future<void> main() async {
     onNotificationOpened: openFromNotification,
   );
 
-  // Local "Đến hẹn xem lại" notifications (Android/iOS only; no-op elsewhere)
+  // Local "Đến hẹn xem lại" and daily "Nhắc ghi khoản mua" notifications
+  // (Android/iOS only; no-op elsewhere)
   final reviewReminderService = LocalReviewReminderService();
-  await reviewReminderService.initialize(onOpen: openReviewDueList);
+  await reviewReminderService.initialize(
+    onOpen: openReviewDueList,
+    onOpenDaily: openRecordPurchase,
+  );
 
   runApp(
     AppProviders(

@@ -33,11 +33,27 @@ class FakeReminders implements ReviewReminderService {
   @override
   bool get isSupported => true;
 
+  /// Daily reminder time as (hour, minute); null = off
+  (int, int)? daily;
+
   @override
-  Future<void> initialize({VoidCallback? onOpen}) async {}
+  Future<void> initialize({
+    VoidCallback? onOpen,
+    VoidCallback? onOpenDaily,
+  }) async {}
 
   @override
   bool consumeLaunchedFromReminder() => false;
+
+  @override
+  bool consumeLaunchedFromDailyReminder() => false;
+
+  @override
+  Future<void> scheduleDaily({required int hour, required int minute}) async =>
+      daily = (hour, minute);
+
+  @override
+  Future<void> cancelDaily() async => daily = null;
 
   @override
   Future<bool> requestPermission() async => grant;

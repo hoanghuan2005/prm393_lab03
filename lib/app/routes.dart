@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../core/constants/legal_texts.dart';
 import '../models/purchase_item.dart';
 import '../models/sale_event.dart';
 import '../models/wishlist_item.dart';
@@ -8,7 +9,9 @@ import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
 import '../screens/compare_items_screen.dart';
 import '../screens/dev/widget_gallery_screen.dart';
+import '../screens/feedback_screen.dart';
 import '../screens/history_screen.dart';
+import '../screens/info_text_screen.dart';
 import '../screens/insights_screen.dart';
 import '../screens/item_detail_screen.dart';
 import '../screens/main_navigation_screen.dart';
@@ -18,6 +21,7 @@ import '../screens/patterns_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
+import '../screens/reminder_permission_screen.dart';
 import '../screens/sale_screens.dart';
 import '../screens/shopping_profile_screen.dart';
 import '../screens/wishlist_screen.dart';
@@ -96,6 +100,14 @@ class AppRoutes {
   static const saleList = '/sales/list';
   static const salePlan = '/sales/plan';
 
+  /// Screen 05a "Xin quyền thông báo" (returns true when the reminder was turned on)
+  static const reminderPermission = '/reminder/permission';
+
+  /// Cá nhân → Hỗ trợ & thông tin
+  static const feedback = '/profile/feedback';
+  static const terms = '/profile/terms';
+  static const privacy = '/profile/privacy';
+
   /// Debug builds only (shared widget catalogue)
   static const widgetGallery = '/dev/widgets';
 
@@ -138,6 +150,10 @@ class AppRoutes {
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),
+      reminderPermission => const ReminderPermissionScreen(),
+      feedback => const FeedbackScreen(),
+      terms => const InfoTextScreen(document: LegalTexts.terms),
+      privacy => const InfoTextScreen(document: LegalTexts.privacy),
       widgetGallery when kDebugMode => const WidgetGalleryScreen(),
       _ => null,
     };

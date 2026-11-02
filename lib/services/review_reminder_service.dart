@@ -6,21 +6,28 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../firebase/platform_support.dart';
 
-/// Local notification on the review date chosen with "Chờ" (spec A-09, E12).
-/// When notifications are unavailable or denied, the "Cần xem lại" list in the app
-/// is the fallback, so every method here may silently do nothing.
+/// Local notifications of the app:
+/// * on the review date chosen with "Chờ" (spec A-09, E12). When notifications are
+///   unavailable or denied, the "Cần xem lại" list in the app is the fallback;
+/// * the daily "Nhắc ghi khoản mua" (screen 05a, Cá nhân), off until the user turns it on.
+/// Every method here may silently do nothing.
 abstract interface class ReviewReminderService {
   /// Android/iOS only. flutter_local_notifications is pinned to 18.0.1, the last version
   /// without a Windows implementation (its Windows plugin needs Visual Studio ATL).
   bool get isSupported;
 
-  /// [onOpen] runs when the user taps a reminder while the app is running
-  Future<void> initialize({VoidCallback? onOpen});
+  /// [onOpen] runs when the user taps a review reminder while the app is running,
+  /// [onOpenDaily] when they tap the daily reminder
+  Future<void> initialize({VoidCallback? onOpen, VoidCallback? onOpenDaily});
 
-  /// The app was started by tapping a reminder; true only once
+  /// The app was started by tapping a review reminder; true only once
   bool consumeLaunchedFromReminder();
 
-  /// Asks for permission. Call only right after the user chose "Chờ". true = may notify.
+  /// The app was started by tapping the daily reminder; true only once
+  bool consumeLaunchedFromDailyReminder();
+
+  /// Asks for permission. Call only from the user's tap ("Chờ", "Bật nhắc nhở").
+  /// true = may notify.
   Future<bool> requestPermission();
 
   Future<void> schedule({
@@ -31,16 +38,30 @@ abstract interface class ReviewReminderService {
 
   Future<void> cancel(String itemId);
 
+  /// Cancels every review reminder; the daily reminder belongs to the device and stays
   Future<void> cancelAll();
+
+  /// Repeats every day at [hour]:[minute] local time; replaces the previous time
+  Future<void> scheduleDaily({required int hour, required int minute});
+
+  Future<void> cancelDaily();
 }
 
 class LocalReviewReminderService implements ReviewReminderService {
   static const String _channelId = 'review_reminders';
   static const String _channelName = 'Nhắc xem lại';
+  static const String _dailyChannelId = 'daily_record_reminder';
+  static const String _dailyChannelName = 'Nhắc ghi khoản mua';
+
+  /// Review ids come from [idFor] (31-bit hashes of item ids); a fixed small id for
+  /// the single daily reminder
+  static const int dailyId = 1;
+  static const String dailyPayload = 'daily_record_reminder';
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
   bool _launchedFromReminder = false;
+  bool _launchedFromDaily = false;
 
   LocalReviewReminderService([FlutterLocalNotificationsPlugin? plugin])
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
@@ -58,7 +79,10 @@ class LocalReviewReminderService implements ReviewReminderService {
   }
 
   @override
-  Future<void> initialize({VoidCallback? onOpen}) async {
+  Future<void> initialize({
+    VoidCallback? onOpen,
+    VoidCallback? onOpenDaily,
+  }) async {
     if (!isSupported || _initialized) return;
     try {
       tz_data.initializeTimeZones();
@@ -78,10 +102,17 @@ class LocalReviewReminderService implements ReviewReminderService {
             requestSoundPermission: false,
           ),
         ),
-        onDidReceiveNotificationResponse: (_) => onOpen?.call(),
+        onDidReceiveNotificationResponse: (response) =>
+            response.payload == dailyPayload
+            ? onOpenDaily?.call()
+            : onOpen?.call(),
       );
       final launch = await _plugin.getNotificationAppLaunchDetails();
-      _launchedFromReminder = launch?.didNotificationLaunchApp ?? false;
+      if (launch?.didNotificationLaunchApp ?? false) {
+        final isDaily = launch?.notificationResponse?.payload == dailyPayload;
+        _launchedFromDaily = isDaily;
+        _launchedFromReminder = !isDaily;
+      }
       _initialized = true;
     } catch (e) {
       debugPrint('ReviewReminder initialize error: $e');
@@ -92,6 +123,13 @@ class LocalReviewReminderService implements ReviewReminderService {
   bool consumeLaunchedFromReminder() {
     final launched = _launchedFromReminder;
     _launchedFromReminder = false;
+    return launched;
+  }
+
+  @override
+  bool consumeLaunchedFromDailyReminder() {
+    final launched = _launchedFromDaily;
+    _launchedFromDaily = false;
     return launched;
   }
 
@@ -164,9 +202,61 @@ class LocalReviewReminderService implements ReviewReminderService {
   Future<void> cancelAll() async {
     if (!_initialized) return;
     try {
-      await _plugin.cancelAll();
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.id != dailyId) await _plugin.cancel(request.id);
+      }
     } catch (e) {
       debugPrint('ReviewReminder cancelAll error: $e');
+    }
+  }
+
+  @override
+  Future<void> scheduleDaily({required int hour, required int minute}) async {
+    if (!_initialized) return;
+    try {
+      final now = tz.TZDateTime.now(tz.local);
+      var first = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
+      if (!first.isAfter(now)) first = first.add(const Duration(days: 1));
+      await _plugin.zonedSchedule(
+        dailyId,
+        'Why I Buy?',
+        'Hôm nay bạn có mua gì không? Ghi lại trong 10 giây.',
+        first,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _dailyChannelId,
+            _dailyChannelName,
+            channelDescription: 'Nhắc mỗi ngày ghi lại khoản mua trong ngày',
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        payload: dailyPayload,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        // Same time every day
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      debugPrint('ReviewReminder scheduleDaily error: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelDaily() async {
+    if (!_initialized) return;
+    try {
+      await _plugin.cancel(dailyId);
+    } catch (e) {
+      debugPrint('ReviewReminder cancelDaily error: $e');
     }
   }
 }

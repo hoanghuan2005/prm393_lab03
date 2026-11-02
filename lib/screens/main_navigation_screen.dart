@@ -46,9 +46,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       context.read<InsightsViewModel>().setVisible(
         _currentIndex == _insightsTabIndex,
       );
-      // App was started by tapping a review reminder
-      if (context.read<ReviewReminderService>().consumeLaunchedFromReminder()) {
+      // App was started by tapping a review reminder or the daily reminder
+      final reminders = context.read<ReviewReminderService>();
+      if (reminders.consumeLaunchedFromReminder()) {
         openReviewDueList();
+      } else if (reminders.consumeLaunchedFromDailyReminder()) {
+        openRecordPurchase();
       }
       // App opened by tapping a push notification, or tapped while signed out
       openPendingNotification();

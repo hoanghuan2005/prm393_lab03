@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +19,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/item_suggestions.dart';
@@ -241,11 +244,28 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     if (widget.wishlistItem != null || original != null) {
       Navigator.pop(context, saved);
     } else {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.purchaseDetail,
-        arguments: PurchaseDetailArgs(saved),
+      // Figma Flow 1: the first saved purchase offers the daily reminder (05a) once
+      final navigator = Navigator.of(context);
+      final offerReminder = await _shouldOfferReminder();
+      if (!mounted) return;
+      unawaited(
+        navigator.pushReplacementNamed(
+          AppRoutes.purchaseDetail,
+          arguments: PurchaseDetailArgs(saved),
+        ),
       );
+      if (offerReminder) {
+        unawaited(navigator.pushNamed(AppRoutes.reminderPermission));
+      }
+    }
+  }
+
+  /// Screens tested without the settings ViewModel simply never offer it
+  Future<bool> _shouldOfferReminder() async {
+    try {
+      return await context.read<SettingsViewModel>().shouldOfferDailyReminder();
+    } on ProviderNotFoundException {
+      return false;
     }
   }
 

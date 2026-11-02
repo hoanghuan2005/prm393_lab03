@@ -42,6 +42,10 @@ class FirestorePaths {
   CollectionReference<JsonMap> ownedItems(String uid) =>
       user(uid).collection('ownedItems');
 
+  /// "Gửi góp ý" messages (create only)
+  CollectionReference<JsonMap> feedback(String uid) =>
+      user(uid).collection('feedback');
+
   /// Chrome extensions signed in with this account (pending → approved on the phone)
   CollectionReference<JsonMap> extensionSessions(String uid) =>
       user(uid).collection('extensionSessions');

@@ -31,6 +31,13 @@ void openReviewDueList() {
   appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
 }
 
+/// Opens "Ghi khoản mua" (tapped daily reminder, screen 05a)
+void openRecordPurchase() {
+  final context = appNavigatorKey.currentContext;
+  if (context == null || context.read<AuthViewModel>().userId == null) return;
+  appNavigatorKey.currentState?.pushNamed(AppRoutes.recordPurchase);
+}
+
 /// A notification tapped before the app or the user was ready (app was closed, signed out)
 Map<String, dynamic>? _pendingNotification;
 

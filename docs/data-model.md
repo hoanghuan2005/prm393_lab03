@@ -113,6 +113,16 @@ Phần khả dụng cho danh sách mong muốn (`AvailableBudget`, đặc tả 7
 
 Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xuất hiện trong tên món) và làm ứng viên "món có thể trùng".
 
+## `feedback/{id}` – ghi bởi `FeedbackService`
+
+"Gửi góp ý" (Cá nhân → Hỗ trợ & thông tin). Chỉ tạo mới, không sửa (rules `update: false`).
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `message` | string | ✓ | 1–1000 ký tự |
+| `appVersion` | string | | `AppConstants.appVersion` |
+| `createdAt` | timestamp | | server time |
+
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 
 Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`.

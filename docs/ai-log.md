@@ -82,9 +82,16 @@ Mẫu ghi và quy ước: xem mục 5 trong [`CONTRIBUTING.md`](../CONTRIBUTING.
 - **Quyết định:** Chấp nhận.
 - **Lý do / phần đã sửa tay:** `receivedAt` lưu mili giây UTC, khi đọc trả về giờ máy để màn Cá nhân hiển thị như trước. `tryFromJson` còn trả null khi id rỗng hoặc mốc thời gian ngoài phạm vi `DateTime`; `title`/`body`/`data` hỏng thì dùng giá trị rỗng. `dart format lib test` có đổi thêm 12 file không liên quan (code có sẵn chưa format) – đã trả lại, không commit. `flutter analyze` sạch; 218/218 test qua (trước: 213).
 
-### 2026-11-02 – Dao Tam Hoang – Bước 4.2 (lưu lịch sử thông báo trên máy)
+### 2026-11-02 – Ngo Gia Kiet – Bước 4.2 (lưu lịch sử thông báo trên máy)
 - **Công cụ:** Claude Code.
 - **Prompt:** Giai đoạn 4.2: tạo `NotificationHistoryStore` (load / add / clear) và bản `SharedPrefsNotificationHistoryStore` dùng `SharedPreferencesAsync`, key `fcm_history_v1`, tối đa 50 tin; tách hàm thuần `parseHistory` và `mergeHistory`; mọi lỗi chỉ `debugPrint`, không throw; thêm store trong bộ nhớ cho test; chưa nối vào `NotificationService`.
 - **Kết quả:** `lib/services/notification_history_store.dart` (interface, `maxNotificationHistory`, `parseHistory`, `mergeHistory`, bản SharedPreferencesAsync tạo lười, có thể truyền vào khi test); `test/support/in_memory_notification_history_store.dart`; `test/notification_history_store_test.dart` (9 test). Sửa thêm sau khi xem lại (gộp vào bước này): `parseHistory` chuẩn hoá dữ liệu đã lưu – bỏ phần tử hỏng, lọc id trùng (giữ bản đầu), sắp mới nhất trước, cắt còn 50; `mergeHistory` giả định đầu vào đã chuẩn hoá nên khi trùng id trả nguyên danh sách cũ.
 - **Quyết định:** Chấp nhận.
 - **Lý do / phần đã sửa tay:** Dùng `SharedPreferencesAsync` thay `SharedPreferences` vì bản cũ cache riêng từng isolate, tin do handler nền ghi sẽ không hiện ở app chính. `add` là đọc–gộp–ghi, không khoá giữa hai isolate. Chưa có test chạy thật `SharedPrefsNotificationHistoryStore` (cần nền tảng giả của plugin). `dart format lib test` lại đổi 12 file không liên quan – đã trả lại; lần sửa sau chỉ format từng file đã đổi. `flutter analyze` sạch; 227/227 test qua (trước: 218).
+
+### 2026-11-02 – Ngo Gia Kiet – Bước 4.3 (ghi tin FCM khi app chạy nền hoặc đã đóng)
+- **Công cụ:** Claude Code.
+- **Prompt:** Giai đoạn 4.3: thêm hàm trong service đổi `RemoteMessage` → `AppNotificationItem` (id từ `messageId`, không có thì `sentTime`/giờ hiện tại; `receivedAt` = giờ gửi; data đổi sang chuỗi; source truyền vào); `_firebaseMessagingBackgroundHandler` ghi tin với source `background` vào `SharedPrefsNotificationHistoryStore`, bọc try/catch, không gọi Remote Config/Analytics/Crashlytics/Firestore, không lọc tin sale; log `FCM background message saved: <id>`.
+- **Kết quả:** `notificationItemFromMessage` (top-level) và handler nền trong `lib/services/notification_service.dart`; `test/notification_message_test.dart` (4 test).
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** `recordNotification` (tin khi app đang mở) chưa đổi sang hàm mới để không đổi hành vi ở bước này – hàm mới lấy giờ gửi thay vì giờ nhận; nối ở Bước 4.4. Log "saved" chỉ in khi tin mới được thêm (trùng id thì không in). Bổ sung theo yêu cầu: gọi `DartPluginRegistrant.ensureInitialized()` ở dòng đầu handler nền để isolate nền có plugin `shared_preferences`, tránh `MissingPluginException`. Chưa chạy trên máy thật (máy này thiếu Android SDK). `flutter analyze` sạch; 231/231 test qua (trước: 227).

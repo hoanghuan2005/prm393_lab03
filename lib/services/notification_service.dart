@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -6,11 +7,47 @@ import 'package:flutter/foundation.dart';
 import '../firebase/platform_support.dart';
 import '../models/app_notification_item.dart';
 import '../models/notification_target.dart';
+import 'notification_history_store.dart';
 
-/// Top-level background message handler for FCM
+/// Converts an FCM message for the notification history. [receivedAt] is the send
+/// time when known, not the time it was recorded.
+AppNotificationItem notificationItemFromMessage(
+  RemoteMessage message,
+  NotificationSource source,
+) {
+  final sentTime = message.sentTime;
+  return AppNotificationItem(
+    id:
+        message.messageId ??
+        (sentTime ?? DateTime.now()).millisecondsSinceEpoch.toString(),
+    title: message.notification?.title ?? 'Thông báo Why I Buy',
+    body: message.notification?.body ?? '',
+    receivedAt: sentTime ?? DateTime.now(),
+    data: {
+      for (final entry in message.data.entries)
+        if (entry.value != null) entry.key: '${entry.value}',
+    },
+    source: source,
+  );
+}
+
+/// Top-level background message handler for FCM. Runs in its own isolate: only
+/// saves the message on the device (no Remote Config, Analytics, Crashlytics or
+/// Firestore here). Sale messages are filtered when shown, not here.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling a background message: ${message.messageId}');
+  // This isolate has no plugins registered yet; shared_preferences needs them
+  DartPluginRegistrant.ensureInitialized();
+  try {
+    final item = notificationItemFromMessage(
+      message,
+      NotificationSource.background,
+    );
+    final added = await SharedPrefsNotificationHistoryStore().add(item);
+    if (added) debugPrint('FCM background message saved: ${item.id}');
+  } catch (e) {
+    debugPrint('FCM background message not saved: $e');
+  }
 }
 
 /// Service abstraction for Firebase Cloud Messaging (FCM)

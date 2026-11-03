@@ -32,35 +32,6 @@ class SectionCard extends StatelessWidget {
         borderRadius: AppDimens.borderLarge,
         border: Border.all(color: theme.dividerColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  color: isDark ? AppColors.primary : AppColors.onPrimary,
-                  size: 20,
-                ),
-                const SizedBox(width: AppDimens.space8),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.titleMedium.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              ?action,
-            ],
-          ),
-          const SizedBox(height: AppDimens.space12),
-          Divider(color: theme.dividerColor),
-          const SizedBox(height: AppDimens.space12),
-          ...children,
-        ],
       // Own Material so ListTile ink in [children] shows above the card's colour
       child: Material(
         type: MaterialType.transparency,
@@ -70,15 +41,26 @@ class SectionCard extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: AppColors.onPrimary, size: 20),
+                  Icon(
+                    icon,
+                    color: isDark ? AppColors.primary : AppColors.onPrimary,
+                    size: 20,
+                  ),
                   const SizedBox(width: AppDimens.space8),
                 ],
-                Expanded(child: Text(title, style: AppTextStyles.titleMedium)),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
                 ?action,
               ],
             ),
             const SizedBox(height: AppDimens.space12),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             const SizedBox(height: AppDimens.space12),
             ...children,
           ],

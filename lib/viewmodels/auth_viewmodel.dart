@@ -141,6 +141,45 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Sign in with GitHub
+  Future<bool> signInWithGithub() async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final credential = await authService.signInWithGithub();
+      if (credential == null) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
+
+      await analyticsService.logLogin(method: 'github');
+      return true;
+    } on FirebaseAuthException catch (e, stack) {
+      _status = AuthStatus.error;
+      _errorMessage = e.message ?? 'Đăng nhập GitHub thất bại.';
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'GitHub sign-in error: ${e.code}',
+      );
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      _status = AuthStatus.error;
+      _errorMessage = 'Đăng nhập GitHub thất bại. Vui lòng thử lại.';
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'GitHub sign-in error',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Guest / Anonymous sign in for quick testing
   Future<bool> signInAnonymously() async {
     _status = AuthStatus.loading;

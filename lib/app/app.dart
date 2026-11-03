@@ -9,15 +9,14 @@ import '../screens/main_navigation_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/pending_writes.dart';
-import '../services/share_intent_service.dart';
 import '../services/remote_config_service.dart';
-import '../theme/app_colors.dart';
+import '../services/share_intent_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
 import 'app_lifecycle_bridge.dart';
@@ -49,6 +48,8 @@ void openAddItemWithSharedData(SharedItemData data) {
       initialUrl: data.url,
     ),
   );
+}
+
 /// Opens "Ghi khoản mua" (tapped daily reminder, screen 05a)
 void openRecordPurchase() {
   final context = appNavigatorKey.currentContext;
@@ -125,6 +126,8 @@ class WhyIBuyApp extends StatelessWidget {
         title: 'Why I Buy',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeVm.themeMode,
         navigatorObservers: [
           ...analyticsService.navigatorObservers,
           crashlyticsService.screenObserver,

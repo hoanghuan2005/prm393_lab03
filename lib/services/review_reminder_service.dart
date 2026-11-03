@@ -57,6 +57,14 @@ abstract interface class ReviewReminderService {
     List<({String saleId, String saleType, String body, DateTime at})>
     reminders,
   );
+
+  /// Displays an immediate system notification on the status bar (for FCM alerts & Crashlytics test events)
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  });
 }
 
 class LocalReviewReminderService implements ReviewReminderService {
@@ -64,6 +72,8 @@ class LocalReviewReminderService implements ReviewReminderService {
   static const String _channelName = 'Nhắc xem lại';
   static const String _dailyChannelId = 'daily_record_reminder';
   static const String _dailyChannelName = 'Nhắc ghi khoản mua';
+  static const String _alertChannelId = 'app_immediate_alerts';
+  static const String _alertChannelName = 'Thông báo trực tiếp';
 
   /// Review ids come from [idFor] (31-bit hashes of item ids); a fixed small id for
   /// the single daily reminder
@@ -346,6 +356,33 @@ class LocalReviewReminderService implements ReviewReminderService {
       }
     } catch (e) {
       debugPrint('ReviewReminder scheduleSaleReminders error: $e');
+    }
+  }
+
+  @override
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!isSupported || !_initialized) return;
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _alertChannelId,
+          _alertChannelName,
+          channelDescription: 'Thông báo sự kiện và thử nghiệm Lab 3',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+      await _plugin.show(id, title, body, details, payload: payload);
+    } catch (e) {
+      debugPrint('ReviewReminder showImmediateNotification error: $e');
     }
   }
 }

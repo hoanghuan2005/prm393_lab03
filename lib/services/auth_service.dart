@@ -69,6 +69,27 @@ class AuthService {
     }
   }
 
+  /// Sign in with GitHub using Firebase Auth OAuth Provider
+  Future<UserCredential?> signInWithGithub() async {
+    try {
+      final GithubAuthProvider githubProvider = GithubAuthProvider();
+      githubProvider.addScope('read:user');
+      githubProvider.addScope('user:email');
+
+      if (kIsWeb) {
+        return await _auth.signInWithPopup(githubProvider);
+      } else {
+        return await _auth.signInWithProvider(githubProvider);
+      }
+    } on FirebaseAuthException catch (e) {
+      debugPrint('AuthService GitHub FirebaseAuthException: ${e.code} - ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('AuthService GitHub Error: $e');
+      rethrow;
+    }
+  }
+
   /// Sign in anonymously for test / guest mode
   Future<UserCredential> signInAnonymously() async {
     return await _auth.signInAnonymously();

@@ -1,3 +1,5 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -37,8 +39,8 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
-import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
 /// All services and ViewModels of the app.

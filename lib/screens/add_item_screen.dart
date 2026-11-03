@@ -56,6 +56,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _urlController.text = item.url ?? '';
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
+      _priority = item.priority;
     } else {
       if (widget.initialTitle != null && widget.initialTitle!.isNotEmpty) {
         _titleController.text = widget.initialTitle!;
@@ -63,7 +64,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
       if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
         _urlController.text = widget.initialUrl!;
       }
-      _priority = item.priority;
     }
   }
 

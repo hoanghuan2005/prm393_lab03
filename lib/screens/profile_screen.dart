@@ -540,6 +540,25 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   const SizedBox(height: AppDimens.space12),
                 ],
+                AppButton(
+                  title: 'Bắn thông báo thử nghiệm lên điện thoại ngay',
+                  icon: Icons.notification_important_rounded,
+                  variant: AppButtonVariant.primary,
+                  onPressed: () async {
+                    await settingsVm.sendTestNotification();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Đã kích hoạt hiển thị thông báo trên thanh trạng thái điện thoại.',
+                          ),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: AppDimens.space12),
                 Text(
                   'Hộp thư nhận thông báo (${settingsVm.notifications.length} tin nhắn):',
                   style: AppTextStyles.labelLarge.copyWith(
@@ -581,15 +600,15 @@ class ProfileScreen extends StatelessWidget {
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        subtitle: Text(
-                          notif.body,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(notif.body, style: AppTextStyles.bodyMedium),
+                            Text(
+                              notif.body,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                             if (notif.openedVia != null)
                               Text(
                                 'Đã mở',

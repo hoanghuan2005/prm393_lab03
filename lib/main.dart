@@ -39,6 +39,7 @@ Future<void> main() async {
     // Same route as a sale push: "Danh sách cho đợt sale" + click_sale_reminder
     onOpenSale: openFromNotification,
   );
+  notificationService.attachReminderService(reviewReminderService);
 
   // Android Native Share Sheet target (Android only; no-op elsewhere)
   final shareIntentService = ShareIntentService();

@@ -118,6 +118,14 @@ class _Reminders implements ReviewReminderService {
 
   @override
   Future<void> cancelDaily() async {}
+
+  @override
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {}
 }
 
 WishlistItem _considering(String id) =>

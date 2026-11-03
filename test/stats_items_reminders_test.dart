@@ -84,6 +84,14 @@ class FakeReminders implements ReviewReminderService {
     cancelAllCalls++;
     scheduled.clear();
   }
+
+  @override
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {}
 }
 
 /// Lets Firestore snapshots and the async reminder sync run

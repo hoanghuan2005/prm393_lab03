@@ -216,7 +216,7 @@ class HistoryScreen extends StatelessWidget {
                               purchaseVm.hasActiveFilter
                                   ? 'Không có khoản chi nào khớp bộ lọc trong $monthLabel'
                                   : 'Không có khoản chi nào trong $monthLabel',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.onSurfaceVariant,
@@ -227,7 +227,7 @@ class HistoryScreen extends StatelessWidget {
                               purchaseVm.hasActiveFilter
                                   ? 'Chọn "Tất cả" để xem mọi khoản mua của tháng.'
                                   : 'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                               ),

@@ -56,6 +56,7 @@ dependencies:
   flutter_local_notifications: 18.0.1
   timezone: 0.10.1
   flutter_timezone: ^5.1.1
+  file_saver: ^0.7.0
 
 dev_dependencies:
   flutter_test:

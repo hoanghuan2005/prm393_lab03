@@ -24,37 +24,53 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | 1 | Onboarding | `01` | `/onboarding` | `OnboardingScreen` | – (nội dung tĩnh) | Implemented |
 | 2 | Đăng nhập | – (thêm ở Lab 3, DEV-01) | `AuthGate` (chưa đăng nhập) | `LoginScreen` | `AuthViewModel` → `AuthService` | Implemented |
 | 3 | Trang chủ | `02` | Tab 1 của `/home` | `HomeScreen` | `PurchaseViewModel`, `BudgetViewModel`, `WishlistViewModel` | Implemented |
-| 4 | Lịch sử | `06` | Tab 2 · `/history` | `HistoryScreen` | `PurchaseViewModel`, `BudgetViewModel` | Implemented |
+| 4 | Lịch sử | `06` | Tab 2 · `/history` | `HistoryScreen` | `PurchaseViewModel`, `BudgetViewModel` | Implemented (lọc động cơ + "Mua từ Wishlist", A-10) |
 | 5 | Mô hình (Thói quen) | `07` | Tab 3 · `/patterns` | `PatternsScreen` | `PurchaseViewModel` | Implemented |
 | 6 | Góc nhìn (có AI) | `08` | Tab 4 · `/insights` | `InsightsScreen` | `InsightsViewModel` → `AiInsightService` → `AiService` | Implemented |
 | 7 | Cá nhân & Firebase Demo Area | `10` | Tab 5 · `/profile` | `ProfileScreen` | `AuthViewModel`, `SettingsViewModel` | Implemented |
 | 8 | Danh sách mong muốn | `11` | `/wishlist` | `WishlistScreen` | `WishlistViewModel` | Implemented |
 | 9 | Thêm món mong muốn | `12` | `/wishlist/add` | `AddItemScreen` | `WishlistViewModel` | Implemented |
-| 10 | Chi tiết món mong muốn | `13` | `/wishlist/detail` | `ItemDetailScreen` | `WishlistViewModel` | Implemented |
+| 10 | Chi tiết món mong muốn + Decision Card | `13`, `20` | `/wishlist/detail` | `ItemDetailScreen`, `DecisionCardPanel` | `WishlistViewModel`, `DecisionSupportViewModel` | Implemented (nhãn 7.4, lý do AI) |
 | 11 | Ghi khoản mua (2 bước) | `03`, `04` | `/purchase/record` | `RecordPurchaseScreen` | `PurchaseViewModel` | Implemented |
 | 12 | Chi tiết khoản mua | `05` | `/purchase/detail` | `PurchaseDetailScreen` | `PurchaseViewModel` | Implemented |
 | 13 | Ngân sách theo nhóm | `31` | `/budget` | `BudgetScreen` | `BudgetViewModel`, `PurchaseViewModel` | Implemented (một tổng + thẻ nhóm) |
 | 14 | Chiêm nghiệm tháng & PDF | `09` | `/reflection` | `MonthlyReflectionScreen` | `ReflectionViewModel`, `ReportViewModel`, `InsightsViewModel` | Implemented |
 | 15 | Widget Gallery | – | `/dev/widgets` (chỉ debug) | `WidgetGalleryScreen` | – | Implemented |
+| 16 | Lịch sale | `26` | `/sales` (nút lịch ở Wishlist) | `SaleCalendarScreen` | `DecisionSupportViewModel` (Remote Config `sale_calendar`) | Implemented (26.1: nhắc 20:00 tối trước đợt đã xác nhận, mức Tắt · Chỉ đợt lớn · Mọi đợt – chỉ Android/iOS) |
+| 17 | Danh sách cho đợt sale | `26.2`, `26.3` | `/sales/list` | `SaleListScreen` | `DecisionSupportViewModel` | Implemented |
+| 19 | Hồ sơ mua sắm | `24` | `/profile/shopping` (Cá nhân → Mở hồ sơ mua sắm) | `ShoppingProfileScreen`, `OwnedItemSheet` | `ShoppingProfileViewModel` → `ShoppingProfileService` | Implemented (24.1–24.3) |
+| 20 | So sánh món cùng nhóm | – (A-15) | `/wishlist/compare` (nút trong Decision Card) | `CompareItemsScreen` | `DecisionSupportViewModel` | Implemented |
+| 21 | Lịch sử giá | `22.3` | Trong Chi tiết món | `PriceHistoryPanel` | `DecisionSupportViewModel` → `WishlistService.priceHistory` | Implemented |
+| 26 | Xác nhận giá gần đây | `22.1` | Sheet "Cập nhật giá" ở Chi tiết món | `PriceUpdateSheet` | `WishlistViewModel.updatePrice` | Implemented ("Giá vẫn là …": ghi lại cùng giá với ngày hôm nay) |
+| 22 | Hỏi mức hài lòng (hộp thoại) | `27` | Tự hiện ở màn chính; nút "Chấm/Sửa" ở Chi tiết khoản mua | `SatisfactionDialog` | `PurchaseViewModel` → `PurchaseService.setSatisfaction` | Implemented (27.1, 27.2 bằng SnackBar) |
+| 18 | Lập kế hoạch cho đợt sale | – (đặc tả 7.5) | `/sales/plan` | `SalePlanScreen` | `DecisionSupportViewModel` → `SalePlanner`, `AiDecisionService` | Implemented (lời giải thích AI tính năng 5) |
+| 23 | Duyệt liên kết extension (hộp thoại) | `25f` | Tự hiện ở màn chính khi extension xin liên kết | `ExtensionApprovalDialog` | `ExtensionLinkViewModel` → `ExtensionSessionService` | Implemented (đăng nhập Google thay mã 6 số – [`decisions.md`](decisions.md)) |
+| 24 | Thiết bị đã liên kết | X4 | Trong Cá nhân | `LinkedDevicesSection` | `ExtensionLinkViewModel` | Implemented (Huỷ liên kết → EXT-8 trên extension) |
+| 25 | Định mua từ máy tính | X3 | Đầu danh sách Wishlist | `BuyIntentSection` | `WishlistViewModel.buyIntentItems` → `PurchaseService.buyFromWishlist` / `WishlistService.clearBuyIntent` | Implemented |
+| 26 | Xin quyền thông báo (nhắc ghi khoản mua) | `05a` | `/reminder/permission` (tự mở sau lần lưu khoản mua đầu tiên) | `ReminderPermissionScreen` | `SettingsViewModel` → `ReviewReminderService.scheduleDaily`, `PreferencesService` | Implemented (Android/iOS) |
+| 27 | Cá nhân – Cài đặt nhắc nhở, Cài đặt dữ liệu, Hỗ trợ & thông tin | `10` (bản sửa), `10` (đã xuất dữ liệu) | Tab 5 · `/profile` | `ProfileScreen` | `SettingsViewModel` → `DataExportService` (CSV vào Tải xuống) | Implemented (chưa có "Nhắc chiêm nghiệm hằng tháng") |
+| 28 | Gửi góp ý | `10` | `/profile/feedback` | `FeedbackScreen` | `SettingsViewModel` → `FeedbackService` (`users/{uid}/feedback`) | Implemented |
+| 29 | Điều khoản sử dụng · Chính sách quyền riêng tư | `10` | `/profile/terms`, `/profile/privacy` | `InfoTextScreen` (`LegalTexts`) | – (nội dung tĩnh) | Implemented |
+| 30 | Trước khi mua (3 câu hỏi → AI phân tích → Nhận định) | `02` (lối vào), `14`–`18` | `/before-buy`, `/before-buy/result` | `PrePurchaseScreen`, `PrePurchaseResultScreen` | `PrePurchaseViewModel` → `PrePurchaseRules`, `AiPrePurchaseService` → `AiService` | Implemented (câu mẫu khi không có AI) |
 
 ---
 
 ## 3. Luồng người dùng
 
 ### Flow 1: Lưu món mong muốn
-1. `AddItemScreen`: nhập tên (bắt buộc, ≤ 60), giá (tuỳ chọn), link (tuỳ chọn), chọn 1 trong 8 động cơ.
+1. `AddItemScreen`: nhập tên (bắt buộc, ≤ 60), giá (tuỳ chọn, ô tiền VND có dấu chấm và ₫), link (tuỳ chọn), nhóm ngân sách (tuỳ chọn, có chip "Gợi ý nhóm: …"), chọn 1 trong 8 động cơ. Nếu đã có khoản mua 30 ngày gần đây hoặc món đang cân nhắc giống món mới, hiện khối "Bạn đã có món tương tự" (DEV-08).
 2. `WishlistViewModel.addItem` → `WishlistService.add`: lưu món; có giá thì tạo kèm `priceSnapshot`; đặt `cooldownUntil` trừ động cơ Nhu cầu.
 3. Món hiện trong danh sách với trạng thái "Đang cân nhắc".
 * **Không nhập giá**: `latestPriceVnd = null`, thẻ hiện "Chưa có giá".
 * **Lỗi**: lỗi Firebase được đổi thành câu tiếng Việt; khi mất mạng, Firestore giữ thay đổi trên máy và đồng bộ khi có mạng lại.
 
 ### Flow 2: Quyết định Mua · Chờ · Bỏ qua
-1. `ItemDetailScreen` (mở từ danh sách) hiện giá, động cơ, thời gian cân nhắc còn lại.
-2. `WishlistViewModel.updateDecision`:
-   * **Mua**: đổi trạng thái sang "Đã mua" (`WishlistService.update`). `PurchaseService.buyFromWishlist` (batch tạo khoản mua) đã có ở service nhưng màn hình chưa dùng.
-   * **Chờ**: `WishlistService.setReview` đặt `reviewAt = hôm nay + coolingOffDays` và ghi decision `wait`.
-   * **Bỏ qua**: `WishlistService.skip` đổi trạng thái sang "Bỏ qua" và ghi decision `skip`.
-3. Firestore stream cập nhật danh sách ngay.
+1. `ItemDetailScreen` (mở từ danh sách) hiện giá và ngày ghi giá, động cơ, thời gian cân nhắc còn lại, khối "Bạn đã có món tương tự" nếu có, rồi **Decision Card**: nhãn theo Rules Engine v1 (đặc tả 7.4, `DecisionRules`), một câu lý do (AI hoặc câu mẫu), các tín hiệu S1–S8 có dữ liệu. Bên dưới là ba nút cùng kiểu và cùng cỡ: Mua · Chờ · Bỏ qua.
+2. Mỗi lựa chọn chỉ báo thành công sau khi ghi xong; khi lỗi, màn hình giữ nguyên và cho thử lại.
+   * **Mua**: mở `RecordPurchaseScreen` điền sẵn tên, giá, nhóm của món; người dùng nhập số tiền thực chi. `PurchaseService.buyFromWishlist` ghi một batch: tạo khoản mua có `wishlistItemId`, đổi món sang "Đã mua" kèm `purchaseId`, ghi decision `buy`. Xong thì mở Chi tiết khoản mua.
+   * **Chờ**: `ReviewDateSheet` cho chọn ngày xem lại (hết thời gian cân nhắc, sau 7 ngày, đến đợt sale đã xác nhận kế tiếp, hoặc tự chọn). `WishlistViewModel.wait` đặt `reviewAt` (09:00) và ghi decision `wait`; món vẫn "Đang cân nhắc". Trên Android, app xin quyền thông báo ngay sau đó và hẹn thông báo "Đến hẹn xem lại"; mọi nền tảng có mục "Cần xem lại" trong danh sách.
+   * **Bỏ qua**: `WishlistViewModel.skip` đổi trạng thái sang "Bỏ qua" và ghi decision `skip`, rồi quay về danh sách với SnackBar `Đã bỏ qua "<tên món>".` có nút "Hoàn tác" trong 5 giây. Sau này vẫn "Cân nhắc lại" được (`reconsider`, decision `undo`).
+3. Firestore stream cập nhật danh sách ngay. Xoá một khoản mua đã liên kết sẽ đưa món về "Đang cân nhắc" ([`data-model.md`](data-model.md), quy tắc 4a).
 
 ### Flow 3: Chiêm nghiệm tháng và báo cáo PDF
 1. Từ Góc nhìn → "Xem chiêm nghiệm tháng" (`/reflection`).
@@ -90,3 +106,8 @@ Route theo `AppRoutes` (`lib/app/routes.dart`). Các tab của màn chính nằm
 | **DEV-05** | `InsightsScreen` | Mỗi thẻ có nhãn "AI" hoặc "Câu mẫu"; AI chỉ chạy khi tháng có ít nhất 3 khoản mua | Minh bạch nguồn câu chữ và nói rõ khi thiếu dữ liệu (đặc tả mục 7.7). Trên Windows, AI chỉ chạy khi build kèm debug token App Check; nếu không thì dùng câu mẫu. |
 | **DEV-06** | Firebase AI Logic / App Check | Firebase AI Logic **bắt buộc App Check**. Android: Play Integrity (bản release cài từ Google Play), debug provider khi build debug hoặc khi build kèm debug token. Web: Fraud Defense (reCAPTCHA Enterprise). Windows: chỉ có debug provider | App chưa phát hành qua Google Play nên APK cài qua QR không qua được Play Integrity. Cả nhóm dùng chung một debug token đăng ký trên Console, đặt trong `assets/local/app_check.json` (git bỏ qua; app tự đọc khi khởi động, không cần cờ build). Windows gọi AI là cách không chính thức (`firebase_ai` không liệt kê Windows). |
 | **DEV-07** | Toàn app | Màu chủ đạo vàng `#FFDE02` thay indigo `#2E4A9E` | Quyết định nhóm – xem [`decisions.md`](decisions.md), [`design-tokens.md`](design-tokens.md). |
+| **DEV-08** | `AddItemScreen`, `RecordPurchaseScreen`, `ItemDetailScreen` | Thêm gợi ý nhóm ngân sách ("Gợi ý nhóm: …", chạm mới áp dụng) và khối "Bạn đã có món tương tự" (khoản mua 30 ngày gần đây, món đang cân nhắc) | Tính năng AI 3 và 4 của đặc tả. Code đoán trước, AI chỉ chọn trong danh sách; gợi ý có nhãn "AI" khi do AI chọn, không chặn hay khuyên quyết định. |
+| **DEV-09** | `ItemDetailScreen`, `SaleCalendarScreen`, `SaleListScreen`, `SalePlanScreen` | Decision Card có nhãn Rules Engine v1 và câu lý do (AI tính năng 2); thêm Lịch sale, "Danh sách cho đợt sale" và "Lập kế hoạch cho đợt sale" (bài toán cái túi 0/1, ba phương án) | Đặc tả 7.4, 7.5, 7.6, 8.2. Khác đặc tả: chưa có Hồ sơ mua sắm nên không có S5 "Đồ đang có" và nhánh "xác nhận trùng" của nhãn 5; gói mua tính `gia` = 0 vì không đọc lịch sử giá; "Giữ lại nhiều hơn" dùng tối đa 50% phần khả dụng (giả định của nhóm); nhắc 20:00 trước đợt sale dùng thông báo cục bộ trên máy (không cần Cloud Functions), chỉ có trên Android/iOS; thông báo đẩy sale vẫn gửi tay từ Console được. |
+| **DEV-10** | `ShoppingProfileScreen`, `ItemDetailScreen`, `CompareItemsScreen`, `PurchaseDetailScreen`, `AddItemScreen` | Thêm Hồ sơ mua sắm (A-12), Lịch sử giá (A-14), So sánh món cùng nhóm (A-15), hỏi mức hài lòng sau 7 ngày (A-16); chọn mức ưu tiên 1–5 sao khi thêm/sửa món | Đặc tả 6.5, 7.2, 7.5, 8.3, màn 22.3, 24, 27. Khác đặc tả: chưa có loại giá và phân loại (`priceType`, `modelId`) nên mọi lần ghi giá của cùng món được coi là "so được"; chỉ hỏi hài lòng với khoản mua 7–30 ngày tuổi, tối đa một lần mỗi phiên; "hài lòng theo động cơ" ở Góc nhìn chỉ hiện động cơ có ≥ 2 khoản đã chấm. |
+| **DEV-11** | `ReminderPermissionScreen`, `ProfileScreen` | Màn 05a hiện **trước** màn Chi tiết khoản mua (Figma: sau "Khoản mua đã lưu"), chỉ một lần trên mỗi máy, chỉ khi ghi khoản mua mới (không từ danh sách mong muốn, không khi sửa). Nhắc ghi khoản mua là thông báo cục bộ, lưu trên máy (`SharedPreferences`), mặc định tắt cho tới khi người dùng bật; Windows/web hiện "Chỉ có trên ứng dụng Android". "Xoá toàn bộ dữ liệu" chuyển từ Dữ liệu demo sang Cài đặt dữ liệu | Màn 05a đặt trên Chi tiết khoản mua nên đóng 05a là thấy khoản vừa lưu. `flutter_local_notifications` 18.0.1 không có bản Windows (xem `pubspec.yaml`). |
+| **DEV-12** | `PrePurchaseScreen`, `PrePurchaseResultScreen` | Sửa sau kiểm thử (người dùng thấy 3 câu còn hời hợt): thêm bước "Bạn sẽ dùng nó ra sao?" (tần suất dùng, đã có món tương tự chưa; tâm trạng lúc này khi chọn Cảm xúc), nên flow có 3 bước, hoặc 4 bước khi chọn Khuyến mãi. Màn 18 thêm khối "Từ dữ liệu của bạn" (tối đa 3 dòng, `PrePurchaseFacts`): đồ đang dùng trong Hồ sơ mua sắm, khoản mua tương tự 90 ngày, món tương tự đang cân nhắc, phần khả dụng của nhóm đoán theo tên món, mức hài lòng trung bình và số khoản cùng động cơ 30 ngày. Không lưu câu trả lời. Thẻ nhận định do code chọn (`PrePurchaseRules`); AI chỉ viết câu tổng kết và câu "Gợi mở", chỉ được dùng số có trong câu trả lời và dữ kiện. Chưa có "Chạm thẻ → 08b". "Vẫn mua" điền sẵn tên, giá, động cơ | Câu hỏi và dữ kiện giúp nhận định gắn với chính người dùng; mọi con số do code tính. Công tắc từ xa dùng chung `enable_ai_suggestions` với Decision Card. |

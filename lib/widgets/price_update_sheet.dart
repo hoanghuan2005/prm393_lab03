@@ -8,8 +8,9 @@ import 'amount_field.dart';
 import 'app_bottom_sheet.dart';
 import 'app_button.dart';
 
-/// "Cập nhật giá" (screen 22.2): the price the user sees now. Returns the amount, or
-/// null when dismissed. Every saved price becomes a dated snapshot.
+/// "Cập nhật giá": confirm the recorded price in one tap (screen 22.1) or type the
+/// price the user sees now (22.2). Returns the amount, or null when dismissed. Every
+/// saved price, a confirmed one too, becomes a snapshot dated now.
 class PriceUpdateSheet {
   PriceUpdateSheet._();
 
@@ -66,6 +67,19 @@ class _PriceFormState extends State<_PriceForm> {
                       'Nhập giá bạn đang thấy; giá cũ vẫn được giữ trong lịch sử.',
             style: AppTextStyles.bodyMedium,
           ),
+          if (current != null) ...[
+            const SizedBox(height: AppDimens.space16),
+            // 22.1: the price has not changed, so it becomes "mới" again in one tap
+            AppButton(
+              key: const ValueKey('price-confirm-same'),
+              title: 'Giá vẫn là ${formatVnd(current)}',
+              icon: Icons.done_rounded,
+              variant: AppButtonVariant.secondary,
+              onPressed: () => Navigator.pop(context, current),
+            ),
+            const SizedBox(height: AppDimens.space8),
+            Text('Hoặc nhập giá mới:', style: AppTextStyles.labelMedium),
+          ],
           const SizedBox(height: AppDimens.space16),
           AmountField(
             key: const ValueKey('price-update-amount'),

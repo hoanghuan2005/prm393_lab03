@@ -2,17 +2,45 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/purchase_csv.dart';
 import '../firebase/platform_support.dart';
+import '../models/app_notification_item.dart';
+import '../models/budget_group.dart';
+import '../models/purchase_item.dart';
 import '../models/user_profile.dart';
 import '../services/crashlytics_service.dart';
+import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
+import '../services/feedback_service.dart';
 import '../services/notification_service.dart';
+import '../services/preferences_service.dart';
 import '../services/remote_config_service.dart';
+import '../services/review_reminder_service.dart';
 import '../services/user_service.dart';
 import 'deferred_notify.dart';
 import 'error_reporting.dart';
 
-/// ViewModel managing Firebase Demo Area (Crashlytics, Remote Config, FCM notifications)
+/// Result of "Xuất dữ liệu"
+sealed class ExportResult {
+  const ExportResult();
+}
+
+/// [fileName] includes the extension, e.g. `whyibuy-10-2026.csv`
+class ExportSaved extends ExportResult {
+  final String fileName;
+  const ExportSaved(this.fileName);
+}
+
+class ExportNothing extends ExportResult {
+  const ExportNothing();
+}
+
+class ExportFailed extends ExportResult {
+  const ExportFailed();
+}
+
+/// Cá nhân: reminders (05a), data export, feedback, and the Firebase Demo Area
+/// (Crashlytics, Remote Config, FCM notifications)
 class SettingsViewModel extends ChangeNotifier
     with DeferredNotify, ErrorReporting {
   final RemoteConfigService remoteConfigService;
@@ -21,6 +49,10 @@ class SettingsViewModel extends ChangeNotifier
   final NotificationService notificationService;
   final UserService userService;
   final DemoDataService demoDataService;
+  final ReviewReminderService? reminderService;
+  final PreferencesService? preferencesService;
+  final DataExportService? exportService;
+  final FeedbackService? feedbackService;
 
   StreamSubscription<List<AppNotificationItem>>? _notifSubscription;
   StreamSubscription<UserSettings>? _settingsSubscription;
@@ -36,8 +68,156 @@ class SettingsViewModel extends ChangeNotifier
     required this.notificationService,
     required this.userService,
     required this.demoDataService,
+    this.reminderService,
+    this.preferencesService,
+    this.exportService,
+    this.feedbackService,
   }) {
     _init();
+  }
+
+  // ---------- Daily "Nhắc ghi khoản mua" (screen 05a, Cá nhân) ----------
+
+  bool _dailyReminderEnabled = false;
+  int _dailyReminderMinutes = PreferencesService.defaultDailyReminderMinutes;
+
+  /// Local notifications exist on Android/iOS only
+  bool get supportsDailyReminder =>
+      (reminderService?.isSupported ?? false) && preferencesService != null;
+  bool get dailyReminderEnabled => _dailyReminderEnabled;
+  int get dailyReminderHour => _dailyReminderMinutes ~/ 60;
+  int get dailyReminderMinute => _dailyReminderMinutes % 60;
+
+  /// "21:00"
+  String get dailyReminderTimeText =>
+      '${dailyReminderHour.toString().padLeft(2, '0')}:'
+      '${dailyReminderMinute.toString().padLeft(2, '0')}';
+
+  Future<void> _loadDailyReminder() async {
+    final prefs = preferencesService;
+    if (prefs == null) return;
+    _dailyReminderEnabled = await prefs.getDailyReminderEnabled();
+    _dailyReminderMinutes = await prefs.getDailyReminderMinutes();
+    notifyListeners();
+    // Re-arm after an app update or a time zone change; replacing is harmless
+    if (_dailyReminderEnabled && supportsDailyReminder) {
+      await reminderService!.scheduleDaily(
+        hour: dailyReminderHour,
+        minute: dailyReminderMinute,
+      );
+    }
+  }
+
+  /// Screen 05a after the first saved purchase: only once per device, only where
+  /// reminders work, and not when the reminder is already on
+  Future<bool> shouldOfferDailyReminder() async {
+    final prefs = preferencesService;
+    if (!supportsDailyReminder || prefs == null || _dailyReminderEnabled) {
+      return false;
+    }
+    return !await prefs.getDailyReminderOffered();
+  }
+
+  Future<void> markDailyReminderOffered() async =>
+      preferencesService?.setDailyReminderOffered();
+
+  /// From the user's tap ("Bật nhắc nhở" or the switch). false = permission denied.
+  Future<bool> enableDailyReminder() async {
+    final reminders = reminderService;
+    final prefs = preferencesService;
+    if (!supportsDailyReminder || reminders == null || prefs == null) {
+      return false;
+    }
+    final granted = await reminders.requestPermission();
+    if (!granted) return false;
+    await reminders.scheduleDaily(
+      hour: dailyReminderHour,
+      minute: dailyReminderMinute,
+    );
+    await prefs.setDailyReminderEnabled(true);
+    _dailyReminderEnabled = true;
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> disableDailyReminder() async {
+    await reminderService?.cancelDaily();
+    await preferencesService?.setDailyReminderEnabled(false);
+    _dailyReminderEnabled = false;
+    notifyListeners();
+  }
+
+  Future<void> setDailyReminderTime(int hour, int minute) async {
+    final prefs = preferencesService;
+    if (prefs == null) return;
+    _dailyReminderMinutes = (hour * 60 + minute).clamp(0, 24 * 60 - 1);
+    await prefs.setDailyReminderMinutes(_dailyReminderMinutes);
+    notifyListeners();
+    if (_dailyReminderEnabled) {
+      await reminderService?.scheduleDaily(
+        hour: dailyReminderHour,
+        minute: dailyReminderMinute,
+      );
+    }
+  }
+
+  // ---------- "Xuất dữ liệu" (CSV) ----------
+
+  bool _isExporting = false;
+  bool get isExporting => _isExporting;
+
+  Future<ExportResult> exportPurchasesCsv(
+    List<PurchaseItem> purchases,
+    List<BudgetGroup> groups, {
+    DateTime? now,
+  }) async {
+    final exporter = exportService;
+    if (exporter == null || _isExporting) return const ExportFailed();
+    if (purchases.isEmpty) return const ExportNothing();
+    _isExporting = true;
+    notifyListeners();
+    try {
+      final name = PurchaseCsv.fileName(now ?? DateTime.now());
+      await exporter.saveCsv(name, PurchaseCsv.build(purchases, groups));
+      return ExportSaved('$name.csv');
+    } catch (e, stack) {
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'exportPurchasesCsv',
+      );
+      return const ExportFailed();
+    } finally {
+      _isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  // ---------- "Gửi góp ý" ----------
+
+  bool _isSendingFeedback = false;
+  bool get isSendingFeedback => _isSendingFeedback;
+
+  /// null on success, otherwise a Vietnamese message to show
+  Future<String?> sendFeedback(String message) async {
+    final uid = _uid;
+    final service = feedbackService;
+    if (uid == null || service == null) {
+      return 'Bạn cần đăng nhập để gửi góp ý.';
+    }
+    if (message.trim().isEmpty) return 'Bạn chưa viết góp ý.';
+    if (_isSendingFeedback) return null;
+    _isSendingFeedback = true;
+    notifyListeners();
+    try {
+      await service.send(uid, message);
+      return null;
+    } catch (e, stack) {
+      return messageFor(e, stack, reason: 'sendFeedback');
+    } finally {
+      _isSendingFeedback = false;
+      notifyListeners();
+    }
   }
 
   /// users/{uid}.settings; defaults while signed out or not loaded
@@ -72,6 +252,7 @@ class SettingsViewModel extends ChangeNotifier
   }
 
   void _init() {
+    unawaited(_loadDailyReminder());
     if (PlatformSupport.supportsMessaging) {
       unawaited(
         notificationService.isPermissionGranted().then((granted) {
@@ -91,7 +272,7 @@ class SettingsViewModel extends ChangeNotifier
   void updateUid(String? uid) {
     if (uid == _uid) return;
     // Leaving an account (not the first sign-in, whose launch message must survive)
-    if (_uid != null) notificationService.clearReceived();
+    if (_uid != null) unawaited(notificationService.clearReceived());
     _uid = uid;
     _settingsSubscription?.cancel();
     _settingsSubscription = null;
@@ -158,6 +339,8 @@ class SettingsViewModel extends ChangeNotifier
 
     try {
       await remoteConfigService.fetchAndActivate();
+      // Re-filter the list for sale_reminder_enabled now, not on the next message
+      unawaited(notificationService.reload());
     } catch (e) {
       debugPrint('Error refreshing remote config: $e');
     } finally {

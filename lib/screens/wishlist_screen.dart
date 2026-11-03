@@ -10,6 +10,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/buy_intent_section.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/error_view.dart';
@@ -44,6 +45,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
       appBar: AppBar(
         title: const Text('Smart Wishlist'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.event_outlined),
+            tooltip: 'Lịch sale',
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.sales),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Thêm món',
@@ -149,6 +155,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
           const SizedBox(height: AppDimens.space8),
           const Divider(),
 
+          // Marked "Mua" in the Chrome extension, waiting for the purchase form
+          const BuyIntentSection(),
+
           // Items Content
           Expanded(child: _buildBodyContent(context, wishlistVm)),
         ],
@@ -205,11 +214,32 @@ class _WishlistScreenState extends State<WishlistScreen> {
       case UiError(message: final msg, onRetry: final retry):
         return ErrorView(message: msg, onRetry: retry);
       case UiSuccess(data: final items):
+        // Remote Config max_wishlist_items_shown: the rest stays one tap away
+        final visible = vm.visibleOf(items);
+        final hidden = items.length - visible.length;
         return ListView.builder(
           padding: const EdgeInsets.all(AppDimens.space16),
-          itemCount: items.length,
+          itemCount: visible.length + (hidden > 0 ? 1 : 0),
           itemBuilder: (context, index) {
-            final item = items[index];
+            if (index == visible.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppDimens.space8),
+                child: Column(
+                  children: [
+                    Text(
+                      'Đang hiện ${visible.length}/${items.length} món.',
+                      style: AppTextStyles.labelMedium,
+                    ),
+                    TextButton(
+                      key: const ValueKey('wishlist-show-all'),
+                      onPressed: vm.showAllItems,
+                      child: Text('Xem thêm $hidden món'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            final item = visible[index];
             return WishlistCard(
               item: item,
               onTap: () {

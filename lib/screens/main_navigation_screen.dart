@@ -5,7 +5,11 @@ import '../app/app.dart';
 import '../services/review_reminder_service.dart';
 import '../services/share_intent_service.dart';
 import '../theme/app_colors.dart';
+import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/extension_approval_dialog.dart';
+import '../widgets/satisfaction_dialog.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
 import 'insights_screen.dart';
@@ -24,18 +28,31 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
+  late final PurchaseViewModel _purchaseVm = context.read<PurchaseViewModel>();
+  late final ExtensionLinkViewModel _extensionVm = context
+      .read<ExtensionLinkViewModel>();
+
+  /// A-16: at most one satisfaction question per app session
+  bool _askedSatisfaction = false;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _purchaseVm.addListener(_onPurchasesChanged);
+    _extensionVm.addListener(_onExtensionSessionsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onPurchasesChanged();
+      _onExtensionSessionsChanged();
       context.read<InsightsViewModel>().setVisible(
         _currentIndex == _insightsTabIndex,
       );
-      // App was started by tapping a review reminder
-      if (context.read<ReviewReminderService>().consumeLaunchedFromReminder()) {
+      // App was started by tapping a review reminder or the daily reminder
+      final reminders = context.read<ReviewReminderService>();
+      if (reminders.consumeLaunchedFromReminder()) {
         openReviewDueList();
+      } else if (reminders.consumeLaunchedFromDailyReminder()) {
+        openRecordPurchase();
       }
       // App was started by sharing text/link from another app (Shopee, Lazada, Browser...)
       final initialShareData =
@@ -43,7 +60,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       if (initialShareData != null) {
         openAddItemWithSharedData(initialShareData);
       }
+      // App opened by tapping a push notification, or tapped while signed out
+      openPendingNotification();
     });
+  }
+
+  /// Purchases arrive from Firestore after the shell is shown; ask once one is due,
+  /// and only while the shell itself is on screen (never over a form)
+  void _onPurchasesChanged() {
+    if (_askedSatisfaction) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _askedSatisfaction) return;
+      if (ModalRoute.of(context)?.isCurrent != true) return;
+      final due = _purchaseVm.satisfactionDue();
+      if (due == null) return;
+      _askedSatisfaction = true;
+      SatisfactionDialog.ask(context, due);
+    });
+  }
+
+  /// A Chrome extension asks to link: ask once per request, only while the shell is on screen
+  void _onExtensionSessionsChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+      final pending = _extensionVm.unpromptedPending;
+      if (pending == null) return;
+      _extensionVm.markPrompted(pending.id);
+      final approved = await ExtensionApprovalDialog.ask(context, pending);
+      if (approved == null || !mounted) return;
+      final ok = approved
+          ? await _extensionVm.approve(pending)
+          : await _extensionVm.reject(pending);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            !ok
+                ? _extensionVm.actionError ?? 'Đã có lỗi, vui lòng thử lại.'
+                : approved
+                ? 'Đã liên kết ${pending.deviceLabel}.'
+                : 'Đã từ chối ${pending.deviceLabel}.',
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _purchaseVm.removeListener(_onPurchasesChanged);
+    _extensionVm.removeListener(_onExtensionSessionsChanged);
+    super.dispose();
   }
 
   static const int _insightsTabIndex = 3;

@@ -268,6 +268,7 @@ class FirestoreDemoDataService implements DemoDataService {
       _paths.decisions(uid),
       _paths.budgets(uid),
       _paths.reflections(uid),
+      _paths.ownedItems(uid),
     ]) {
       final docs = await collection.get();
       for (final doc in docs.docs) {

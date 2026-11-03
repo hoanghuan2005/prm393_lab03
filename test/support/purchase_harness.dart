@@ -42,6 +42,12 @@ class TestAnalytics extends Fake implements AppAnalyticsService {
   }
 
   @override
+  Future<void> logAddToWishlist({
+    required String motive,
+    required int? priceVnd,
+  }) async {}
+
+  @override
   Future<void> logViewItemDetail({
     required String motive,
     required int daysInCooldown,
@@ -105,6 +111,12 @@ class ControlledPurchaseService implements PurchaseService {
   Future<void> delete(String uid, String purchaseId) async {
     await _beforeWrite();
     return delegate.delete(uid, purchaseId);
+  }
+
+  @override
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) async {
+    await _beforeWrite();
+    return delegate.setSatisfaction(uid, purchaseId, stars);
   }
 }
 

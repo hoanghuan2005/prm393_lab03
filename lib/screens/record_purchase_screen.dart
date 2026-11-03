@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,13 +19,16 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/item_suggestions.dart';
 
 /// Shared Android/web form. Wishlist items are only changed by a successful save.
 class RecordPurchaseScreen extends StatefulWidget {
   final int? initialAmount;
   final String? initialTitle;
+  final BuyingMotive? initialMotive;
   final PurchaseItem? existingPurchase;
   final WishlistItem? wishlistItem;
 
@@ -31,6 +36,7 @@ class RecordPurchaseScreen extends StatefulWidget {
     super.key,
     this.initialAmount,
     this.initialTitle,
+    this.initialMotive,
     this.existingPurchase,
     this.wishlistItem,
   }) : assert(existingPurchase == null || wishlistItem == null);
@@ -50,6 +56,9 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   late DateTime _occurredAt;
   late BuyingMotive _motive;
   late String _budgetGroupId;
+
+  /// The group came from the user, an existing purchase or the wishlist item: no suggestion
+  late bool _groupChosen;
   late bool _usedDiscountCode;
   int _step = 1;
   bool _isSaving = false;
@@ -71,9 +80,14 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         purchase?.title ?? item?.title ?? widget.initialTitle ?? '';
     _noteController.text = purchase?.note ?? item?.note ?? '';
     _occurredAt = purchase?.occurredAt ?? DateTime.now();
-    _motive = purchase?.motive ?? item?.displayMotive ?? BuyingMotive.emotion;
+    _motive =
+        purchase?.motive ??
+        item?.displayMotive ??
+        widget.initialMotive ??
+        BuyingMotive.emotion;
     _budgetGroupId =
         purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
+    _groupChosen = purchase != null || item?.budgetGroupId != null;
     _usedDiscountCode = purchase?.usedDiscountCode ?? false;
   }
 
@@ -236,11 +250,28 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     if (widget.wishlistItem != null || original != null) {
       Navigator.pop(context, saved);
     } else {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.purchaseDetail,
-        arguments: PurchaseDetailArgs(saved),
+      // Figma Flow 1: the first saved purchase offers the daily reminder (05a) once
+      final navigator = Navigator.of(context);
+      final offerReminder = await _shouldOfferReminder();
+      if (!mounted) return;
+      unawaited(
+        navigator.pushReplacementNamed(
+          AppRoutes.purchaseDetail,
+          arguments: PurchaseDetailArgs(saved),
+        ),
       );
+      if (offerReminder) {
+        unawaited(navigator.pushNamed(AppRoutes.reminderPermission));
+      }
+    }
+  }
+
+  /// Screens tested without the settings ViewModel simply never offer it
+  Future<bool> _shouldOfferReminder() async {
+    try {
+      return await context.read<SettingsViewModel>().shouldOfferDailyReminder();
+    } on ProviderNotFoundException {
+      return false;
     }
   }
 
@@ -428,21 +459,45 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
             ),
           ),
           const SizedBox(height: AppDimens.space16),
-          DropdownButtonFormField<String>(
+          // Re-keyed by value so an applied suggestion shows in the field
+          KeyedSubtree(
             key: const ValueKey('purchase-budget-group'),
-            initialValue: _budgetGroupId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
-            items: [
-              for (final group in groups)
-                DropdownMenuItem(value: group.id, child: Text(group.name)),
-            ],
-            onChanged: enabled
-                ? (value) {
-                    if (value != null) setState(() => _budgetGroupId = value);
-                  }
-                : null,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('purchase-budget-group-$_budgetGroupId'),
+              initialValue: _budgetGroupId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
+              items: [
+                for (final group in groups)
+                  DropdownMenuItem(value: group.id, child: Text(group.name)),
+              ],
+              onChanged: enabled
+                  ? (value) {
+                      if (value != null) {
+                        setState(() {
+                          _budgetGroupId = value;
+                          _groupChosen = true;
+                        });
+                      }
+                    }
+                  : null,
+            ),
           ),
+          // A new manual purchase starts on "Khác"; edits and wishlist purchases keep their group
+          if (!_groupChosen)
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _titleController,
+              builder: (_, value, _) => BudgetGroupSuggestion(
+                title: value.text,
+                groups: groups,
+                selectedGroupId: _budgetGroupId,
+                enabled: enabled,
+                onApply: (id) => setState(() {
+                  _budgetGroupId = id;
+                  _groupChosen = true;
+                }),
+              ),
+            ),
           const SizedBox(height: AppDimens.space16),
           OutlinedButton.icon(
             onPressed: enabled ? _pickDateTime : null,

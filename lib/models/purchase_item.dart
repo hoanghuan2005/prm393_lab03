@@ -20,6 +20,12 @@ class PurchaseItem {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Spec A-16: 1–5 stars, asked 7 days after the purchase; null = not answered
+  final int? satisfaction;
+
+  /// The user chose "Bỏ qua" on the satisfaction question; it is not asked again
+  final bool satisfactionSkipped;
+
   const PurchaseItem({
     required this.id,
     required this.title,
@@ -32,7 +38,20 @@ class PurchaseItem {
     this.usedDiscountCode = false,
     this.createdAt,
     this.updatedAt,
+    this.satisfaction,
+    this.satisfactionSkipped = false,
   });
+
+  /// Asked once a purchase is a week old; very old purchases (e.g. imported or demo
+  /// data) are not asked about, since memory of them is no longer reliable
+  static const int satisfactionAfterDays = 7;
+  static const int satisfactionUntilDays = 30;
+
+  bool isSatisfactionDue(DateTime now) {
+    if (satisfaction != null || satisfactionSkipped) return false;
+    final days = now.difference(occurredAt).inDays;
+    return days >= satisfactionAfterDays && days <= satisfactionUntilDays;
+  }
 
   String get formattedAmount => formatVnd(amountVnd);
 
@@ -54,6 +73,11 @@ class PurchaseItem {
       usedDiscountCode: data['usedDiscountCode'] == true,
       createdAt: readDate(data['createdAt']),
       updatedAt: readDate(data['updatedAt']),
+      satisfaction: switch (readInt(data['satisfaction'])) {
+        final int v when v >= 1 && v <= 5 => v,
+        _ => null,
+      },
+      satisfactionSkipped: data['satisfactionSkipped'] == true,
     );
   }
 
@@ -69,6 +93,8 @@ class PurchaseItem {
       'usedDiscountCode': usedDiscountCode,
       if (createdAt != null) 'createdAt': toTimestamp(createdAt),
       if (updatedAt != null) 'updatedAt': toTimestamp(updatedAt),
+      'satisfaction': satisfaction,
+      'satisfactionSkipped': satisfactionSkipped,
     };
   }
 
@@ -85,6 +111,8 @@ class PurchaseItem {
     bool? usedDiscountCode,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? satisfaction,
+    bool? satisfactionSkipped,
   }) {
     return PurchaseItem(
       id: id ?? this.id,
@@ -98,6 +126,8 @@ class PurchaseItem {
       usedDiscountCode: usedDiscountCode ?? this.usedDiscountCode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      satisfaction: satisfaction ?? this.satisfaction,
+      satisfactionSkipped: satisfactionSkipped ?? this.satisfactionSkipped,
     );
   }
 
@@ -115,7 +145,9 @@ class PurchaseItem {
           other.wishlistItemId == wishlistItemId &&
           other.usedDiscountCode == usedDiscountCode &&
           other.createdAt == createdAt &&
-          other.updatedAt == updatedAt;
+          other.updatedAt == updatedAt &&
+          other.satisfaction == satisfaction &&
+          other.satisfactionSkipped == satisfactionSkipped;
 
   @override
   int get hashCode => Object.hash(
@@ -130,5 +162,7 @@ class PurchaseItem {
     usedDiscountCode,
     createdAt,
     updatedAt,
+    satisfaction,
+    satisfactionSkipped,
   );
 }

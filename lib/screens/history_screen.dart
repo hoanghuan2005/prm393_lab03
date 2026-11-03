@@ -151,8 +151,20 @@ class HistoryScreen extends StatelessWidget {
                     _buildFilterChip(
                       context,
                       label: 'Tất cả',
-                      isSelected: purchaseVm.selectedMotiveFilter == null,
-                      onTap: () => purchaseVm.setMotiveFilter(null),
+                      isSelected: !purchaseVm.hasActiveFilter,
+                      onTap: purchaseVm.clearFilters,
+                    ),
+                    const SizedBox(width: 8),
+                    // Spec A-10: purchases that came from a Wishlist decision
+                    _buildFilterChip(
+                      context,
+                      key: const ValueKey('history-from-wishlist'),
+                      label: 'Mua từ Wishlist',
+                      icon: Icons.bookmark_border_rounded,
+                      isSelected: purchaseVm.fromWishlistOnly,
+                      onTap: () => purchaseVm.setFromWishlistOnly(
+                        !purchaseVm.fromWishlistOnly,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     ...BuyingMotive.values.map((motive) {
@@ -201,8 +213,10 @@ class HistoryScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Không có khoản chi nào trong $monthLabel',
-                              style: TextStyle(
+                              purchaseVm.hasActiveFilter
+                                  ? 'Không có khoản chi nào khớp bộ lọc trong $monthLabel'
+                                  : 'Không có khoản chi nào trong $monthLabel',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.onSurfaceVariant,
@@ -210,8 +224,10 @@ class HistoryScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
-                              style: TextStyle(
+                              purchaseVm.hasActiveFilter
+                                  ? 'Chọn "Tất cả" để xem mọi khoản mua của tháng.'
+                                  : 'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                               ),
@@ -520,6 +536,7 @@ class HistoryScreen extends StatelessWidget {
 
   Widget _buildFilterChip(
     BuildContext context, {
+    Key? key,
     required String label,
     IconData? icon,
     required bool isSelected,
@@ -541,6 +558,7 @@ class HistoryScreen extends StatelessWidget {
         : (isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary);
 
     return InkWell(
+      key: key,
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(

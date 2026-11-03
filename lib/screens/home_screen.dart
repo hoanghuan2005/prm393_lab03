@@ -148,6 +148,11 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
+                // Section: Trước khi mua (Flow 9)
+                _buildPrePurchaseEntry(context),
+
+                const SizedBox(height: 24),
+
                 // Section 3: Khoản mua gần đây
                 _buildRecentPurchasesSection(context, purchaseVm),
               ],
@@ -550,6 +555,44 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // ==================== TRƯỚC KHI MUA ENTRY (Figma 02, Flow 9) ====================
+  Widget _buildPrePurchaseEntry(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Trước khi mua',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Dừng lại một chút. Vài câu hỏi nhanh giúp bạn hiểu điều gì đang '
+          'thu hút mình.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'Hiểu trước khi thay đổi.',
+          style: TextStyle(fontSize: 13, color: AppColors.accentNeutral),
+        ),
+        const SizedBox(height: 10),
+        ActionChip(
+          key: const ValueKey('open-pre-purchase'),
+          label: const Text('Trước khi mua'),
+          avatar: const Icon(Icons.lightbulb_outline, size: 18),
+          backgroundColor: AppColors.primaryContainer,
+          side: BorderSide.none,
+          shape: const StadiumBorder(),
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.prePurchase),
+        ),
+      ],
     );
   }
 

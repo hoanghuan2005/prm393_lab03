@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
+import '../services/ai_pre_purchase_service.dart';
 import '../services/ai_service.dart';
+import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
+import '../services/extension_session_service.dart';
+import '../services/feedback_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
 import '../services/purchase_service.dart';
@@ -17,16 +23,22 @@ import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import '../services/review_reminder_service.dart';
 import '../services/share_intent_service.dart';
+import '../services/shopping_profile_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
+import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
+import '../viewmodels/item_suggestion_viewmodel.dart';
+import '../viewmodels/pre_purchase_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
+import '../viewmodels/shopping_profile_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
 /// All services and ViewModels of the app.
@@ -66,6 +78,12 @@ class AppProviders extends StatelessWidget {
           create: (_) => FirestoreReflectionService(),
         ),
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
+        Provider<ExtensionSessionService>(
+          create: (_) => FirestoreExtensionSessionService(),
+        ),
+        Provider<ShoppingProfileService>(
+          create: (_) => FirestoreShoppingProfileService(),
+        ),
         Provider<AiService>(
           create: (_) => FirebaseAiService(
             modelName: () => remoteConfigService.aiInsightModel,
@@ -82,6 +100,19 @@ class AppProviders extends StatelessWidget {
         Provider<ReportService>(create: (_) => ReportService()),
         Provider<ReportShareService>(
           create: (_) => PrintingReportShareService(),
+        ),
+        Provider<DataExportService>(
+          create: (_) => FileSaverDataExportService(),
+        ),
+        Provider<FeedbackService>(create: (_) => FirestoreFeedbackService()),
+        ChangeNotifierProvider(
+          create: (context) => PrePurchaseViewModel(
+            aiService: AiPrePurchaseService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+          ),
         ),
 
         // Theme management with persistence
@@ -105,6 +136,10 @@ class AppProviders extends StatelessWidget {
             notificationService: notificationService,
             userService: context.read<UserService>(),
             demoDataService: context.read<DemoDataService>(),
+            reminderService: reviewReminderService,
+            preferencesService: PreferencesService(),
+            exportService: context.read<DataExportService>(),
+            feedbackService: context.read<FeedbackService>(),
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
@@ -121,7 +156,8 @@ class AppProviders extends StatelessWidget {
           ),
           update: (_, auth, settings, vm) => vm!
             ..updateUid(auth.userId)
-            ..updateCoolingOffDays(settings.coolingOffDays),
+            ..updateCoolingOffDays(settings.coolingOffDays)
+            ..updateMaxShown(settings.maxWishlistItems),
         ),
         ChangeNotifierProxyProvider<AuthViewModel, PurchaseViewModel>(
           create: (context) => PurchaseViewModel(
@@ -201,6 +237,72 @@ class AppProviders extends StatelessWidget {
                 wishlistItems: wishlistVm.allItems,
                 month: purchaseVm.selectedMonth,
               ),
+        ),
+        // Hồ sơ mua sắm: owned items, style, brands (spec 7.2)
+        ChangeNotifierProxyProvider<AuthViewModel, ShoppingProfileViewModel>(
+          create: (context) => ShoppingProfileViewModel(
+            service: context.read<ShoppingProfileService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
+        // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
+        ChangeNotifierProxyProvider5<
+          AuthViewModel,
+          PurchaseViewModel,
+          WishlistViewModel,
+          BudgetViewModel,
+          ShoppingProfileViewModel,
+          DecisionSupportViewModel
+        >(
+          create: (context) => DecisionSupportViewModel(
+            budgetService: context.read<BudgetService>(),
+            wishlistService: context.read<WishlistService>(),
+            aiDecisionService: AiDecisionService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+            reminderService: reviewReminderService,
+          ),
+          update: (_, auth, purchaseVm, wishlistVm, budgetVm, profileVm, vm) =>
+              vm!
+                ..updateUid(auth.userId)
+                ..updateSources(
+                  purchases: purchaseVm.allPurchases,
+                  wishlistItems: wishlistVm.allItems,
+                  groups: budgetVm.groups,
+                  ownedItems: profileVm.ownedItems,
+                ),
+        ),
+        // Thêm món / Ghi khoản mua / Chi tiết món: budget group and possible duplicates
+        ChangeNotifierProxyProvider3<
+          PurchaseViewModel,
+          WishlistViewModel,
+          ShoppingProfileViewModel,
+          ItemSuggestionViewModel
+        >(
+          create: (context) => ItemSuggestionViewModel(
+            aiSuggestionService: AiSuggestionService(
+              generator: context.read<AiService>(),
+            ),
+            remoteConfigService: remoteConfigService,
+            preferencesService: PreferencesService(),
+          ),
+          update: (_, purchaseVm, wishlistVm, profileVm, vm) =>
+              vm!..updateSources(
+                purchases: purchaseVm.allPurchases,
+                wishlistItems: wishlistVm.allItems,
+                ownedItems: profileVm.ownedItems,
+              ),
+        ),
+        // Chrome extension linking: approval dialog and "Thiết bị đã liên kết"
+        ChangeNotifierProxyProvider<AuthViewModel, ExtensionLinkViewModel>(
+          create: (context) => ExtensionLinkViewModel(
+            service: context.read<ExtensionSessionService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
       ],
       child: child,

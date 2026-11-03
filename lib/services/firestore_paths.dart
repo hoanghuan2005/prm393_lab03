@@ -38,6 +38,20 @@ class FirestorePaths {
   DocumentReference<JsonMap> budget(String uid, String monthKey) =>
       budgets(uid).doc(monthKey);
 
+  /// "Đồ đang dùng" of the shopping profile (spec 7.2)
+  CollectionReference<JsonMap> ownedItems(String uid) =>
+      user(uid).collection('ownedItems');
+
+  /// "Gửi góp ý" messages (create only)
+  CollectionReference<JsonMap> feedback(String uid) =>
+      user(uid).collection('feedback');
+
+  /// Chrome extensions signed in with this account (pending → approved on the phone)
+  CollectionReference<JsonMap> extensionSessions(String uid) =>
+      user(uid).collection('extensionSessions');
+  DocumentReference<JsonMap> extensionSession(String uid, String sessionId) =>
+      extensionSessions(uid).doc(sessionId);
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

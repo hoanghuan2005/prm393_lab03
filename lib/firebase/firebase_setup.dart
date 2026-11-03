@@ -16,7 +16,7 @@ class FirebaseSetup {
     required CrashlyticsService crashlyticsService,
     required RemoteConfigService remoteConfigService,
     required NotificationService notificationService,
-    Function(dynamic message)? onNotificationOpened,
+    void Function(Map<String, dynamic> data)? onNotificationOpened,
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
 

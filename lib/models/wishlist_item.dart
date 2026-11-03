@@ -44,6 +44,20 @@ class WishlistItem {
   final DateTime? updatedAt;
   final DateTime? decidedAt;
 
+  /// The user confirmed this is the same as something owned or bought in the last
+  /// 30 days (Decision Card label 5, spec 7.4)
+  final bool confirmedDuplicate;
+
+  /// Written by the Chrome extension: `shopee:<shopId>:<itemId>`, the chosen variant,
+  /// Shopee's model id and product image
+  final String? productKey;
+  final String? variantLabel;
+  final String? modelId;
+  final String? imageUrl;
+
+  /// The user pressed "Mua" in the extension; only the app records the purchase
+  final DateTime? buyIntentAt;
+
   const WishlistItem({
     required this.id,
     required this.title,
@@ -62,9 +76,21 @@ class WishlistItem {
     required this.createdAt,
     this.updatedAt,
     this.decidedAt,
+    this.confirmedDuplicate = false,
+    this.productKey,
+    this.variantLabel,
+    this.modelId,
+    this.imageUrl,
+    this.buyIntentAt,
   });
 
   bool get hasPrice => latestPriceVnd != null;
+
+  bool get isFromExtension => saveChannel == SaveChannel.extension;
+
+  /// Still undecided and marked "Mua" in the extension: waiting for the purchase form
+  bool get hasBuyIntent =>
+      status == WishlistStatus.considering && buyIntentAt != null;
 
   /// Motive for display; items saved without one show as "Khác"
   BuyingMotive get displayMotive => motive ?? BuyingMotive.other;
@@ -76,6 +102,16 @@ class WishlistItem {
 
   Duration get remainingCooldown =>
       isInCooldown ? cooldownUntil!.difference(DateTime.now()) : Duration.zero;
+
+  /// Short countdown, rounded up: a 3-day item saved a minute ago reads "3 ngày", not "2 ngày"
+  String get remainingCooldownLabel {
+    final minutes = remainingCooldown.inMinutes;
+    if (minutes >= Duration.minutesPerDay) {
+      return '${(minutes / Duration.minutesPerDay).ceil()} ngày';
+    }
+    final hours = (minutes / Duration.minutesPerHour).ceil();
+    return '${hours < 1 ? 1 : hours} giờ';
+  }
 
   /// User chose "Chờ" and the review date has not come yet
   bool get isWaiting =>
@@ -120,6 +156,12 @@ class WishlistItem {
       createdAt: readDate(data['createdAt']) ?? DateTime.now(),
       updatedAt: readDate(data['updatedAt']),
       decidedAt: readDate(data['decidedAt']),
+      confirmedDuplicate: data['confirmedDuplicate'] == true,
+      productKey: readText(data['productKey']),
+      variantLabel: readText(data['variantLabel']),
+      modelId: readText(data['modelId']),
+      imageUrl: readText(data['imageUrl']),
+      buyIntentAt: readDate(data['buyIntentAt']),
     );
   }
 
@@ -141,6 +183,14 @@ class WishlistItem {
       'createdAt': Timestamp.fromDate(createdAt),
       if (updatedAt != null) 'updatedAt': toTimestamp(updatedAt),
       'decidedAt': toTimestamp(decidedAt),
+      'confirmedDuplicate': confirmedDuplicate,
+      // Extension fields are only written when known, so an app edit never wipes them.
+      // buyIntentAt is cleared by its own write (clearBuyIntent, buyFromWishlist).
+      if (productKey != null) 'productKey': productKey,
+      if (variantLabel != null) 'variantLabel': variantLabel,
+      if (modelId != null) 'modelId': modelId,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (buyIntentAt != null) 'buyIntentAt': toTimestamp(buyIntentAt),
     };
   }
 
@@ -162,6 +212,13 @@ class WishlistItem {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? decidedAt,
+    bool? confirmedDuplicate,
+    String? productKey,
+    String? variantLabel,
+    String? modelId,
+    String? imageUrl,
+    DateTime? buyIntentAt,
+    bool clearBuyIntent = false,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -181,6 +238,12 @@ class WishlistItem {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       decidedAt: decidedAt ?? this.decidedAt,
+      confirmedDuplicate: confirmedDuplicate ?? this.confirmedDuplicate,
+      productKey: productKey ?? this.productKey,
+      variantLabel: variantLabel ?? this.variantLabel,
+      modelId: modelId ?? this.modelId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      buyIntentAt: clearBuyIntent ? null : buyIntentAt ?? this.buyIntentAt,
     );
   }
 
@@ -204,10 +267,16 @@ class WishlistItem {
           other.note == note &&
           other.createdAt == createdAt &&
           other.updatedAt == updatedAt &&
-          other.decidedAt == decidedAt;
+          other.decidedAt == decidedAt &&
+          other.confirmedDuplicate == confirmedDuplicate &&
+          other.productKey == productKey &&
+          other.variantLabel == variantLabel &&
+          other.modelId == modelId &&
+          other.imageUrl == imageUrl &&
+          other.buyIntentAt == buyIntentAt;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
     url,
@@ -225,5 +294,11 @@ class WishlistItem {
     createdAt,
     updatedAt,
     decidedAt,
-  );
+    confirmedDuplicate,
+    productKey,
+    variantLabel,
+    modelId,
+    imageUrl,
+    buyIntentAt,
+  ]);
 }

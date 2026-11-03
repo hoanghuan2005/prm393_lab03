@@ -12,6 +12,7 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `settings.coolingOffDays` | int? | | null → dùng Remote Config `cooling_off_days` |
 | `settings.reminderHour` | int | | 0–23 (code), mặc định 20 |
 | `settings.notificationsEnabled` | bool | | mặc định true |
+| `shoppingStyles`, `favoriteBrands` | string[] | | Hồ sơ mua sắm (đặc tả 7.2): phong cách, thương hiệu hay dùng; ≤ 8 thẻ (code) |
 
 ## `purchases/{id}` – `PurchaseItem` · ghi bởi `PurchaseService`, `DemoDataService`
 
@@ -26,6 +27,9 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `wishlistItemId` | string? | | — (khi mua từ danh sách mong muốn) |
 | `usedDiscountCode` | bool | | — |
 | `createdAt`, `updatedAt` | timestamp | | — (server time) |
+| `satisfaction` | int? | | null hoặc 1–5 (rules) – mức hài lòng, hỏi sau 7 ngày (A-16) |
+| `satisfactionSkipped` | bool | | người dùng chọn "Bỏ qua"; không hỏi lại |
+| `satisfactionAt` | timestamp? | | server time khi trả lời |
 
 ## `wishlistItems/{id}` – `WishlistItem` · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
 
@@ -40,7 +44,14 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 | `url`, `budgetGroupId`, `purchaseId` | string? | | — |
 | `cooldownUntil`, `reviewAt`, `latestPriceAt`, `decidedAt` | timestamp? | | — |
 | `saveChannel` | string | | — (`manual` · `share` · `extension`) |
+| `confirmedDuplicate` | bool | | người dùng xác nhận trùng với đồ đang có / khoản mua gần đây (nhãn 5 của Decision Card) |
 | `createdAt`, `updatedAt` | timestamp | ✓ / | — |
+| `productKey`, `modelId`, `imageUrl` | string? | | — (extension Chrome: `shopee:<shopId>:<itemId>`, mã phân loại, ảnh) |
+| `variantLabel` | string? | | null hoặc ≤ 60 ký tự (tên phân loại đã chọn) |
+| `buyIntentAt` | timestamp? | | null hoặc timestamp – đã bấm "Mua" trên extension, chờ app ghi khoản mua |
+| *(khi `status == purchased`)* | | | rules bắt buộc có `purchaseId` (string) |
+
+App chỉ ghi các trường extension khi có giá trị, nên sửa món trong app không xoá chúng. `buyIntentAt` được xoá khi ghi khoản mua (`buyFromWishlist`) hoặc bấm "Chưa mua" (`clearBuyIntent`).
 
 ### `wishlistItems/{id}/priceSnapshots/{sid}` – `PriceSnapshot` · **chỉ thêm, không sửa**
 
@@ -48,7 +59,24 @@ Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/g
 |:---|:---|:-:|:---|
 | `amountVnd` | int | ✓ | 1 … 999.999.999 |
 | `observedAt` | timestamp | ✓ | là timestamp |
-| `source` | string | | — (`manual` · `demo`) |
+| `source` | string | | nếu có: `manual` · `demo` · `extensionPage` |
+| `priceType` | string | | nếu có: `single` (mặc định) · `range` · `flash` · `afterVoucher` |
+| `minVnd`, `maxVnd`, `originalVnd` | int? | | — (khoảng giá: `amountVnd` = `minVnd`; giá gạch ngang) |
+| `confirmation` | string | | — `userConfirmed` (mặc định) · `unconfirmed` (giá đọc từ trang, chưa xác nhận) |
+| `variantLabel` | string? | | — |
+
+Giá `afterVoucher` không cập nhật `latestPriceVnd` và không dùng để so sánh (`PriceInsights.comparable`).
+
+## `extensionSessions/{id}` – `ExtensionSession` · tạo bởi extension Chrome, duyệt bởi `ExtensionSessionService`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `deviceLabel` | string | ✓ | 1–60 ký tự (khi tạo) |
+| `status` | string | ✓ | tạo: `pending`; sửa: `pending` · `approved` · `rejected` · `revoked` |
+| `createdAt`, `updatedAt` | timestamp | | — |
+| `approvedAt` | timestamp? | | — (server time khi Đồng ý) |
+
+Yêu cầu `pending` quá 5 phút coi như hết hạn (app không hỏi nữa).
 
 ## `decisions/{id}` – `Decision` · **chỉ thêm, không sửa** · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
 
@@ -70,6 +98,30 @@ Id document phải khớp `^[0-9]{4}-[0-9]{2}$` (rules). Trường: `limits` (ma
 Không lưu tổng riêng: **tổng ngân sách tháng = tổng `limits`**, nên không thể thấp hơn tổng các nhóm. Sheet ngân sách lưu mọi nhóm thay đổi trong một lần ghi (`BudgetService.setGroupLimits`).
 
 Phần khả dụng cho danh sách mong muốn (`AvailableBudget`, đặc tả 7.1): `max(0, hạn mức − đã chi − dự phòng) × 90%`; dự phòng = chi trung bình mỗi ngày của nhóm trong tối đa 90 ngày gần nhất (không tính khoản mua từ danh sách mong muốn) × số ngày còn lại của tháng; bằng 0 khi người dùng có dưới 30 ngày dữ liệu. Có dưới 90 ngày dữ liệu thì chia cho số ngày thực có.
+
+## `ownedItems/{id}` – `OwnedItem` · ghi bởi `ShoppingProfileService`
+
+"Đồ đang dùng" trong Hồ sơ mua sắm (đặc tả 7.2, A-12). Người dùng tự nhập; không lấy lịch sử mua Shopee.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `name` | string | ✓ | 1–60 ký tự |
+| `tags` | string[] | ✓ | ≤ 8 thẻ |
+| `note` | string? | | ≤ 100 ký tự |
+| `budgetGroupId` | string? | | — |
+| `createdAt`, `updatedAt` | timestamp | | — |
+
+Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xuất hiện trong tên món) và làm ứng viên "món có thể trùng".
+
+## `feedback/{id}` – ghi bởi `FeedbackService`
+
+"Gửi góp ý" (Cá nhân → Hỗ trợ & thông tin). Chỉ tạo mới, không sửa (rules `update: false`).
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `message` | string | ✓ | 1–1000 ký tự |
+| `appVersion` | string | | `AppConstants.appVersion` |
+| `createdAt` | timestamp | | server time |
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 

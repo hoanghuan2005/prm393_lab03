@@ -61,6 +61,44 @@ class WishlistViewModel extends ChangeNotifier
 
   void updateCoolingOffDays(int days) => _coolingOffDays = days;
 
+  /// Remote Config `max_wishlist_items_shown`: items listed before "Xem thêm"
+  int _maxShown = 20;
+  bool _showAll = false;
+  bool _disposed = false;
+
+  int get maxShown => _maxShown;
+
+  /// Fed by the ProxyProvider during build, so the redraw is deferred
+  void updateMaxShown(int value) {
+    final next = value < 1 ? 1 : value;
+    if (next == _maxShown) return;
+    _maxShown = next;
+    Future.microtask(() {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  /// The part of [items] the list shows; all of it after "Xem thêm"
+  List<WishlistItem> visibleOf(List<WishlistItem> items) =>
+      _showAll || items.length <= _maxShown
+      ? items
+      : items.sublist(0, _maxShown);
+
+  void showAllItems() {
+    _showAll = true;
+    notifyListeners();
+  }
+
+  /// Sale reminder tapped: the items still being considered, nothing else filtered
+  void showConsidering() {
+    _searchQuery = '';
+    _selectedMotiveFilter = null;
+    _reviewDueOnly = false;
+    _selectedStatusFilter = WishlistStatus.considering;
+    _showAll = false;
+    _updateFilteredState();
+  }
+
   UiState<List<WishlistItem>> get state => _state;
   BuyingMotive? get selectedMotiveFilter => _selectedMotiveFilter;
   WishlistStatus? get selectedStatusFilter => _selectedStatusFilter;
@@ -72,6 +110,12 @@ class WishlistViewModel extends ChangeNotifier
   List<WishlistItem> get reviewDueItems =>
       _allItems.where((i) => i.isReviewDue).toList();
   int get reviewDueCount => reviewDueItems.length;
+
+  /// "Định mua từ máy tính": marked "Mua" in the Chrome extension, waiting for the
+  /// purchase to be recorded here. Oldest intent first.
+  List<WishlistItem> get buyIntentItems =>
+      _allItems.where((i) => i.hasBuyIntent).toList()
+        ..sort((a, b) => a.buyIntentAt!.compareTo(b.buyIntentAt!));
   bool get reviewDueOnly => _reviewDueOnly;
 
   /// Filtered items based on active motive, status, and search query
@@ -163,6 +207,7 @@ class WishlistViewModel extends ChangeNotifier
   /// Set search query and log analytics event
   void setSearchQuery(String query) {
     _searchQuery = query;
+    _showAll = false;
     _updateFilteredState();
 
     if (query.trim().isNotEmpty) {
@@ -178,12 +223,14 @@ class WishlistViewModel extends ChangeNotifier
   /// Toggle motive filter
   void setMotiveFilter(BuyingMotive? motive) {
     _selectedMotiveFilter = (_selectedMotiveFilter == motive) ? null : motive;
+    _showAll = false;
     _updateFilteredState();
   }
 
   /// Show only items whose review date has arrived
   void setReviewDueFilter(bool enabled) {
     _reviewDueOnly = enabled;
+    _showAll = false;
     _updateFilteredState();
   }
 
@@ -232,6 +279,7 @@ class WishlistViewModel extends ChangeNotifier
   /// Toggle status filter
   void setStatusFilter(WishlistStatus? status) {
     _selectedStatusFilter = (_selectedStatusFilter == status) ? null : status;
+    _showAll = false;
     _updateFilteredState();
   }
 
@@ -242,6 +290,7 @@ class WishlistViewModel extends ChangeNotifier
     required BuyingMotive motive,
     String? productUrl,
     String? budgetGroupId,
+    int priority = WishlistItem.defaultPriority,
   }) async {
     try {
       final uid = _uid;
@@ -256,6 +305,7 @@ class WishlistViewModel extends ChangeNotifier
         motive: motive,
         url: productUrl,
         budgetGroupId: budgetGroupId,
+        priority: priority,
         coolingOffDays: _coolingOffDays,
       );
 
@@ -296,7 +346,7 @@ class WishlistViewModel extends ChangeNotifier
     reason: 'reconsider',
   );
 
-  /// Title, link, motive and budget group. The price is changed with [updatePrice]
+  /// Title, link, motive, budget group and priority. The price is changed with [updatePrice]
   /// so every price keeps its own snapshot and date.
   Future<bool> updateDetails(
     WishlistItem item, {
@@ -304,6 +354,7 @@ class WishlistViewModel extends ChangeNotifier
     String? url,
     BuyingMotive? motive,
     String? budgetGroupId,
+    int? priority,
   }) {
     // Built field by field: copyWith cannot clear an optional value such as the link
     final updated = WishlistItem(
@@ -311,7 +362,7 @@ class WishlistViewModel extends ChangeNotifier
       title: title.trim(),
       url: url == null || url.trim().isEmpty ? null : url.trim(),
       motive: motive,
-      priority: item.priority,
+      priority: priority ?? item.priority,
       status: item.status,
       cooldownUntil: item.cooldownUntil,
       reviewAt: item.reviewAt,
@@ -323,6 +374,12 @@ class WishlistViewModel extends ChangeNotifier
       note: item.note,
       createdAt: item.createdAt,
       decidedAt: item.decidedAt,
+      confirmedDuplicate: item.confirmedDuplicate,
+      productKey: item.productKey,
+      variantLabel: item.variantLabel,
+      modelId: item.modelId,
+      imageUrl: item.imageUrl,
+      buyIntentAt: item.buyIntentAt,
     );
     return _writeItem(
       item,
@@ -331,11 +388,29 @@ class WishlistViewModel extends ChangeNotifier
     );
   }
 
+  /// Decision Card: the user says this item is (not) the same as something they have
+  Future<bool> setConfirmedDuplicate(WishlistItem item, bool value) =>
+      _writeItem(
+        item,
+        (uid) => wishlistService.update(
+          uid,
+          item.copyWith(confirmedDuplicate: value),
+        ),
+        reason: 'setConfirmedDuplicate',
+      );
+
   /// New price snapshot dated now (also fills in a price that was unknown)
   Future<bool> updatePrice(WishlistItem item, int amountVnd) => _writeItem(
     item,
     (uid) => wishlistService.addPrice(uid, item.id, amountVnd),
     reason: 'updatePrice',
+  );
+
+  /// "Chưa mua" on an item marked "Mua" in the Chrome extension
+  Future<bool> clearBuyIntent(WishlistItem item) => _writeItem(
+    item,
+    (uid) => wishlistService.clearBuyIntent(uid, item.id),
+    reason: 'clearBuyIntent',
   );
 
   /// Removes the item and its price history; a purchase made from it stays in Lịch sử
@@ -409,6 +484,7 @@ class WishlistViewModel extends ChangeNotifier
 
   @override
   void dispose() {
+    _disposed = true;
     _itemsSubscription?.cancel();
     super.dispose();
   }

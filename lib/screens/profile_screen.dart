@@ -2,16 +2,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/app.dart';
 import '../app/routes.dart';
+import '../core/constants/app_constants.dart';
+import '../models/ui_state.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/budget_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/linked_devices_section.dart';
 import '../widgets/section_card.dart';
 
 /// Screen Profile & Firebase Demo Area
@@ -215,6 +221,82 @@ class ProfileScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: AppDimens.space16),
+            // Figma 10 (bản sửa): reminders, data, support
+            const _GroupLabel('Cài đặt nhắc nhở'),
+            _SettingsGroup(
+              children: [_DailyReminderTile(settingsVm: settingsVm)],
+            ),
+            const SizedBox(height: AppDimens.space16),
+
+            const _GroupLabel('Cài đặt dữ liệu'),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  key: const ValueKey('export-csv'),
+                  title: 'Xuất dữ liệu',
+                  subtitle: 'Tải bản sao nhật ký và động cơ dưới dạng CSV',
+                  busy: settingsVm.isExporting,
+                  onTap: () => _exportCsv(context, settingsVm),
+                ),
+                _SettingsTile(
+                  key: const ValueKey('clear-all-data'),
+                  title: 'Xóa toàn bộ dữ liệu',
+                  subtitle: 'Xóa vĩnh viễn mọi khoản mua đã ghi.',
+                  isDanger: true,
+                  onTap: settingsVm.isDemoBusy
+                      ? null
+                      : () => _confirmClear(context, settingsVm),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space16),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space16,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.shield_outlined,
+                    size: 20,
+                    color: AppColors.textPrimary,
+                  ),
+                  const SizedBox(width: AppDimens.space12),
+                  Expanded(
+                    child: Text(
+                      'Dữ liệu được lưu trên máy và đồng bộ với tài khoản của bạn '
+                      'khi có mạng.',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDimens.space24),
+
+            const _GroupLabel('Hỗ trợ & thông tin'),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  key: const ValueKey('open-feedback'),
+                  title: 'Gửi góp ý',
+                  subtitle: 'Báo lỗi hoặc đề xuất tính năng mới',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.feedback),
+                ),
+                _SettingsTile(
+                  key: const ValueKey('open-terms'),
+                  title: 'Điều khoản sử dụng',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.terms),
+                ),
+                _SettingsTile(
+                  key: const ValueKey('open-privacy'),
+                  title: 'Chính sách quyền riêng tư',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.privacy),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space24),
 
             // Button to preview 01 Onboarding screen
             OutlinedButton.icon(
@@ -272,6 +354,33 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
+            // Shopping profile (spec 7.2): owned items, style, brands
+            SectionCard(
+              title: 'Hồ sơ mua sắm',
+              icon: Icons.inventory_2_outlined,
+              children: [
+                Text(
+                  'Ghi đồ đang dùng, phong cách và thương hiệu hay dùng để Thẻ '
+                  'Quyết Định nhắc khi bạn cân nhắc món cùng loại. Tất cả tùy chọn.',
+                  style: AppTextStyles.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  key: const ValueKey('open-shopping-profile'),
+                  title: 'Mở hồ sơ mua sắm',
+                  variant: AppButtonVariant.secondary,
+                  icon: Icons.chevron_right_rounded,
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.shoppingProfile),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space16),
+
+            // Chrome extension linked with this account (approved on this phone)
+            const LinkedDevicesSection(),
+            const SizedBox(height: AppDimens.space16),
+
             // Demo data (never seeded automatically)
             SectionCard(
               title: 'Dữ liệu demo',
@@ -289,15 +398,6 @@ class ProfileScreen extends StatelessWidget {
                   icon: Icons.auto_awesome_motion_outlined,
                   isLoading: settingsVm.isDemoBusy,
                   onPressed: () => _confirmSeed(context, settingsVm),
-                ),
-                const SizedBox(height: AppDimens.space8),
-                AppButton(
-                  title: 'Xoá toàn bộ dữ liệu của tôi',
-                  icon: Icons.delete_outline,
-                  variant: AppButtonVariant.danger,
-                  onPressed: settingsVm.isDemoBusy
-                      ? null
-                      : () => _confirmClear(context, settingsVm),
                 ),
               ],
             ),
@@ -469,6 +569,8 @@ class ProfileScreen extends StatelessWidget {
                       final notif = settingsVm.notifications[index];
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
+                        // Same screen as tapping the system notification
+                        onTap: () => openFromNotification(notif.data),
                         leading: const Icon(
                           Icons.mark_email_unread_outlined,
                           color: AppColors.info,
@@ -484,6 +586,18 @@ class ProfileScreen extends StatelessWidget {
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(notif.body, style: AppTextStyles.bodyMedium),
+                            if (notif.openedVia != null)
+                              Text(
+                                'Đã mở',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -517,11 +631,49 @@ class ProfileScreen extends StatelessWidget {
                 if (ok) await authVm.signOut();
               },
             ),
+            const SizedBox(height: AppDimens.space16),
+            Center(
+              child: Text(
+                'Phiên bản ${AppConstants.appVersion}',
+                style: AppTextStyles.caption,
+              ),
+            ),
             const SizedBox(height: AppDimens.space24),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _exportCsv(
+    BuildContext context,
+    SettingsViewModel settingsVm,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final purchaseVm = context.read<PurchaseViewModel>();
+    final groups = context.read<BudgetViewModel>().groups;
+    void show(String text) => messenger.showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+    switch (purchaseVm.state) {
+      case UiInitial() || UiLoading():
+        show('Đang tải khoản mua, thử lại sau giây lát.');
+        return;
+      case UiError(:final message):
+        show(message);
+        return;
+      case UiEmpty() || UiSuccess():
+        break;
+    }
+    final result = await settingsVm.exportPurchasesCsv(
+      purchaseVm.allPurchases,
+      groups,
+    );
+    show(switch (result) {
+      ExportSaved(:final fileName) => 'Đã lưu "$fileName" vào Tải xuống',
+      ExportNothing() => 'Chưa có khoản mua nào để xuất.',
+      ExportFailed() => 'Chưa xuất được dữ liệu. Thử lại sau ít phút.',
+    });
   }
 
   Future<void> _confirmSeed(
@@ -598,6 +750,178 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Uppercase caption above a settings group ("CÀI ĐẶT NHẮC NHỞ")
+class _GroupLabel extends StatelessWidget {
+  final String text;
+
+  const _GroupLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.space8),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.labelMedium.copyWith(
+          color: AppColors.textSecondary,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+/// White rounded card holding rows separated by thin dividers
+class _SettingsGroup extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SettingsGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: AppColors.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0)
+                const Divider(
+                  height: 1,
+                  indent: AppDimens.space16,
+                  endIndent: AppDimens.space16,
+                ),
+              children[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Row with a chevron that opens something
+class _SettingsTile extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final bool isDanger;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  const _SettingsTile({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.isDanger = false,
+    this.busy = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDanger ? AppColors.onErrorContainer : AppColors.textPrimary;
+    return ListTile(
+      minTileHeight: AppDimens.minTouchTarget + AppDimens.space16,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space16,
+        vertical: AppDimens.space4,
+      ),
+      title: Text(
+        title,
+        style: AppTextStyles.titleMedium.copyWith(color: color),
+      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle!, style: AppTextStyles.bodyMedium),
+      trailing: busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(Icons.chevron_right_rounded, color: color),
+      onTap: busy ? null : onTap,
+    );
+  }
+}
+
+/// "Nhắc ghi khoản mua": switch turns the daily reminder on/off; tapping the row
+/// changes its time. Only on Android/iOS (local notifications).
+class _DailyReminderTile extends StatelessWidget {
+  final SettingsViewModel settingsVm;
+
+  const _DailyReminderTile({required this.settingsVm});
+
+  Future<void> _toggle(BuildContext context, bool on) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!on) {
+      await settingsVm.disableDailyReminder();
+      return;
+    }
+    final ok = await settingsVm.enableDailyReminder();
+    if (!ok) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Chưa được phép gửi thông báo. Bạn có thể bật lại trong cài đặt của máy.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickTime(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      helpText: 'Giờ nhắc ghi khoản mua',
+      initialTime: TimeOfDay(
+        hour: settingsVm.dailyReminderHour,
+        minute: settingsVm.dailyReminderMinute,
+      ),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    await settingsVm.setDailyReminderTime(picked.hour, picked.minute);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final supported = settingsVm.supportsDailyReminder;
+    final time = settingsVm.dailyReminderTimeText;
+    return ListTile(
+      key: const ValueKey('daily-reminder-tile'),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space16,
+        vertical: AppDimens.space4,
+      ),
+      title: Text('Nhắc ghi khoản mua', style: AppTextStyles.titleMedium),
+      subtitle: Text(
+        supported
+            ? 'Nhắc bạn ghi lại khoản mua lúc $time mỗi tối. Chạm để đổi giờ.'
+            : 'Chỉ có trên ứng dụng Android.',
+        style: AppTextStyles.bodyMedium,
+      ),
+      onTap: supported ? () => _pickTime(context) : null,
+      trailing: Switch(
+        key: const ValueKey('daily-reminder-switch'),
+        value: supported && settingsVm.dailyReminderEnabled,
+        onChanged: supported ? (on) => _toggle(context, on) : null,
       ),
     );
   }

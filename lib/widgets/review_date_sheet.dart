@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../core/formatters/date_format.dart';
+import '../models/sale_event.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import 'app_bottom_sheet.dart';
 
-/// "Chờ – chọn thời điểm xem lại" (screen 21): a few days later or a date the user picks.
+/// "Chờ – chọn thời điểm xem lại" (screen 21): a few days later, the next confirmed sale,
+/// or a date the user picks.
 /// Returns the review moment, or null when the sheet is dismissed.
 class ReviewDateSheet {
   ReviewDateSheet._();
@@ -13,17 +15,23 @@ class ReviewDateSheet {
   /// Reviews land at 09:00, outside the 22:00–08:00 quiet hours of spec 4.3
   static const int reviewHour = 9;
 
-  /// [defaultDays] is the user's cooling-off setting; 7 days is offered too
+  /// [defaultDays] is the user's cooling-off setting; 7 days is offered too.
+  /// [sale]: next confirmed sale, offered as "Đến đợt sale …" (spec 21.1).
   static Future<DateTime?> show(
     BuildContext context, {
     required int defaultDays,
     DateTime? current,
+    SaleEvent? sale,
   }) {
     final options = {defaultDays, 7}.toList()..sort();
     return AppBottomSheet.show<DateTime>(
       context,
       title: 'Xem lại món này khi nào?',
-      child: _ReviewDateOptions(dayOptions: options, current: current),
+      child: _ReviewDateOptions(
+        dayOptions: options,
+        current: current,
+        sale: sale,
+      ),
     );
   }
 
@@ -39,8 +47,9 @@ class ReviewDateSheet {
 class _ReviewDateOptions extends StatelessWidget {
   final List<int> dayOptions;
   final DateTime? current;
+  final SaleEvent? sale;
 
-  const _ReviewDateOptions({required this.dayOptions, this.current});
+  const _ReviewDateOptions({required this.dayOptions, this.current, this.sale});
 
   Future<void> _pickDate(BuildContext context) async {
     final now = DateTime.now();
@@ -81,6 +90,17 @@ class _ReviewDateOptions extends StatelessWidget {
             ),
             onTap: () =>
                 Navigator.pop(context, ReviewDateSheet.daysFromToday(days)),
+          ),
+        if (sale case final sale?)
+          ListTile(
+            key: const ValueKey('review-until-sale'),
+            contentPadding: EdgeInsets.zero,
+            minTileHeight: AppDimens.minTouchTarget,
+            leading: const Icon(Icons.event_outlined),
+            title: Text('Đến đợt sale ${sale.name}'),
+            subtitle: Text(formatWeekdayDate(sale.date)),
+            onTap: () =>
+                Navigator.pop(context, ReviewDateSheet.atReviewHour(sale.date)),
           ),
         ListTile(
           contentPadding: EdgeInsets.zero,

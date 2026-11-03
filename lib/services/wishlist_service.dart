@@ -33,6 +33,9 @@ abstract interface class WishlistService {
   /// New price snapshot + latestPriceVnd/latestPriceAt
   Future<void> addPrice(String uid, String itemId, int amountVnd);
 
+  /// Every recorded price of the item, newest first ("Lịch sử giá", spec A-14)
+  Future<List<PriceSnapshot>> priceHistory(String uid, String itemId);
+
   /// "Chờ": reviewAt + decision wait
   Future<void> setReview(String uid, String itemId, DateTime reviewAt);
 
@@ -44,6 +47,9 @@ abstract interface class WishlistService {
 
   /// Deletes the item and its price snapshots (decisions stay as history)
   Future<void> delete(String uid, String itemId);
+
+  /// "Chưa mua": drops the "Mua" intent set in the Chrome extension; the item stays considering
+  Future<void> clearBuyIntent(String uid, String itemId);
 }
 
 class FirestoreWishlistService implements WishlistService {
@@ -108,6 +114,17 @@ class FirestoreWishlistService implements WishlistService {
     await awaitWrite(batch.commit());
     return item;
   });
+
+  @override
+  Future<List<PriceSnapshot>> priceHistory(String uid, String itemId) =>
+      guard(() async {
+        final snapshots = await _paths
+            .priceSnapshots(uid, itemId)
+            .orderBy('observedAt', descending: true)
+            .limit(50)
+            .get();
+        return snapshots.docs.map(PriceSnapshot.fromFirestore).toList();
+      });
 
   @override
   Future<void> update(String uid, WishlistItem item) => guard(() {
@@ -185,6 +202,16 @@ class FirestoreWishlistService implements WishlistService {
     batch.delete(_paths.wishlistItem(uid, itemId));
     await awaitWrite(batch.commit());
   });
+
+  @override
+  Future<void> clearBuyIntent(String uid, String itemId) => guard(
+    () => awaitWrite(
+      _paths.wishlistItem(uid, itemId).update({
+        'buyIntentAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    ),
+  );
 
   void _addDecision(
     WriteBatch batch,

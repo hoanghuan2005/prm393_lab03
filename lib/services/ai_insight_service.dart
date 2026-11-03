@@ -82,7 +82,8 @@ Quy tắc bắt buộc:
         'late_night = các khoản mua trong khung 22:00-05:00; '
         'month_over_month = so tổng đã chi với tháng trước; '
         'largest_purchase = khoản mua lớn nhất; '
-        'skipped_items = các món người dùng đã cân nhắc và quyết định không mua (gọi là "giá trị món đã quyết định không mua").';
+        'skipped_items = các món người dùng đã cân nhắc và quyết định không mua (gọi là "giá trị món đã quyết định không mua"); '
+        'satisfaction_by_motive = mức hài lòng (1–5 sao) người dùng tự chấm cho khoản mua tháng này, theo động cơ.';
   }
 
   /// Validates the model output card by card; anything unusable falls back to the template
@@ -243,6 +244,19 @@ Quy tắc bắt buộc:
           body:
               'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
               '${stats.skippedValueText}.',
+          fromAi: false,
+        );
+      case InsightKind.satisfactionByMotive:
+        final parts = stats.satisfaction
+            .take(3)
+            .map(
+              (s) => '${s.motive.label} ${s.averageText}/5 (${s.count} khoản)',
+            )
+            .join(' · ');
+        return InsightCard(
+          kind: kind,
+          title: 'Mức hài lòng theo động cơ',
+          body: 'Mức hài lòng trung bình bạn tự chấm tháng này: $parts.',
           fromAi: false,
         );
     }

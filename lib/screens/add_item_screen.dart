@@ -10,8 +10,10 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
+import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 
 /// Screen 04: Add Item Screen from Figma "Why I Buy".
@@ -40,6 +42,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
   String? _budgetGroupId;
+  int _priority = WishlistItem.defaultPriority;
   bool _isSaving = false;
 
   bool get _isEdit => widget.existing != null;
@@ -60,6 +63,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
         _urlController.text = widget.initialUrl!;
       }
+      _priority = item.priority;
     }
   }
 
@@ -88,6 +92,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             url: url,
             motive: _selectedMotive,
             budgetGroupId: _budgetGroupId,
+            priority: _priority,
           )
         : await wishlistVm.addItem(
             title: _titleController.text.trim(),
@@ -95,6 +100,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             motive: _selectedMotive,
             productUrl: url.isNotEmpty ? url : null,
             budgetGroupId: _budgetGroupId,
+            priority: _priority,
           );
 
     if (mounted) {
@@ -155,16 +161,25 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 validator: Validators.validateTitle,
               ),
               const SizedBox(height: AppDimens.space16),
+              if (!_isEdit)
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _titleController,
+                  builder: (_, value, _) => DuplicateHint(
+                    title: value.text,
+                    budgetGroupId: _budgetGroupId,
+                  ),
+                ),
 
               // Price Input (new items only; an edit changes the price via "Cập nhật giá")
               if (!_isEdit) ...[
-                AppTextField(
-                  label: 'Giá dự kiến (VND, không bắt buộc)',
+                // Same VND field as Ghi khoản mua: "389.000" grouping, "₫", empty = unknown price
+                AmountField(
+                  key: const ValueKey('wishlist-price'),
+                  label: 'Giá dự kiến (không bắt buộc)',
                   hint: 'Để trống nếu chưa biết giá',
                   controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  prefixIcon: Icons.attach_money,
-                  validator: Validators.validateOptionalAmount,
+                  optional: true,
+                  enabled: !_isSaving,
                 ),
                 const SizedBox(height: AppDimens.space16),
               ],
@@ -179,32 +194,70 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: AppDimens.space16),
 
-              // Budget group: prefilled when the item is bought later
-              DropdownButtonFormField<String?>(
+              // Budget group: prefilled when the item is bought later. Re-keyed by value
+              // so an applied suggestion shows in the field.
+              KeyedSubtree(
                 key: const ValueKey('wishlist-budget-group'),
-                initialValue: groups.any((g) => g.id == _budgetGroupId)
-                    ? _budgetGroupId
-                    : null,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nhóm ngân sách (không bắt buộc)',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Chưa chọn'),
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey('wishlist-budget-group-$_budgetGroupId'),
+                  initialValue: groups.any((g) => g.id == _budgetGroupId)
+                      ? _budgetGroupId
+                      : null,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nhóm ngân sách (không bắt buộc)',
                   ),
-                  for (final group in groups)
-                    DropdownMenuItem<String?>(
-                      value: group.id,
-                      child: Text(group.name),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Chưa chọn'),
+                    ),
+                    for (final group in groups)
+                      DropdownMenuItem<String?>(
+                        value: group.id,
+                        child: Text(group.name),
+                      ),
+                  ],
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _budgetGroupId = value),
+                ),
+              ),
+              // Only while no group is chosen; the user's own choice is never second-guessed
+              if (_budgetGroupId == null)
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _titleController,
+                  builder: (_, value, _) => BudgetGroupSuggestion(
+                    title: value.text,
+                    groups: groups,
+                    selectedGroupId: _budgetGroupId,
+                    enabled: !_isSaving,
+                    onApply: (id) => setState(() => _budgetGroupId = id),
+                  ),
+                ),
+              const SizedBox(height: AppDimens.space24),
+
+              // Priority (1–5 stars): used by "So sánh" and the sale plan (spec 7.5)
+              Text('Mức ưu tiên', style: AppTextStyles.titleMedium),
+              Row(
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    IconButton(
+                      key: ValueKey('priority-$i'),
+                      tooltip: '$i sao',
+                      onPressed: _isSaving
+                          ? null
+                          : () => setState(() => _priority = i),
+                      icon: Icon(
+                        i <= _priority
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: AppColors.motiveSale,
+                      ),
                     ),
                 ],
-                onChanged: _isSaving
-                    ? null
-                    : (value) => setState(() => _budgetGroupId = value),
               ),
-              const SizedBox(height: AppDimens.space24),
+              const SizedBox(height: AppDimens.space16),
 
               // Motive Selection Header
               Text(

@@ -10,13 +10,19 @@ import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/decision_card_panel.dart';
+import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
+import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/undo_snack_bar.dart';
+import '../widgets/wishlist_card.dart';
 
 /// Screen 03: Item Detail & Decision Card from Figma "Why I Buy"
 class ItemDetailScreen extends StatefulWidget {
@@ -83,6 +89,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       context,
       defaultDays: vm.coolingOffDays,
       current: item.reviewAt,
+      sale: context.read<DecisionSupportViewModel?>()?.nextConfirmedSale,
     );
     if (reviewAt == null || !mounted) return;
     final ok = await _run((vm) => vm.wait(item, reviewAt));
@@ -146,6 +153,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       );
   }
 
+  /// Decision Card label 5 (spec 7.4): the user marks the item as (not) a duplicate
+  Future<void> _setDuplicate(WishlistItem item, bool value) async {
+    final ok = await _run((vm) => vm.setConfirmedDuplicate(item, value));
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            value
+                ? 'Đã đánh dấu món trùng với đồ bạn đã có.'
+                : 'Đã bỏ đánh dấu trùng.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   /// A skipped item can be considered again later
   Future<void> _reconsider(WishlistItem item) async {
     final ok = await _run((vm) => vm.reconsider(item));
@@ -179,13 +204,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       currentPriceAt: item.latestPriceAt,
     );
     if (amount == null || !mounted) return;
+    final confirmed = amount == item.latestPriceVnd;
     final ok = await _run((vm) => vm.updatePrice(item, amount));
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('Đã lưu giá ${formatVnd(amount)}.'),
+          content: Text(
+            confirmed
+                ? 'Đã xác nhận giá ${formatVnd(amount)} hôm nay.'
+                : 'Đã lưu giá ${formatVnd(amount)}.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -286,7 +316,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (ProductImage.canShow(item.imageUrl)) ...[
+                    Center(
+                      child: ProductImage(
+                        url: item.imageUrl,
+                        size: 160,
+                        borderRadius: AppDimens.borderLarge,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimens.space16),
+                  ],
                   Text(item.title, style: AppTextStyles.headlineMedium),
+                  if (item.variantLabel != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Phân loại: ${item.variantLabel}',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(item.latestPriceVnd),
@@ -320,6 +367,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      if (item.isFromExtension)
+                        WishlistCard.fromExtensionChip(),
                       Text(
                         'Lưu ngày: ${formatDate(item.createdAt)}',
                         style: AppTextStyles.labelMedium,
@@ -330,6 +379,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
             const SizedBox(height: AppDimens.space20),
+
+            // A-14: every recorded price, compared only when it makes sense (spec 6.5)
+            if (item.hasPrice) PriceHistoryPanel(item: item),
 
             // Psychological Cooldown Box
             if (item.isInCooldown) ...[
@@ -373,6 +425,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               const SizedBox(height: AppDimens.space20),
             ],
 
+            if (canDecide)
+              DuplicateHint(
+                title: item.title,
+                excludeItemId: item.id,
+                budgetGroupId: item.budgetGroupId,
+                onConfirmDuplicate: item.confirmedDuplicate
+                    ? null
+                    : () => _setDuplicate(item, true),
+              ),
+
             // Decision Card (Why I Buy Core)
             Text(
               'Thẻ Quyết Định (Decision Card)',
@@ -384,6 +446,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: AppDimens.space16),
+            if (canDecide)
+              DecisionCardPanel(
+                item: item,
+                onSetDuplicate: (value) => _setDuplicate(item, value),
+              ),
 
             if (needsPurchase) ...[
               Text(

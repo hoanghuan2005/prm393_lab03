@@ -29,6 +29,9 @@ abstract interface class PurchaseService {
   /// (same batch, decision "undo"), so the item can be bought again later.
   Future<void> delete(String uid, String purchaseId);
 
+  /// Spec A-16: 1–5 stars, or null for "Bỏ qua" (then it is not asked again)
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars);
+
   /// One batch: new purchase linked to [item], item marked purchased, decision "buy".
   /// Stable ids make a retry refer to the same purchase and decision.
   Future<PurchaseItem> buyFromWishlist(
@@ -139,6 +142,25 @@ class FirestorePurchaseService implements PurchaseService {
   });
 
   @override
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) =>
+      guard(() {
+        if (stars != null && (stars < 1 || stars > 5)) {
+          throw const AppException(
+            'invalid-satisfaction',
+            'Vui lòng chọn từ 1 đến 5 sao.',
+          );
+        }
+        return awaitWrite(
+          _paths.purchase(uid, purchaseId).update({
+            'satisfaction': stars,
+            'satisfactionSkipped': stars == null,
+            'satisfactionAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }),
+        );
+      });
+
+  @override
   Future<PurchaseItem> buyFromWishlist(
     String uid,
     WishlistItem item,
@@ -224,6 +246,8 @@ class FirestorePurchaseService implements PurchaseService {
         'purchaseId': purchaseRef.id,
         'decidedAt': FieldValue.serverTimestamp(),
         'reviewAt': null,
+        // The extension's "Mua" intent is fulfilled by this purchase
+        'buyIntentAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
       })
       // Decisions are create-only in firestore.rules. A competing batch for

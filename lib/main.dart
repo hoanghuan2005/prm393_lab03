@@ -18,17 +18,27 @@ Future<void> main() async {
   // after Firebase is initialized.
   final crashlyticsService = CrashlyticsService();
   final remoteConfigService = RemoteConfigService();
-  final notificationService = NotificationService();
+  final notificationService = NotificationService(
+    saleRemindersEnabled: () => remoteConfigService.saleReminderEnabled,
+  );
 
   await FirebaseSetup.initialize(
     crashlyticsService: crashlyticsService,
     remoteConfigService: remoteConfigService,
     notificationService: notificationService,
+    // A tapped push notification opens its screen (waits for sign-in if needed)
+    onNotificationOpened: openFromNotification,
   );
 
-  // Local "Đến hẹn xem lại" notifications (Android/iOS only; no-op elsewhere)
+  // Local "Đến hẹn xem lại" and daily "Nhắc ghi khoản mua" notifications
+  // (Android/iOS only; no-op elsewhere)
   final reviewReminderService = LocalReviewReminderService();
-  await reviewReminderService.initialize(onOpen: openReviewDueList);
+  await reviewReminderService.initialize(
+    onOpen: openReviewDueList,
+    onOpenDaily: openRecordPurchase,
+    // Same route as a sale push: "Danh sách cho đợt sale" + click_sale_reminder
+    onOpenSale: openFromNotification,
+  );
 
   // Android Native Share Sheet target (Android only; no-op elsewhere)
   final shareIntentService = ShareIntentService();

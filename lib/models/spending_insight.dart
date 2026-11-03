@@ -39,6 +39,11 @@ enum InsightKind {
     'skipped_items',
     Icons.do_not_disturb_on_outlined,
     AppColors.motiveConvenience,
+  ),
+  satisfactionByMotive(
+    'satisfaction_by_motive',
+    Icons.star_outline_rounded,
+    AppColors.motiveWant,
   );
 
   final String key;
@@ -58,6 +63,25 @@ class MotiveStat {
     required this.count,
     required this.amount,
   });
+}
+
+/// Average stars (1–5) the user gave this month's purchases of one motive (spec A-16)
+class MotiveSatisfaction {
+  final BuyingMotive motive;
+  final int count;
+
+  /// Average × 10, so 4,5 sao is 45
+  final int tenths;
+
+  const MotiveSatisfaction({
+    required this.motive,
+    required this.count,
+    required this.tenths,
+  });
+
+  /// "4,5" or "4"
+  String get averageText =>
+      tenths % 10 == 0 ? '${tenths ~/ 10}' : '${tenths ~/ 10},${tenths % 10}';
 }
 
 /// Monthly numbers computed by code. AI only rephrases these and never adds new figures (spec 7.6).
@@ -83,6 +107,12 @@ class MonthlySpendingStats {
   /// Skipped items with no recorded price; they are not part of [skippedValue]
   final int skippedUnpricedCount;
 
+  /// Motives with at least [kMinRatingsPerMotive] rated purchases this month
+  final List<MotiveSatisfaction> satisfaction;
+
+  /// One rating says little about a motive (spec 7.5 also needs ≥ 2)
+  static const int kMinRatingsPerMotive = 2;
+
   /// Stable identity of the input data; used to cache AI output
   late final String cacheKey = jsonEncode(toPromptData());
 
@@ -99,6 +129,7 @@ class MonthlySpendingStats {
     required this.skippedCount,
     required this.skippedValue,
     required this.skippedUnpricedCount,
+    this.satisfaction = const [],
   });
 
   factory MonthlySpendingStats.compute({
@@ -156,6 +187,22 @@ class MonthlySpendingStats {
       (sum, p) => sum + p.amountVnd,
     );
 
+    final ratings = <BuyingMotive, List<int>>{};
+    for (final p in monthPurchases) {
+      final stars = p.satisfaction;
+      if (stars != null) (ratings[p.motive] ??= []).add(stars);
+    }
+    final satisfaction = [
+      for (final e in ratings.entries)
+        if (e.value.length >= kMinRatingsPerMotive)
+          MotiveSatisfaction(
+            motive: e.key,
+            count: e.value.length,
+            tenths: (e.value.fold(0, (a, b) => a + b) * 10 / e.value.length)
+                .round(),
+          ),
+    ]..sort((a, b) => b.count.compareTo(a.count));
+
     final skipped = wishlistItems.where(
       (i) =>
           i.status == WishlistStatus.skipped &&
@@ -181,6 +228,7 @@ class MonthlySpendingStats {
         0,
         (sum, i) => sum + (i.latestPriceVnd ?? 0),
       ),
+      satisfaction: satisfaction,
     );
   }
 
@@ -226,6 +274,7 @@ class MonthlySpendingStats {
   /// Observations that apply to this month, in display order
   List<InsightKind> get applicableKinds => [
     if (hasPurchases) InsightKind.dominantMotive,
+    if (satisfaction.isNotEmpty) InsightKind.satisfactionByMotive,
     if (lateNightCount > 0) InsightKind.lateNight,
     if (hasPurchases && previousMonthTotal != null) InsightKind.monthOverMonth,
     if (purchaseCount >= 2) InsightKind.largestPurchase,
@@ -280,6 +329,15 @@ class MonthlySpendingStats {
         },
         'soMonChuaGhiGia': skippedUnpricedCount,
       },
+      if (satisfaction.isNotEmpty)
+        'hailongTheoDongCo': [
+          for (final s in satisfaction)
+            {
+              'dongCo': s.motive.label,
+              'trungBinhText': '${s.averageText}/5',
+              'soKhoanDaCham': s.count,
+            },
+        ],
     };
   }
 
@@ -304,6 +362,12 @@ class MonthlySpendingStats {
     };
     for (final m in motives) {
       numbers.addAll([m.count, m.amount, sharePercent(m)]);
+    }
+    for (final s in satisfaction) {
+      numbers
+        ..add(s.count)
+        ..add(5)
+        ..addAll(extractNumbers(s.averageText));
     }
     if (previousMonthTotal != null) numbers.add(previousMonthTotal!);
     final change = changeVsPreviousPercent;

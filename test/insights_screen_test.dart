@@ -103,6 +103,10 @@ class _FakePurchaseService implements PurchaseService {
       throw UnimplementedError();
 
   @override
+  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) =>
+      throw UnimplementedError();
+
+  @override
   Future<PurchaseItem> buyFromWishlist(
     String uid,
     WishlistItem item,
@@ -142,6 +146,20 @@ class _FakeGenerator implements AiService {
       ],
     });
   }
+
+  @override
+  Future<String> generateChoice({
+    required String systemInstruction,
+    required String prompt,
+    required AiChoiceSchema schema,
+  }) => throw UnimplementedError('Not used by Góc nhìn');
+
+  @override
+  Future<String> generateFields({
+    required String systemInstruction,
+    required String prompt,
+    required List<String> fields,
+  }) => throw UnimplementedError('Not used here');
 }
 
 void main() {

@@ -31,6 +31,14 @@
           }
         },
         {
+          "client_id": "21478927288-ugu9bas790pl8b522h9k9t1op3o2bdec.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.group07.whyibuy",
+            "certificate_hash": "fd8ecf5007a480abcd65981da365b533d63232c2"
+          }
+        },
+        {
           "client_id": "21478927288-qivdr7sf7pju091ohu41iaae6d3n8uk8.apps.googleusercontent.com",
           "client_type": 3
         }

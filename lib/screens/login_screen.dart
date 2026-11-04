@@ -122,6 +122,18 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppDimens.space12),
 
+              // GitHub Sign-In Button
+              AppButton(
+                title: 'Đăng nhập với GitHub',
+                icon: Icons.code_rounded,
+                variant: AppButtonVariant.secondary,
+                isLoading: authVm.status == AuthStatus.loading,
+                onPressed: () async {
+                  await authVm.signInWithGithub();
+                },
+              ),
+              const SizedBox(height: AppDimens.space12),
+
               // Guest mode / Test account option
               AppButton(
                 title: 'Dùng thử chế độ Khách (Test)',

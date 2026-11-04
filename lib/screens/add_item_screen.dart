@@ -20,11 +20,22 @@ import '../widgets/motive_chip.dart';
 /// With [existing] it edits that item; the price is then changed with "Cập nhật giá" instead.
 class AddItemScreen extends StatefulWidget {
   final WishlistItem? existing;
+  final String? initialTitle;
+  final String? initialUrl;
 
+<<<<<<< HEAD
   /// Prefilled name for a new item (e.g. the AI guess from "Chụp để tìm")
   final String? initialTitle;
 
   const AddItemScreen({super.key, this.existing, this.initialTitle});
+=======
+  const AddItemScreen({
+    super.key,
+    this.existing,
+    this.initialTitle,
+    this.initialUrl,
+  });
+>>>>>>> feature/share-intent-and-dark-theme
 
   @override
   State<AddItemScreen> createState() => _AddItemScreenState();
@@ -53,8 +64,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
       _priority = item.priority;
+<<<<<<< HEAD
     } else if (widget.initialTitle case final title?) {
       _titleController.text = title;
+=======
+    } else {
+      if (widget.initialTitle != null && widget.initialTitle!.isNotEmpty) {
+        _titleController.text = widget.initialTitle!;
+      }
+      if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
+        _urlController.text = widget.initialUrl!;
+      }
+>>>>>>> feature/share-intent-and-dark-theme
     }
   }
 

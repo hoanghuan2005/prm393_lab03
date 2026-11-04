@@ -45,11 +45,17 @@ class ItemDetailArgs {
   const ItemDetailArgs(this.item);
 }
 
-/// Arguments for [AppRoutes.wishlistAdd]; optional prefill (e.g. from "Chụp để tìm")
+/// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
 class AddItemArgs {
+  final WishlistItem? existing;
   final String? initialTitle;
+  final String? initialUrl;
 
-  const AddItemArgs({this.initialTitle});
+  const AddItemArgs({
+    this.existing,
+    this.initialTitle,
+    this.initialUrl,
+  });
 }
 
 /// Arguments for [AppRoutes.purchaseDetail]
@@ -149,11 +155,14 @@ class AppRoutes {
       ),
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
-      wishlistAdd => AddItemScreen(
-        initialTitle: args is AddItemArgs ? args.initialTitle : null,
-      ),
+      wishlistAdd => const AddItemScreen(),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,
+      ),
+      wishlistEdit when args is AddItemArgs => AddItemScreen(
+        existing: args.existing,
+        initialTitle: args.initialTitle,
+        initialUrl: args.initialUrl,
       ),
       itemDetail when args is ItemDetailArgs => ItemDetailScreen(
         item: args.item,

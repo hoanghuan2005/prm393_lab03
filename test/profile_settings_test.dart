@@ -108,6 +108,14 @@ class _FakeReminders implements ReviewReminderService {
 
   @override
   Future<void> cancelDaily() async => daily = null;
+
+  @override
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {}
 }
 
 class _FakeExport implements DataExportService {

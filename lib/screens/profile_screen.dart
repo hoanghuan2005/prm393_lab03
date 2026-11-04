@@ -14,6 +14,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
@@ -25,11 +26,44 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final authVm = context.watch<AuthViewModel>();
     final settingsVm = context.watch<SettingsViewModel>();
+    final themeVm = context.watch<ThemeViewModel>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cá nhân & Firebase Demo')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Cá nhân & Cài đặt'),
+        actions: [
+          // Nút công tắc Dark Mode trên AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.primary : AppColors.onPrimary,
+                ),
+                const SizedBox(width: 4),
+                Switch(
+                  value: isDark,
+                  activeThumbColor: AppColors.primary,
+                  activeTrackColor: const Color(0xFF332E05),
+                  inactiveThumbColor: AppColors.onPrimary,
+                  inactiveTrackColor: AppColors.divider,
+                  onChanged: (bool value) {
+                    themeVm.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),
         child: Column(
@@ -39,9 +73,9 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppDimens.space16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: theme.colorScheme.surface,
                 borderRadius: AppDimens.borderLarge,
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: theme.dividerColor),
               ),
               child: Row(
                 children: [
@@ -64,15 +98,21 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         Text(
                           authVm.displayName,
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                         Text(
                           authVm.user?.email ?? 'Tài khoản ẩn danh / Khách',
-                          style: AppTextStyles.bodyMedium,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         Text(
                           'UID: ${authVm.userId ?? "N/A"}',
-                          style: AppTextStyles.caption,
+                          style: AppTextStyles.caption.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -83,6 +123,104 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
+            // Theme Mode Switch Card
+            SectionCard(
+              title: 'Giao diện ứng dụng',
+              icon: Icons.palette_outlined,
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: isDark ? AppColors.primary : AppColors.onPrimary,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    'Chế độ tối (Dark Mode)',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    isDark
+                        ? 'Đang bật nền tối cao cấp, dịu mắt'
+                        : 'Đang bật nền sáng chuẩn',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  value: isDark,
+                  activeThumbColor: AppColors.primary,
+                  activeTrackColor: const Color(0xFF332E05),
+                  inactiveThumbColor: AppColors.onPrimary,
+                  inactiveTrackColor: AppColors.divider,
+                  onChanged: (bool value) {
+                    themeVm.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                  },
+                ),
+                Divider(color: theme.dividerColor, height: 20),
+                // Lựa chọn tự động theo hệ thống
+                InkWell(
+                  onTap: () {
+                    themeVm.setThemeMode(
+                      themeVm.themeMode == ThemeMode.system
+                          ? (isDark ? ThemeMode.dark : ThemeMode.light)
+                          : ThemeMode.system,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.brightness_auto_rounded,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tự động theo thiết bị',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Checkbox(
+                          value: themeVm.themeMode == ThemeMode.system,
+                          activeColor: AppColors.primary,
+                          checkColor: AppColors.onPrimary,
+                          onChanged: (bool? checked) {
+                            if (checked == true) {
+                              themeVm.setThemeMode(ThemeMode.system);
+                            } else {
+                              themeVm.setThemeMode(
+                                isDark ? ThemeMode.dark : ThemeMode.light,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppDimens.space16),
             // Figma 10 (bản sửa): reminders, data, support
             const _GroupLabel('Cài đặt nhắc nhở'),
             _SettingsGroup(
@@ -177,14 +315,14 @@ class ProfileScreen extends StatelessWidget {
                 horizontal: AppDimens.space12,
                 vertical: AppDimens.space6,
               ),
-              decoration: const BoxDecoration(
-                color: AppColors.primaryContainer,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
                 'FIREBASE DEMO AREA',
                 style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.onPrimary,
+                  color: isDark ? AppColors.primary : AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -196,11 +334,11 @@ class ProfileScreen extends StatelessWidget {
               title: 'Ngân sách chi tiêu',
               icon: Icons.account_balance_wallet_outlined,
               children: [
-                const Text(
+                Text(
                   'Thiết lập ngân sách tham chiếu theo tháng và theo nhóm hàng, tự động đồng bộ Firestore:',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -250,7 +388,9 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   'Tạo khoảng 20 khoản mua, 6 món mong muốn, ngân sách tháng này và chiêm nghiệm tháng trước để thử các màn hình.',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
@@ -280,18 +420,22 @@ class ProfileScreen extends StatelessWidget {
               icon: Icons.tune,
               children: [
                 _buildKeyValueRow(
+                  context,
                   'Thời gian hoãn mua (cooling_off_days):',
                   '${settingsVm.coolingOffDays} ngày',
                 ),
                 _buildKeyValueRow(
+                  context,
                   'Bật tính năng AI (enable_ai_insight):',
                   settingsVm.enableAiInsight ? 'Bật (True)' : 'Tắt (False)',
                 ),
                 _buildKeyValueRow(
+                  context,
                   'Số món tối đa (max_wishlist_items):',
                   '${settingsVm.maxWishlistItems} món',
                 ),
                 _buildKeyValueRow(
+                  context,
                   'Nhắc nhở đợt sale (sale_reminder_enabled):',
                   settingsVm.saleReminderEnabled ? 'Bật (True)' : 'Tắt (False)',
                 ),
@@ -324,7 +468,9 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   'Kiểm thử ghi nhận lỗi Crashlytics có gắn User ID và Custom Key per Lab 3:',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: AppDimens.space12),
                 AppButton(
@@ -369,7 +515,9 @@ class ProfileScreen extends StatelessWidget {
                   if (settingsVm.notificationsEnabled)
                     Text(
                       'Đã bật thông báo cho ứng dụng.',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     )
                   else
                     OutlinedButton.icon(
@@ -392,9 +540,30 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   const SizedBox(height: AppDimens.space12),
                 ],
+                AppButton(
+                  title: 'Bắn thông báo thử nghiệm lên điện thoại ngay',
+                  icon: Icons.notification_important_rounded,
+                  variant: AppButtonVariant.primary,
+                  onPressed: () async {
+                    await settingsVm.sendTestNotification();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Đã kích hoạt hiển thị thông báo trên thanh trạng thái điện thoại.',
+                          ),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: AppDimens.space12),
                 Text(
                   'Hộp thư nhận thông báo (${settingsVm.notifications.length} tin nhắn):',
-                  style: AppTextStyles.labelLarge,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: AppDimens.space8),
                 if (settingsVm.notifications.isEmpty)
@@ -404,7 +573,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Text(
                       'Chưa có thông báo nào. Bạn có thể gửi tin nhắn thử từ Firebase Console FCM để kiểm tra nhận thông báo ở 3 trạng thái.',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   )
                 else
@@ -412,7 +583,7 @@ class ProfileScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: settingsVm.notifications.length,
-                    separatorBuilder: (_, _) => const Divider(),
+                    separatorBuilder: (_, _) => Divider(color: theme.dividerColor),
                     itemBuilder: (context, index) {
                       final notif = settingsVm.notifications[index];
                       return ListTile(
@@ -425,12 +596,19 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         title: Text(
                           notif.title,
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(notif.body, style: AppTextStyles.bodyMedium),
+                            Text(
+                              notif.body,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                             if (notif.openedVia != null)
                               Text(
                                 'Đã mở',
@@ -459,10 +637,12 @@ class ProfileScreen extends StatelessWidget {
                   context,
                   title: 'Đăng xuất?',
                   message: [
-                    if (isGuest) 'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
+                    if (isGuest)
+                      'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
                     if (pending > 0)
                       'Còn $pending thay đổi chưa đồng bộ do mất mạng; chúng chỉ được gửi lên khi bạn đăng nhập lại tài khoản này.',
-                    if (!isGuest && pending == 0) 'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
+                    if (!isGuest && pending == 0)
+                      'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
                   ].join('\n\n'),
                   confirmLabel: 'Đăng xuất',
                   isDanger: isGuest || pending > 0,
@@ -566,15 +746,28 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildKeyValueRow(String key, String value) {
+  Widget _buildKeyValueRow(BuildContext context, String key, String value) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppDimens.space4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text(key, style: AppTextStyles.bodyMedium)),
+          Expanded(
+            child: Text(
+              key,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
           const SizedBox(width: AppDimens.space8),
-          Text(value, style: AppTextStyles.labelLarge),
+          Text(
+            value,
+            style: AppTextStyles.labelLarge.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
         ],
       ),
     );

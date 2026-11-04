@@ -6,6 +6,7 @@ import '../core/formatters/money_format.dart';
 import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/state_view.dart';
@@ -71,6 +72,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final purchaseVm = context.watch<PurchaseViewModel>();
     final isWeek = _period == StatsPeriod.week;
     // Total, count, motives and time slots all come from this one period
@@ -80,21 +83,24 @@ class _PatternsScreenState extends State<PatternsScreen> {
     final totalSpent = stats.total;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         titleSpacing: 16,
-        title: const Row(
+        title: Row(
           children: [
-            WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            SizedBox(width: 8),
+            WhyIBuyLogo(
+              size: 26,
+              color: isDark ? AppColors.primary : AppColors.onPrimary,
+            ),
+            const SizedBox(width: 8),
             Text(
               'Mô hình',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.onPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ],
@@ -113,16 +119,26 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.divider,
+                    color: isDark
+                        ? const Color(0xFF252D3C)
+                        : AppColors.divider,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       Expanded(
-                        child: _buildSegmentOption('Tuần', StatsPeriod.week),
+                        child: _buildSegmentOption(
+                          context,
+                          'Tuần',
+                          StatsPeriod.week,
+                        ),
                       ),
                       Expanded(
-                        child: _buildSegmentOption('Tháng', StatsPeriod.month),
+                        child: _buildSegmentOption(
+                          context,
+                          'Tháng',
+                          StatsPeriod.month,
+                        ),
                       ),
                     ],
                   ),
@@ -137,17 +153,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.chevron_left_rounded,
-                          color: AppColors.accentNeutral,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         tooltip: isWeek ? 'Tuần trước' : 'Tháng trước',
                         onPressed: isWeek
@@ -175,10 +191,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.calendar_month_outlined,
                                   size: 16,
-                                  color: AppColors.onPrimary,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                                 const SizedBox(width: 8),
                                 Flexible(
@@ -189,18 +205,18 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                             purchaseVm.selectedMonth,
                                           ),
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.onPrimary,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_drop_down_rounded,
                                   size: 20,
-                                  color: AppColors.textSecondary,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -208,9 +224,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.chevron_right_rounded,
-                          color: AppColors.accentNeutral,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         tooltip: isWeek ? 'Tuần sau' : 'Tháng sau',
                         onPressed: isWeek
@@ -227,9 +243,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -241,26 +257,28 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             isWeek
                                 ? 'Tổng chi tiêu trong tuần'
                                 : 'Tổng chi tiêu trong tháng',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             formatVnd(totalSpent),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.accentNeutral,
+                              color: isDark
+                                  ? AppColors.primary
+                                  : AppColors.accentNeutral,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${stats.count} khoản đã ghi nhận',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textHint,
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -268,13 +286,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
                       Container(
                         width: 48,
                         height: 48,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryContainer,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2C2706)
+                              : AppColors.primaryContainer,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.pie_chart_rounded,
-                          color: AppColors.onPrimary,
+                          color: isDark
+                              ? AppColors.primary
+                              : AppColors.onPrimary,
                           size: 24,
                         ),
                       ),
@@ -285,12 +307,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 const SizedBox(height: 24),
 
                 // Theo động cơ Header
-                const Text(
+                Text(
                   'Theo động cơ',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
 
@@ -299,20 +321,20 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 // Motives Breakdown List
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: Column(
                     children: [
                       if (stats.motives.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
                           child: Text(
                             'Chưa có khoản mua nào trong kỳ này.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -321,6 +343,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         final sum = m.totalVnd;
                         final count = m.count;
                         final percent = stats.shareOf(sum);
+                        final motivePalette = MotiveColors.of(context).paletteOf(motive);
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(
@@ -335,13 +358,13 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                     width: 32,
                                     height: 32,
                                     decoration: BoxDecoration(
-                                      color: motive.backgroundColor,
+                                      color: motivePalette.background,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
                                       motive.icon,
                                       size: 16,
-                                      color: motive.color,
+                                      color: motivePalette.foreground,
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -356,18 +379,20 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                           children: [
                                             Text(
                                               motive.label,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
-                                                color: AppColors.onPrimary,
+                                                color: theme.colorScheme.onSurface,
                                               ),
                                             ),
                                             Text(
                                               formatVnd(sum),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
-                                                color: AppColors.accentNeutral,
+                                                color: isDark
+                                                    ? AppColors.primary
+                                                    : AppColors.accentNeutral,
                                               ),
                                             ),
                                           ],
@@ -379,17 +404,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                           children: [
                                             Text(
                                               '$count khoản chi',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: AppColors.textHint,
+                                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                               ),
                                             ),
                                             Text(
                                               '${(percent * 100).toStringAsFixed(0)}%',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
-                                                color: AppColors.textSecondary,
+                                                color: theme.colorScheme.onSurfaceVariant,
                                               ),
                                             ),
                                           ],
@@ -406,10 +431,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                 child: LinearProgressIndicator(
                                   value: percent,
                                   minHeight: 6,
-                                  backgroundColor: AppColors.surfaceVariant,
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF262D3B)
+                                      : AppColors.surfaceVariant,
                                   color: motive == BuyingMotive.sale
                                       ? AppColors.primary
-                                      : motive.color,
+                                      : motivePalette.foreground,
                                 ),
                               ),
                             ],
@@ -423,12 +450,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 const SizedBox(height: 24),
 
                 // Khung giờ chi tiêu
-                const Text(
+                Text(
                   'Khung giờ mua sắm',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -436,16 +463,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: Column(
                     children: [
                       for (final stat in stats.timeSlots) ...[
                         if (stat.slot != TimeSlot.values.first)
-                          const Divider(height: 20),
+                          Divider(height: 20, color: theme.dividerColor),
                         _buildTimeSlotRow(
+                          context,
                           '${stat.slot.label} (${stat.slot.rangeLabel})',
                           '${stat.count} khoản (${formatVnd(stat.totalVnd)})',
                           _slotIcons[stat.slot]!,
@@ -462,20 +490,29 @@ class _PatternsScreenState extends State<PatternsScreen> {
     );
   }
 
-  Widget _buildSegmentOption(String label, StatsPeriod period) {
+  Widget _buildSegmentOption(
+    BuildContext context,
+    String label,
+    StatsPeriod period,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isSelected = _period == period;
+
     return InkWell(
       onTap: () => setState(() => _period = period),
       borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected
+              ? (isDark ? const Color(0xFF1B202A) : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -488,7 +525,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+            color: isSelected
+                ? (isDark ? AppColors.primary : AppColors.onPrimary)
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -496,12 +535,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
   }
 
   Widget _buildTimeSlotRow(
+    BuildContext context,
     String title,
     String subtitle,
     IconData icon,
     Color color,
     double progress,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -511,18 +554,18 @@ class _PatternsScreenState extends State<PatternsScreen> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const Spacer(),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -533,7 +576,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,
-            backgroundColor: AppColors.surfaceVariant,
+            backgroundColor: isDark
+                ? const Color(0xFF262D3B)
+                : AppColors.surfaceVariant,
             color: color,
           ),
         ),

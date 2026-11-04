@@ -8,6 +8,7 @@ import 'services/crashlytics_service.dart';
 import 'services/notification_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/review_reminder_service.dart';
+import 'services/share_intent_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,11 @@ Future<void> main() async {
     // Same route as a sale push: "Danh sách cho đợt sale" + click_sale_reminder
     onOpenSale: openFromNotification,
   );
+  notificationService.attachReminderService(reviewReminderService);
+
+  // Android Native Share Sheet target (Android only; no-op elsewhere)
+  final shareIntentService = ShareIntentService();
+  await shareIntentService.initialize(onDataReceived: openAddItemWithSharedData);
 
   runApp(
     AppProviders(
@@ -45,6 +51,7 @@ Future<void> main() async {
       remoteConfigService: remoteConfigService,
       notificationService: notificationService,
       reviewReminderService: reviewReminderService,
+      shareIntentService: shareIntentService,
       child: const WhyIBuyApp(),
     ),
   );

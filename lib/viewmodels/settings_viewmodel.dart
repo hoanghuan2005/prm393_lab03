@@ -366,12 +366,32 @@ class SettingsViewModel extends ChangeNotifier
           'screen': 'ProfileScreen/FirebaseDemo',
         },
       );
+      await reminderService?.showImmediateNotification(
+        id: 998,
+        title: '🚨 [Crashlytics] Đã ghi nhận lỗi Non-Fatal!',
+        body: 'Đã báo cáo lỗi có xử lý lên Firebase Console (User: $userId).',
+      );
     }
   }
 
   /// Trigger a forced test crash for Crashlytics dashboard evidence
-  void testForcedCrash() {
+  Future<void> testForcedCrash() async {
+    await reminderService?.showImmediateNotification(
+      id: 999,
+      title: '💥 [Crashlytics] Kích hoạt Crash thử nghiệm!',
+      body: 'Đang gửi stack trace lên Firebase Crashlytics và đóng tiến trình.',
+    );
+    await Future.delayed(const Duration(milliseconds: 600));
     crashlyticsService.forceCrashForTesting();
+  }
+
+  /// Trigger a test notification directly on phone
+  Future<void> sendTestNotification() async {
+    await reminderService?.showImmediateNotification(
+      id: 1001,
+      title: '🔔 [Firebase Cloud Messaging] Thông báo thử nghiệm',
+      body: 'Điện thoại đã nhận thông báo đẩy thành công từ Why I Buy!',
+    );
   }
 
   @override

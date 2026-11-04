@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../app/routes.dart';
 import '../core/constants/app_constants.dart';
+import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
@@ -73,58 +74,7 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Card
-            Container(
-              padding: const EdgeInsets.all(AppDimens.space16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: AppDimens.borderLarge,
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      authVm.displayName.isNotEmpty
-                          ? authVm.displayName[0].toUpperCase()
-                          : 'U',
-                      style: AppTextStyles.headlineMedium.copyWith(
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.space16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          authVm.displayName,
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          authVm.user?.email ?? 'Tài khoản ẩn danh / Khách',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          'UID: ${authVm.userId ?? "N/A"}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AccountHeaderCard(),
             const SizedBox(height: AppDimens.space16),
 
             // Link Google / GitHub to this account (hidden where unsupported)
@@ -1013,6 +963,87 @@ class FirebaseDemoTools extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Account card at the top of Cá nhân. Never shows the full email or uid.
+class AccountHeaderCard extends StatelessWidget {
+  /// Defaults to [kDebugMode]; tests pass false to check a release build
+  final bool showDebugUid;
+
+  const AccountHeaderCard({super.key, this.showDebugUid = kDebugMode});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authVm = context.watch<AuthViewModel>();
+    // AuthService.displayName falls back to the email when there is no name
+    final rawName = authVm.displayName;
+    final name = rawName.contains('@') ? maskEmail(rawName) : rawName;
+    final uid = authVm.userId;
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primary,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: AppColors.onPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.space16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  _accountLabel(authVm),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (showDebugUid && uid != null)
+                  Text(
+                    'UID: ${uid.length > 6 ? uid.substring(0, 6) : uid}…',
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Based on isAnonymous, not on having an email: a GitHub account may hide it
+  static String _accountLabel(AuthViewModel authVm) {
+    if (authVm.isAnonymous) return 'Khách';
+    final email = authVm.user?.email;
+    if (email != null && email.isNotEmpty) return maskEmail(email);
+    final name = authVm.user?.displayName;
+    if (name != null && name.isNotEmpty) return name;
+    return 'Tài khoản đã liên kết';
   }
 }
 

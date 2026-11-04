@@ -46,6 +46,9 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   User? get user => _currentUser;
   AuthStatus get status => _status;
   bool get isAuthenticated => _currentUser != null;
+
+  /// Guest account; false once a guest links Google / GitHub
+  bool get isAnonymous => _currentUser?.isAnonymous ?? false;
   String? get errorMessage => _errorMessage;
   String get displayName => authService.displayName;
 

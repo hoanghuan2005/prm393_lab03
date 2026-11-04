@@ -91,5 +91,11 @@ service cloud.firestore {
           && d().rating is int && d().rating >= 1 && d().rating <= 5;
       }
     }
+
+    match /admin_broadcasts/{id} {
+      allow create: if isAdmin();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
   }
 }

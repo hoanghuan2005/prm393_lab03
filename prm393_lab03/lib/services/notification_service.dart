@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../firebase/platform_support.dart';
@@ -169,6 +171,9 @@ class NotificationService {
 
       // On web getToken itself would open the browser prompt; wait for the user's click
       if (!kIsWeb || await isPermissionGranted()) await _logToken();
+      FirebaseAuth.instance.authStateChanges().listen((_) {
+        unawaited(_logToken());
+      });
     } catch (e) {
       debugPrint('NotificationService initialize error: $e');
     }
@@ -178,6 +183,11 @@ class NotificationService {
     // ignore: deprecated_member_use
     final token = await _fcm.getToken();
     debugPrint('FCM Device Token: $token');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (token == null || uid == null) return;
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'fcmTokens': FieldValue.arrayUnion([token]),
+    }, SetOptions(merge: true));
   }
 
   /// Notifications are allowed for this app (web: for this site)

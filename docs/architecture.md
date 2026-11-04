@@ -37,6 +37,7 @@ flowchart TD
         ReportVM[ReportViewModel]
         InsightsVM[InsightsViewModel]
         SettingsVM[SettingsViewModel]
+        LinkedVM[LinkedAccountsViewModel]
     end
 
     subgraph SVC["Services"]
@@ -96,6 +97,7 @@ App Check được kích hoạt trong `FirebaseSetup.initialize` (`AppCheckSetup
 | `BudgetViewModel` | `BudgetService`, `AppAnalyticsService`, `CrashlyticsService` | uid, khoản mua + tháng (Purchase) |
 | `ReflectionViewModel` | `ReflectionService`, `CrashlyticsService` | uid, tháng (Purchase) |
 | `ReportViewModel` | `ReportService`, `ReportShareService`, `AppAnalyticsService`, `CrashlyticsService` | uid, tên, khoản mua, món (Purchase, Wishlist) |
+| `LinkedAccountsViewModel` | `AuthService`, `UserService`, `CrashlyticsService` | uid |
 | `InsightsViewModel` | `AiInsightService` (→ `AiService`), `RemoteConfigService`, `PreferencesService`, `CrashlyticsService` | khoản mua, món, tháng (Purchase, Wishlist) |
 
 ## 4. Luồng phiên đăng nhập
@@ -107,7 +109,7 @@ sequenceDiagram
     participant P as ProxyProviders
     participant VM as Purchase/Wishlist/Budget/…VM
 
-    FA->>Auth: authStateChanges(user)
+    FA->>Auth: userChanges(user)
     Auth->>Auth: status = loading
     Auth->>Auth: UserService.ensureUserDocument + BudgetService.ensureDefaultGroups (lỗi → Crashlytics, không chặn)
     Auth->>Auth: status = authenticated, userId = uid
@@ -117,10 +119,37 @@ sequenceDiagram
     Note over FA,VM: Đăng xuất: user = null → userId = null → updateUid(null) → UiInitial
 ```
 
+- `AuthViewModel` nghe `userChanges` (phát cả khi đăng nhập/đăng xuất, liên kết/huỷ liên kết, làm mới token). Sự kiện cùng `uid` chỉ cập nhật `user` / `displayName`; không chạy lại ensure*, `setUserId` và không đổi `userId`, nên `updateUid` của các ViewModel không làm gì.
 - `AuthGate` hiện Loading khi `status` là `initial`/`loading`, `MainNavigationScreen` khi `authenticated`, `LoginScreen` khi chưa đăng nhập.
 - `update` của ProxyProvider chạy trong lúc build, nên ViewModel thông báo bằng `notifyLater()` (mixin `DeferredNotify`).
 
-## 5. Quy tắc
+## 5. Luồng liên kết tài khoản
+
+```mermaid
+sequenceDiagram
+    participant UI as Cá nhân · LinkedAccountsSection
+    participant LVM as LinkedAccountsViewModel
+    participant AS as AuthService
+    participant FA as FirebaseAuth
+    participant Auth as AuthViewModel
+    participant US as UserService
+
+    UI->>LVM: linkGoogle() / linkGithub() / unlink(id)
+    LVM->>LVM: dòng đó busy, khoá mọi nút
+    LVM->>AS: linkGoogle / linkGithub / unlink (bọc guard())
+    AS->>FA: linkWithCredential / linkWithProvider / unlink
+    AS->>FA: reload() (lỗi bỏ qua)
+    FA-->>LVM: userChanges(user) → dòng linked / notLinked
+    FA-->>Auth: userChanges(user) cùng uid → isAnonymous, displayName mới
+    LVM->>US: ensureUserDocument(isAnonymous: false) (chỉ sau khi liên kết)
+    LVM-->>UI: successMessage / errorMessage → SnackBar
+```
+
+- Lỗi ra khỏi `AuthService` luôn là `AppException`; huỷ (`null` hoặc `sign-in-cancelled`) không báo lỗi; lỗi có `cause` ghi Crashlytics kèm `auth_method` (`link_google` · `link_github` · `unlink`).
+- `canUnlink` tính trên mọi `providerId` của người dùng (kể cả cách không hiện trên màn), để không bao giờ huỷ cách đăng nhập cuối cùng.
+- Lý do và giới hạn: [`decisions.md`](decisions.md) – "Liên kết nhiều cách đăng nhập vào một tài khoản".
+
+## 6. Quy tắc
 
 1. Widget không gọi Firebase SDK, service, analytics hay crashlytics; chỉ đọc ViewModel.
 2. Mỗi service có `abstract interface class` + bản Firestore/Firebase, nhận `FirebaseFirestore` qua constructor; lỗi Firebase → `AppException`.

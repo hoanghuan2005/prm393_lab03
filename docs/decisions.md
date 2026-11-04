@@ -20,6 +20,7 @@ Bảng D1–D14 gốc trong kế hoạch base chưa được gửi vào repo. B�
 | AI | Code tính số; AI chỉ viết lời hoặc chọn trong danh sách; lỗi thì dùng câu mẫu. | Mục 2 – AI |
 | Hồ sơ và mức hài lòng | Đồ đang dùng, phong cách, thương hiệu do người dùng tự ghi (không lấy lịch sử Shopee); mức hài lòng 1–5 sao hỏi sau 7 ngày, có "Bỏ qua", dùng cho Góc nhìn và gói mua. | [`data-model.md`](data-model.md) – `ownedItems`, `purchases` |
 | Decision Card và sale | Nhãn theo Rules Engine v1 (đặc tả 7.4), không có "Nên mua"; lịch sale lấy từ Remote Config `sale_calendar` (đã xác nhận / dự kiến); gói mua chỉ chạy khi người dùng bấm. | [`design-traceability.md`](design-traceability.md) – DEV-09 |
+| Tài khoản liên kết | Một tài khoản (`uid`) có thể liên kết Google và GitHub; Khách liên kết để thành tài khoản thật. Không gộp dữ liệu hai tài khoản đã có. Thêm trong giai đoạn chốt tính năng. | Mục 2 – Liên kết nhiều cách đăng nhập vào một tài khoản |
 | Extension Chrome | Extension đăng nhập Google cùng tài khoản và đọc/ghi thẳng Firestore; liên kết bằng một phiên `pending` được **duyệt trên điện thoại** thay cho mã 6 số (X4); không có backend, chạy trên gói Spark. Nút "Mua" trên extension chỉ ghi `buyIntentAt`; khoản mua luôn ghi trong app. | Mục 2 – Extension Chrome |
 
 ## 2. Sai khác so với thiết kế Lab 2 (deviation)
@@ -43,7 +44,7 @@ Giải thích gói mua (tính năng AI 5): khi người dùng mở "Lập kế h
 Repo có bộ test tự động (`flutter test`, hiện 118 test) dùng Firestore giả lập (`fake_cloud_firestore`) và dịch vụ giả, không gọi Firebase thật. Chưa có CI; trước khi push, mỗi người chạy `dart format lib`, `flutter analyze`, `flutter test` và chạy thử theo checklist trong [`CONTRIBUTING.md`](../CONTRIBUTING.md). Kiểm thử đầu cuối trên Android theo [`test-plan.md`](test-plan.md).
 
 ### Đăng nhập và dữ liệu
-- Đăng nhập bằng Google hoặc chế độ Khách (Firebase Anonymous Auth).
+- Đăng nhập bằng Google, GitHub hoặc chế độ Khách (Firebase Anonymous Auth). Google và GitHub liên kết được vào cùng một tài khoản (mục "Liên kết nhiều cách đăng nhập vào một tài khoản").
 - Bỏ trường `revision` (extension so phiên bản bằng `updatedAt`). `productKey` và `priceType` được thêm lại cho extension Chrome. Cấu trúc dữ liệu hiện tại: [`data-model.md`](data-model.md).
 
 ### Extension Chrome
@@ -53,3 +54,21 @@ Handoff X4 đề xuất liên kết bằng mã 6 số và token do server cấp.
 - Không còn mã 6 số và giới hạn 5 lần sai.
 - "Mua · mở form trên điện thoại" chỉ ghi `buyIntentAt`; món hiện ở mục "Định mua từ máy tính" của Wishlist, khoản mua vẫn qua `buyFromWishlist` (xoá `buyIntentAt`). Extension không bao giờ đặt `purchased` (rules bắt buộc `purchaseId`).
 - Giá "Sau voucher" chỉ để tham khảo: hiện trong Lịch sử giá nhưng không làm giá chính, không dùng để so sánh.
+
+### Liên kết nhiều cách đăng nhập vào một tài khoản
+Người dùng liên kết Google và GitHub vào cùng một tài khoản Firebase ở Cá nhân → "Tài khoản liên kết"; đăng nhập bằng cách nào cũng ra cùng `uid` và cùng dữ liệu.
+
+**Vì sao thêm trong giai đoạn chốt tính năng.** Đăng nhập GitHub được thêm muộn (cùng nhánh share intent) và mỗi lần đăng nhập GitHub tạo một tài khoản riêng theo `uid`. Không có liên kết thì người dùng GitHub không dùng được extension, còn Khách mất dữ liệu khi đăng xuất hoặc đổi máy. Liên kết sửa cả hai mà không đổi cấu trúc dữ liệu, nên nhóm làm luôn thay vì bỏ đăng nhập GitHub.
+
+**Lý do.**
+- Mọi dữ liệu nằm dưới `users/{uid}/…`; giữ một `uid` là giữ được toàn bộ dữ liệu, không cần di chuyển gì.
+- Extension Chrome chỉ đăng nhập bằng Google. Tài khoản tạo bằng GitHub phải liên kết Google thì extension mới vào đúng `uid` đó.
+- Khách (Anonymous Auth) liên kết Google hoặc GitHub thì được nâng thành tài khoản thật, cùng `uid`; `users/{uid}.isAnonymous` được cập nhật thành `false`.
+
+**Giới hạn.**
+- Không gộp dữ liệu của hai tài khoản đã có sẵn. Liên kết một tài khoản Google/GitHub đã từng dùng riêng trong app thì Firebase báo `credential-already-in-use`; app chỉ báo lỗi, dữ liệu hiện tại không đổi.
+- Không tự liên kết bằng credential đang chờ (credential kèm theo lỗi `account-exists-with-different-credential`), vì cách lấy và dùng credential này không ổn định giữa các phiên bản Firebase. Người dùng tự đăng nhập bằng cách cũ rồi liên kết ở Cá nhân.
+- Câu hướng dẫn khi trùng email (`accountExistsUseGoogle` / `accountExistsUseGithub` trong `firebase_error_mapper.dart`) giả định app **chỉ có Google và GitHub**: lỗi khi đăng nhập GitHub thì hướng dẫn dùng Google, và ngược lại. Firebase chặn việc tra cứu email đang thuộc cách đăng nhập nào (bảo vệ liệt kê email), nên app không biết chắc. Thêm cách đăng nhập mới thì phải sửa hai câu này và `AuthViewModel.suggestedProviderId`.
+- Luôn phải giữ ít nhất một cách đăng nhập (`last-provider`); nút "Huỷ liên kết" bị khoá khi chỉ còn một cách.
+- Với chế độ "một tài khoản mỗi email" (mặc định), Google là nhà cung cấp tin cậy: đăng nhập Google vào email đã gắn GitHub có thể **không** báo lỗi mà Firebase tự chuyển tài khoản sang Google. Kết quả thật (ACC-09 trong [`test-plan.md`](test-plan.md)): _chưa chạy – điền sau khi chạy ACC-09 (có báo lỗi không, dữ liệu còn không, đăng nhập GitHub sau đó còn được không)._
+- Không có trên Windows (không có plugin đăng nhập Google/GitHub): mục "Tài khoản liên kết" bị ẩn.

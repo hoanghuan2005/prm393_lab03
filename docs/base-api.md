@@ -41,7 +41,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 
 | Lớp | Hàm chính | Mô tả |
 |:---|:---|:---|
-| `AuthService` | `authStateChanges`, `signInWithGoogle()`, `signInWithGithub()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In. Các hàm đăng nhập bọc `guard()`, mọi lỗi ném ra là `AppException` (huỷ đăng nhập: code `sign-in-cancelled`); huỷ chọn tài khoản Google trả `null`; `signInWithGoogle()` ném `UnsupportedError` trên Windows |
+| `AuthService` | `authStateChanges`, `currentUser`, `currentUserId`, `signInWithGoogle()`, `signInWithGithub()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In. Các hàm đăng nhập bọc `guard()`, mọi lỗi ném ra là `AppException` (huỷ đăng nhập: code `sign-in-cancelled`); huỷ chọn tài khoản Google trả `null`; `signInWithGoogle()` ném `UnsupportedError` trên Windows |
 | | `Stream<User?> userChanges` | Như `authStateChanges` nhưng phát cả khi liên kết / huỷ liên kết |
 | | `Set<String> linkedProviderIds` | `providerId` trong `currentUser.providerData` (`google.com`, `github.com`, …); Khách hoặc chưa đăng nhập → rỗng |
 | | `Future<UserCredential?> linkGoogle()`, `Future<UserCredential?> linkGithub()` | Liên kết vào tài khoản đang đăng nhập (web: popup; mobile: `google_sign_in` + `linkWithCredential` / `linkWithProvider`), rồi `reload()` (`reload()` lỗi thì bỏ qua, không ném). Huỷ chọn tài khoản Google → `null`; `linkGoogle()` ném `UnsupportedError` trên Windows; lỗi khác là `AppException` (chưa đăng nhập: code `no-current-user`) |

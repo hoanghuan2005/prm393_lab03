@@ -368,8 +368,8 @@ class SettingsViewModel extends ChangeNotifier
       );
       await reminderService?.showImmediateNotification(
         id: 998,
-        title: '🚨 [Crashlytics] Đã ghi nhận lỗi Non-Fatal!',
-        body: 'Đã báo cáo lỗi có xử lý lên Firebase Console (User: $userId).',
+        title: 'Đã ghi lỗi có xử lý (Crashlytics)',
+        body: 'Lỗi thử đã được gửi lên Firebase Crashlytics.',
       );
     }
   }
@@ -378,19 +378,19 @@ class SettingsViewModel extends ChangeNotifier
   Future<void> testForcedCrash() async {
     await reminderService?.showImmediateNotification(
       id: 999,
-      title: '💥 [Crashlytics] Kích hoạt Crash thử nghiệm!',
-      body: 'Đang gửi stack trace lên Firebase Crashlytics và đóng tiến trình.',
+      title: 'Sắp crash thử (Crashlytics)',
+      body: 'App sẽ đóng để gửi báo cáo crash lên Firebase Crashlytics.',
     );
     await Future.delayed(const Duration(milliseconds: 600));
     crashlyticsService.forceCrashForTesting();
   }
 
-  /// Trigger a test notification directly on phone
+  /// Shows a local notification; it does not go through FCM
   Future<void> sendTestNotification() async {
     await reminderService?.showImmediateNotification(
       id: 1001,
-      title: '🔔 [Firebase Cloud Messaging] Thông báo thử nghiệm',
-      body: 'Điện thoại đã nhận thông báo đẩy thành công từ Why I Buy!',
+      title: 'Thử thông báo trên máy',
+      body: 'Đây là thông báo cục bộ do app tạo, không đi qua Firebase Cloud Messaging.',
     );
   }
 

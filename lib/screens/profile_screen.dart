@@ -472,54 +472,12 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
-            // 2. Crashlytics Section
-            SectionCard(
-              title: '2. Firebase Crashlytics',
-              icon: Icons.bug_report_outlined,
-              children: [
-                Text(
-                  'Kiểm thử ghi nhận lỗi Crashlytics có gắn User ID và Custom Key per Lab 3:',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppDimens.space12),
-                AppButton(
-                  title: 'Bắn lỗi có xử lý (Non-Fatal)',
-                  variant: AppButtonVariant.secondary,
-                  icon: Icons.warning_amber_rounded,
-                  onPressed: () async {
-                    await settingsVm.testHandledNonFatalError(
-                      authVm.userId ?? 'unknown_user',
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard.',
-                          ),
-                          backgroundColor: AppColors.success,
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: AppDimens.space12),
-                AppButton(
-                  title: 'Kích hoạt thử nghiệm Crash thật',
-                  variant: AppButtonVariant.danger,
-                  icon: Icons.dangerous_outlined,
-                  onPressed: () {
-                    settingsVm.testForcedCrash();
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space16),
+            // Crashlytics and local notification test buttons (debug builds only)
+            FirebaseDemoTools(userId: authVm.userId ?? 'unknown_user'),
 
-            // 3. FCM Notification Center
+            // 2. FCM Notification Center
             SectionCard(
-              title: '3. Cloud Messaging (FCM) Center',
+              title: '2. Cloud Messaging (FCM) Center',
               icon: Icons.notifications_active_outlined,
               children: [
                 if (settingsVm.asksNotificationPermissionInApp) ...[
@@ -551,25 +509,6 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   const SizedBox(height: AppDimens.space12),
                 ],
-                AppButton(
-                  title: 'Bắn thông báo thử nghiệm lên điện thoại ngay',
-                  icon: Icons.notification_important_rounded,
-                  variant: AppButtonVariant.primary,
-                  onPressed: () async {
-                    await settingsVm.sendTestNotification();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Đã kích hoạt hiển thị thông báo trên thanh trạng thái điện thoại.',
-                          ),
-                          backgroundColor: AppColors.success,
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: AppDimens.space12),
                 Text(
                   'Hộp thư nhận thông báo (${settingsVm.notifications.length} tin nhắn):',
                   style: AppTextStyles.labelLarge.copyWith(
@@ -971,6 +910,103 @@ class _DailyReminderTile extends StatelessWidget {
         key: const ValueKey('daily-reminder-switch'),
         value: supported && settingsVm.dailyReminderEnabled,
         onChanged: supported ? (on) => _toggle(context, on) : null,
+      ),
+    );
+  }
+}
+
+/// Crashlytics and local notification test buttons; release builds show nothing
+class FirebaseDemoTools extends StatelessWidget {
+  final String userId;
+
+  /// Defaults to [kDebugMode]; tests pass false to check a release build
+  final bool visible;
+
+  const FirebaseDemoTools({
+    super.key,
+    required this.userId,
+    this.visible = kDebugMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final settingsVm = context.read<SettingsViewModel>();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.space16),
+      child: SectionCard(
+        title: 'Khu trình diễn (chỉ bản debug)',
+        icon: Icons.bug_report_outlined,
+        children: [
+          Text(
+            'Kiểm thử ghi nhận lỗi Crashlytics có gắn User ID và Custom Key per Lab 3:',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+            title: 'Bắn lỗi có xử lý (Non-Fatal)',
+            variant: AppButtonVariant.secondary,
+            icon: Icons.warning_amber_rounded,
+            onPressed: () async {
+              await settingsVm.testHandledNonFatalError(userId);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard.',
+                    ),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+            title: 'Kích hoạt thử nghiệm Crash thật',
+            variant: AppButtonVariant.danger,
+            icon: Icons.dangerous_outlined,
+            onPressed: () async {
+              final ok = await ConfirmDialog.show(
+                context,
+                title: 'Crash thử ứng dụng?',
+                message: 'App sẽ đóng ngay để gửi báo cáo crash lên Firebase Crashlytics.',
+                confirmLabel: 'Crash thử',
+                isDanger: true,
+              );
+              if (ok) await settingsVm.testForcedCrash();
+            },
+          ),
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+            title: 'Thử thông báo trên máy',
+            icon: Icons.notification_important_rounded,
+            variant: AppButtonVariant.primary,
+            onPressed: () async {
+              await settingsVm.sendTestNotification();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Đã kích hoạt hiển thị thông báo trên thanh trạng thái điện thoại.',
+                    ),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: AppDimens.space8),
+          Text(
+            'Thông báo FCM thật gửi từ Firebase Console.',
+            style: AppTextStyles.caption.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

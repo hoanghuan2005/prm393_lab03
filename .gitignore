@@ -60,3 +60,8 @@ e2e_test/results/
 .env
 
 # KHÔNG thêm android/app/google-services.json vào đây — nhóm cần file này trong repo.
+
+# Firebase server credentials
+**/*service-account*.json
+**/*firebase-adminsdk*.json
+**/*credentials*.json

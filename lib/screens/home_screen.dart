@@ -32,8 +32,12 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         titleSpacing: 16,
         title: Row(
           children: [
@@ -195,14 +199,15 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Stacked bar of the month's motives, widest first, in each motive's own color
-  List<Widget> _motiveSegments(BuildContext context, Map<BuyingMotive, double> distribution) {
+  List<Widget> _motiveSegments(
+    BuildContext context,
+    Map<BuyingMotive, double> distribution,
+  ) {
     final theme = Theme.of(context);
     if (distribution.isEmpty) {
       return [
         Expanded(
-          child: Container(
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
+          child: Container(color: theme.colorScheme.surfaceContainerHighest),
         ),
       ];
     }
@@ -401,7 +406,10 @@ class HomeScreen extends StatelessWidget {
             child: SizedBox(
               height: 7,
               child: Row(
-                children: _motiveSegments(context, purchaseVm.motiveDistribution),
+                children: _motiveSegments(
+                  context,
+                  purchaseVm.motiveDistribution,
+                ),
               ),
             ),
           ),
@@ -458,11 +466,11 @@ class HomeScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: budgetVm.isExceeded
                             ? (isDark
-                                ? const Color(0xFF451A1A)
-                                : AppColors.surfaceVariant)
+                                  ? const Color(0xFF451A1A)
+                                  : AppColors.surfaceVariant)
                             : (isDark
-                                ? const Color(0xFF064E3B)
-                                : AppColors.successContainer),
+                                  ? const Color(0xFF064E3B)
+                                  : AppColors.successContainer),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -472,11 +480,11 @@ class HomeScreen extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                           color: budgetVm.isExceeded
                               ? (isDark
-                                  ? const Color(0xFFFCA5A5)
-                                  : AppColors.accentNeutral)
+                                    ? const Color(0xFFFCA5A5)
+                                    : AppColors.accentNeutral)
                               : (isDark
-                                  ? const Color(0xFF6EE7B7)
-                                  : AppColors.onSuccessContainer),
+                                    ? const Color(0xFF6EE7B7)
+                                    : AppColors.onSuccessContainer),
                         ),
                       ),
                     ),
@@ -560,27 +568,34 @@ class HomeScreen extends StatelessWidget {
 
   // ==================== TRƯỚC KHI MUA ENTRY (Figma 02, Flow 9) ====================
   Widget _buildPrePurchaseEntry(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Trước khi mua',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.onPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Dừng lại một chút. Vài câu hỏi nhanh giúp bạn hiểu điều gì đang '
           'thu hút mình.',
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 2),
-        const Text(
+        Text(
           'Hiểu trước khi thay đổi.',
-          style: TextStyle(fontSize: 13, color: AppColors.accentNeutral),
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -591,8 +606,14 @@ class HomeScreen extends StatelessWidget {
               key: const ValueKey('open-pre-purchase'),
               label: const Text('Trước khi mua'),
               avatar: const Icon(Icons.lightbulb_outline, size: 18),
-              backgroundColor: AppColors.primaryContainer,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              labelStyle: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
               side: BorderSide.none,
+              iconTheme: IconThemeData(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
               shape: const StadiumBorder(),
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.prePurchase),
@@ -602,8 +623,14 @@ class HomeScreen extends StatelessWidget {
               key: const ValueKey('open-photo-search'),
               label: const Text('Chụp để tìm'),
               avatar: const Icon(Icons.photo_camera_outlined, size: 18),
-              backgroundColor: AppColors.primaryContainer,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              labelStyle: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
               side: BorderSide.none,
+              iconTheme: IconThemeData(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
               shape: const StadiumBorder(),
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.photoSearch),
@@ -671,7 +698,9 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                      color: isDark
+                          ? AppColors.primary
+                          : AppColors.accentNeutral,
                     ),
                   ),
                   Icon(
@@ -713,10 +742,7 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         _buildPurchaseRow(context, item),
                         if (!isLast)
-                          Divider(
-                            height: 1,
-                            color: theme.dividerColor,
-                          ),
+                          Divider(height: 1, color: theme.dividerColor),
                       ],
                     );
                   }),
@@ -813,7 +839,9 @@ class HomeScreen extends StatelessWidget {
                         item.formattedTime,
                         style: TextStyle(
                           fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],

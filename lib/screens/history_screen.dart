@@ -37,8 +37,12 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         titleSpacing: 16,
         title: Row(
           children: [
@@ -66,11 +70,13 @@ class HistoryScreen extends StatelessWidget {
             children: [
               // Period Selector: < Tháng MM/YYYY > (Fully Interactive)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 5,
+                  bottom: 0,
                 ),
-                color: theme.colorScheme.surface,
+                color: theme.scaffoldBackgroundColor,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -96,7 +102,7 @@ class HistoryScreen extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 6,
+                          vertical: 3,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -139,13 +145,13 @@ class HistoryScreen extends StatelessWidget {
 
               // Motive Filter Chips (Horizontal scroll)
               Container(
-                height: 48,
-                color: theme.colorScheme.surface,
+                height: 42,
+                color: theme.scaffoldBackgroundColor,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 6,
+                    vertical: 3,
                   ),
                   children: [
                     _buildFilterChip(
@@ -187,12 +193,12 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
 
-              Divider(height: 1, color: theme.dividerColor),
+              const SizedBox(height: 8),
 
               // Main Scroll Area with Budget Meter & Purchases
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   children: [
                     // 1. Monthly Budget Meter Card (Figma "31 Ngân sách theo nhóm")
                     _buildBudgetMeterCard(context),
@@ -202,7 +208,7 @@ class HistoryScreen extends StatelessWidget {
                     // 2. Day Grouped Purchases or Empty State
                     if (purchases.isEmpty)
                       Container(
-                        padding: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.fromLTRB(24, 50, 24, 24),
                         alignment: Alignment.center,
                         child: Column(
                           children: [
@@ -217,10 +223,12 @@ class HistoryScreen extends StatelessWidget {
                                   ? 'Không có khoản chi nào khớp bộ lọc trong $monthLabel'
                                   : 'Không có khoản chi nào trong $monthLabel',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -229,7 +237,8 @@ class HistoryScreen extends StatelessWidget {
                                   : 'Nhấn nút "+" bên dưới để ghi nhận khoản mua sắm mới.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.7),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -263,7 +272,8 @@ class HistoryScreen extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -378,7 +388,9 @@ class HistoryScreen extends StatelessWidget {
                     Icon(
                       Icons.account_balance_wallet_outlined,
                       size: 18,
-                      color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                      color: isDark
+                          ? AppColors.primary
+                          : AppColors.accentNeutral,
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -402,11 +414,11 @@ class HistoryScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isExceeded
                             ? (isDark
-                                ? const Color(0xFF451A1A)
-                                : AppColors.surfaceVariant)
+                                  ? const Color(0xFF451A1A)
+                                  : AppColors.surfaceVariant)
                             : (isDark
-                                ? const Color(0xFF064E3B)
-                                : AppColors.successContainer),
+                                  ? const Color(0xFF064E3B)
+                                  : AppColors.successContainer),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -416,11 +428,11 @@ class HistoryScreen extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           color: isExceeded
                               ? (isDark
-                                  ? const Color(0xFFFCA5A5)
-                                  : AppColors.accentNeutral)
+                                    ? const Color(0xFFFCA5A5)
+                                    : AppColors.accentNeutral)
                               : (isDark
-                                  ? const Color(0xFF6EE7B7)
-                                  : AppColors.onSuccessContainer),
+                                    ? const Color(0xFF6EE7B7)
+                                    : AppColors.onSuccessContainer),
                         ),
                       ),
                     ),
@@ -445,7 +457,9 @@ class HistoryScreen extends StatelessWidget {
                       Icon(
                         Icons.tune_rounded,
                         size: 14,
-                        color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                        color: isDark
+                            ? AppColors.primary
+                            : AppColors.accentNeutral,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -477,9 +491,7 @@ class HistoryScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? AppColors.primary
-                        : AppColors.accentNeutral,
+                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -613,7 +625,11 @@ class HistoryScreen extends StatelessWidget {
           color: motivePalette.background,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(item.motive.icon, size: 20, color: motivePalette.foreground),
+        child: Icon(
+          item.motive.icon,
+          size: 20,
+          color: motivePalette.foreground,
+        ),
       ),
       title: Text(
         item.title,
@@ -643,7 +659,9 @@ class HistoryScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.5,
                 fontStyle: FontStyle.italic,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.8,
+                ),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

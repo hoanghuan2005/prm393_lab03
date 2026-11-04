@@ -165,7 +165,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
     final hasPhoto = state is! UiInitial<ItemRecognition>;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Chụp để tìm'),
         actions: [
@@ -174,7 +174,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
               key: const ValueKey('photo-search-retake'),
               onPressed: vm.reset,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accentNeutral,
+                foregroundColor: Theme.of(context).colorScheme.primary,
               ),
               child: const Text('Chọn ảnh khác'),
             ),
@@ -263,23 +263,23 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.add_a_photo_outlined,
                 size: 36,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: AppDimens.space12),
               Text(
                 'Chưa chọn ảnh',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: AppDimens.space4),
               Text(
                 'Đủ sáng · một món · chụp gần',
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textHint,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -307,12 +307,14 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
             children: [
               Text('AI đang xem ảnh', style: AppTextStyles.titleMedium),
               const SizedBox(height: AppDimens.space12),
-              const ClipRRect(
-                borderRadius: BorderRadius.all(Radius.circular(4)),
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(4)),
                 child: LinearProgressIndicator(
                   minHeight: 6,
                   color: AppColors.primary,
-                  backgroundColor: AppColors.surfaceVariant,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest,
                 ),
               ),
             ],
@@ -419,10 +421,10 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.hourglass_empty_rounded,
               size: 16,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: AppDimens.space8),
             Expanded(
@@ -430,7 +432,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
                 'Thêm vào danh sách cân nhắc để món này qua $coolingOffDays '
                 'ngày chờ rồi hẵng quyết định mua.',
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -441,10 +443,11 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
   }
 
   Widget _bottomBar(List<Widget> children) {
+    final theme = Theme.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.divider)),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       padding: const EdgeInsets.fromLTRB(
         AppDimens.space16,
@@ -471,23 +474,29 @@ class _StepHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           step,
           style: AppTextStyles.labelMedium.copyWith(
-            color: AppColors.accentNeutral,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppDimens.space4),
-        Text(title, style: AppTextStyles.titleLarge),
+        Text(
+          title,
+          style: AppTextStyles.titleLarge.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         if (subtitle != null) ...[
           const SizedBox(height: AppDimens.space6),
           Text(
             subtitle!,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -505,17 +514,18 @@ class _DashedFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Semantics(
       button: true,
       label: 'Chọn ảnh món đồ',
       child: Material(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: AppDimens.borderLarge,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppDimens.borderLarge,
           child: CustomPaint(
-            painter: _DashedBorderPainter(),
+            painter: _DashedBorderPainter(color: theme.colorScheme.outline),
             child: SizedBox(
               height: 300,
               width: double.infinity,
@@ -529,10 +539,14 @@ class _DashedFrame extends StatelessWidget {
 }
 
 class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+
+  const _DashedBorderPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.outline
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     final path = Path()
@@ -563,12 +577,13 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,22 +1013,23 @@ class _ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.dividerColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
             if (i > 0)
-              const Divider(
+              Divider(
                 height: 1,
                 thickness: 1,
                 indent: AppDimens.space16,
-                color: AppColors.divider,
+                color: theme.dividerColor,
               ),
             children[i],
           ],
@@ -1041,6 +1057,7 @@ class _ListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1059,7 +1076,9 @@ class _ListRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: AppTextStyles.bodyLarge,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1070,14 +1089,14 @@ class _ListRow extends StatelessWidget {
                   style: trailingBold
                       ? AppTextStyles.titleMedium
                       : AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                 ),
                 const SizedBox(width: AppDimens.space4),
-                const Icon(
+                Icon(
                   Icons.open_in_new,
                   size: 16,
-                  color: AppColors.textHint,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -1095,19 +1114,22 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.space6,
         vertical: AppDimens.space2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.successContainer,
+        color: theme.brightness == Brightness.dark
+            ? theme.colorScheme.surfaceContainerHighest
+            : AppColors.successContainer,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: AppTextStyles.labelMedium.copyWith(
-          color: AppColors.onSuccessContainer,
+          color: theme.colorScheme.primary,
         ),
       ),
     );
@@ -1123,26 +1145,27 @@ class _Notice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space12),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: AppDimens.borderMedium,
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline,
             size: 18,
-            color: AppColors.textSecondary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: AppDimens.space8),
           Expanded(
             child: Text(
               message,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textBody,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -1150,7 +1173,7 @@ class _Notice extends StatelessWidget {
             TextButton(
               onPressed: onAction,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accentNeutral,
+                foregroundColor: theme.colorScheme.primary,
               ),
               child: Text(actionLabel!),
             ),
@@ -1168,10 +1191,11 @@ class _LinkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.accentNeutral,
+        foregroundColor: theme.colorScheme.primary,
         minimumSize: const Size.fromHeight(48),
         textStyle: AppTextStyles.labelLarge,
       ),
@@ -1185,22 +1209,23 @@ class _PrivacyNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: AppDimens.space4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.verified_user_outlined,
             size: 14,
-            color: AppColors.textHint,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: AppDimens.space4),
           Flexible(
             child: Text(
               'Ảnh chỉ dùng để nhận diện, không được lưu lại',
               style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),

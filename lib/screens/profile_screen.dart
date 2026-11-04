@@ -52,11 +52,13 @@ class ProfileScreen extends StatelessWidget {
                 Switch(
                   value: isDark,
                   activeThumbColor: AppColors.primary,
-                  activeTrackColor: const Color(0xFF332E05),
-                  inactiveThumbColor: AppColors.onPrimary,
-                  inactiveTrackColor: AppColors.divider,
+                  activeTrackColor: theme.colorScheme.primaryContainer,
+                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
+                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
                   onChanged: (bool value) {
-                    themeVm.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                    themeVm.setThemeMode(
+                      value ? ThemeMode.dark : ThemeMode.light,
+                    );
                   },
                 ),
               ],
@@ -111,7 +113,8 @@ class ProfileScreen extends StatelessWidget {
                         Text(
                           'UID: ${authVm.userId ?? "N/A"}',
                           style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -134,11 +137,15 @@ class ProfileScreen extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
+                      color: isDark
+                          ? const Color(0xFF2C2706)
+                          : AppColors.primaryContainer,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      isDark
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
                       color: isDark ? AppColors.primary : AppColors.onPrimary,
                       size: 20,
                     ),
@@ -162,11 +169,13 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   value: isDark,
                   activeThumbColor: AppColors.primary,
-                  activeTrackColor: const Color(0xFF332E05),
-                  inactiveThumbColor: AppColors.onPrimary,
-                  inactiveTrackColor: AppColors.divider,
+                  activeTrackColor: theme.colorScheme.primaryContainer,
+                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
+                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
                   onChanged: (bool value) {
-                    themeVm.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                    themeVm.setThemeMode(
+                      value ? ThemeMode.dark : ThemeMode.light,
+                    );
                   },
                 ),
                 Divider(color: theme.dividerColor, height: 20),
@@ -257,10 +266,10 @@ class ProfileScreen extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shield_outlined,
                     size: 20,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: AppDimens.space12),
                   Expanded(
@@ -316,7 +325,9 @@ class ProfileScreen extends StatelessWidget {
                 vertical: AppDimens.space6,
               ),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
+                color: isDark
+                    ? const Color(0xFF2C2706)
+                    : AppColors.primaryContainer,
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
@@ -583,7 +594,8 @@ class ProfileScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: settingsVm.notifications.length,
-                    separatorBuilder: (_, _) => Divider(color: theme.dividerColor),
+                    separatorBuilder: (_, _) =>
+                        Divider(color: theme.dividerColor),
                     itemBuilder: (context, index) {
                       final notif = settingsVm.notifications[index];
                       return ListTile(
@@ -613,7 +625,9 @@ class ProfileScreen extends StatelessWidget {
                               Text(
                                 'Đã mở',
                                 style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
                           ],
@@ -637,12 +651,10 @@ class ProfileScreen extends StatelessWidget {
                   context,
                   title: 'Đăng xuất?',
                   message: [
-                    if (isGuest)
-                      'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
+                    if (isGuest) 'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
                     if (pending > 0)
                       'Còn $pending thay đổi chưa đồng bộ do mất mạng; chúng chỉ được gửi lên khi bạn đăng nhập lại tài khoản này.',
-                    if (!isGuest && pending == 0)
-                      'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
+                    if (!isGuest && pending == 0) 'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
                   ].join('\n\n'),
                   confirmLabel: 'Đăng xuất',
                   isDanger: isGuest || pending > 0,
@@ -787,7 +799,7 @@ class _GroupLabel extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: AppTextStyles.labelMedium.copyWith(
-          color: AppColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 0.4,
         ),
       ),
@@ -803,12 +815,13 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.dividerColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -817,7 +830,8 @@ class _SettingsGroup extends StatelessWidget {
           children: [
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0)
-                const Divider(
+                Divider(
+                  color: theme.dividerColor,
                   height: 1,
                   indent: AppDimens.space16,
                   endIndent: AppDimens.space16,
@@ -850,7 +864,10 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDanger ? AppColors.onErrorContainer : AppColors.textPrimary;
+    final theme = Theme.of(context);
+    final color = isDanger
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurface;
     return ListTile(
       minTileHeight: AppDimens.minTouchTarget + AppDimens.space16,
       contentPadding: const EdgeInsets.symmetric(
@@ -863,7 +880,12 @@ class _SettingsTile extends StatelessWidget {
       ),
       subtitle: subtitle == null
           ? null
-          : Text(subtitle!, style: AppTextStyles.bodyMedium),
+          : Text(
+              subtitle!,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
       trailing: busy
           ? const SizedBox(
               width: 20,
@@ -921,6 +943,7 @@ class _DailyReminderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final supported = settingsVm.supportsDailyReminder;
     final time = settingsVm.dailyReminderTimeText;
     return ListTile(
@@ -929,12 +952,19 @@ class _DailyReminderTile extends StatelessWidget {
         horizontal: AppDimens.space16,
         vertical: AppDimens.space4,
       ),
-      title: Text('Nhắc ghi khoản mua', style: AppTextStyles.titleMedium),
+      title: Text(
+        'Nhắc ghi khoản mua',
+        style: AppTextStyles.titleMedium.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
       subtitle: Text(
         supported
             ? 'Nhắc bạn ghi lại khoản mua lúc $time mỗi tối. Chạm để đổi giờ.'
             : 'Chỉ có trên ứng dụng Android.',
-        style: AppTextStyles.bodyMedium,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
       onTap: supported ? () => _pickTime(context) : null,
       trailing: Switch(

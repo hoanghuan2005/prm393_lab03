@@ -5,7 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import '../core/errors/app_exception.dart';
 import '../core/errors/describe_error.dart';
-import '../core/errors/firebase_error_mapper.dart' show signInCancelled;
+import '../core/errors/firebase_error_mapper.dart'
+    show accountExistsCode, signInCancelled;
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
@@ -29,6 +30,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   User? _currentUser;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
+  String? _suggestedProviderId;
 
   /// Increments on every auth event so a slow setup for an old user cannot win
   int _authEvent = 0;
@@ -50,6 +52,10 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   /// Guest account; false once a guest links Google / GitHub
   bool get isAnonymous => _currentUser?.isAnonymous ?? false;
   String? get errorMessage => _errorMessage;
+
+  /// 'google.com' / 'github.com' after account-exists-with-different-credential:
+  /// the sign-in method the screen should point to; null otherwise
+  String? get suggestedProviderId => _suggestedProviderId;
   String get displayName => authService.displayName;
 
   /// uid handed to every user-data ViewModel; null until the user documents are ready
@@ -125,6 +131,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   Future<bool> signInWithGoogle() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
@@ -155,6 +162,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   Future<bool> signInWithGithub() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
@@ -177,6 +185,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   Future<bool> signInAnonymously() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
@@ -206,6 +215,15 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
       reason: '$method sign-in error',
       customKeys: {'auth_method': method},
     );
+    // The email already signs in another way: point the screen at that button
+    final accountExists = e is AppException && e.code == accountExistsCode;
+    _suggestedProviderId = !accountExists
+        ? null
+        : switch (method) {
+            'github' => 'google.com',
+            'google' => 'github.com',
+            _ => null,
+          };
     _status = e is AppException && e.code == signInCancelled.code
         ? AuthStatus.unauthenticated
         : AuthStatus.error;

@@ -981,6 +981,9 @@ class AccountHeaderCard extends StatelessWidget {
     final rawName = authVm.displayName;
     final name = rawName.contains('@') ? maskEmail(rawName) : rawName;
     final uid = authVm.userId;
+    final linkedNames = context.select<LinkedAccountsViewModel, List<String>>(
+      (vm) => vm.linkedProviderNames,
+    );
 
     return Container(
       padding: const EdgeInsets.all(AppDimens.space16),
@@ -1013,7 +1016,7 @@ class AccountHeaderCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _accountLabel(authVm),
+                  _accountLabel(authVm, linkedNames),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1037,12 +1040,12 @@ class AccountHeaderCard extends StatelessWidget {
   }
 
   /// Based on isAnonymous, not on having an email: a GitHub account may hide it
-  static String _accountLabel(AuthViewModel authVm) {
+  static String _accountLabel(AuthViewModel authVm, List<String> linkedNames) {
     if (authVm.isAnonymous) return 'Khách';
     final email = authVm.user?.email;
     if (email != null && email.isNotEmpty) return maskEmail(email);
-    final name = authVm.user?.displayName;
-    if (name != null && name.isNotEmpty) return name;
+    // The name is already the title above; list the linked methods instead
+    if (linkedNames.isNotEmpty) return 'Đã liên kết: ${linkedNames.join(', ')}';
     return 'Tài khoản đã liên kết';
   }
 }

@@ -8,6 +8,9 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
 
+const _googleProviderId = 'google.com';
+const _githubProviderId = 'github.com';
+
 /// Screen for Authentication (Google Sign-In & Guest Mode)
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -15,6 +18,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authVm = context.watch<AuthViewModel>();
+    final suggested = authVm.suggestedProviderId;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -78,43 +82,25 @@ class LoginScreen extends StatelessWidget {
               ),
               const Spacer(),
 
-              // Error banner if any
-              if (authVm.errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(AppDimens.space12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: AppDimens.borderMedium,
-                    border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline,
-                        color: AppColors.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: AppDimens.space8),
-                      Expanded(
-                        child: Text(
-                          authVm.errorMessage!,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              // Error banner; when another sign-in method owns this email it sits
+              // right above that button and points to it
+              if (authVm.errorMessage != null &&
+                  suggested != _githubProviderId) ...[
+                _ErrorBanner(
+                  message: authVm.errorMessage!,
+                  pointsDown: suggested == _googleProviderId,
                 ),
                 const SizedBox(height: AppDimens.space16),
               ],
 
               // Google Sign-In Button
               AppButton(
+                key: const Key('login-google'),
                 title: 'Đăng nhập với Google',
                 icon: Icons.g_mobiledata,
+                variant: suggested == _githubProviderId
+                    ? AppButtonVariant.secondary
+                    : AppButtonVariant.primary,
                 isLoading: authVm.status == AuthStatus.loading,
                 onPressed: () async {
                   await authVm.signInWithGoogle();
@@ -122,11 +108,20 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppDimens.space12),
 
+              if (authVm.errorMessage != null &&
+                  suggested == _githubProviderId) ...[
+                _ErrorBanner(message: authVm.errorMessage!, pointsDown: true),
+                const SizedBox(height: AppDimens.space16),
+              ],
+
               // GitHub Sign-In Button
               AppButton(
+                key: const Key('login-github'),
                 title: 'Đăng nhập với GitHub',
                 icon: Icons.code_rounded,
-                variant: AppButtonVariant.secondary,
+                variant: suggested == _githubProviderId
+                    ? AppButtonVariant.primary
+                    : AppButtonVariant.secondary,
                 isLoading: authVm.status == AuthStatus.loading,
                 onPressed: () async {
                   await authVm.signInWithGithub();
@@ -168,6 +163,43 @@ class LoginScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sign-in error; [pointsDown] marks the button right below as the way to continue
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  final bool pointsDown;
+
+  const _ErrorBanner({required this.message, this.pointsDown = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('login-error-banner'),
+      padding: const EdgeInsets.all(AppDimens.space12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            pointsDown ? Icons.arrow_downward_rounded : Icons.info_outline,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: AppDimens.space8),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
       ),
     );
   }

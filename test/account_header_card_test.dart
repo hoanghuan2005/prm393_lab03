@@ -10,6 +10,7 @@ import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
+import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
@@ -25,8 +26,19 @@ class _User extends Fake implements User {
   final String? displayName;
   @override
   final String? email;
+  final List<String> providers;
 
-  _User({required this.isAnonymous, this.displayName, this.email});
+  _User({
+    required this.isAnonymous,
+    this.displayName,
+    this.email,
+    this.providers = const [],
+  });
+
+  @override
+  List<UserInfo> get providerData => [
+    for (final id in providers) FakeUserInfo(id, email: email),
+  ];
 }
 
 class _StreamFirebaseAuth extends Fake implements FirebaseAuth {
@@ -65,17 +77,27 @@ Future<void> _pump(
   bool showDebugUid = false,
 }) async {
   final auth = _StreamFirebaseAuth();
+  final authService = AuthService(auth: auth);
   final vm = AuthViewModel(
-    authService: AuthService(auth: auth),
+    authService: authService,
     userService: RecordingUserService(),
     budgetService: _NoopBudgetService(),
     analyticsService: _NoopAnalytics(),
     crashlyticsService: _NoopCrashlytics(),
   );
+  final linkedVm = LinkedAccountsViewModel(
+    authService: authService,
+    userService: RecordingUserService(),
+    isAvailable: true,
+  );
   addTearDown(vm.dispose);
+  addTearDown(linkedVm.dispose);
   await tester.pumpWidget(
-    ChangeNotifierProvider.value(
-      value: vm,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: vm),
+        ChangeNotifierProvider.value(value: linkedVm),
+      ],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         home: Scaffold(body: AccountHeaderCard(showDebugUid: showDebugUid)),
@@ -106,12 +128,35 @@ void main() {
     expect(find.text('Tài khoản đã liên kết'), findsOneWidget);
   });
 
-  testWidgets('without email the display name is the label', (tester) async {
-    await _pump(tester, _User(isAnonymous: false, displayName: 'Ngo Gia Kiet'));
+  testWidgets('with a name but no email the label lists linked methods', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _User(
+        isAnonymous: false,
+        displayName: 'Ngo Gia Kiet',
+        providers: ['github.com'],
+      ),
+    );
 
-    // Title and label
-    expect(find.text('Ngo Gia Kiet'), findsNWidgets(2));
+    // Name only once (title), not repeated as the label
+    expect(find.text('Ngo Gia Kiet'), findsOneWidget);
+    expect(find.text('Đã liên kết: GitHub'), findsOneWidget);
     expect(find.textContaining('Khách'), findsNothing);
+  });
+
+  testWidgets('both linked methods are listed in row order', (tester) async {
+    await _pump(
+      tester,
+      _User(
+        isAnonymous: false,
+        displayName: 'Ngo Gia Kiet',
+        providers: ['github.com', 'google.com'],
+      ),
+    );
+
+    expect(find.text('Đã liên kết: Google, GitHub'), findsOneWidget);
   });
 
   testWidgets('the email is shown masked, never in full', (tester) async {

@@ -71,6 +71,12 @@ class LinkedAccountsViewModel extends ChangeNotifier
 
   bool get isGuest => authService.currentUser?.isAnonymous ?? false;
 
+  /// "Google", "GitHub" for the rows that are linked, in row order
+  List<String> get linkedProviderNames => [
+    for (final id in const [googleId, githubId])
+      if (_info(id) != null) _providerName(id),
+  ];
+
   /// Only Google and GitHub are shown, in this order
   List<LinkedAccountRow> get rows => [rowFor(googleId), rowFor(githubId)];
 

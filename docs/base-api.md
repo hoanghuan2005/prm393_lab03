@@ -35,7 +35,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 | `ReflectionService` → `FirestoreReflectionService` | `Stream<Reflection?> watch(String uid, String monthKey)` / `Future<void> save(String uid, Reflection r)` | Chiêm nghiệm tháng |
 | `DemoDataService` → `FirestoreDemoDataService` | `Future<void> seed(String uid)` / `Future<void> clearAll(String uid)` | Thay dữ liệu bằng bộ demo / xoá mọi dữ liệu (giữ hồ sơ + nhóm) |
 | `FirestorePaths` | `purchases(uid)`, `wishlistItem(uid, id)`, `priceSnapshots(uid, itemId)`, `decisions(uid)`, `budgetGroups(uid)`, `budget(uid, monthKey)`, `reflection(uid, monthKey)`, … | Nơi duy nhất viết chuỗi đường dẫn Firestore |
-| `guard` / `guardStream` (`service_guard.dart`) | `Future<T> guard<T>(Future<T> Function())`, `Stream<T> guardStream<T>(Stream<T>)` | Bọc lời gọi Firebase, ném `AppException` |
+| `guard` / `guardStream` (`service_guard.dart`) | `Future<T> guard<T>(Future<T> Function())`, `Stream<T> guardStream<T>(Stream<T>)` | Bọc lời gọi Firebase, ném `AppException`; `guard` giữ stack trace gốc (`Error.throwWithStackTrace`), `guardStream` chuyển tiếp stack trace của lỗi |
 
 ### Khác
 
@@ -56,7 +56,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 
 ## 2. ViewModels (`lib/viewmodels/`)
 
-ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)` từ ProxyProvider. Mixin dùng chung: `DeferredNotify` (`notifyLater()` cho thay đổi trong `update`), `ErrorReporting` (`messageFor(error, stack, reason:)`).
+ViewModel có dữ liệu người dùng nhận uid qua `updateUid(String? uid)` từ ProxyProvider. Mixin dùng chung: `DeferredNotify` (`notifyLater()` cho thay đổi trong `update`), `ErrorReporting` (`messageFor(error, stack, reason:, customKeys:)`: `AppException` có `cause` và lỗi không phải `AppException` được ghi Crashlytics non-fatal, `AppException` không có `cause` (lỗi đã có câu riêng) thì không ghi; có `cause` thì ghi `cause` kèm custom key `error_code`. Không có Crashlytics thì chỉ `debugPrint` ở bản debug, qua `describeError` (kiểu + mã, không in message). `AuthViewModel` cũng dùng mixin này, thêm key `auth_method`).
 
 | ViewModel | Thành phần chính |
 |:---|:---|
@@ -106,4 +106,4 @@ Xem mẫu trực quan: Profile → "Widget Gallery (debug)" (chỉ bản debug).
 | `TimeSlot` | Sáng 05–11 · Trưa 11–14 · Chiều 14–18 · Tối 18–05 |
 | `Validators.validateTitle / validateAmount / validateOptionalAmount / validateNote` | Validator form, thông điệp tiếng Việt |
 | `AppConstants` | `titleMaxLength` 60, `noteMaxLength` 200, `amountMax` 999.999.999 |
-| `AppException`, `mapFirebaseError(Object)` | Lỗi có `messageVi`; chỉ service dùng `mapFirebaseError` |
+| `AppException(code, messageVi, {Object? cause})`, `mapFirebaseError(Object)` | Lỗi có `messageVi`; `cause` là lỗi gốc, chỉ có khi lỗi không nhận ra (code `unknown`, instance mới, không phải `AppException.unknown`) hoặc mã auth/Firestore chưa có câu riêng; `toString()` thêm ` <- cause`. Hằng `signInCancelled` (code `sign-in-cancelled`) dùng chung cho mọi cách đăng nhập bị huỷ. Chỉ service dùng `mapFirebaseError` |

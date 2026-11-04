@@ -4,24 +4,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/errors/app_exception.dart';
+import '../core/errors/firebase_error_mapper.dart' show signInCancelled;
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/pending_writes.dart';
 import '../services/user_service.dart';
+import 'error_reporting.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
-/// AppException code for a sign-in the user closed or cancelled
-const _cancelledCode = 'sign-in-cancelled';
-
 /// ViewModel managing Authentication state & Google Sign-In
-class AuthViewModel extends ChangeNotifier {
+class AuthViewModel extends ChangeNotifier with ErrorReporting {
   final AuthService authService;
   final UserService userService;
   final BudgetService budgetService;
   final AppAnalyticsService analyticsService;
+  @override
   final CrashlyticsService crashlyticsService;
 
   StreamSubscription<User?>? _authSubscription;
@@ -120,7 +120,7 @@ class AuthViewModel extends ChangeNotifier {
       if (credential == null) {
         // User cancelled Google account picker
         _status = AuthStatus.unauthenticated;
-        _errorMessage = 'Bạn đã hủy đăng nhập Google.';
+        _errorMessage = signInCancelled.messageVi;
         notifyListeners();
         return false;
       }
@@ -133,18 +133,8 @@ class AuthViewModel extends ChangeNotifier {
           'Đăng nhập Google chưa hỗ trợ trên Windows. Hãy dùng chế độ Khách.';
       notifyListeners();
       return false;
-    } on AppException catch (e, stack) {
-      await _onSignInFailed(e, stack, reason: 'Google sign-in error');
-      return false;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'Google sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'google');
       return false;
     }
   }
@@ -165,18 +155,8 @@ class AuthViewModel extends ChangeNotifier {
 
       await analyticsService.logLogin(method: 'github');
       return true;
-    } on AppException catch (e, stack) {
-      await _onSignInFailed(e, stack, reason: 'GitHub sign-in error');
-      return false;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập GitHub thất bại. Vui lòng thử lại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'GitHub sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'github');
       return false;
     }
   }
@@ -191,37 +171,23 @@ class AuthViewModel extends ChangeNotifier {
       await authService.signInAnonymously();
       await analyticsService.logLogin(method: 'guest');
       return true;
-    } on AppException catch (e, stack) {
-      await _onSignInFailed(e, stack, reason: 'Anonymous sign-in error');
-      return false;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập khách thất bại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'Anonymous sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'anonymous');
       return false;
     }
   }
 
-  /// Shows the mapped message; only unexpected errors reach Crashlytics
-  Future<void> _onSignInFailed(
-    AppException e,
-    StackTrace stack, {
-    required String reason,
-  }) async {
-    _errorMessage = e.messageVi;
-    if (e.code == _cancelledCode) {
-      _status = AuthStatus.unauthenticated;
-    } else {
-      _status = AuthStatus.error;
-      if (e.code == AppException.unknown.code) {
-        await crashlyticsService.recordHandledError(e, stack, reason: reason);
-      }
-    }
+  /// Cancelling is not an error; Crashlytics only gets errors without their own message
+  void _onSignInFailed(Object e, StackTrace stack, {required String method}) {
+    _errorMessage = messageFor(
+      e,
+      stack,
+      reason: '$method sign-in error',
+      customKeys: {'auth_method': method},
+    );
+    _status = e is AppException && e.code == signInCancelled.code
+        ? AuthStatus.unauthenticated
+        : AuthStatus.error;
     notifyListeners();
   }
 

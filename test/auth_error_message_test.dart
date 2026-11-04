@@ -18,10 +18,10 @@ import 'package:provider/provider.dart';
 const _accountExistsMessage =
     'Email này đã có tài khoản đăng nhập bằng cách khác (ví dụ Google). '
     'Hãy đăng nhập bằng cách đó.';
-const _cancelledMessage = 'Bạn đã huỷ đăng nhập. Bấm "Thử lại" khi sẵn sàng.';
+const _cancelledMessage =
+    'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.';
 const _networkMessage =
     'Không có kết nối mạng. Kiểm tra mạng rồi bấm "Thử lại".';
-const _googlePickerCancelledMessage = 'Bạn đã hủy đăng nhập Google.';
 
 /// FirebaseAuth whose sign-in calls fail with [error]
 class _FailingFirebaseAuth extends Fake implements FirebaseAuth {
@@ -78,6 +78,8 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
 
 class _CountingCrashlytics extends Fake implements CrashlyticsService {
   int handledErrors = 0;
+  Object? lastError;
+  Map<String, Object>? lastKeys;
 
   @override
   Future<void> recordHandledError(
@@ -87,6 +89,8 @@ class _CountingCrashlytics extends Fake implements CrashlyticsService {
     Map<String, Object>? customKeys,
   }) async {
     handledErrors++;
+    lastError = error;
+    lastKeys = customKeys;
   }
 }
 
@@ -230,9 +234,10 @@ void main() {
     });
 
     test('unknown codes never leak the raw Firebase message', () async {
+      final crashlytics = _CountingCrashlytics();
       final vm = _viewModel(
         _authFailingWith(_authError('internal-error')),
-        _CountingCrashlytics(),
+        crashlytics,
       );
 
       await vm.signInWithGithub();
@@ -241,19 +246,86 @@ void main() {
         vm.errorMessage,
         'Không đăng nhập được. Bấm "Thử lại" sau ít phút.',
       );
-      vm.dispose();
-    });
-
-    test('unexpected errors are reported to Crashlytics', () async {
-      final crashlytics = _CountingCrashlytics();
-      final vm = _viewModel(_authFailingWith(StateError('boom')), crashlytics);
-
-      await vm.signInAnonymously();
-      expect(vm.status, AuthStatus.error);
-      expect(vm.errorMessage, AppException.unknown.messageVi);
+      // No message of its own, so it has a cause and is recorded
       expect(crashlytics.handledErrors, 1);
+      expect(crashlytics.lastKeys, {
+        'auth_method': 'github',
+        'error_code': 'internal-error',
+      });
       vm.dispose();
     });
+
+    test('operation-not-allowed is recorded with the auth method', () async {
+      final crashlytics = _CountingCrashlytics();
+      final error = _authError('operation-not-allowed');
+      final vm = _viewModel(_authFailingWith(error), crashlytics);
+
+      await vm.signInWithGoogle();
+      expect(vm.status, AuthStatus.error);
+      expect(crashlytics.handledErrors, 1);
+      expect(crashlytics.lastError, same(error));
+      expect(crashlytics.lastKeys, {
+        'auth_method': 'google',
+        'error_code': 'operation-not-allowed',
+      });
+      vm.dispose();
+    });
+
+    test('errors with their own message are not recorded', () async {
+      final crashlytics = _CountingCrashlytics();
+      for (final code in [
+        'web-context-canceled',
+        'network-request-failed',
+        'popup-blocked',
+        'too-many-requests',
+        'user-disabled',
+        'account-exists-with-different-credential',
+      ]) {
+        final vm = _viewModel(_authFailingWith(_authError(code)), crashlytics);
+        await vm.signInWithGithub();
+        expect(crashlytics.handledErrors, 0, reason: code);
+        vm.dispose();
+      }
+    });
+
+    test('closing the Google account picker shows the shared cancelled '
+        'message and is not recorded', () async {
+      final crashlytics = _CountingCrashlytics();
+      final vm = _viewModel(
+        _authFailingWith(
+          _authError('internal-error'),
+          googleSignIn: _FakeGoogleSignIn(cancels: true),
+        ),
+        crashlytics,
+      );
+
+      expect(await vm.signInWithGoogle(), isFalse);
+      expect(vm.status, AuthStatus.unauthenticated);
+      expect(vm.errorMessage, _cancelledMessage);
+      expect(vm.errorMessage, signInCancelled.messageVi);
+      expect(crashlytics.handledErrors, 0);
+      vm.dispose();
+    });
+
+    test(
+      'unexpected errors report the original error to Crashlytics',
+      () async {
+        final crashlytics = _CountingCrashlytics();
+        final original = StateError('boom');
+        final vm = _viewModel(_authFailingWith(original), crashlytics);
+
+        await vm.signInAnonymously();
+        expect(vm.status, AuthStatus.error);
+        expect(vm.errorMessage, AppException.unknown.messageVi);
+        expect(crashlytics.handledErrors, 1);
+        expect(crashlytics.lastError, same(original));
+        expect(crashlytics.lastKeys, {
+          'auth_method': 'anonymous',
+          'error_code': 'unknown',
+        });
+        vm.dispose();
+      },
+    );
   });
 
   group('LoginScreen', () {
@@ -302,7 +374,7 @@ void main() {
         await tester.tap(find.text('Đăng nhập với Google'));
         await tester.pumpAndSettle();
 
-        expect(find.text(_googlePickerCancelledMessage), findsOneWidget);
+        expect(find.text(_cancelledMessage), findsOneWidget);
       },
     );
 

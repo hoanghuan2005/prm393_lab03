@@ -8,6 +8,12 @@ const _network = AppException(
   'Không có kết nối mạng. Kiểm tra mạng rồi bấm "Thử lại".',
 );
 
+/// The user closed or cancelled a sign-in flow; shared by every sign-in method
+const signInCancelled = AppException(
+  'sign-in-cancelled',
+  'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.',
+);
+
 /// Converts errors from Firebase Auth, Firestore and Firebase AI Logic into [AppException]
 AppException mapFirebaseError(Object e) {
   if (e is AppException) return e;
@@ -15,7 +21,11 @@ AppException mapFirebaseError(Object e) {
   if (e is FirebaseException) return _mapFirebase(e);
   if (e is FirebaseAIException) return _mapAi(e);
   if (_looksLikeNetwork(e.toString())) return _network;
-  return AppException.unknown;
+  return AppException(
+    AppException.unknown.code,
+    AppException.unknown.messageVi,
+    cause: e,
+  );
 }
 
 AppException _mapAuth(FirebaseAuthException e) {
@@ -33,10 +43,7 @@ AppException _mapAuth(FirebaseAuthException e) {
     case 'web-context-cancelled':
     case 'sign-in-cancelled':
     case 'canceled':
-      return const AppException(
-        'sign-in-cancelled',
-        'Bạn đã huỷ đăng nhập. Bấm "Thử lại" khi sẵn sàng.',
-      );
+      return signInCancelled;
     case 'popup-blocked':
       return const AppException(
         'popup-blocked',
@@ -56,6 +63,7 @@ AppException _mapAuth(FirebaseAuthException e) {
       return AppException(
         e.code,
         'Không đăng nhập được. Bấm "Thử lại" sau ít phút.',
+        cause: e,
       );
   }
 }
@@ -87,6 +95,7 @@ AppException _mapFirebase(FirebaseException e) {
       return AppException(
         e.code,
         'Đã có lỗi xảy ra. Bấm "Thử lại" sau ít phút.',
+        cause: e,
       );
   }
 }

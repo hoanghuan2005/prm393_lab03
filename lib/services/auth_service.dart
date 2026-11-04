@@ -126,7 +126,7 @@ class AuthService {
           if (credential == null) return null;
           result = await user.linkWithCredential(credential);
         }
-        await user.reload();
+        await _reloadQuietly(user);
         return result;
       } on FirebaseAuthException catch (e) {
         debugPrint('AuthService link Google FirebaseAuthException: ${e.code}');
@@ -147,7 +147,7 @@ class AuthService {
         final result = kIsWeb
             ? await user.linkWithPopup(provider)
             : await user.linkWithProvider(provider);
-        await user.reload();
+        await _reloadQuietly(user);
         return result;
       } on FirebaseAuthException catch (e) {
         debugPrint('AuthService link GitHub FirebaseAuthException: ${e.code}');
@@ -173,7 +173,7 @@ class AuthService {
           PlatformSupport.isMobile) {
         await _googleSignIn.signOut();
       }
-      await user.reload();
+      await _reloadQuietly(user);
     });
   }
 
@@ -182,6 +182,18 @@ class AuthService {
     'last-provider',
     'Phải giữ ít nhất một cách đăng nhập.',
   );
+
+  /// Refreshes providerData after link / unlink. The change is already saved on
+  /// Firebase, so a failed reload must not turn it into an error.
+  Future<void> _reloadQuietly(User user) async {
+    try {
+      await user.reload();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('AuthService reload error: ${describeError(e)}');
+      }
+    }
+  }
 
   /// Thrown inside guard(); flutterfire uses the same code when nobody is signed in
   User _requireUser() =>

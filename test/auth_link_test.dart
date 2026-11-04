@@ -18,10 +18,11 @@ class _FakeCredential extends Fake implements UserCredential {}
 class _FakeUser extends Fake implements User {
   final List<String> providers;
   final Object? linkError;
+  final Object? reloadError;
   final List<String> calls = [];
   AuthCredential? linkedCredential;
 
-  _FakeUser(this.providers, {this.linkError});
+  _FakeUser(this.providers, {this.linkError, this.reloadError});
 
   @override
   List<UserInfo> get providerData => [
@@ -53,7 +54,10 @@ class _FakeUser extends Fake implements User {
   }
 
   @override
-  Future<void> reload() async => calls.add('reload');
+  Future<void> reload() async {
+    calls.add('reload');
+    if (reloadError != null) throw reloadError!;
+  }
 }
 
 class _FakeFirebaseAuth extends Fake implements FirebaseAuth {
@@ -225,6 +229,34 @@ void main() {
 
       expect(user.calls, ['unlink:github.com', 'reload']);
       expect(googleSignIn.signOuts, 0);
+    });
+  });
+
+  group('reload after a successful change', () {
+    final reloadError = FirebaseAuthException(code: 'network-request-failed');
+
+    test('a failed reload does not fail linkGoogle', () async {
+      final user = _FakeUser(['github.com'], reloadError: reloadError);
+
+      expect(await _service(user).linkGoogle(), isA<UserCredential>());
+      expect(user.calls, ['linkWithCredential', 'reload']);
+    });
+
+    test('a failed reload does not fail linkGithub', () async {
+      final user = _FakeUser(['google.com'], reloadError: reloadError);
+
+      expect(await _service(user).linkGithub(), isA<UserCredential>());
+      expect(user.calls, ['linkWithProvider:github.com', 'reload']);
+    });
+
+    test('a failed reload does not fail unlink', () async {
+      final user = _FakeUser([
+        'google.com',
+        'github.com',
+      ], reloadError: reloadError);
+
+      await expectLater(_service(user).unlink('github.com'), completes);
+      expect(user.calls, ['unlink:github.com', 'reload']);
     });
   });
 }

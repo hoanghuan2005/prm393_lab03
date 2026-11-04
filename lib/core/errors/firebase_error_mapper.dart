@@ -54,6 +54,31 @@ AppException _mapAuth(FirebaseAuthException e) {
         'account-exists-with-different-credential',
         'Email này đã có tài khoản đăng nhập bằng cách khác (ví dụ Google). Hãy đăng nhập bằng cách đó.',
       );
+    case 'credential-already-in-use':
+      return const AppException(
+        'credential-already-in-use',
+        'Tài khoản này đã có dữ liệu Why I Buy riêng nên không liên kết được. Đăng nhập bằng tài khoản đó, xoá dữ liệu hoặc tài khoản, rồi thử lại.',
+      );
+    case 'provider-already-linked':
+      return const AppException(
+        'provider-already-linked',
+        'Cách đăng nhập này đã được liên kết.',
+      );
+    case 'email-already-in-use':
+      return const AppException(
+        'email-already-in-use',
+        'Email của tài khoản này đang thuộc một tài khoản Why I Buy khác.',
+      );
+    case 'requires-recent-login':
+      return const AppException(
+        'requires-recent-login',
+        'Vui lòng đăng xuất và đăng nhập lại rồi thử liên kết.',
+      );
+    case 'no-such-provider':
+      return const AppException(
+        'no-such-provider',
+        'Cách đăng nhập này chưa được liên kết.',
+      );
     case 'too-many-requests':
       return const AppException(
         'too-many-requests',

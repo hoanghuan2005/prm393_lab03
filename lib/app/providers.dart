@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
+import '../services/ai_photo_search_service.dart';
 import '../services/ai_pre_purchase_service.dart';
+import '../services/ai_price_search_service.dart';
 import '../services/ai_service.dart';
 import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
@@ -31,6 +33,7 @@ import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
+import '../viewmodels/photo_search_viewmodel.dart';
 import '../viewmodels/pre_purchase_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
@@ -106,6 +109,22 @@ class AppProviders extends StatelessWidget {
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
           ),
+        ),
+
+        // "Chụp để tìm": photo + prompt to Gemini (FirebaseAiService is stateless).
+        // AI shop prices only show when enable_ai_price_search is on (paid grounding).
+        ChangeNotifierProvider(
+          create: (context) {
+            final gemini = FirebaseAiService(
+              modelName: () => remoteConfigService.aiInsightModel,
+            );
+            return PhotoSearchViewModel(
+              aiService: AiPhotoSearchService(generator: gemini),
+              priceSearchService: AiPriceSearchService(generator: gemini),
+              remoteConfigService: remoteConfigService,
+              preferencesService: PreferencesService(),
+            );
+          },
         ),
 
         // ViewModels. Every ViewModel holding user data gets the uid from AuthViewModel

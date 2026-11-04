@@ -22,6 +22,10 @@ class RemoteConfigService {
   static const String keyEnableAiSuggestions = 'enable_ai_suggestions';
   static const String keySaleCalendar = 'sale_calendar';
 
+  /// "Chụp để tìm" → AI looks up shop prices with Google Search. Off by default:
+  /// grounding is not in the free Gemini tier, so turn it on only after billing is set up.
+  static const String keyEnableAiPriceSearch = 'enable_ai_price_search';
+
   /// Announced sales (spec 8.2); the team keeps this list in the console. 11.11 is the
   /// spec's confirmed example; other days of the public pattern appear as "dự kiến".
   static const String defaultSaleCalendar =
@@ -37,6 +41,7 @@ class RemoteConfigService {
     keyAiInsightModel: 'gemini-3.5-flash-lite',
     keyEnableAiSuggestions: true,
     keySaleCalendar: defaultSaleCalendar,
+    keyEnableAiPriceSearch: false,
   };
 
   bool get _isSupported =>
@@ -79,6 +84,9 @@ class RemoteConfigService {
 
   /// AI help when adding an item (budget group, possible duplicates)
   bool get enableAiSuggestions => _getBool(keyEnableAiSuggestions);
+
+  /// AI shop-price lookup in "Chụp để tìm" (needs paid Gemini grounding)
+  bool get enableAiPriceSearch => _getBool(keyEnableAiPriceSearch);
 
   /// JSON list of sales for Lịch sale (see SaleCalendar.parse)
   String get saleCalendarJson {

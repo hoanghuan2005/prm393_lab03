@@ -21,7 +21,10 @@ import '../widgets/motive_chip.dart';
 class AddItemScreen extends StatefulWidget {
   final WishlistItem? existing;
 
-  const AddItemScreen({super.key, this.existing});
+  /// Prefilled name for a new item (e.g. the AI guess from "Chụp để tìm")
+  final String? initialTitle;
+
+  const AddItemScreen({super.key, this.existing, this.initialTitle});
 
   @override
   State<AddItemScreen> createState() => _AddItemScreenState();
@@ -50,6 +53,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
       _priority = item.priority;
+    } else if (widget.initialTitle case final title?) {
+      _titleController.text = title;
     }
   }
 

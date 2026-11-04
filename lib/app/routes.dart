@@ -20,6 +20,7 @@ import '../screens/main_navigation_screen.dart';
 import '../screens/monthly_reflection_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/patterns_screen.dart';
+import '../screens/photo_search_screen.dart';
 import '../screens/pre_purchase_result_screen.dart';
 import '../screens/pre_purchase_screen.dart';
 import '../screens/profile_screen.dart';
@@ -42,6 +43,13 @@ class ItemDetailArgs {
   final WishlistItem item;
 
   const ItemDetailArgs(this.item);
+}
+
+/// Arguments for [AppRoutes.wishlistAdd]; optional prefill (e.g. from "Chụp để tìm")
+class AddItemArgs {
+  final String? initialTitle;
+
+  const AddItemArgs({this.initialTitle});
 }
 
 /// Arguments for [AppRoutes.purchaseDetail]
@@ -119,6 +127,9 @@ class AppRoutes {
   static const prePurchase = '/before-buy';
   static const prePurchaseResult = '/before-buy/result';
 
+  /// "Chụp để tìm": photo → AI names the item → search / add to the wishlist
+  static const photoSearch = '/photo-search';
+
   /// Screen 05a "Xin quyền thông báo" (returns true when the reminder was turned on)
   static const reminderPermission = '/reminder/permission';
 
@@ -138,7 +149,9 @@ class AppRoutes {
       ),
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
-      wishlistAdd => const AddItemScreen(),
+      wishlistAdd => AddItemScreen(
+        initialTitle: args is AddItemArgs ? args.initialTitle : null,
+      ),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,
       ),
@@ -174,6 +187,7 @@ class AppRoutes {
       prePurchaseResult when args is PrePurchaseArgs => PrePurchaseResultScreen(
         answers: args.answers,
       ),
+      photoSearch => const PhotoSearchScreen(),
       reminderPermission => const ReminderPermissionScreen(),
       feedback => const FeedbackScreen(),
       terms => const InfoTextScreen(document: LegalTexts.terms),

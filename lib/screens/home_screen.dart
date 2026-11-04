@@ -554,14 +554,32 @@ class HomeScreen extends StatelessWidget {
           style: TextStyle(fontSize: 13, color: AppColors.accentNeutral),
         ),
         const SizedBox(height: 10),
-        ActionChip(
-          key: const ValueKey('open-pre-purchase'),
-          label: const Text('Trước khi mua'),
-          avatar: const Icon(Icons.lightbulb_outline, size: 18),
-          backgroundColor: AppColors.primaryContainer,
-          side: BorderSide.none,
-          shape: const StadiumBorder(),
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.prePurchase),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ActionChip(
+              key: const ValueKey('open-pre-purchase'),
+              label: const Text('Trước khi mua'),
+              avatar: const Icon(Icons.lightbulb_outline, size: 18),
+              backgroundColor: AppColors.primaryContainer,
+              side: BorderSide.none,
+              shape: const StadiumBorder(),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.prePurchase),
+            ),
+            // "Chụp để tìm": name an item from a photo, then add it to the wishlist
+            ActionChip(
+              key: const ValueKey('open-photo-search'),
+              label: const Text('Chụp để tìm'),
+              avatar: const Icon(Icons.photo_camera_outlined, size: 18),
+              backgroundColor: AppColors.primaryContainer,
+              side: BorderSide.none,
+              shape: const StadiumBorder(),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.photoSearch),
+            ),
+          ],
         ),
       ],
     );

@@ -1,0 +1,7 @@
+server:
+  port: ${PORT:8080}
+
+app:
+  admin-email: ${ADMIN_EMAIL:admin@gmail.com}
+  firebase-project-id: ${FIREBASE_PROJECT_ID:prm393-34056}
+  cors-origin: ${CORS_ORIGIN:http://localhost:5000}

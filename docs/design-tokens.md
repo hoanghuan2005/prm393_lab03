@@ -71,6 +71,43 @@ Nguồn: `lib/theme/` (`app_colors.dart`, `motive_colors.dart`, `app_text_styles
 
 Theme thành phần để widget mặc định không ra chữ vàng trên trắng: `TextButton` chữ `onPrimary`; `ProgressIndicator` màu `onPrimary`, rãnh `surfaceVariant`; con trỏ/tay chọn chữ `onPrimary`; FAB nền `primary` chữ `onPrimary`.
 
+### 2.5 Theme tối: ánh xạ màu cứng cũ sang token (cho bước A6b)
+
+Các màn đang viết `isDark ? const Color(0x...) : AppColors.x`. Ở bước A6b, chỉ cần thay phần `const Color(0x...)` bằng token ở cột "Token mới", còn nhánh sáng giữ nguyên (trừ các dòng có ghi chú). Token tối dùng tiền tố `dark*` cho khớp với các token `dark*` đã có.
+
+| Giá trị cũ | Token mới | Vai trò | Nhánh sáng đi kèm | Chỗ dùng |
+|:---|:---|:---|:---|:---|
+| `0xFF2C2706` | `AppColors.darkPrimaryContainer` | Nền vàng tối (thẻ gợi ý, avatar, khối AI) | `primaryContainer` (onboarding:669 là `aiContainer`) | profile:141, 329; onboarding:71, 339, 669; patterns:291; insights:197 |
+| `0xFF5E5410` | `AppColors.darkPrimaryContainerOutline` | Viền khối vàng tối | `primary` alpha 0,5 | insights:200 |
+| `0xFF332E05` | đã sửa: `isDark ? AppColors.darkPrimaryContainerOutline : AppColors.onPrimary` | Track Switch "Dùng AI" | (trước đây dùng chung cho cả hai theme) | insights:227 (đã sửa ở A6) |
+| `0xFFFEF3C7` | `AppColors.darkPrimaryContainerText` | Chữ trên nền vàng tối | `textBody`, `onAiContainer` | insights:246; onboarding:689 |
+| `0xFF1B202A` | `AppColors.darkCardSurface` | Nền thẻ nổi, ô segment được chọn | `Colors.white` → nên đổi thành `AppColors.surface` | onboarding:239, 402, 586; patterns:509 |
+| `0xFF262D3B`, `0xFF252D3C` | `AppColors.darkSurfaceMuted` (gộp, chênh nhau 1 đơn vị) | Chip chưa chọn, nền segmented, rãnh thanh tiến trình | `surfaceVariant` (patterns:123 là `divider`) | history:524, 562; onboarding:420, 656; patterns:123, 435, 580 |
+| `0xFF333B49` | `AppColors.darkIndicatorInactive` | Chấm trang chưa chọn | `outline` | onboarding:149 |
+| `0xFFCBD5E1` | `AppColors.darkTextBody` | Chữ chip chưa chọn | `accentNeutral` | history:566 |
+| `0xFF94A3B8` | `AppColors.darkTextSecondary` (đã có) | Icon/chữ phụ | `textSecondary`, `accentNeutral` | history:570; onboarding:507 |
+| `0xFF64748B` | `AppColors.darkNavInactive` | Tab chưa chọn ở thanh điều hướng | `navInactive` | main_navigation:213 |
+| `0xFF93B5CE` | `AppColors.darkAccentNeutral` | Nhấn trung tính | `accentNeutral` | insights:267 |
+| `0xFF064E3B` | `AppColors.darkSuccessContainer` | Nhãn "Trong hạn mức" | `successContainer` | history:420; home:472; onboarding:630, 707 |
+| `0xFF6EE7B7` | `AppColors.darkOnSuccessContainer` | Chữ nhãn "Trong hạn mức" | `onSuccessContainer` | history:434; home:486; onboarding:640, 716 |
+| `0xFF451A1A` | xem ghi chú (1) | Nền nhãn "Đã vượt" | `surfaceVariant` | history:417; home:469 |
+| `0xFFFCA5A5` | xem ghi chú (1) | Chữ nhãn "Đã vượt" | `accentNeutral` | history:431; home:483 |
+| `0xFFEF4444` | xem ghi chú (1) | Viền thẻ và thanh tiến trình khi đã vượt | `outline`, `accentNeutral` | history:366, 527 |
+| `0xFF1E2838` / `0xFFDBEAFE` | `AppColors.darkInfoContainer` / `AppColors.infoContainer` | Nền nhãn thông tin (xanh) | (cả hai nhánh đều là màu cứng) | onboarding:471-472, 523 |
+| `0xFF93C5FD` / `0xFF1D4ED8` | `AppColors.darkOnInfoContainer` / `AppColors.onInfoContainer` | Chữ nhãn thông tin | (cả hai nhánh đều là màu cứng) | onboarding:481-482, 532 |
+| `0xFF60A5FA` / `0xFF2563EB` | `AppColors.infoLight` (đã có) / `AppColors.infoText` | Chữ thông tin nhỏ | (cả hai nhánh đều là màu cứng) | onboarding:457-458 |
+| `0xFF1E1E38` / `0xFF818CF8` | `MotiveColors.of(context).paletteOf(BuyingMotive.need)` `.background` / `.foreground` | Huy hiệu động cơ "Nhu cầu" | `motiveNeedBg` / `motiveNeed` | onboarding:289-290 |
+| `0xFF2E1E38` / `0xFFA78BFA` | như trên với `BuyingMotive.emotion` | Huy hiệu "Cảm xúc" | `motiveEmotionBg` / `motiveEmotion` | onboarding:301-302 |
+| `0xFF382D1E` / `0xFFFBBF24` | như trên với `BuyingMotive.sale` | Huy hiệu "Khuyến mãi" | `motiveSaleBg` / `motiveSale` | onboarding:313-314 |
+| `0xFF1E3834` / `0xFF2DD4BF` | như trên với `BuyingMotive.convenience` | Huy hiệu "Tiện lợi" | `motiveConvenienceBg` / `motiveConvenience` | onboarding:325-326 |
+
+Ghi chú:
+
+1. **Vượt ngân sách ở theme tối đang dùng đỏ**, trái quy tắc ở mục 1 ("Vượt ngân sách không dùng đỏ"). Theme sáng đang dùng màu trung tính. Đề xuất cho theme tối: nền `darkSurfaceMuted`, chữ/viền/thanh `darkAccentNeutral`. Nếu nhóm quyết định giữ đỏ thì dùng `darkErrorContainer` (`0xFF451A1A`), `darkOnErrorContainer` (`0xFFFCA5A5`) và `colorScheme.error`.
+2. **Huy hiệu động cơ ở onboarding**: `MotiveColors.dark` có giá trị khác các màu cứng cũ (ví dụ "Nhu cầu" tối là `#60A5FA` trên `#172554`). Đổi sang `MotiveColors` sẽ làm màu hơi khác, nhưng sẽ khớp với chip động cơ ở các màn khác. Khi đã dùng `MotiveColors.of(context)` thì bỏ luôn `isDark ? … :`, vì extension tự chọn bản sáng/tối.
+3. Ở những chỗ cả hai nhánh đều là màu cứng (nhãn thông tin ở onboarding), thay cả hai nhánh.
+4. Bốn giá trị dùng trong `AppTheme.darkTheme` (`primaryContainer`, `tertiary`, `errorContainer`, `onErrorContainer`) giờ lấy từ chính các token trên, giá trị không đổi. Vì vậy ở nhiều chỗ có thể dùng `Theme.of(context).colorScheme.primaryContainer` / `.tertiary` thay cho `isDark ? … : …`.
+
 ## 3. Typography
 
 Font **Be Vietnam Pro** (`google_fonts`), khai báo ở `AppTextStyles`.

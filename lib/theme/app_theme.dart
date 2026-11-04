@@ -218,7 +218,7 @@ class AppTheme {
       primary: AppColors.primary,
       onPrimary: AppColors.onPrimary,
       // Web: bg-amber-400/20 containers
-      primaryContainer: Color(0xFF2C2706),
+      primaryContainer: AppColors.darkPrimaryContainer,
       onPrimaryContainer: AppColors.primary,
       // Secondary: light text
       secondary: darkTextPrimary,
@@ -227,13 +227,13 @@ class AppTheme {
       secondaryContainer: Color(0xFF1E293B),
       onSecondaryContainer: darkTextPrimary,
       // Tertiary: muted blue-gray
-      tertiary: Color(0xFF93B5CE),
+      tertiary: AppColors.darkAccentNeutral,
       onTertiary: Color(0xFF0F172A),
       // Error: red-400 for dark (Web: `text-rose-400`)
       error: AppColors.errorLight, // #F87171
       onError: Color(0xFF450A0A),
-      errorContainer: Color(0xFF451A1A),
-      onErrorContainer: Color(0xFFFCA5A5), // red-300
+      errorContainer: AppColors.darkErrorContainer,
+      onErrorContainer: AppColors.darkOnErrorContainer, // red-300
       // Surface: slate-900 (matches Web `bg-slate-900/80`)
       surface: darkSurface,
       onSurface: darkTextPrimary,
@@ -259,21 +259,26 @@ class AppTheme {
 
       // Text Theme
       textTheme: TextTheme(
-        displayLarge:
-            AppTextStyles.displayLarge.copyWith(color: darkTextPrimary),
-        displayMedium:
-            AppTextStyles.displayMedium.copyWith(color: darkTextPrimary),
-        headlineLarge:
-            AppTextStyles.headlineLarge.copyWith(color: darkTextPrimary),
-        headlineMedium:
-            AppTextStyles.headlineMedium.copyWith(color: darkTextPrimary),
+        displayLarge: AppTextStyles.displayLarge.copyWith(
+          color: darkTextPrimary,
+        ),
+        displayMedium: AppTextStyles.displayMedium.copyWith(
+          color: darkTextPrimary,
+        ),
+        headlineLarge: AppTextStyles.headlineLarge.copyWith(
+          color: darkTextPrimary,
+        ),
+        headlineMedium: AppTextStyles.headlineMedium.copyWith(
+          color: darkTextPrimary,
+        ),
         titleLarge: AppTextStyles.titleLarge.copyWith(color: darkTextPrimary),
         titleMedium: AppTextStyles.titleMedium.copyWith(color: darkTextPrimary),
         bodyLarge: AppTextStyles.bodyLarge.copyWith(color: darkTextPrimary),
         bodyMedium: AppTextStyles.bodyMedium.copyWith(color: darkTextSecondary),
         labelLarge: AppTextStyles.labelLarge.copyWith(color: darkTextPrimary),
-        labelMedium:
-            AppTextStyles.labelMedium.copyWith(color: darkTextSecondary),
+        labelMedium: AppTextStyles.labelMedium.copyWith(
+          color: darkTextSecondary,
+        ),
       ),
 
       // App Bar: slate-950 bg (Web: `bg-slate-900/60 backdrop-blur`)
@@ -460,9 +465,7 @@ class AppTheme {
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppDimens.borderMedium,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppDimens.borderMedium),
       ),
     );
   }

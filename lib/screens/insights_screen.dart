@@ -224,7 +224,10 @@ class InsightsScreen extends StatelessWidget {
               Switch(
                 value: vm.canToggleAi && vm.userAiEnabled,
                 activeThumbColor: AppColors.primary,
-                activeTrackColor: const Color(0xFF332E05),
+                // Must stand out from the primaryContainer box behind it
+                activeTrackColor: isDark
+                    ? AppColors.darkPrimaryContainerOutline
+                    : AppColors.onPrimary,
                 onChanged: vm.canToggleAi ? vm.setUserAiEnabled : null,
               ),
             ],

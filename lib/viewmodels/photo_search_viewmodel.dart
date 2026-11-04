@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import '../models/item_recognition.dart';
 import '../models/price_offer.dart';
@@ -112,7 +113,7 @@ class PhotoSearchViewModel extends ChangeNotifier {
           : UiSuccess(result);
       if (!result.isEmpty) _selectedName = result.name;
     } catch (e) {
-      debugPrint('PhotoSearch AI failed: $e');
+      debugPrint('PhotoSearch AI failed: ${describeError(e)}');
       next = UiError(message: failedMessage, onRetry: retry);
     }
     if (run != _run) return;
@@ -152,7 +153,7 @@ class PhotoSearchViewModel extends ChangeNotifier {
             ? const UiEmpty(message: priceNotFoundMessage)
             : UiSuccess(result);
       } catch (e) {
-        debugPrint('PhotoSearch price lookup failed: $e');
+        debugPrint('PhotoSearch price lookup failed: ${describeError(e)}');
         next = UiError(
           message: isQuotaError(e) ? priceQuotaMessage : priceFailedMessage,
           onRetry: searchPrices,

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/errors/app_exception.dart';
+import 'package:prm393_lab03/core/errors/describe_error.dart';
 import 'package:prm393_lab03/core/errors/firebase_error_mapper.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/service_guard.dart';

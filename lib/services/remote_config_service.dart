@@ -1,6 +1,7 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Remote Config
@@ -72,7 +73,7 @@ class RemoteConfigService {
         'RemoteConfig initialized successfully. cooling_off_days: $coolingOffDays, ai_enabled: $enableAiInsight',
       );
     } catch (e) {
-      debugPrint('RemoteConfig initialize error: $e');
+      debugPrint('RemoteConfig initialize error: ${describeError(e)}');
     }
   }
 

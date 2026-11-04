@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,8 +21,7 @@ const _accountExistsMessage =
     'Hãy đăng nhập bằng cách đó.';
 const _cancelledMessage =
     'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.';
-const _networkMessage =
-    'Không có kết nối mạng. Kiểm tra mạng rồi bấm "Thử lại".';
+const _networkMessage = 'Không có kết nối mạng. Kiểm tra mạng rồi thử lại.';
 
 /// FirebaseAuth whose sign-in calls fail with [error]
 class _FailingFirebaseAuth extends Fake implements FirebaseAuth {
@@ -99,6 +99,41 @@ class _UnusedUserService extends Fake implements UserService {}
 class _UnusedBudgetService extends Fake implements BudgetService {}
 
 class _UnusedAnalytics extends Fake implements AppAnalyticsService {}
+
+class _FakeCredential extends Fake implements UserCredential {}
+
+/// FirebaseAuth whose sign-in calls succeed
+class _SucceedingFirebaseAuth extends _FailingFirebaseAuth {
+  _SucceedingFirebaseAuth() : super(StateError('unused'));
+
+  @override
+  Future<UserCredential> signInWithProvider(AuthProvider provider) async =>
+      _FakeCredential();
+
+  @override
+  Future<UserCredential> signInAnonymously() async => _FakeCredential();
+}
+
+class _ThrowingAnalytics extends Fake implements AppAnalyticsService {
+  final List<String> methods = [];
+
+  @override
+  Future<void> logLogin({required String method}) async {
+    methods.add(method);
+    throw StateError('analytics down');
+  }
+}
+
+/// FirebaseAnalytics whose every event fails
+class _FailingFirebaseAnalytics extends Fake implements FirebaseAnalytics {
+  @override
+  Future<void> logEvent({
+    required String name,
+    Map<String, Object>? parameters,
+    AnalyticsCallOptions? callOptions,
+    List<AnalyticsEventItem>? items,
+  }) => Future.error(StateError('analytics down'));
+}
 
 AuthViewModel _viewModel(
   AuthService authService,
@@ -320,12 +355,45 @@ void main() {
         expect(crashlytics.handledErrors, 1);
         expect(crashlytics.lastError, same(original));
         expect(crashlytics.lastKeys, {
-          'auth_method': 'anonymous',
+          'auth_method': 'guest',
           'error_code': 'unknown',
         });
         vm.dispose();
       },
     );
+  });
+
+  group('Analytics during sign-in', () {
+    test('a failing logLogin does not fail the sign-in', () async {
+      final crashlytics = _CountingCrashlytics();
+      final analytics = _ThrowingAnalytics();
+      final vm = AuthViewModel(
+        authService: AuthService(
+          auth: _SucceedingFirebaseAuth(),
+          googleSignIn: _FakeGoogleSignIn(),
+        ),
+        userService: _UnusedUserService(),
+        budgetService: _UnusedBudgetService(),
+        analyticsService: analytics,
+        crashlyticsService: crashlytics,
+      );
+
+      expect(await vm.signInAnonymously(), isTrue);
+      expect(await vm.signInWithGithub(), isTrue);
+      expect(analytics.methods, ['guest', 'github']);
+      expect(vm.errorMessage, isNull);
+      expect(vm.status, isNot(AuthStatus.error));
+      expect(crashlytics.handledErrors, 0);
+      vm.dispose();
+    });
+
+    test('AppAnalyticsService swallows Firebase Analytics errors', () async {
+      final service = AppAnalyticsService(
+        analytics: _FailingFirebaseAnalytics(),
+      );
+
+      await expectLater(service.logLogin(method: 'guest'), completes);
+    });
   });
 
   group('LoginScreen', () {

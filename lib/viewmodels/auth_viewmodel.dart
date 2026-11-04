@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/errors/app_exception.dart';
+import '../core/errors/describe_error.dart';
 import '../core/errors/firebase_error_mapper.dart' show signInCancelled;
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
@@ -125,7 +126,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
         return false;
       }
 
-      await analyticsService.logLogin(method: 'google');
+      await _logLogin('google');
       return true;
     } on UnsupportedError {
       _status = AuthStatus.error;
@@ -153,7 +154,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
         return false;
       }
 
-      await analyticsService.logLogin(method: 'github');
+      await _logLogin('github');
       return true;
     } catch (e, stack) {
       _onSignInFailed(e, stack, method: 'github');
@@ -169,11 +170,20 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
 
     try {
       await authService.signInAnonymously();
-      await analyticsService.logLogin(method: 'guest');
+      await _logLogin('guest');
       return true;
     } catch (e, stack) {
-      _onSignInFailed(e, stack, method: 'anonymous');
+      _onSignInFailed(e, stack, method: 'guest');
       return false;
+    }
+  }
+
+  /// Analytics failures never fail a sign-in that already succeeded
+  Future<void> _logLogin(String method) async {
+    try {
+      await analyticsService.logLogin(method: method);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Analytics login error: ${describeError(e)}');
     }
   }
 

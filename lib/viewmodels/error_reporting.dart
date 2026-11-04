@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import '../core/errors/app_exception.dart';
+import '../core/errors/describe_error.dart';
 import '../services/crashlytics_service.dart';
 
 /// Turns any error caught in a ViewModel into a message for the UI.
@@ -64,16 +63,4 @@ Future<void> recordError(
     reason: reason,
     customKeys: customKeys,
   );
-}
-
-/// Type and code only, never the message: messages can carry emails or user data
-String describeError(Object error) {
-  if (error is AppException) {
-    final cause = error.cause;
-    final base = 'AppException(${error.code})';
-    return cause == null ? base : '$base <- ${describeError(cause)}';
-  }
-  if (error is FirebaseException) return '${error.runtimeType}(${error.code})';
-  if (error is PlatformException) return 'PlatformException(${error.code})';
-  return '${error.runtimeType}';
 }

@@ -5,7 +5,7 @@ import 'app_exception.dart';
 
 const _network = AppException(
   'network',
-  'Không có kết nối mạng. Kiểm tra mạng rồi bấm "Thử lại".',
+  'Không có kết nối mạng. Kiểm tra mạng rồi thử lại.',
 );
 
 /// The user closed or cancelled a sign-in flow; shared by every sign-in method

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import '../models/app_notification_item.dart';
 import '../models/notification_target.dart';
@@ -170,7 +171,7 @@ class NotificationService {
       // On web getToken itself would open the browser prompt; wait for the user's click
       if (!kIsWeb || await isPermissionGranted()) await _logToken();
     } catch (e) {
-      debugPrint('NotificationService initialize error: $e');
+      debugPrint('NotificationService initialize error: ${describeError(e)}');
     }
   }
 
@@ -187,7 +188,9 @@ class NotificationService {
       final settings = await _fcm.getNotificationSettings();
       return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (e) {
-      debugPrint('NotificationService permission check error: $e');
+      debugPrint(
+        'NotificationService permission check error: ${describeError(e)}',
+      );
       return false;
     }
   }
@@ -202,7 +205,9 @@ class NotificationService {
       if (granted) await _logToken();
       return granted;
     } catch (e) {
-      debugPrint('NotificationService requestPermission error: $e');
+      debugPrint(
+        'NotificationService requestPermission error: ${describeError(e)}',
+      );
       return false;
     }
   }

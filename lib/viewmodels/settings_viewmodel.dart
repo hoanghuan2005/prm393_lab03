@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../core/utils/purchase_csv.dart';
 import '../firebase/platform_support.dart';
 import '../models/app_notification_item.dart';
@@ -342,7 +343,7 @@ class SettingsViewModel extends ChangeNotifier
       // Re-filter the list for sale_reminder_enabled now, not on the next message
       unawaited(notificationService.reload());
     } catch (e) {
-      debugPrint('Error refreshing remote config: $e');
+      debugPrint('Error refreshing remote config: ${describeError(e)}');
     } finally {
       _isRefreshingConfig = false;
       notifyListeners();

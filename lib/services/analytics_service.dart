@@ -1,6 +1,8 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import 'analytics_events.dart';
 
@@ -27,7 +29,9 @@ class AppAnalyticsService {
     try {
       await _analytics?.setUserId(id: userId);
     } catch (e) {
-      debugPrint('Analytics setUserId error: $e');
+      if (kDebugMode) {
+        debugPrint('Analytics setUserId error: ${describeError(e)}');
+      }
     }
   }
 
@@ -40,7 +44,8 @@ class AppAnalyticsService {
             : parameters,
       );
     } catch (e) {
-      debugPrint('Analytics $event error: $e');
+      // Analytics must never break the flow that logs it
+      if (kDebugMode) debugPrint('Analytics $event error: ${describeError(e)}');
     }
   }
 

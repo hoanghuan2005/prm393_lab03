@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import 'service_guard.dart';
 
@@ -67,7 +68,7 @@ class AuthService {
         debugPrint('AuthService Google FirebaseAuthException: ${e.code}');
         rethrow;
       } catch (e) {
-        debugPrint('AuthService GoogleSignIn Error: $e');
+        debugPrint('AuthService GoogleSignIn Error: ${describeError(e)}');
         rethrow;
       }
     });
@@ -90,7 +91,7 @@ class AuthService {
         debugPrint('AuthService GitHub FirebaseAuthException: ${e.code}');
         rethrow;
       } catch (e) {
-        debugPrint('AuthService GitHub Error: $e');
+        debugPrint('AuthService GitHub Error: ${describeError(e)}');
         rethrow;
       }
     });
@@ -108,7 +109,7 @@ class AuthService {
         _auth.signOut(),
       ]);
     } catch (e) {
-      debugPrint('AuthService signOut error: $e');
+      debugPrint('AuthService signOut error: ${describeError(e)}');
       await _auth.signOut();
     }
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
+
 /// Writes already applied to the local Firestore cache that the server has not confirmed
 /// yet (offline). The app shows "đang chờ mạng" while [count] > 0; Firestore syncs them
 /// by itself when the connection returns.
@@ -23,7 +25,7 @@ class PendingWrites extends ChangeNotifier {
     write
         .catchError((Object e) {
           // Rejected after reconnecting (e.g. rules); the screen already moved on
-          debugPrint('Pending write failed after sync: $e');
+          debugPrint('Pending write failed after sync: ${describeError(e)}');
         })
         .whenComplete(() {
           if (generation != _generation) return;

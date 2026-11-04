@@ -5,20 +5,42 @@ import 'package:prm393_lab03/app/app.dart';
 import 'package:prm393_lab03/app/app_lifecycle_bridge.dart';
 import 'package:prm393_lab03/models/app_notification_item.dart';
 import 'package:prm393_lab03/services/notification_service.dart';
+import 'package:prm393_lab03/services/review_reminder_service.dart';
 import 'package:provider/provider.dart';
 
 import 'support/in_memory_notification_history_store.dart';
 
+/// Counts system notifications; any other call fails the test
+class _CountingReminders implements ReviewReminderService {
+  int immediateCalls = 0;
+
+  @override
+  Future<void> showImmediateNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async => immediateCalls++;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// Bridge inside a MaterialApp wired to [appScaffoldMessengerKey], as in WhyIBuyApp
-Widget _app(NotificationService service) => Provider<NotificationService>.value(
-  value: service,
-  child: AppLifecycleBridge(
-    child: MaterialApp(
-      scaffoldMessengerKey: appScaffoldMessengerKey,
-      home: const Scaffold(body: SizedBox()),
-    ),
-  ),
-);
+Widget _app(NotificationService service, {ReviewReminderService? reminders}) =>
+    MultiProvider(
+      providers: [
+        Provider<NotificationService>.value(value: service),
+        if (reminders != null)
+          Provider<ReviewReminderService>.value(value: reminders),
+      ],
+      child: AppLifecycleBridge(
+        child: MaterialApp(
+          scaffoldMessengerKey: appScaffoldMessengerKey,
+          home: const Scaffold(body: SizedBox()),
+        ),
+      ),
+    );
 
 void main() {
   group('FCM message while the app is open → SnackBar', () {
@@ -74,6 +96,18 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Đến hẹn xem lại'), findsOneWidget);
       expect(find.byType(SnackBarAction), findsNothing);
+    });
+
+    testWidgets('SnackBar only, no duplicate system notification', (
+      tester,
+    ) async {
+      final reminders = _CountingReminders();
+      await tester.pumpWidget(_app(service, reminders: reminders));
+      await receive(tester, 'd1', {'type': 'review'});
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Đến hẹn xem lại'), findsOneWidget);
+      expect(reminders.immediateCalls, 0);
     });
 
     testWidgets('sale with sale_reminder_enabled off → no SnackBar', (

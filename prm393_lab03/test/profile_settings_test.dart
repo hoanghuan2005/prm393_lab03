@@ -7,6 +7,7 @@ import 'package:prm393_lab03/models/app_notification_item.dart';
 import 'package:prm393_lab03/models/budget_group.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
+import 'package:prm393_lab03/screens/profile_screen.dart';
 import 'package:prm393_lab03/screens/reminder_permission_screen.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/data_export_service.dart';
@@ -56,6 +57,9 @@ class _FakeReminders implements ReviewReminderService {
   bool grant = true;
   int permissionRequests = 0;
   (int, int)? daily;
+
+  /// System notifications shown so far
+  final immediate = <({String title, String body})>[];
 
   @override
   bool get isSupported => true;
@@ -115,7 +119,7 @@ class _FakeReminders implements ReviewReminderService {
     required String title,
     required String body,
     String? payload,
-  }) async {}
+  }) async => immediate.add((title: title, body: body));
 }
 
 class _FakeExport implements DataExportService {
@@ -392,6 +396,87 @@ void main() {
       final vm = build();
       await settle();
       expect(await vm.sendFeedback('Hi'), 'Bạn cần đăng nhập để gửi góp ý.');
+    });
+
+    test('test notifications name their source, no UID', () async {
+      final vm = build();
+      await settle();
+      await vm.sendTestNotification();
+      await vm.testHandledNonFatalError('uid-123');
+
+      expect(reminders.immediate.map((n) => n.title), [
+        'Thử thông báo trên máy',
+        'Đã ghi lỗi có xử lý (Crashlytics)',
+      ]);
+      expect(
+        reminders.immediate.first.body,
+        'Đây là thông báo cục bộ do app tạo, không đi qua Firebase Cloud Messaging.',
+      );
+      expect(
+        reminders.immediate.last.body,
+        'Lỗi thử đã được gửi lên Firebase Crashlytics.',
+      );
+      for (final n in reminders.immediate) {
+        expect('${n.title}${n.body}', isNot(contains('uid-123')));
+        // No emoji: Vietnamese letters stay below U+2000
+        expect('${n.title}${n.body}'.runes.every((r) => r < 0x2000), isTrue);
+      }
+    });
+
+    Widget demoTools(SettingsViewModel vm, {required bool visible}) =>
+        ChangeNotifierProvider.value(
+          value: vm,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: FirebaseDemoTools(userId: 'uid-123', visible: visible),
+              ),
+            ),
+          ),
+        );
+
+    const demoButtons = [
+      'Bắn lỗi có xử lý (Non-Fatal)',
+      'Kích hoạt thử nghiệm Crash thật',
+      'Thử thông báo trên máy',
+    ];
+
+    testWidgets('release build shows none of the test buttons', (tester) async {
+      final vm = build();
+      await tester.runAsync(settle);
+      await tester.pumpWidget(demoTools(vm, visible: false));
+
+      expect(find.text('Khu trình diễn (chỉ bản debug)'), findsNothing);
+      for (final title in demoButtons) {
+        expect(find.text(title), findsNothing);
+      }
+    });
+
+    testWidgets('debug build groups the buttons; crash asks first', (
+      tester,
+    ) async {
+      final vm = build();
+      await tester.runAsync(settle);
+      await tester.pumpWidget(demoTools(vm, visible: true));
+
+      expect(find.text('Khu trình diễn (chỉ bản debug)'), findsOneWidget);
+      for (final title in demoButtons) {
+        expect(find.text(title), findsOneWidget);
+      }
+      expect(
+        find.text('Thông báo FCM thật gửi từ Firebase Console.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Kích hoạt thử nghiệm Crash thật'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crash thử ứng dụng?'), findsOneWidget);
+
+      await tester.tap(find.text('Huỷ'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crash thử ứng dụng?'), findsNothing);
+      // Cancelled: no "Sắp crash thử" notification, no crash
+      expect(reminders.immediate, isEmpty);
     });
 
     testWidgets('05a: "Bật nhắc nhở" turns the reminder on and closes', (

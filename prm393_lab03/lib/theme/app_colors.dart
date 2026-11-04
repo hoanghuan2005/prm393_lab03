@@ -129,4 +129,44 @@ class AppColors {
   static const Color darkTextSecondary = Color(0xFF94A3B8); // slate-400
   static const Color darkTextHint = Color(0xFF64748B); // slate-500
   static const Color darkTextMuted = Color(0xFF475569); // slate-600
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DARK MODE — role tokens for the `isDark ? dark* : light` branches in screens
+  // (mapping from the old hex values: docs/design-tokens.md, section 2.5)
+  // ═══════════════════════════════════════════════════════════════════════════
+  /// Dark counterpart of [primaryContainer] (also `colorScheme.primaryContainer`)
+  static const Color darkPrimaryContainer = Color(0xFF2C2706);
+
+  /// Border of a [darkPrimaryContainer] box; active Switch track on that box
+  static const Color darkPrimaryContainerOutline = Color(0xFF5E5410);
+
+  /// Text on [darkPrimaryContainer] (AI note, tips)
+  static const Color darkPrimaryContainerText = Color(0xFFFEF3C7); // amber-100
+
+  /// Raised card on the dark background (light: [surface])
+  static const Color darkCardSurface = Color(0xFF1B202A);
+
+  /// Unselected chip, segmented control, progress track (light: [surfaceVariant])
+  static const Color darkSurfaceMuted = Color(0xFF262D3B);
+
+  /// Inactive page dot (light: [outline])
+  static const Color darkIndicatorInactive = Color(0xFF333B49);
+
+  static const Color darkTextBody = Color(0xFFCBD5E1); // slate-300
+  static const Color darkNavInactive = Color(0xFF64748B); // slate-500
+
+  /// Dark counterpart of [accentNeutral] (also `colorScheme.tertiary`)
+  static const Color darkAccentNeutral = Color(0xFF93B5CE);
+
+  static const Color darkSuccessContainer = Color(0xFF064E3B); // emerald-900
+  static const Color darkOnSuccessContainer = Color(0xFF6EE7B7); // emerald-300
+  static const Color darkErrorContainer = Color(0xFF451A1A);
+  static const Color darkOnErrorContainer = Color(0xFFFCA5A5); // red-300
+  static const Color darkInfoContainer = Color(0xFF1E2838);
+  static const Color darkOnInfoContainer = Color(0xFF93C5FD); // blue-300
+
+  // Info badge, light mode (dark text: [infoLight])
+  static const Color infoContainer = Color(0xFFDBEAFE); // blue-100
+  static const Color onInfoContainer = Color(0xFF1D4ED8); // blue-700
+  static const Color infoText = Color(0xFF2563EB); // blue-600
 }

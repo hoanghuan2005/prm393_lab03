@@ -18,6 +18,7 @@ class MotivePalette {
 }
 
 /// Single source of the 8 motive colors.
+/// Synchronized with Admin Web Portal (`motiveDistributionData` in mockData.ts).
 /// Widgets: `MotiveColors.of(context).of(motive)`; models read [MotiveColors.light].
 @immutable
 class MotiveColors extends ThemeExtension<MotiveColors> {
@@ -25,70 +26,80 @@ class MotiveColors extends ThemeExtension<MotiveColors> {
 
   const MotiveColors(this.palettes);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LIGHT MODE — vibrant fg on pastel bg (Tailwind *-500 / *-100)
+  // ═══════════════════════════════════════════════════════════════════════════
   static const light = MotiveColors({
     BuyingMotive.need: MotivePalette(
-      AppColors.motiveNeed,
-      AppColors.motiveNeedBg,
+      AppColors.motiveNeed, // blue-500
+      AppColors.motiveNeedBg, // blue-100
     ),
     BuyingMotive.want: MotivePalette(
-      AppColors.motiveWant,
-      AppColors.motiveWantBg,
+      AppColors.motiveWant, // pink-500
+      AppColors.motiveWantBg, // pink-100
     ),
     BuyingMotive.sale: MotivePalette(
-      AppColors.motiveSale,
-      AppColors.motiveSaleBg,
+      AppColors.motiveSale, // amber-500
+      AppColors.motiveSaleBg, // amber-100
     ),
     BuyingMotive.emotion: MotivePalette(
-      AppColors.motiveEmotion,
-      AppColors.motiveEmotionBg,
+      AppColors.motiveEmotion, // purple-500
+      AppColors.motiveEmotionBg, // purple-100
     ),
     BuyingMotive.social: MotivePalette(
-      AppColors.motiveSocial,
-      AppColors.motiveSocialBg,
+      AppColors.motiveSocial, // sky-500
+      AppColors.motiveSocialBg, // sky-100
     ),
     BuyingMotive.convenience: MotivePalette(
-      AppColors.motiveConvenience,
-      AppColors.motiveConvenienceBg,
+      AppColors.motiveConvenience, // teal-500
+      AppColors.motiveConvenienceBg, // teal-100
     ),
-    BuyingMotive.ads: MotivePalette(AppColors.motiveAds, AppColors.motiveAdsBg),
+    BuyingMotive.ads: MotivePalette(
+      AppColors.motiveAds, // blue-600
+      AppColors.motiveAdsBg, // blue-100
+    ),
     BuyingMotive.other: MotivePalette(
-      AppColors.motiveOther,
-      AppColors.motiveOtherBg,
+      AppColors.motiveOther, // slate-500
+      AppColors.motiveOtherBg, // slate-100
     ),
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DARK MODE — lighter/luminous fg on deep-hued bg
+  // Matches Web admin pie chart colors on slate-950 background
+  // ═══════════════════════════════════════════════════════════════════════════
   static const dark = MotiveColors({
     BuyingMotive.need: MotivePalette(
-      Color(0xFF818CF8),
-      Color(0xFF1E1E38),
+      Color(0xFF60A5FA), // blue-400
+      Color(0xFF172554), // blue-950
     ),
     BuyingMotive.want: MotivePalette(
-      Color(0xFFF472B6),
-      Color(0xFF381E2E),
+      Color(0xFFF472B6), // pink-400
+      Color(0xFF500724), // pink-950
     ),
     BuyingMotive.sale: MotivePalette(
-      Color(0xFFFBBF24),
-      Color(0xFF382D1E),
+      Color(0xFFFBBF24), // amber-400
+      Color(0xFF451A03), // amber-950
     ),
     BuyingMotive.emotion: MotivePalette(
-      Color(0xFFA78BFA),
-      Color(0xFF2E1E38),
+      Color(0xFFC084FC), // purple-400
+      Color(0xFF3B0764), // purple-950
     ),
     BuyingMotive.social: MotivePalette(
-      Color(0xFF38BDF8),
-      Color(0xFF1E2F38),
+      Color(0xFF38BDF8), // sky-400
+      Color(0xFF082F49), // sky-950
     ),
     BuyingMotive.convenience: MotivePalette(
-      Color(0xFF2DD4BF),
-      Color(0xFF1E3834),
+      Color(0xFF2DD4BF), // teal-400
+      Color(0xFF042F2E), // teal-950
     ),
     BuyingMotive.ads: MotivePalette(
-      Color(0xFF60A5FA),
-      Color(0xFF1E2838),
+      Color(0xFF60A5FA), // blue-400
+      Color(0xFF172554), // blue-950
     ),
     BuyingMotive.other: MotivePalette(
-      Color(0xFF94A3B8),
-      Color(0xFF252B36),
+      Color(0xFF94A3B8), // slate-400
+      Color(0xFF1E293B), // slate-800
     ),
   });
 

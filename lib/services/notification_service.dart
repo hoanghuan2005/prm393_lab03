@@ -8,7 +8,6 @@ import '../firebase/platform_support.dart';
 import '../models/app_notification_item.dart';
 import '../models/notification_target.dart';
 import 'notification_history_store.dart';
-import 'review_reminder_service.dart';
 
 /// Converts an FCM message for the notification history. [receivedAt] is the send
 /// time when known, not the time it was recorded.
@@ -82,11 +81,6 @@ class NotificationService {
   /// Remote Config `sale_reminder_enabled`; while off, sale messages are hidden from the
   /// in-app list (still stored) and a tap on one only opens the app
   final bool Function() _saleRemindersEnabled;
-  ReviewReminderService? _reminderService;
-
-  void attachReminderService(ReviewReminderService reminderService) {
-    _reminderService = reminderService;
-  }
 
   NotificationService({
     FirebaseMessaging? fcm,
@@ -149,15 +143,6 @@ class NotificationService {
         debugPrint(
           'FCM Foreground message received: ${message.notification?.title}',
         );
-        final title = message.notification?.title ?? 'Why I Buy';
-        final body = message.notification?.body ?? '';
-        if (title.isNotEmpty || body.isNotEmpty) {
-          _reminderService?.showImmediateNotification(
-            id: message.hashCode,
-            title: title,
-            body: body,
-          );
-        }
         unawaited(handleForegroundMessage(message));
       });
 

@@ -58,7 +58,7 @@ abstract interface class ReviewReminderService {
     reminders,
   );
 
-  /// Displays an immediate system notification on the status bar (for FCM alerts & Crashlytics test events)
+  /// Displays an immediate system notification (test buttons in Cá nhân only)
   Future<void> showImmediateNotification({
     required int id,
     required String title,

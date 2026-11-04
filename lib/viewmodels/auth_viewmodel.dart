@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
-import '../core/errors/firebase_error_mapper.dart';
+import '../core/errors/app_exception.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
@@ -12,6 +12,9 @@ import '../services/pending_writes.dart';
 import '../services/user_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+
+/// AppException code for a sign-in the user closed or cancelled
+const _cancelledCode = 'sign-in-cancelled';
 
 /// ViewModel managing Authentication state & Google Sign-In
 class AuthViewModel extends ChangeNotifier {
@@ -130,6 +133,9 @@ class AuthViewModel extends ChangeNotifier {
           'Đăng nhập Google chưa hỗ trợ trên Windows. Hãy dùng chế độ Khách.';
       notifyListeners();
       return false;
+    } on AppException catch (e, stack) {
+      await _onSignInFailed(e, stack, reason: 'Google sign-in error');
+      return false;
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
@@ -159,15 +165,8 @@ class AuthViewModel extends ChangeNotifier {
 
       await analyticsService.logLogin(method: 'github');
       return true;
-    } on FirebaseAuthException catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = mapFirebaseError(e).messageVi;
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'GitHub sign-in error: ${e.code}',
-      );
-      notifyListeners();
+    } on AppException catch (e, stack) {
+      await _onSignInFailed(e, stack, reason: 'GitHub sign-in error');
       return false;
     } catch (e, stack) {
       _status = AuthStatus.error;
@@ -192,6 +191,9 @@ class AuthViewModel extends ChangeNotifier {
       await authService.signInAnonymously();
       await analyticsService.logLogin(method: 'guest');
       return true;
+    } on AppException catch (e, stack) {
+      await _onSignInFailed(e, stack, reason: 'Anonymous sign-in error');
+      return false;
     } catch (e, stack) {
       _status = AuthStatus.error;
       _errorMessage = 'Đăng nhập khách thất bại.';
@@ -203,6 +205,24 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Shows the mapped message; only unexpected errors reach Crashlytics
+  Future<void> _onSignInFailed(
+    AppException e,
+    StackTrace stack, {
+    required String reason,
+  }) async {
+    _errorMessage = e.messageVi;
+    if (e.code == _cancelledCode) {
+      _status = AuthStatus.unauthenticated;
+    } else {
+      _status = AuthStatus.error;
+      if (e.code == AppException.unknown.code) {
+        await crashlyticsService.recordHandledError(e, stack, reason: reason);
+      }
+    }
+    notifyListeners();
   }
 
   /// Sign out

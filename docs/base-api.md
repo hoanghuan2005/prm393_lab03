@@ -41,7 +41,7 @@ Danh sách lớp/hàm dùng chung, đúng với code hiện tại. Service có i
 
 | Lớp | Hàm chính | Mô tả |
 |:---|:---|:---|
-| `AuthService` | `authStateChanges`, `signInWithGoogle()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In |
+| `AuthService` | `authStateChanges`, `signInWithGoogle()`, `signInWithGithub()`, `signInAnonymously()`, `signOut()`, `displayName` | Firebase Auth + Google Sign-In. Các hàm đăng nhập bọc `guard()`, mọi lỗi ném ra là `AppException` (huỷ đăng nhập: code `sign-in-cancelled`); huỷ chọn tài khoản Google trả `null`; `signInWithGoogle()` ném `UnsupportedError` trên Windows |
 | `AiService` → `FirebaseAiService` | `Future<String> generateJson({required String systemInstruction, required String prompt, required List<String> cardIds})`, `Future<String> generateChoice({required String systemInstruction, required String prompt, required AiChoiceSchema schema})`, `Future<String> generateFields({required String systemInstruction, required String prompt, required List<String> fields})` | Nơi duy nhất gọi `firebase_ai` (Gemini). `generateChoice` chỉ cho model chọn trong các giá trị liệt kê, không viết chữ |
 | `AiDecisionService` | `Future<String?> reasonFor(DecisionAssessment)`, `Future<Map<PlanOption, String>> explainPlans(SalePlanResult)` | Một câu lý do cho nhãn Decision Card (AI tính năng 2); 1–2 câu cho mỗi phương án gói mua, một lần gọi cho cả ba (AI tính năng 5). Câu có số lạ hoặc từ cấm bị bỏ |
 | `AiSuggestionService` | `Future<String?> suggestGroup(String title, List<BudgetGroup> groups)`, `Future<Set<String>> pickDuplicates(String title, List<DuplicateCandidate> candidates)` | Gợi ý nhóm ngân sách và món có thể trùng; bỏ giá trị lạ, nhớ kết quả theo tên món |

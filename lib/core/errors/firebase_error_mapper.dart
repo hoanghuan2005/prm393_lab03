@@ -30,6 +30,7 @@ AppException _mapAuth(FirebaseAuthException e) {
     case 'popup-closed-by-user':
     case 'cancelled-popup-request':
     case 'web-context-canceled':
+    case 'web-context-cancelled':
     case 'sign-in-cancelled':
     case 'canceled':
       return const AppException(

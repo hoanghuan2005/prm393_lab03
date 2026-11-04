@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../firebase/platform_support.dart';
+import 'service_guard.dart';
 
 /// Service abstraction for Authentication
 class AuthService {
@@ -33,7 +34,7 @@ class AuthService {
       _auth.currentUser?.email ??
       'Người dùng';
 
-  /// Sign in with Google
+  /// Sign in with Google; failures are thrown as AppException
   /// Mobile: native google_sign_in. Web: Firebase popup. Windows: unsupported.
   Future<UserCredential?> signInWithGoogle() async {
     if (!PlatformSupport.supportsGoogleSignIn) {
@@ -41,59 +42,63 @@ class AuthService {
         'Google Sign-In is not available on this platform',
       );
     }
-    try {
-      if (kIsWeb) {
-        return await _auth.signInWithPopup(GoogleAuthProvider());
+    return guard(() async {
+      try {
+        if (kIsWeb) {
+          return await _auth.signInWithPopup(GoogleAuthProvider());
+        }
+
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          // The user cancelled the sign-in flow
+          return null;
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        return await _auth.signInWithCredential(credential);
+      } on FirebaseAuthException catch (e) {
+        // Code only: some auth messages carry the email
+        debugPrint('AuthService Google FirebaseAuthException: ${e.code}');
+        rethrow;
+      } catch (e) {
+        debugPrint('AuthService GoogleSignIn Error: $e');
+        rethrow;
       }
-
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // The user cancelled the sign-in flow
-        return null;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      return await _auth.signInWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      debugPrint('AuthService FirebaseAuthException: ${e.code} - ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('AuthService GoogleSignIn Error: $e');
-      rethrow;
-    }
+    });
   }
 
-  /// Sign in with GitHub using Firebase Auth OAuth Provider
+  /// Sign in with GitHub using Firebase Auth OAuth Provider; throws AppException
   Future<UserCredential?> signInWithGithub() async {
-    try {
-      final GithubAuthProvider githubProvider = GithubAuthProvider();
-      githubProvider.addScope('read:user');
-      githubProvider.addScope('user:email');
+    return guard(() async {
+      try {
+        final GithubAuthProvider githubProvider = GithubAuthProvider();
+        githubProvider.addScope('read:user');
+        githubProvider.addScope('user:email');
 
-      if (kIsWeb) {
-        return await _auth.signInWithPopup(githubProvider);
-      } else {
-        return await _auth.signInWithProvider(githubProvider);
+        if (kIsWeb) {
+          return await _auth.signInWithPopup(githubProvider);
+        } else {
+          return await _auth.signInWithProvider(githubProvider);
+        }
+      } on FirebaseAuthException catch (e) {
+        debugPrint('AuthService GitHub FirebaseAuthException: ${e.code}');
+        rethrow;
+      } catch (e) {
+        debugPrint('AuthService GitHub Error: $e');
+        rethrow;
       }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('AuthService GitHub FirebaseAuthException: ${e.code} - ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('AuthService GitHub Error: $e');
-      rethrow;
-    }
+    });
   }
 
-  /// Sign in anonymously for test / guest mode
-  Future<UserCredential> signInAnonymously() async {
-    return await _auth.signInAnonymously();
-  }
+  /// Sign in anonymously for test / guest mode; throws AppException
+  Future<UserCredential> signInAnonymously() =>
+      guard(() => _auth.signInAnonymously());
 
   /// Sign out
   Future<void> signOut() async {

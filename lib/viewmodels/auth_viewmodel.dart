@@ -84,6 +84,7 @@ class AuthViewModel extends ChangeNotifier {
       await userService.ensureUserDocument(
         user.uid,
         displayName: user.displayName,
+        email: user.email,
         isAnonymous: user.isAnonymous,
       );
     } catch (e, stack) {

@@ -10,6 +10,7 @@ abstract interface class UserService {
   Future<void> ensureUserDocument(
     String uid, {
     String? displayName,
+    String? email,
     required bool isAnonymous,
   });
 
@@ -29,6 +30,7 @@ class FirestoreUserService implements UserService {
   Future<void> ensureUserDocument(
     String uid, {
     String? displayName,
+    String? email,
     required bool isAnonymous,
   }) => guard(() async {
     final ref = _paths.user(uid);
@@ -36,6 +38,7 @@ class FirestoreUserService implements UserService {
     if (snapshot.exists) {
       await ref.update({
         'displayName': displayName,
+        'email': email,
         'isAnonymous': isAnonymous,
       });
       return;
@@ -46,6 +49,7 @@ class FirestoreUserService implements UserService {
         displayName: displayName,
         isAnonymous: isAnonymous,
       ).toMap(),
+      'email': email,
       'createdAt': FieldValue.serverTimestamp(),
     });
   });

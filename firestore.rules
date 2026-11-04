@@ -3,6 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@gmail.com';
+    }
     function d() { return request.resource.data; }
     function validTitle() { return d().title is string && d().title.size() > 0 && d().title.size() <= 60; }
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
@@ -11,7 +14,8 @@ service cloud.firestore {
     function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid);
 
       match /purchases/{id} {
         allow read, delete: if isOwner(uid);

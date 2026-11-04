@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/firebase_error_mapper.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
@@ -160,7 +161,7 @@ class AuthViewModel extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (e, stack) {
       _status = AuthStatus.error;
-      _errorMessage = e.message ?? 'Đăng nhập GitHub thất bại.';
+      _errorMessage = mapFirebaseError(e).messageVi;
       await crashlyticsService.recordHandledError(
         e,
         stack,

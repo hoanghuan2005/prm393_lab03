@@ -41,6 +41,11 @@ AppException _mapAuth(FirebaseAuthException e) {
         'popup-blocked',
         'Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép cửa sổ bật lên rồi bấm "Thử lại".',
       );
+    case 'account-exists-with-different-credential':
+      return const AppException(
+        'account-exists-with-different-credential',
+        'Email này đã có tài khoản đăng nhập bằng cách khác (ví dụ Google). Hãy đăng nhập bằng cách đó.',
+      );
     case 'too-many-requests':
       return const AppException(
         'too-many-requests',

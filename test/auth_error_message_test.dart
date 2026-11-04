@@ -33,6 +33,9 @@ class _FailingFirebaseAuth extends Fake implements FirebaseAuth {
   Stream<User?> authStateChanges() => const Stream.empty();
 
   @override
+  Stream<User?> userChanges() => const Stream.empty();
+
+  @override
   User? get currentUser => null;
 
   @override

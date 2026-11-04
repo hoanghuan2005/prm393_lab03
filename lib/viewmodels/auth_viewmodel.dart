@@ -54,11 +54,19 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
       _status == AuthStatus.authenticated ? _currentUser?.uid : null;
 
   void _init() {
-    // authStateChanges emits the current user right away; AuthGate shows loading until then
-    _authSubscription = authService.authStateChanges.listen(_onAuthChanged);
+    // userChanges emits the current user right away (AuthGate shows loading until then),
+    // and also on link / unlink / token refresh, unlike authStateChanges
+    _authSubscription = authService.userChanges.listen(_onAuthChanged);
   }
 
   Future<void> _onAuthChanged(User? user) async {
+    // Same account (link, unlink, profile or token change): refresh the user only, so
+    // sign-in work does not run again and the uid handed to other ViewModels stays the same
+    if (user != null && _currentUser != null && user.uid == _currentUser!.uid) {
+      _currentUser = user;
+      notifyListeners();
+      return;
+    }
     final event = ++_authEvent;
     // Firestore holds another account's queued writes until that account signs in again
     if (user?.uid != _currentUser?.uid) PendingWrites.instance.reset();

@@ -84,9 +84,10 @@ class _FakeGoogleAccount extends Fake implements GoogleSignInAccount {
 
 class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
   final bool cancels;
+  final Object? signOutError;
   int signOuts = 0;
 
-  _FakeGoogleSignIn({this.cancels = false});
+  _FakeGoogleSignIn({this.cancels = false, this.signOutError});
 
   @override
   Future<GoogleSignInAccount?> signIn() async =>
@@ -95,6 +96,7 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
   @override
   Future<GoogleSignInAccount?> signOut() async {
     signOuts++;
+    if (signOutError != null) throw signOutError!;
     return null;
   }
 }
@@ -258,5 +260,19 @@ void main() {
       await expectLater(_service(user).unlink('github.com'), completes);
       expect(user.calls, ['unlink:github.com', 'reload']);
     });
+  });
+
+  test('a failed Google signOut does not fail unlink', () async {
+    final user = _FakeUser(['google.com', 'github.com']);
+    final googleSignIn = _FakeGoogleSignIn(
+      signOutError: StateError('google_sign_in unavailable'),
+    );
+
+    await expectLater(
+      _service(user, googleSignIn: googleSignIn).unlink('google.com'),
+      completes,
+    );
+    expect(googleSignIn.signOuts, 1);
+    expect(user.calls, ['unlink:google.com', 'reload']);
   });
 }

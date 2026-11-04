@@ -1,139 +1,29 @@
-import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/errors/firebase_error_mapper.dart';
 import 'package:prm393_lab03/core/formatters/email_format.dart';
 import 'package:prm393_lab03/services/auth_service.dart';
-import 'package:prm393_lab03/services/crashlytics_service.dart';
-import 'package:prm393_lab03/services/user_service.dart';
 import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
+
+import 'support/linked_auth_fakes.dart';
 
 const _googleId = LinkedAccountsViewModel.googleId;
 const _githubId = LinkedAccountsViewModel.githubId;
 
-class _FakeUserInfo extends Fake implements UserInfo {
-  @override
-  final String providerId;
-  @override
-  final String? email;
-  @override
-  final String? displayName;
-
-  _FakeUserInfo(this.providerId, {this.email, this.displayName});
-}
-
-class _FakeUser extends Fake implements User {
-  @override
-  final List<UserInfo> providerData;
-  @override
-  final String? email;
-
-  _FakeUser(this.providerData, {this.email});
-
-  /// Top-level name stays empty, as for a guest who just linked
-  @override
-  String? get displayName => null;
-
-  @override
-  bool get isAnonymous => providerData.isEmpty;
-}
-
-class _FakeCredential extends Fake implements UserCredential {}
-
-/// AuthService whose link / unlink swap the current user, or fail with [error]
-class _FakeAuthService extends Fake implements AuthService {
-  final _changes = StreamController<User?>.broadcast();
-  User? user;
-  Object? error;
-  bool cancelLink = false;
-  final List<String> unlinked = [];
-
-  /// User returned after a successful link
-  User? Function()? afterLink;
-
-  _FakeAuthService(this.user);
-
-  @override
-  Stream<User?> get userChanges => _changes.stream;
-
-  @override
-  User? get currentUser => user;
-
-  @override
-  String? get currentUserId => user == null ? null : 'uid-1';
-
-  @override
-  Set<String> get linkedProviderIds => {
-    for (final info in user?.providerData ?? const <UserInfo>[])
-      info.providerId,
-  };
-
-  Future<UserCredential?> _link() async {
-    if (error != null) throw error!;
-    if (cancelLink) return null;
-    user = afterLink?.call();
-    _changes.add(user);
-    return _FakeCredential();
-  }
-
-  @override
-  Future<UserCredential?> linkGoogle() => _link();
-
-  @override
-  Future<UserCredential?> linkGithub() => _link();
-
-  @override
-  Future<void> unlink(String providerId) async {
-    if (error != null) throw error!;
-    unlinked.add(providerId);
-  }
-}
-
-class _RecordingUserService extends Fake implements UserService {
-  final List<({String uid, String? displayName, bool isAnonymous})> calls = [];
-
-  @override
-  Future<void> ensureUserDocument(
-    String uid, {
-    String? displayName,
-    String? email,
-    required bool isAnonymous,
-  }) async {
-    calls.add((uid: uid, displayName: displayName, isAnonymous: isAnonymous));
-  }
-}
-
-class _CountingCrashlytics extends Fake implements CrashlyticsService {
-  int handledErrors = 0;
-  Map<String, Object>? lastKeys;
-
-  @override
-  Future<void> recordHandledError(
-    dynamic error,
-    StackTrace? stackTrace, {
-    String? reason,
-    Map<String, Object>? customKeys,
-  }) async {
-    handledErrors++;
-    lastKeys = customKeys;
-  }
-}
-
-_FakeUser _googleUser() => _FakeUser([
-  _FakeUserInfo(_googleId, email: 'someone@gmail.com', displayName: 'An'),
+FakeLinkUser _googleUser() => FakeLinkUser([
+  FakeUserInfo(_googleId, email: 'someone@gmail.com', displayName: 'An'),
 ], email: 'someone@gmail.com');
 
 void main() {
-  late _RecordingUserService userService;
-  late _CountingCrashlytics crashlytics;
+  late RecordingUserService userService;
+  late CountingCrashlytics crashlytics;
 
   setUp(() {
-    userService = _RecordingUserService();
-    crashlytics = _CountingCrashlytics();
+    userService = RecordingUserService();
+    crashlytics = CountingCrashlytics();
   });
 
-  LinkedAccountsViewModel viewModel(_FakeAuthService auth) =>
+  LinkedAccountsViewModel viewModel(FakeLinkAuthService auth) =>
       LinkedAccountsViewModel(
         authService: auth,
         userService: userService,
@@ -146,11 +36,11 @@ void main() {
   });
 
   test('rows show only Google and GitHub, with masked email and name', () {
-    final auth = _FakeAuthService(
-      _FakeUser([
-        _FakeUserInfo(_googleId, email: 'someone@gmail.com'),
-        _FakeUserInfo(_githubId, displayName: 'Ngo Gia Kiet'),
-        _FakeUserInfo('password'),
+    final auth = FakeLinkAuthService(
+      FakeLinkUser([
+        FakeUserInfo(_googleId, email: 'someone@gmail.com'),
+        FakeUserInfo(_githubId, displayName: 'Ngo Gia Kiet'),
+        FakeUserInfo('password'),
       ]),
     );
     final vm = viewModel(auth);
@@ -164,7 +54,7 @@ void main() {
 
   group('canUnlink', () {
     test('false for the only provider left', () {
-      final vm = viewModel(_FakeAuthService(_googleUser()));
+      final vm = viewModel(FakeLinkAuthService(_googleUser()));
       expect(vm.canUnlink(_googleId), isFalse);
       expect(vm.rowFor(_googleId).canUnlink, isFalse);
       vm.dispose();
@@ -172,8 +62,8 @@ void main() {
 
     test('true when two providers are linked', () {
       final vm = viewModel(
-        _FakeAuthService(
-          _FakeUser([_FakeUserInfo(_googleId), _FakeUserInfo(_githubId)]),
+        FakeLinkAuthService(
+          FakeLinkUser([FakeUserInfo(_googleId), FakeUserInfo(_githubId)]),
         ),
       );
       expect(vm.canUnlink(_googleId), isTrue);
@@ -183,8 +73,8 @@ void main() {
 
     test('counts providers that are not shown, like password', () {
       final vm = viewModel(
-        _FakeAuthService(
-          _FakeUser([_FakeUserInfo(_googleId), _FakeUserInfo('password')]),
+        FakeLinkAuthService(
+          FakeLinkUser([FakeUserInfo(_googleId), FakeUserInfo('password')]),
         ),
       );
       expect(vm.canUnlink(_googleId), isTrue);
@@ -192,7 +82,7 @@ void main() {
     });
 
     test('false for a guest', () {
-      final vm = viewModel(_FakeAuthService(_FakeUser([])));
+      final vm = viewModel(FakeLinkAuthService(FakeLinkUser([])));
       expect(vm.canUnlink(_googleId), isFalse);
       expect(vm.rowFor(_googleId).state, LinkState.notLinked);
       vm.dispose();
@@ -202,10 +92,10 @@ void main() {
   test(
     'linking Google turns the row linked and shows a success message',
     () async {
-      final auth = _FakeAuthService(_FakeUser([_FakeUserInfo(_githubId)]))
-        ..afterLink = () => _FakeUser([
-          _FakeUserInfo(_githubId),
-          _FakeUserInfo(_googleId, email: 'someone@gmail.com'),
+      final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_githubId)]))
+        ..afterLink = () => FakeLinkUser([
+          FakeUserInfo(_githubId),
+          FakeUserInfo(_googleId, email: 'someone@gmail.com'),
         ]);
       final vm = viewModel(auth);
       final states = <LinkState>[];
@@ -224,9 +114,9 @@ void main() {
   test(
     'a guest linking Google updates the user document to not anonymous',
     () async {
-      final auth = _FakeAuthService(_FakeUser([]))
-        ..afterLink = () => _FakeUser([
-          _FakeUserInfo(
+      final auth = FakeLinkAuthService(FakeLinkUser([]))
+        ..afterLink = () => FakeLinkUser([
+          FakeUserInfo(
             _googleId,
             email: 'someone@gmail.com',
             displayName: 'An',
@@ -248,7 +138,7 @@ void main() {
   test(
     'credential-already-in-use shows its message and is not recorded',
     () async {
-      final auth = _FakeAuthService(_FakeUser([_FakeUserInfo(_githubId)]))
+      final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_githubId)]))
         ..error = mapFirebaseError(
           FirebaseAuthException(code: 'credential-already-in-use'),
         );
@@ -268,7 +158,7 @@ void main() {
   );
 
   test('cancelling is not an error', () async {
-    final auth = _FakeAuthService(_FakeUser([_FakeUserInfo(_githubId)]))
+    final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_githubId)]))
       ..cancelLink = true;
     final vm = viewModel(auth);
 
@@ -286,7 +176,7 @@ void main() {
   });
 
   test('errors with a cause are recorded with auth_method', () async {
-    final auth = _FakeAuthService(_FakeUser([_FakeUserInfo(_googleId)]))
+    final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_googleId)]))
       ..error = mapFirebaseError(FirebaseAuthException(code: 'internal-error'));
     final vm = viewModel(auth);
 
@@ -302,8 +192,8 @@ void main() {
   });
 
   test('unlink calls the service and shows a success message', () async {
-    final auth = _FakeAuthService(
-      _FakeUser([_FakeUserInfo(_googleId), _FakeUserInfo(_githubId)]),
+    final auth = FakeLinkAuthService(
+      FakeLinkUser([FakeUserInfo(_googleId), FakeUserInfo(_githubId)]),
     );
     final vm = viewModel(auth);
 
@@ -315,7 +205,7 @@ void main() {
   });
 
   test('unlinking the last provider shows the service message', () async {
-    final auth = _FakeAuthService(_googleUser())
+    final auth = FakeLinkAuthService(_googleUser())
       ..error = AuthService.lastProvider;
     final vm = viewModel(auth);
 
@@ -326,9 +216,9 @@ void main() {
   });
 
   test('a second action while busy is ignored', () async {
-    final auth = _FakeAuthService(_FakeUser([_FakeUserInfo(_githubId)]))
+    final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_githubId)]))
       ..afterLink = () =>
-          _FakeUser([_FakeUserInfo(_githubId), _FakeUserInfo(_googleId)]);
+          FakeLinkUser([FakeUserInfo(_githubId), FakeUserInfo(_googleId)]);
     final vm = viewModel(auth);
 
     final first = vm.linkGoogle();

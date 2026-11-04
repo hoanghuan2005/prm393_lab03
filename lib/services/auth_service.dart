@@ -171,7 +171,7 @@ class AuthService {
       // Forget the cached Google account so the next link asks again
       if (providerId == GoogleAuthProvider.PROVIDER_ID &&
           PlatformSupport.isMobile) {
-        await _googleSignIn.signOut();
+        await _signOutGoogleQuietly();
       }
       await _reloadQuietly(user);
     });
@@ -191,6 +191,17 @@ class AuthService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('AuthService reload error: ${describeError(e)}');
+      }
+    }
+  }
+
+  /// Runs after Firebase already unlinked Google, so a failure must not undo that result
+  Future<void> _signOutGoogleQuietly() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('AuthService Google signOut error: ${describeError(e)}');
       }
     }
   }

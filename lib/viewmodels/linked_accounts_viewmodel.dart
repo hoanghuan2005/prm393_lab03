@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../core/errors/app_exception.dart';
 import '../core/errors/firebase_error_mapper.dart' show signInCancelled;
 import '../core/formatters/email_format.dart';
+import '../firebase/platform_support.dart';
 import '../services/auth_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/user_service.dart';
@@ -43,6 +44,9 @@ class LinkedAccountsViewModel extends ChangeNotifier
   @override
   final CrashlyticsService? crashlyticsService;
 
+  /// False where Google / GitHub sign-in has no plugin (Windows): the section is hidden
+  final bool isAvailable;
+
   StreamSubscription<User?>? _subscription;
   String? _uid;
   String? _busyProviderId;
@@ -53,7 +57,8 @@ class LinkedAccountsViewModel extends ChangeNotifier
     required this.authService,
     required this.userService,
     this.crashlyticsService,
-  }) {
+    bool? isAvailable,
+  }) : isAvailable = isAvailable ?? PlatformSupport.supportsGoogleSignIn {
     // userChanges also fires on link / unlink, authStateChanges does not
     _subscription = authService.userChanges.listen((_) {
       if (!isDisposed) notifyListeners();
@@ -63,6 +68,8 @@ class LinkedAccountsViewModel extends ChangeNotifier
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
   bool get isBusy => _busyProviderId != null;
+
+  bool get isGuest => authService.currentUser?.isAnonymous ?? false;
 
   /// Only Google and GitHub are shown, in this order
   List<LinkedAccountRow> get rows => [rowFor(googleId), rowFor(githubId)];
@@ -89,7 +96,7 @@ class LinkedAccountsViewModel extends ChangeNotifier
   /// Counts every provider (password, phone, ...), not only the two rows shown
   bool canUnlink(String providerId) {
     final user = authService.currentUser;
-    if (user == null || user.isAnonymous) return false;
+    if (user == null || isGuest) return false;
     final linked = authService.linkedProviderIds;
     return linked.contains(providerId) && linked.length > 1;
   }

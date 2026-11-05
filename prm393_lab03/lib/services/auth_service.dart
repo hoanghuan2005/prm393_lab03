@@ -143,6 +143,15 @@ class AuthService {
     return _auth.sendPasswordResetEmail(email: email.trim());
   }
 
+  Future<void> sendEmailVerification() async {
+    await _auth.currentUser?.sendEmailVerification();
+  }
+
+  Future<User?> reloadCurrentUser() async {
+    await _auth.currentUser?.reload();
+    return _auth.currentUser;
+  }
+
   /// Links Google to the current user; null when the account picker is cancelled.
   /// Throws UnsupportedError where Google Sign-In is unavailable, AppException otherwise.
   Future<UserCredential?> linkGoogle() async {

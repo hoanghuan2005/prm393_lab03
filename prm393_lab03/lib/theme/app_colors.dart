@@ -9,10 +9,10 @@ class AppColors {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PRIMARY BRAND COLORS
-  // Web: amber-400 (#FBBF24), amber-300 (#FCD34D)
+  // Web/app brand yellow (#FFDE02)
   // ═══════════════════════════════════════════════════════════════════════════
-  static const Color primary = Color(0xFFFBBF24); // Tailwind amber-400
-  static const Color primaryLight = Color(0xFFFCD34D); // Tailwind amber-300
+  static const Color primary = Color(0xFFFFDE02);
+  static const Color primaryLight = Color(0xFFFFE84D);
   static const Color primaryContainer = Color(
     0xFFFFFCE6,
   ); // Light: Soft yellow bg

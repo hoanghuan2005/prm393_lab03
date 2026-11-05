@@ -14,7 +14,6 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/app_header_actions.dart';
-import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 02: Trang chủ from Figma "Why I Buy ver2"
@@ -64,47 +63,43 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [AppHeaderActions(onProfileTap: () => onNavigateTab?.call(4))],
       ),
-      body:
-          stateView([
-            purchaseVm.state,
-          ], loadingMessage: 'Đang tải khoản mua...') ??
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Greeting
-                Text(
-                  'Chào bạn,',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Card 1: TỔNG QUAN THÁNG (selected month)
-                _buildMonthSummaryCard(context, purchaseVm),
-
-                const SizedBox(height: 16),
-
-                // Card 2: Danh sách mong muốn entry
-                _buildWishlistEntryCard(context, wishlistVm),
-
-                const SizedBox(height: 24),
-
-                // Section: Trước khi mua (Flow 9)
-                _buildPrePurchaseEntry(context),
-
-                const SizedBox(height: 24),
-
-                // Section 3: Khoản mua gần đây
-                _buildRecentPurchasesSection(context, purchaseVm),
-              ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Greeting
+            Text(
+              'Chào bạn,',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
-          ),
+
+            const SizedBox(height: 12),
+
+            // Card 1: TỔNG QUAN THÁNG (selected month)
+            _buildMonthSummaryCard(context, purchaseVm),
+
+            const SizedBox(height: 16),
+
+            // Card 2: Danh sách mong muốn entry
+            _buildWishlistEntryCard(context, wishlistVm),
+
+            const SizedBox(height: 24),
+
+            // Section: Trước khi mua (Flow 9)
+            _buildPrePurchaseEntry(context),
+
+            const SizedBox(height: 24),
+
+            // Section 3: Khoản mua gần đây
+            _buildRecentPurchasesSection(context, purchaseVm),
+          ],
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),

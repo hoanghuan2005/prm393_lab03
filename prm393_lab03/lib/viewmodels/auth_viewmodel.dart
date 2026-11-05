@@ -94,11 +94,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
       _setAuthError(e, stack, reason: 'Email verification resend error');
       return false;
     } catch (e, stack) {
-      _setUnexpectedAuthError(
-        e,
-        stack,
-        'Không thể gửi lại email xác minh.',
-      );
+      _setUnexpectedAuthError(e, stack, 'Không thể gửi lại email xác minh.');
       return false;
     }
   }
@@ -134,19 +130,18 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
     notifyListeners();
     unawaited(analyticsService.setUserId(user.uid));
     unawaited(crashlyticsService.setUserId(user.uid));
-    try {
-      await _prepareUserData(user).timeout(const Duration(seconds: 15));
-    } catch (e, stack) {
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'User data preparation timed out',
-      );
-    }
-
     if (event != _authEvent) return;
     _status = AuthStatus.authenticated;
     notifyListeners();
+    unawaited(
+      _prepareUserData(user).catchError((Object error, StackTrace stack) async {
+        await crashlyticsService.recordHandledError(
+          error,
+          stack,
+          reason: 'User data preparation failed',
+        );
+      }),
+    );
   }
 
   /// users/{uid} + default budget groups. Failures are logged and never block sign-in.

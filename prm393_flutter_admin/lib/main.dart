@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'services/admin_service.dart';
@@ -63,10 +64,45 @@ class AdminAuthGate extends StatelessWidget {
         }
         final user = snapshot.data;
         if (user == null) return const AdminLoginScreen();
-        if (user.email != AdminService.adminEmail) {
+        return _RoleGate(uid: user.uid);
+      },
+    );
+  }
+}
+
+/// Only staff and admins (users/{uid}.role, set by an admin) may use the web admin
+class _RoleGate extends StatelessWidget {
+  final String uid;
+
+  const _RoleGate({required this.uid});
+
+  static const allowedRoles = ['staff', 'admin'];
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
           FirebaseAuth.instance.signOut();
           return const AdminLoginScreen(
-            error: 'Tài khoản này không có quyền Admin.',
+            error: 'Không kiểm tra được quyền của tài khoản. Hãy thử lại.',
+          );
+        }
+        if (!snapshot.hasData) {
+          return const SizedBox.expand(
+            child: ColoredBox(
+              color: Color(0xFF020617),
+              child: Center(child: CircularProgressIndicator(color: AdminColors.primary)),
+            ),
+          );
+        }
+        final role = snapshot.data!.data()?['role'];
+        if (!allowedRoles.contains(role)) {
+          FirebaseAuth.instance.signOut();
+          return const AdminLoginScreen(
+            error: 'Tài khoản này không phải nhân viên (staff) hay quản trị (admin). '
+                'Admin cần đặt role cho tài khoản trong users/{uid}.',
           );
         }
         return const WhyIBuyAdminApp();

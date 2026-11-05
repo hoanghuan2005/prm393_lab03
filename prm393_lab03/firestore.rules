@@ -13,9 +13,15 @@ service cloud.firestore {
     // Owner, or a linked extension (data the extension syncs: wishlist, prices, decisions, budgets…)
     function canAccess(uid) { return isOwner(uid) || linkedDevice(uid); }
     function isAnonymous() { return request.auth.token.firebase.sign_in_provider == 'anonymous'; }
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'admin@gmail.com';
-    }
+    // Roles (Final 6): users/{uid}.role is 'user' (also when the field or the document is
+    // missing), 'staff' or 'admin'. The first admin is set in the Firebase console; after that
+    // only an admin changes roles, and nobody changes their own.
+    function userDoc(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function roleOf(uid) { return exists(userDoc(uid)) ? get(userDoc(uid)).data.get('role', 'user') : 'user'; }
+    function isStaff() { return request.auth != null && roleOf(request.auth.uid) in ['staff', 'admin']; }
+    function isAdmin() { return request.auth != null && roleOf(request.auth.uid) == 'admin'; }
+    function unchanged(fields) { return !d().diff(resource.data).affectedKeys().hasAny(fields); }
+    function text(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
     function d() { return request.resource.data; }
     function validTitle() { return d().title is string && d().title.size() > 0 && d().title.size() <= 60; }
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
@@ -24,8 +30,15 @@ service cloud.firestore {
     function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin() || linkedDevice(uid);
-      allow write: if isOwner(uid);
+      // Staff read profiles for the web user list
+      allow read: if isOwner(uid) || isStaff() || linkedDevice(uid);
+      // Created on first sign-in as a plain user; the owner never changes the role
+      allow create: if isOwner(uid) && d().get('role', 'user') == 'user';
+      allow update: if (isOwner(uid) && d().get('role', 'user') == resource.data.get('role', 'user'))
+        || (isAdmin() && request.auth.uid != uid
+          && d().diff(resource.data).affectedKeys().hasOnly(['role'])
+          && d().role in ['user', 'staff', 'admin']);
+      allow delete: if isOwner(uid);
 
       match /purchases/{id} {
         allow read: if canAccess(uid);
@@ -102,6 +115,22 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$');
       }
 
+      // Hộp thư: personal messages written by staff (e.g. the answer to a feedback).
+      // The owner only marks a message read or deletes it.
+      match /inbox/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isStaff()
+          && d().keys().hasOnly(['title', 'body', 'kind', 'refId', 'createdAt', 'createdBy', 'readAt'])
+          && text(d().title, 80) && text(d().body, 500)
+          && d().kind in ['message', 'feedback_reply']
+          && (!('refId' in d()) || text(d().refId, 128))
+          && d().createdAt == request.time && d().createdBy == request.auth.uid
+          && (!('readAt' in d()) || d().readAt == null);
+        allow update: if isOwner(uid)
+          && d().diff(resource.data).affectedKeys().hasOnly(['readAt'])
+          && d().readAt is timestamp;
+      }
+
       match /reflections/{month} {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$')
@@ -150,10 +179,40 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.anonUid;
     }
 
-    match /admin_broadcasts/{id} {
-      allow create: if isAdmin();
-      allow read: if isAdmin();
-      allow update, delete: if false;
+    // Thông báo chung (web announcement form → mobile inbox). Never deleted: archived instead.
+    function validAnnouncement() {
+      return d().keys().hasOnly(['title', 'body', 'status', 'createdAt', 'createdBy', 'updatedAt'])
+        && text(d().title, 80) && text(d().body, 500)
+        && d().createdAt is timestamp && d().updatedAt == request.time;
     }
+    match /announcements/{id} {
+      // Signed-in users see published ones; a list query must filter status == 'published'
+      allow read: if request.auth != null && (resource.data.status == 'published' || isStaff());
+      allow create: if isStaff() && validAnnouncement() && d().status == 'published'
+        && d().createdAt == request.time && d().createdBy == request.auth.uid;
+      // published → published (edit) or archived; an archived one stays archived
+      allow update: if isStaff() && validAnnouncement() && resource.data.status == 'published'
+        && d().status in ['published', 'archived'] && unchanged(['createdAt', 'createdBy']);
+      allow delete: if false;
+    }
+
+    // Lịch sale managed on the web (the team follows the shops' official announcements).
+    function validSaleEvent() {
+      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'updatedAt', 'updatedBy'])
+        && text(d().name, 40) && d().date is timestamp
+        && d().type in ['double_day', 'mid_month', 'payday', 'other']
+        && d().confirmed is bool
+        && d().updatedAt == request.time && d().updatedBy == request.auth.uid;
+    }
+    match /saleEvents/{id} {
+      allow read: if request.auth != null && (resource.data.status == 'published' || isStaff());
+      allow create: if isStaff() && validSaleEvent() && d().status in ['draft', 'published'];
+      // draft → draft/published/archived; published → published/archived; archived is final
+      allow update: if isStaff() && validSaleEvent()
+        && ((resource.data.status == 'draft' && d().status in ['draft', 'published', 'archived'])
+          || (resource.data.status == 'published' && d().status in ['published', 'archived']));
+      allow delete: if false;
+    }
+
   }
 }

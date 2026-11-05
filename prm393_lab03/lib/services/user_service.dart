@@ -50,6 +50,8 @@ class FirestoreUserService implements UserService {
         isAnonymous: isAnonymous,
       ).toMap(),
       'email': email,
+      // Every account starts as a plain user; only an admin changes it (firestore.rules)
+      'role': 'user',
       'createdAt': FieldValue.serverTimestamp(),
     });
   });

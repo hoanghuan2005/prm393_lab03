@@ -1,12 +1,40 @@
 # Mô hình dữ liệu Firestore
 
-Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/ghi (`firestore.rules`). Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+Dữ liệu cá nhân nằm dưới `users/{uid}` và chỉ chủ tài khoản đọc/ghi; dữ liệu dùng chung (`announcements`, `saleEvents`, `sharedPrices`, `extensionPairings`) nằm ở gốc. Quyền theo vai trò xem mục **Vai trò và quyền** ngay dưới; `firestore.rules` từ chối mọi đường dẫn không khai báo. Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+
+## Vai trò và quyền
+
+Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trên Firebase Console** (xem README); sau đó chỉ admin đổi vai trò người khác. Web admin chỉ cho `staff` và `admin` đăng nhập, tài khoản khác bị đăng xuất kèm thông báo. Mobile dùng cho mọi vai trò (nhân viên cũng là người dùng app).
+
+| Collection | Create | Read | Update | Delete | Màn hình dùng |
+|:---|:---|:---|:---|:---|:---|
+| `users/{uid}` | Chủ tài khoản lần đầu đăng nhập, `role = user` | Chủ tài khoản; staff, admin | Chủ tài khoản (không đổi `role`); admin chỉ đổi `role` của người khác | Chủ tài khoản | Cá nhân; web danh sách người dùng |
+| `users/{uid}/purchases`, `wishlistItems` (+ `priceSnapshots`), `decisions`, `budgetGroups`, `budgets`, `reflections`, `ownedItems`, `feedback`, `extensionSessions` | Chủ tài khoản (một số: cả extension đã liên kết) | Chủ tài khoản (+ extension) | Chủ tài khoản; `priceSnapshots`, `decisions`, `feedback` không sửa | Chủ tài khoản | Các màn mobile; **staff/admin không đọc được** |
+| `users/{uid}/inbox` | Staff, admin | Chủ tài khoản | Chủ tài khoản, chỉ `readAt` | Chủ tài khoản | Hộp thư mobile; web gửi tin riêng |
+| `announcements` | Staff, admin (`status = published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Hộp thư mobile; web form thông báo |
+| `saleEvents` | Staff, admin (`draft` hoặc `published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Lịch sale mobile; web quản lý đợt sale |
+| `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
+| `extensionPairings` | Extension (ẩn danh) | Ai có id (không liệt kê được) | Tài khoản không ẩn danh: duyệt/từ chối 1 lần | Extension | Liên kết extension |
+
+**Chuyển trạng thái theo vai trò**
+
+| Collection | Ai | Chuyển được |
+|:---|:---|:---|
+| `announcements.status` | Staff, admin | `published` → `published` (sửa) · `archived`; `archived` giữ nguyên |
+| `saleEvents.status` | Staff, admin | `draft` → `draft` · `published` · `archived`; `published` → `published` · `archived`; `archived` giữ nguyên |
+| `wishlistItems.status` | Chủ tài khoản | `considering` ↔ `purchased` (cần `purchaseId`) · `skipped` |
+| `extensionPairings.status` | Tài khoản không ẩn danh | `pending` → `approved` (của chính mình) · `rejected` |
+
+Kiểm thử: `firebase/tests/rules.test.mjs` chạy trên Firestore Emulator, mỗi vai trò có ít nhất một ca cho phép và một ca từ chối ở mỗi collection; kết quả ở `evidence/rules/firestore-rules-results.md`.
 
 ## `users/{uid}` – `UserProfile` · ghi bởi `UserService`, `DemoDataService` (nhóm)
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc |
 |:---|:---|:-:|:---|
+| `role` | string | | `user` · `staff` · `admin`; thiếu trường = `user`. App ghi `user` khi tạo; chủ tài khoản không đổi được; chỉ admin đổi, chỉ đổi riêng trường này, không đổi của chính mình |
 | `displayName` | string? | | — |
+| `email` | string? | | — |
+| `fcmTokens` | string[] | | token FCM của các máy (`NotificationService`) |
 | `isAnonymous` | bool | ✓ | — |
 | `createdAt` | timestamp | ✓ | server time khi tạo |
 | `settings.coolingOffDays` | int? | | null → dùng Remote Config `cooling_off_days` |
@@ -139,6 +167,47 @@ Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xu�
 `productKey` (id document cha) phải dạng `shopee:<shopId>:<itemId>`: lấy từ món extension lưu, hoặc tách từ link Shopee của món nhập tay (`ShopeeLink`, đặc tả 6.4). Chỉ tài khoản không ẩn danh được ghi (khách và extension liên kết chỉ đọc), để một người không thành nhiều người. Tắt "Góp giá của tôi" xoá bản ghi của món đang mở; bản ghi khác hết hiệu lực sau 3 ngày vì không còn được tính. Kiểm chứng bằng Firestore Emulator: 16/16 ca cho phép/từ chối đạt.
 
 Cách so sánh (`SharedPriceSummary`): chỉ cùng sản phẩm, cùng `modelKey`, cùng loại giá, ghi trong 3 ngày; bỏ bản ghi của chính mình; bỏ giá lệch > 30% so với trung vị; cần ≥ 2 người còn lại. Kết quả chỉ là gợi ý, người dùng phải xác nhận mới dùng làm giá của món.
+
+## `users/{uid}/inbox/{id}` – tin nhắn riêng · ghi bởi web admin
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `title` | string | ✓ | 1–80 ký tự |
+| `body` | string | ✓ | 1–500 ký tự |
+| `kind` | string | ✓ | `message` · `feedback_reply` |
+| `refId` | string? | | id liên quan (ví dụ góp ý được trả lời), ≤ 128 |
+| `createdAt` | timestamp | ✓ | server time |
+| `createdBy` | string | ✓ | uid người gửi (staff/admin), phải là người đang ghi |
+| `readAt` | timestamp? | | `null` khi gửi; chủ tài khoản đặt khi đọc |
+
+Không có trường nào khác (`keys().hasOnly`).
+
+## `announcements/{id}` – thông báo chung · ghi bởi web admin
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `title` | string | ✓ | 1–80 ký tự |
+| `body` | string | ✓ | 1–500 ký tự |
+| `status` | string | ✓ | `published` · `archived` |
+| `createdAt` | timestamp | ✓ | server time, không đổi |
+| `createdBy` | string | ✓ | uid người đăng, không đổi |
+| `updatedAt` | timestamp | ✓ | server time mỗi lần ghi |
+
+Mobile phải truy vấn có `where('status', '==', 'published')`, nếu không rules từ chối cả truy vấn.
+
+## `saleEvents/{id}` – lịch sale · ghi bởi web admin
+
+Đợt sale do nhóm theo dõi từ thông báo chính thức của sàn (trước đây nhập tay ở Remote Config `sale_calendar`).
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `name` | string | ✓ | 1–40 ký tự (ví dụ "11.11") |
+| `date` | timestamp | ✓ | ngày sale |
+| `type` | string | ✓ | `double_day` · `mid_month` · `payday` · `other` (khớp `SaleType`) |
+| `confirmed` | bool | ✓ | sàn đã công bố (chỉ đợt đã xác nhận được tính trong Thẻ Quyết Định) |
+| `status` | string | ✓ | `draft` · `published` · `archived` |
+| `updatedAt` | timestamp | ✓ | server time |
+| `updatedBy` | string | ✓ | uid người ghi |
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 

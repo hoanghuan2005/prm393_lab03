@@ -80,6 +80,10 @@ class ProfileScreen extends StatelessWidget {
             // Link Google / GitHub to this account (hidden where unsupported)
             const LinkedAccountsSection(),
 
+            // Chrome extension linked with this account: "Quét mã QR" to link a browser
+            const LinkedDevicesSection(),
+            const SizedBox(height: AppDimens.space16),
+
             // Theme Mode Switch Card
             SectionCard(
               title: 'Giao diện ứng dụng',
@@ -340,10 +344,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppDimens.space16),
-
-            // Chrome extension linked with this account (approved on this phone)
-            const LinkedDevicesSection(),
             const SizedBox(height: AppDimens.space16),
 
             // Demo data (never seeded automatically)

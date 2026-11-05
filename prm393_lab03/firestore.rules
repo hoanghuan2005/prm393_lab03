@@ -3,6 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+    // Chrome extension linked by QR: signs in anonymously; the phone approved
+    // users/{uid}/extensionSessions/{that anonymous uid}
+    function linkedDevice(uid) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(uid)/extensionSessions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(uid)/extensionSessions/$(request.auth.uid)).data.status == 'approved';
+    }
+    // Owner, or a linked extension (data the extension syncs: wishlist, prices, decisions, budgets…)
+    function canAccess(uid) { return isOwner(uid) || linkedDevice(uid); }
+    function isAnonymous() { return request.auth.token.firebase.sign_in_provider == 'anonymous'; }
     function isAdmin() {
       return request.auth != null && request.auth.token.email == 'admin@gmail.com';
     }
@@ -14,19 +24,20 @@ service cloud.firestore {
     function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid) || isAdmin() || linkedDevice(uid);
       allow write: if isOwner(uid);
 
       match /purchases/{id} {
-        allow read, delete: if isOwner(uid);
+        allow read: if canAccess(uid);
+        allow delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && validTitle() && validMoney(d().amountVnd)
           && validMotive(d().motive) && d().occurredAt is timestamp && optionalNote()
           && optionalStars('satisfaction');
       }
 
       match /wishlistItems/{id} {
-        allow read, delete: if isOwner(uid);
-        allow create, update: if isOwner(uid) && validTitle()
+        allow read, delete: if canAccess(uid);
+        allow create, update: if canAccess(uid) && validTitle()
           && d().status in ['considering','purchased','skipped']
           && (!('motive' in d()) || d().motive == null || validMotive(d().motive))
           && (!('priority' in d()) || (d().priority is int && d().priority >= 1 && d().priority <= 5))
@@ -38,26 +49,30 @@ service cloud.firestore {
           && (d().status != 'purchased' || ('purchaseId' in d() && d().purchaseId is string));
 
         match /priceSnapshots/{sid} {
-          allow read, delete: if isOwner(uid);
-          allow create: if isOwner(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
+          allow read, delete: if canAccess(uid);
+          allow create: if canAccess(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
             && (!('source' in d()) || d().source in ['manual','demo','extensionPage'])
             && (!('priceType' in d()) || d().priceType in ['single','range','flash','afterVoucher']);
           allow update: if false;
         }
       }
 
-      // Chrome extension linked with this account: created pending by the extension,
-      // approved / rejected / revoked on the phone (the extension may revoke itself)
+      // Chrome extension linked with this account. Google sign-in (old): created pending by the
+      // extension, decided on the phone. QR (new): the phone scans and creates it approved with
+      // id = the extension's anonymous uid. The extension may read and revoke its own session.
       match /extensionSessions/{sid} {
-        allow read, delete: if isOwner(uid);
-        allow create: if isOwner(uid) && d().status == 'pending'
+        allow read: if isOwner(uid) || (request.auth != null && request.auth.uid == sid);
+        allow delete: if isOwner(uid);
+        allow create: if isOwner(uid) && d().status in ['pending','approved']
           && d().deviceLabel is string && d().deviceLabel.size() > 0 && d().deviceLabel.size() <= 60;
-        allow update: if isOwner(uid) && d().status in ['pending','approved','rejected','revoked'];
+        allow update: if (isOwner(uid) && d().status in ['pending','approved','rejected','revoked'])
+          || (request.auth != null && request.auth.uid == sid && d().status == 'revoked');
       }
 
       match /decisions/{id} {
-        allow read, delete: if isOwner(uid);
-        allow create: if isOwner(uid) && d().choice in ['buy','wait','skip','undo'];
+        allow read: if canAccess(uid);
+        allow delete: if isOwner(uid);
+        allow create: if canAccess(uid) && d().choice in ['buy','wait','skip','undo'];
         allow update: if false;
       }
 
@@ -73,7 +88,8 @@ service cloud.firestore {
 
       // Shopping profile (spec 7.2): things the user owns, typed by the user
       match /ownedItems/{id} {
-        allow read, delete: if isOwner(uid);
+        allow read: if canAccess(uid);
+        allow delete: if isOwner(uid);
         allow create, update: if isOwner(uid)
           && d().name is string && d().name.size() > 0 && d().name.size() <= 60
           && d().tags is list && d().tags.size() <= 8
@@ -81,7 +97,8 @@ service cloud.firestore {
       }
 
       match /budgets/{month} {
-        allow read, delete: if isOwner(uid);
+        allow read: if canAccess(uid);
+        allow delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$');
       }
 
@@ -90,6 +107,23 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$')
           && d().rating is int && d().rating >= 1 && d().rating <= 5;
       }
+    }
+
+    // QR linking: the extension (anonymous) creates a pending request and shows its id as a QR.
+    // Only someone holding the id can read it (no list); a signed-in, non-anonymous app user
+    // approves it for their own uid or rejects it, once.
+    match /extensionPairings/{pid} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if request.auth != null && d().anonUid == request.auth.uid && d().status == 'pending'
+        && d().deviceLabel is string && d().deviceLabel.size() > 0 && d().deviceLabel.size() <= 60
+        && d().keys().hasOnly(['anonUid','deviceLabel','status','createdAt']);
+      allow update: if request.auth != null && !isAnonymous()
+        && resource.data.status == 'pending' && request.auth.uid != resource.data.anonUid
+        && d().anonUid == resource.data.anonUid && d().deviceLabel == resource.data.deviceLabel
+        && ((d().status == 'approved' && d().ownerUid == request.auth.uid)
+          || d().status == 'rejected');
+      allow delete: if request.auth != null && request.auth.uid == resource.data.anonUid;
     }
 
     match /admin_broadcasts/{id} {

@@ -93,6 +93,35 @@ class ExtensionLinkViewModel extends ChangeNotifier
   Future<bool> revoke(ExtensionSession session) =>
       _write((uid) => service.revoke(uid, session.id), 'revokeExtension');
 
+  /// QR linking: the scanned request if it can still be approved, else null with [actionError]
+  Future<ExtensionPairingRequest?> loadPairing(String pairingId) async {
+    try {
+      final request = await service.fetchPairing(pairingId);
+      if (request == null || !request.isFreshPending(_now())) {
+        _actionError = 'Mã QR đã hết hạn hoặc đã được dùng. Hãy tạo mã mới trên extension.';
+        return null;
+      }
+      _actionError = null;
+      return request;
+    } catch (e, stack) {
+      _actionError = messageFor(e, stack, reason: 'loadExtensionPairing');
+      return null;
+    }
+  }
+
+  Future<bool> approvePairing(
+    ExtensionPairingRequest request, {
+    String? accountName,
+  }) => _write(
+    (uid) => service.approvePairing(uid, request, accountName: accountName),
+    'approveExtensionPairing',
+  );
+
+  Future<bool> rejectPairing(ExtensionPairingRequest request) => _write(
+    (_) => service.rejectPairing(request.id),
+    'rejectExtensionPairing',
+  );
+
   Future<bool> _write(
     Future<void> Function(String uid) write,
     String reason,

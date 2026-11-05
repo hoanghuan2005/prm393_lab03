@@ -52,6 +52,10 @@ class FirestorePaths {
   DocumentReference<JsonMap> extensionSession(String uid, String sessionId) =>
       extensionSessions(uid).doc(sessionId);
 
+  /// QR linking requests created by the extension (top level: the extension is not the owner yet)
+  DocumentReference<JsonMap> extensionPairing(String pairingId) =>
+      db.collection('extensionPairings').doc(pairingId);
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

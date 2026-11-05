@@ -299,4 +299,95 @@ void main() {
       vm.dispose();
     });
   });
+
+  group('QR linking', () {
+    const pid = 'AbCdEfGhIjKlMnOpQrSt';
+
+    Future<void> addPairing(
+      FakeFirebaseFirestore db, {
+      required DateTime createdAt,
+      String status = 'pending',
+    }) => db.collection('extensionPairings').doc(pid).set({
+      'anonUid': 'anon1',
+      'deviceLabel': 'Edge – Windows',
+      'status': status,
+      'createdAt': Timestamp.fromDate(createdAt),
+    });
+
+    test('only a Why I Buy? QR gives a pairing id', () {
+      expect(ExtensionPairingRequest.idFromQr('whyibuy-link:$pid'), pid);
+      expect(ExtensionPairingRequest.idFromQr(' whyibuy-link:$pid\n'), pid);
+      expect(ExtensionPairingRequest.idFromQr(pid), isNull);
+      expect(ExtensionPairingRequest.idFromQr('https://shopee.vn'), isNull);
+      expect(ExtensionPairingRequest.idFromQr('whyibuy-link:../users'), isNull);
+      expect(ExtensionPairingRequest.idFromQr(null), isNull);
+    });
+
+    test('approve makes the anonymous extension a linked session', () async {
+      final db = FakeFirebaseFirestore();
+      final vm = ExtensionLinkViewModel(
+        service: FirestoreExtensionSessionService(db),
+        now: () => _now,
+      );
+      vm.updateUid(_uid);
+      await addPairing(
+        db,
+        createdAt: _now.subtract(const Duration(minutes: 1)),
+      );
+      await _settle();
+
+      final request = await vm.loadPairing(pid);
+      expect(request?.deviceLabel, 'Edge – Windows');
+      expect(await vm.approvePairing(request!, accountName: 'Huan'), isTrue);
+      await _settle();
+
+      final pairing = (await db.collection('extensionPairings').doc(pid).get())
+          .data()!;
+      expect(pairing['status'], 'approved');
+      expect(pairing['ownerUid'], _uid);
+      expect(pairing['ownerName'], 'Huan');
+      final session = (await _sessions(db).doc('anon1').get()).data()!;
+      expect(session['status'], 'approved');
+      expect(session['deviceLabel'], 'Edge – Windows');
+      expect(vm.linkedSessions.map((s) => s.id), ['anon1']);
+      vm.dispose();
+    });
+
+    test(
+      'an expired, used or missing QR is refused; reject closes it',
+      () async {
+        final db = FakeFirebaseFirestore();
+        final vm = ExtensionLinkViewModel(
+          service: FirestoreExtensionSessionService(db),
+          now: () => _now,
+        );
+        vm.updateUid(_uid);
+        expect(await vm.loadPairing(pid), isNull);
+        expect(vm.actionError, isNotNull);
+
+        await addPairing(
+          db,
+          createdAt: _now.subtract(const Duration(minutes: 6)),
+        );
+        expect(await vm.loadPairing(pid), isNull);
+
+        await addPairing(db, createdAt: _now, status: 'approved');
+        expect(await vm.loadPairing(pid), isNull);
+
+        await addPairing(db, createdAt: _now);
+        final request = await vm.loadPairing(pid);
+        expect(await vm.rejectPairing(request!), isTrue);
+        expect(
+          (await db.collection('extensionPairings').doc(pid).get())
+              .data()!['status'],
+          'rejected',
+        );
+        expect(
+          await _sessions(db).doc('anon1').get().then((d) => d.exists),
+          isFalse,
+        );
+        vm.dispose();
+      },
+    );
+  });
 }

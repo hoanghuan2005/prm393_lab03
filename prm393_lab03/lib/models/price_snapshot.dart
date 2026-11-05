@@ -7,7 +7,10 @@ enum PriceSource {
   demo('demo'),
 
   /// Read from the Shopee page by the Chrome extension
-  extensionPage('extensionPage');
+  extensionPage('extensionPage'),
+
+  /// "Giá người khác ghi" the user chose to use as their own (spec 8.3); never shared again
+  community('community');
 
   final String key;
 

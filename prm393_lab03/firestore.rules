@@ -51,7 +51,7 @@ service cloud.firestore {
         match /priceSnapshots/{sid} {
           allow read, delete: if canAccess(uid);
           allow create: if canAccess(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
-            && (!('source' in d()) || d().source in ['manual','demo','extensionPage'])
+            && (!('source' in d()) || d().source in ['manual','demo','extensionPage','community'])
             && (!('priceType' in d()) || d().priceType in ['single','range','flash','afterVoucher']);
           allow update: if false;
         }
@@ -107,6 +107,30 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$')
           && d().rating is int && d().rating >= 1 && d().rating <= 5;
       }
+    }
+
+    // "Giá người khác ghi" (spec 8.3): anonymous prices shared between users. A report holds
+    // no uid; its id must be sha256("uid|productKey|modelKey"), so each Google account has one
+    // report per product variant and nobody writes under someone else's id. Guests and
+    // linked extensions (anonymous) only read, so one person cannot count as several.
+    function sharedReportId(productKey, modelKey) {
+      return hashing.sha256(request.auth.uid + '|' + productKey + '|' + modelKey).toHexString().lower();
+    }
+    match /sharedPrices/{productKey}/reports/{rid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && !isAnonymous()
+        && productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+        && d().keys().hasOnly(['modelKey','priceType','amountVnd','observedAt','source'])
+        && d().modelKey is string && d().modelKey.matches('^(none|[0-9]{1,20})$')
+        && rid == sharedReportId(productKey, d().modelKey)
+        && validMoney(d().amountVnd)
+        && d().priceType in ['single','range','flash']
+        && d().source in ['manual','extensionPage']
+        && d().observedAt is timestamp
+        && d().observedAt <= request.time + duration.value(5, 'm')
+        && d().observedAt > request.time - duration.value(3, 'd');
+      allow delete: if request.auth != null && !isAnonymous()
+        && rid == sharedReportId(productKey, resource.data.modelKey);
     }
 
     // QR linking: the extension (anonymous) creates a pending request and shows its id as a QR.

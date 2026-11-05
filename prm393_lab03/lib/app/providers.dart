@@ -25,6 +25,7 @@ import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import '../services/review_reminder_service.dart';
 import '../services/share_intent_service.dart';
+import '../services/shared_price_service.dart';
 import '../services/shopping_profile_service.dart';
 import '../services/user_service.dart';
 import '../services/wishlist_service.dart';
@@ -41,6 +42,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
+import '../viewmodels/shared_price_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
@@ -87,6 +89,9 @@ class AppProviders extends StatelessWidget {
         ),
         Provider<ShoppingProfileService>(
           create: (_) => FirestoreShoppingProfileService(),
+        ),
+        Provider<SharedPriceService>(
+          create: (_) => FirestoreSharedPriceService(),
         ),
         Provider<AiService>(
           create: (_) => FirebaseAiService(
@@ -265,6 +270,18 @@ class AppProviders extends StatelessWidget {
             crashlyticsService: crashlyticsService,
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
+        // "Giá người khác ghi" (spec 8.3): Google accounts share, guests only read
+        ChangeNotifierProxyProvider<AuthViewModel, SharedPriceViewModel>(
+          create: (context) => SharedPriceViewModel(
+            service: context.read<SharedPriceService>(),
+            preferencesService: PreferencesService(),
+          ),
+          update: (_, auth, vm) => vm!
+            ..updateUser(
+              auth.userId,
+              canContribute: !(auth.user?.isAnonymous ?? true),
+            ),
         ),
         // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
         ChangeNotifierProxyProvider5<

@@ -31,7 +31,12 @@ abstract interface class WishlistService {
   Future<void> update(String uid, WishlistItem item);
 
   /// New price snapshot + latestPriceVnd/latestPriceAt
-  Future<void> addPrice(String uid, String itemId, int amountVnd);
+  Future<void> addPrice(
+    String uid,
+    String itemId,
+    int amountVnd, {
+    PriceSource source = PriceSource.manual,
+  });
 
   /// Every recorded price of the item, newest first ("Lịch sử giá", spec A-14)
   Future<List<PriceSnapshot>> priceHistory(String uid, String itemId);
@@ -138,22 +143,30 @@ class FirestoreWishlistService implements WishlistService {
   });
 
   @override
-  Future<void> addPrice(String uid, String itemId, int amountVnd) => guard(
-    () async {
-      final now = DateTime.now();
-      final batch = _paths.db.batch()
-        ..set(
-          _paths.priceSnapshots(uid, itemId).doc(),
-          PriceSnapshot(id: '', amountVnd: amountVnd, observedAt: now).toMap(),
-        )
-        ..update(_paths.wishlistItem(uid, itemId), {
-          'latestPriceVnd': amountVnd,
-          'latestPriceAt': Timestamp.fromDate(now),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      await awaitWrite(batch.commit());
-    },
-  );
+  Future<void> addPrice(
+    String uid,
+    String itemId,
+    int amountVnd, {
+    PriceSource source = PriceSource.manual,
+  }) => guard(() async {
+    final now = DateTime.now();
+    final batch = _paths.db.batch()
+      ..set(
+        _paths.priceSnapshots(uid, itemId).doc(),
+        PriceSnapshot(
+          id: '',
+          amountVnd: amountVnd,
+          source: source,
+          observedAt: now,
+        ).toMap(),
+      )
+      ..update(_paths.wishlistItem(uid, itemId), {
+        'latestPriceVnd': amountVnd,
+        'latestPriceAt': Timestamp.fromDate(now),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    await awaitWrite(batch.commit());
+  });
 
   @override
   Future<void> setReview(String uid, String itemId, DateTime reviewAt) =>

@@ -114,6 +114,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
   /// is "Chưa xác nhận"
   static String? _tagFor(PriceSnapshot s) {
     if (s.priceType == PriceType.afterVoucher) return 'Sau voucher';
+    if (s.source == PriceSource.community) return 'Từ giá người khác';
     if (!s.confirmed) return 'Chưa xác nhận';
     if (s.priceType == PriceType.flash) return 'Flash Sale';
     return null;

@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,6 +34,7 @@ import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
+import '../viewmodels/linked_accounts_viewmodel.dart';
 import '../viewmodels/photo_search_viewmodel.dart';
 import '../viewmodels/pre_purchase_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -321,6 +320,15 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthViewModel, ExtensionLinkViewModel>(
           create: (context) => ExtensionLinkViewModel(
             service: context.read<ExtensionSessionService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
+        // Cá nhân → "Tài khoản liên kết": link / unlink Google and GitHub
+        ChangeNotifierProxyProvider<AuthViewModel, LinkedAccountsViewModel>(
+          create: (context) => LinkedAccountsViewModel(
+            authService: context.read<AuthService>(),
+            userService: context.read<UserService>(),
             crashlyticsService: crashlyticsService,
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),

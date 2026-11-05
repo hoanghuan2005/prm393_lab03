@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../core/utils/month_key.dart';
 import '../firebase/platform_support.dart';
 import '../models/available_budget.dart';
@@ -101,7 +102,8 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
             notifyListeners();
           },
           // No limits means "Chưa đủ dữ liệu", never a wrong number
-          onError: (Object e) => debugPrint('Decision budget unavailable: $e'),
+          onError: (Object e) =>
+              debugPrint('Decision budget unavailable: ${describeError(e)}'),
         );
   }
 
@@ -321,7 +323,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
       if (!isDisposed) notifyListeners();
     } catch (e) {
       _histories.remove(key);
-      debugPrint('Price history unavailable: $e');
+      debugPrint('Price history unavailable: ${describeError(e)}');
     }
   }
 
@@ -337,7 +339,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
         final text = await aiDecisionService.reasonFor(assessment);
         if (text != null) return DecisionReason(text, fromAi: true);
       } catch (e) {
-        debugPrint('AI decision reason unavailable: $e');
+        debugPrint('AI decision reason unavailable: ${describeError(e)}');
       }
     }
     return DecisionReason(assessment.templateReason, fromAi: false);
@@ -375,7 +377,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
         explanations[e.key] = DecisionReason(e.value, fromAi: true);
       }
     } catch (e) {
-      debugPrint('AI plan explanation unavailable: $e');
+      debugPrint('AI plan explanation unavailable: ${describeError(e)}');
     }
     return explanations;
   }

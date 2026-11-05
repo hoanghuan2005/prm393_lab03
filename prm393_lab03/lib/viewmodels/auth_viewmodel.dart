@@ -3,27 +3,34 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/app_exception.dart';
+import '../core/errors/describe_error.dart';
+import '../core/errors/firebase_error_mapper.dart'
+    show accountExistsCode, signInCancelled;
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/pending_writes.dart';
 import '../services/user_service.dart';
+import 'error_reporting.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 /// ViewModel managing Authentication state & Google Sign-In
-class AuthViewModel extends ChangeNotifier {
+class AuthViewModel extends ChangeNotifier with ErrorReporting {
   final AuthService authService;
   final UserService userService;
   final BudgetService budgetService;
   final AppAnalyticsService analyticsService;
+  @override
   final CrashlyticsService crashlyticsService;
 
   StreamSubscription<User?>? _authSubscription;
   User? _currentUser;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
+  String? _suggestedProviderId;
 
   /// Increments on every auth event so a slow setup for an old user cannot win
   int _authEvent = 0;
@@ -41,7 +48,14 @@ class AuthViewModel extends ChangeNotifier {
   User? get user => _currentUser;
   AuthStatus get status => _status;
   bool get isAuthenticated => _currentUser != null;
+
+  /// Guest account; false once a guest links Google / GitHub
+  bool get isAnonymous => _currentUser?.isAnonymous ?? false;
   String? get errorMessage => _errorMessage;
+
+  /// 'google.com' / 'github.com' after account-exists-with-different-credential:
+  /// the sign-in method the screen should point to; null otherwise
+  String? get suggestedProviderId => _suggestedProviderId;
   String get displayName => authService.displayName;
 
   /// uid handed to every user-data ViewModel; null until the user documents are ready
@@ -49,11 +63,19 @@ class AuthViewModel extends ChangeNotifier {
       _status == AuthStatus.authenticated ? _currentUser?.uid : null;
 
   void _init() {
-    // authStateChanges emits the current user right away; AuthGate shows loading until then
-    _authSubscription = authService.authStateChanges.listen(_onAuthChanged);
+    // userChanges emits the current user right away (AuthGate shows loading until then),
+    // and also on link / unlink / token refresh, unlike authStateChanges
+    _authSubscription = authService.userChanges.listen(_onAuthChanged);
   }
 
   Future<void> _onAuthChanged(User? user) async {
+    // Same account (link, unlink, profile or token change): refresh the user only, so
+    // sign-in work does not run again and the uid handed to other ViewModels stays the same
+    if (user != null && _currentUser != null && user.uid == _currentUser!.uid) {
+      _currentUser = user;
+      notifyListeners();
+      return;
+    }
     final event = ++_authEvent;
     // Firestore holds another account's queued writes until that account signs in again
     if (user?.uid != _currentUser?.uid) PendingWrites.instance.reset();
@@ -109,6 +131,7 @@ class AuthViewModel extends ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
@@ -116,12 +139,12 @@ class AuthViewModel extends ChangeNotifier {
       if (credential == null) {
         // User cancelled Google account picker
         _status = AuthStatus.unauthenticated;
-        _errorMessage = 'Bạn đã hủy đăng nhập Google.';
+        _errorMessage = signInCancelled.messageVi;
         notifyListeners();
         return false;
       }
 
-      await analyticsService.logLogin(method: 'google');
+      await _logLogin('google');
       return true;
     } on UnsupportedError {
       _status = AuthStatus.error;
@@ -130,14 +153,7 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'Google sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'google');
       return false;
     }
   }
@@ -146,6 +162,7 @@ class AuthViewModel extends ChangeNotifier {
   Future<bool> signInWithGithub() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
@@ -156,27 +173,10 @@ class AuthViewModel extends ChangeNotifier {
         return false;
       }
 
-      await analyticsService.logLogin(method: 'github');
+      await _logLogin('github');
       return true;
-    } on FirebaseAuthException catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = e.message ?? 'Đăng nhập GitHub thất bại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'GitHub sign-in error: ${e.code}',
-      );
-      notifyListeners();
-      return false;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập GitHub thất bại. Vui lòng thử lại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'GitHub sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'github');
       return false;
     }
   }
@@ -290,23 +290,49 @@ class AuthViewModel extends ChangeNotifier {
   Future<bool> signInAnonymously() async {
     _status = AuthStatus.loading;
     _errorMessage = null;
+    _suggestedProviderId = null;
     notifyListeners();
 
     try {
       await authService.signInAnonymously();
-      await analyticsService.logLogin(method: 'guest');
+      await _logLogin('guest');
       return true;
     } catch (e, stack) {
-      _status = AuthStatus.error;
-      _errorMessage = 'Đăng nhập khách thất bại.';
-      await crashlyticsService.recordHandledError(
-        e,
-        stack,
-        reason: 'Anonymous sign-in error',
-      );
-      notifyListeners();
+      _onSignInFailed(e, stack, method: 'guest');
       return false;
     }
+  }
+
+  /// Analytics failures never fail a sign-in that already succeeded
+  Future<void> _logLogin(String method) async {
+    try {
+      await analyticsService.logLogin(method: method);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Analytics login error: ${describeError(e)}');
+    }
+  }
+
+  /// Cancelling is not an error; Crashlytics only gets errors without their own message
+  void _onSignInFailed(Object e, StackTrace stack, {required String method}) {
+    _errorMessage = messageFor(
+      e,
+      stack,
+      reason: '$method sign-in error',
+      customKeys: {'auth_method': method},
+    );
+    // The email already signs in another way: point the screen at that button
+    final accountExists = e is AppException && e.code == accountExistsCode;
+    _suggestedProviderId = !accountExists
+        ? null
+        : switch (method) {
+            'github' => 'google.com',
+            'google' => 'github.com',
+            _ => null,
+          };
+    _status = e is AppException && e.code == signInCancelled.code
+        ? AuthStatus.unauthenticated
+        : AuthStatus.error;
+    notifyListeners();
   }
 
   /// Sign out

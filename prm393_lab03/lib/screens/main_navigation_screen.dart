@@ -55,8 +55,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         openRecordPurchase();
       }
       // App was started by sharing text/link from another app (Shopee, Lazada, Browser...)
-      final initialShareData =
-          context.read<ShareIntentService>().consumeInitialData();
+      final initialShareData = context
+          .read<ShareIntentService>()
+          .consumeInitialData();
       if (initialShareData != null) {
         openAddItemWithSharedData(initialShareData);
       }
@@ -140,7 +141,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onProfileTap: () => _navigateToTab(4),
         onBackTap: () => _navigateToTab(0),
       ),
-      ProfileScreen(onProfileTap: () => _navigateToTab(4)),
+      const ProfileScreen(),
     ];
 
     // Android back on another tab returns to Trang chủ instead of closing the app
@@ -154,7 +155,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
+            border: Border(
+              top: BorderSide(color: theme.dividerColor, width: 1),
+            ),
           ),
           child: SafeArea(
             child: SizedBox(

@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/app.dart';
 import '../app/routes.dart';
 import '../core/constants/app_constants.dart';
+import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
@@ -12,6 +13,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
+import '../viewmodels/linked_accounts_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
@@ -19,13 +21,10 @@ import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
 import '../widgets/section_card.dart';
-import '../widgets/app_header_actions.dart';
 
 /// Screen Profile & Firebase Demo Area
 class ProfileScreen extends StatelessWidget {
-  final VoidCallback? onProfileTap;
-
-  const ProfileScreen({super.key, this.onProfileTap});
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,22 +37,35 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        titleSpacing: 0,
-        leadingWidth: 42,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
         title: const Text('Cá nhân & Cài đặt'),
         actions: [
-          AppHeaderActions(onProfileTap: onProfileTap),
+          // Nút công tắc Dark Mode trên AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.primary : AppColors.onPrimary,
+                ),
+                const SizedBox(width: 4),
+                Switch(
+                  value: isDark,
+                  activeThumbColor: AppColors.primary,
+                  activeTrackColor: theme.colorScheme.primaryContainer,
+                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
+                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
+                  onChanged: (bool value) {
+                    themeVm.setThemeMode(
+                      value ? ThemeMode.dark : ThemeMode.light,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -62,50 +74,14 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Card
-            Container(
-              padding: const EdgeInsets.all(AppDimens.space16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: AppDimens.borderLarge,
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      authVm.displayName.isNotEmpty
-                          ? authVm.displayName[0].toUpperCase()
-                          : 'U',
-                      style: AppTextStyles.headlineMedium.copyWith(
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.space16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          authVm.displayName,
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          authVm.user?.email ?? 'Tài khoản ẩn danh / Khách',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AccountHeaderCard(),
+            const SizedBox(height: AppDimens.space16),
+
+            // Link Google / GitHub to this account (hidden where unsupported)
+            const LinkedAccountsSection(),
+
+            // Chrome extension linked with this account: "Quét mã QR" to link a browser
+            const LinkedDevicesSection(),
             const SizedBox(height: AppDimens.space16),
 
             // Theme Mode Switch Card
@@ -113,8 +89,25 @@ class ProfileScreen extends StatelessWidget {
               title: 'Giao diện ứng dụng',
               icon: Icons.palette_outlined,
               children: [
-                ListTile(
+                SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  secondary: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF2C2706)
+                          : AppColors.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isDark
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
+                      color: isDark ? AppColors.primary : AppColors.onPrimary,
+                      size: 20,
+                    ),
+                  ),
                   title: Text(
                     'Chế độ tối (Dark Mode)',
                     style: TextStyle(
@@ -132,10 +125,62 @@ class ProfileScreen extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  trailing: _ThemeModeSwitch(
-                    isDark: isDark,
-                    onChanged: (value) => themeVm.setThemeMode(
+                  value: isDark,
+                  activeThumbColor: AppColors.primary,
+                  activeTrackColor: theme.colorScheme.primaryContainer,
+                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
+                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
+                  onChanged: (bool value) {
+                    themeVm.setThemeMode(
                       value ? ThemeMode.dark : ThemeMode.light,
+                    );
+                  },
+                ),
+                Divider(color: theme.dividerColor, height: 20),
+                // Lựa chọn tự động theo hệ thống
+                InkWell(
+                  onTap: () {
+                    themeVm.setThemeMode(
+                      themeVm.themeMode == ThemeMode.system
+                          ? (isDark ? ThemeMode.dark : ThemeMode.light)
+                          : ThemeMode.system,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.brightness_auto_rounded,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tự động theo thiết bị',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Checkbox(
+                          value: themeVm.themeMode == ThemeMode.system,
+                          activeColor: AppColors.primary,
+                          checkColor: AppColors.onPrimary,
+                          onChanged: (bool? checked) {
+                            if (checked == true) {
+                              themeVm.setThemeMode(ThemeMode.system);
+                            } else {
+                              themeVm.setThemeMode(
+                                isDark ? ThemeMode.dark : ThemeMode.light,
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -299,10 +344,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppDimens.space16),
-
-            // Chrome extension linked with this account (approved on this phone)
-            const LinkedDevicesSection(),
             const SizedBox(height: AppDimens.space16),
 
             // Demo data (never seeded automatically)
@@ -639,63 +680,6 @@ class ProfileScreen extends StatelessWidget {
 }
 
 /// Uppercase caption above a settings group ("CÀI ĐẶT NHẮC NHỞ")
-class _ThemeModeSwitch extends StatelessWidget {
-  final bool isDark;
-  final ValueChanged<bool> onChanged;
-
-  const _ThemeModeSwitch({
-    required this.isDark,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: isDark ? 'Tắt chế độ tối' : 'Bật chế độ tối',
-      child: GestureDetector(
-        onTap: () => onChanged(!isDark),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          width: 58,
-          height: 34,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.primary
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.primary
-                  : Theme.of(context).colorScheme.outline,
-            ),
-          ),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 220),
-            alignment: isDark
-                ? Alignment.centerRight
-                : Alignment.centerLeft,
-            child: Container(
-              width: 26,
-              height: 26,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                size: 16,
-                color: isDark ? AppColors.onPrimary : AppColors.warning,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GroupLabel extends StatelessWidget {
   final String text;
 
@@ -979,5 +963,235 @@ class FirebaseDemoTools extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Account card at the top of Cá nhân. Never shows the full email or uid.
+class AccountHeaderCard extends StatelessWidget {
+  /// Defaults to [kDebugMode]; tests pass false to check a release build
+  final bool showDebugUid;
+
+  const AccountHeaderCard({super.key, this.showDebugUid = kDebugMode});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authVm = context.watch<AuthViewModel>();
+    // AuthService.displayName falls back to the email when there is no name
+    final rawName = authVm.displayName;
+    final name = rawName.contains('@') ? maskEmail(rawName) : rawName;
+    final uid = authVm.userId;
+    final linkedNames = context.select<LinkedAccountsViewModel, List<String>>(
+      (vm) => vm.linkedProviderNames,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primary,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: AppColors.onPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.space16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  _accountLabel(authVm, linkedNames),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (showDebugUid && uid != null)
+                  Text(
+                    'UID: ${uid.length > 6 ? uid.substring(0, 6) : uid}…',
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Based on isAnonymous, not on having an email: a GitHub account may hide it
+  static String _accountLabel(AuthViewModel authVm, List<String> linkedNames) {
+    if (authVm.isAnonymous) return 'Khách';
+    final email = authVm.user?.email;
+    if (email != null && email.isNotEmpty) return maskEmail(email);
+    // The name is already the title above; list the linked methods instead
+    if (linkedNames.isNotEmpty) return 'Đã liên kết: ${linkedNames.join(', ')}';
+    return 'Tài khoản đã liên kết';
+  }
+}
+
+/// "Tài khoản liên kết": Google and GitHub rows; one action at a time
+class LinkedAccountsSection extends StatelessWidget {
+  const LinkedAccountsSection({super.key});
+
+  static const extensionNote =
+      'Extension Why I Buy? chỉ đăng nhập bằng Google. Huỷ liên kết sẽ ngắt đồng bộ với extension.';
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<LinkedAccountsViewModel>();
+    if (!vm.isAvailable) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.space16),
+      child: SectionCard(
+        title: 'Tài khoản liên kết',
+        icon: Icons.link_rounded,
+        children: [
+          if (vm.isGuest)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppDimens.space8),
+              child: Text(
+                'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          for (final row in vm.rows) _LinkedAccountTile(row: row),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkedAccountTile extends StatelessWidget {
+  final LinkedAccountRow row;
+
+  const _LinkedAccountTile({required this.row});
+
+  bool get _isGoogle => row.providerId == LinkedAccountsViewModel.googleId;
+  String get _name => _isGoogle ? 'Google' : 'GitHub';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final vm = context.read<LinkedAccountsViewModel>();
+    // Every button waits while any row is busy: the ViewModel ignores a second action
+    final locked = context.select<LinkedAccountsViewModel, bool>(
+      (vm) => vm.isBusy,
+    );
+    final isLinked = row.state == LinkState.linked;
+    final showLastNote = isLinked && !row.canUnlink && !vm.isGuest;
+    final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        _isGoogle ? Icons.g_mobiledata : Icons.code_rounded,
+        color: theme.colorScheme.onSurface,
+      ),
+      title: Text(
+        _name,
+        style: AppTextStyles.titleMedium.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
+      subtitle: isLinked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.label == null
+                      ? 'Đã liên kết'
+                      : 'Đã liên kết · ${row.label}',
+                  style: subtitleStyle,
+                ),
+                if (showLastNote)
+                  Text(
+                    'Phải giữ ít nhất một cách đăng nhập',
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            )
+          : null,
+      trailing: switch (row.state) {
+        LinkState.busy => const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        LinkState.linked =>
+          vm.isGuest
+              ? null
+              : TextButton(
+                  onPressed: locked || !row.canUnlink
+                      ? null
+                      : () => _unlink(context, vm),
+                  child: const Text('Huỷ liên kết'),
+                ),
+        LinkState.notLinked => TextButton(
+          onPressed: locked ? null : () => _link(context, vm),
+          child: const Text('Liên kết'),
+        ),
+      },
+    );
+  }
+
+  Future<void> _link(BuildContext context, LinkedAccountsViewModel vm) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await (_isGoogle ? vm.linkGoogle() : vm.linkGithub());
+    _showResult(messenger, vm);
+  }
+
+  Future<void> _unlink(BuildContext context, LinkedAccountsViewModel vm) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Huỷ liên kết $_name?',
+      message: [
+        'Bạn sẽ không đăng nhập bằng $_name được nữa cho tới khi liên kết lại.',
+        if (_isGoogle) LinkedAccountsSection.extensionNote,
+      ].join('\n\n'),
+      confirmLabel: 'Huỷ liên kết',
+      isDanger: true,
+    );
+    if (!ok) return;
+    await vm.unlink(row.providerId);
+    _showResult(messenger, vm);
+  }
+
+  void _showResult(
+    ScaffoldMessengerState messenger,
+    LinkedAccountsViewModel vm,
+  ) {
+    final text = vm.errorMessage ?? vm.successMessage;
+    if (text == null) return;
+    messenger.showSnackBar(SnackBar(content: Text(text)));
+    vm.clearMessages();
   }
 }

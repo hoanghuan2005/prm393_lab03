@@ -57,13 +57,15 @@ class _PushScreenState extends State<PushScreen> {
   }
 
   Future<void> _handleSend() async {
+    final admin = context.read<AdminService>();
+    if (_targetAudience == 'specific' && admin.preselectedUser == null) return;
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
     if (title.isEmpty || body.isEmpty) return;
 
     setState(() => _isSending = true);
     try {
-      await context.read<AdminService>().sendBroadcast(
+      await admin.sendBroadcast(
         title: title,
         body: body,
         targetAudience: _targetAudience,
@@ -92,6 +94,8 @@ class _PushScreenState extends State<PushScreen> {
   @override
   Widget build(BuildContext context) {
     final admin = context.watch<AdminService>();
+    final hasValidAudience =
+        _targetAudience != 'specific' || admin.preselectedUser != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
@@ -228,7 +232,8 @@ class _PushScreenState extends State<PushScreen> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: _targetAudience,
+                            value: hasValidAudience ? _targetAudience : null,
+                            hint: const Text('Chọn đối tượng nhận thông báo'),
                             isExpanded: true,
                             dropdownColor: AdminColors.surface,
                             style: const TextStyle(color: Colors.white, fontSize: 13),
@@ -332,7 +337,7 @@ class _PushScreenState extends State<PushScreen> {
                             foregroundColor: AdminColors.onPrimary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: _isSending ? null : _handleSend,
+                          onPressed: _isSending || !hasValidAudience ? null : _handleSend,
                           icon: _isSending
                               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AdminColors.onPrimary))
                               : const Icon(Icons.campaign_rounded, size: 18),

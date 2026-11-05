@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import '../models/budget_group.dart';
 import '../models/item_suggestion.dart';
@@ -78,7 +79,7 @@ class ItemSuggestionViewModel extends ChangeNotifier {
           ? null
           : GroupSuggestion(groupId: id, fromAi: true);
     } catch (e) {
-      debugPrint('AI group suggestion unavailable: $e');
+      debugPrint('AI group suggestion unavailable: ${describeError(e)}');
       return null;
     }
   }
@@ -131,7 +132,7 @@ class ItemSuggestionViewModel extends ChangeNotifier {
               DuplicateMatch(candidate: c, fromAi: true),
         ]);
       } catch (e) {
-        debugPrint('AI duplicate check unavailable: $e');
+        debugPrint('AI duplicate check unavailable: ${describeError(e)}');
       }
     }
     return matches.take(maxShown).toList();

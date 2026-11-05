@@ -3,7 +3,10 @@ class AppException implements Exception {
   final String code;
   final String messageVi;
 
-  const AppException(this.code, this.messageVi);
+  /// Original error this was mapped from; set for unknown or unmapped errors
+  final Object? cause;
+
+  const AppException(this.code, this.messageVi, {this.cause});
 
   static const unknown = AppException(
     'unknown',
@@ -11,5 +14,6 @@ class AppException implements Exception {
   );
 
   @override
-  String toString() => 'AppException($code): $messageVi';
+  String toString() =>
+      'AppException($code): $messageVi${cause == null ? '' : ' <- $cause'}';
 }

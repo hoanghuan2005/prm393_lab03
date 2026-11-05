@@ -16,6 +16,19 @@ abstract interface class ExtensionSessionService {
 
   /// "Huỷ liên kết": the extension sees revoked and goes back to unlinked
   Future<void> revoke(String uid, String sessionId);
+
+  /// QR linking: the request whose id was scanned, or null when it does not exist
+  Future<ExtensionPairingRequest?> fetchPairing(String pairingId);
+
+  /// QR linking "Đồng ý": the extension's anonymous uid becomes a linked session of [uid]
+  Future<void> approvePairing(
+    String uid,
+    ExtensionPairingRequest request, {
+    String? accountName,
+  });
+
+  /// QR linking "Từ chối"
+  Future<void> rejectPairing(String pairingId);
 }
 
 class FirestoreExtensionSessionService implements ExtensionSessionService {
@@ -48,6 +61,50 @@ class FirestoreExtensionSessionService implements ExtensionSessionService {
   @override
   Future<void> revoke(String uid, String sessionId) =>
       _setStatus(uid, sessionId, ExtensionSessionStatus.revoked);
+
+  @override
+  Future<ExtensionPairingRequest?> fetchPairing(String pairingId) => guard(
+    () async => ExtensionPairingRequest.fromFirestore(
+      // Always the server copy: the extension may have just created or cancelled it
+      await _paths
+          .extensionPairing(pairingId)
+          .get(const GetOptions(source: Source.server)),
+    ),
+  );
+
+  @override
+  Future<void> approvePairing(
+    String uid,
+    ExtensionPairingRequest request, {
+    String? accountName,
+  }) => guard(() {
+    final batch = _paths.db.batch()
+      ..set(_paths.extensionSession(uid, request.anonUid), {
+        'deviceLabel': request.deviceLabel,
+        'status': ExtensionSessionStatus.approved.key,
+        'pairingId': request.id,
+        'createdAt': FieldValue.serverTimestamp(),
+        'approvedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      })
+      ..update(_paths.extensionPairing(request.id), {
+        'status': ExtensionSessionStatus.approved.key,
+        'ownerUid': uid,
+        if (accountName != null && accountName.isNotEmpty)
+          'ownerName': accountName,
+        'approvedAt': FieldValue.serverTimestamp(),
+      });
+    return awaitWrite(batch.commit());
+  });
+
+  @override
+  Future<void> rejectPairing(String pairingId) => guard(
+    () => awaitWrite(
+      _paths.extensionPairing(pairingId).update({
+        'status': ExtensionSessionStatus.rejected.key,
+      }),
+    ),
+  );
 
   Future<void> _setStatus(
     String uid,

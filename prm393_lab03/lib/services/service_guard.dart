@@ -3,12 +3,13 @@ import 'dart:async';
 import '../core/errors/firebase_error_mapper.dart';
 import 'pending_writes.dart';
 
-/// Runs a Firebase call and rethrows any failure as an AppException
+/// Runs a Firebase call and rethrows any failure as an AppException,
+/// keeping the original stack trace
 Future<T> guard<T>(Future<T> Function() action) async {
   try {
     return await action();
-  } catch (e) {
-    throw mapFirebaseError(e);
+  } catch (e, st) {
+    Error.throwWithStackTrace(mapFirebaseError(e), st);
   }
 }
 

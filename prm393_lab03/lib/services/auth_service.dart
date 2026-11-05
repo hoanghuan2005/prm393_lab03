@@ -82,12 +82,46 @@ class AuthService {
         return await _auth.signInWithProvider(githubProvider);
       }
     } on FirebaseAuthException catch (e) {
-      debugPrint('AuthService GitHub FirebaseAuthException: ${e.code} - ${e.message}');
+      debugPrint(
+        'AuthService GitHub FirebaseAuthException: ${e.code} - ${e.message}',
+      );
       rethrow;
     } catch (e) {
       debugPrint('AuthService GitHub Error: $e');
       rethrow;
     }
+  }
+
+  /// Sign in with an email and password.
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
+
+  /// Create a Firebase account with an email, password and display name.
+  Future<UserCredential> createAccount({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+    await credential.user?.updateDisplayName(displayName.trim());
+    await credential.user?.reload();
+    await credential.user?.sendEmailVerification();
+    return credential;
+  }
+
+  /// Send Firebase's password reset email.
+  Future<void> sendPasswordResetEmail(String email) {
+    return _auth.sendPasswordResetEmail(email: email.trim());
   }
 
   /// Sign in anonymously for test / guest mode

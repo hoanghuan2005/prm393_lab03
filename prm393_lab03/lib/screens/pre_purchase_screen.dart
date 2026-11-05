@@ -131,7 +131,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.chevron_left_rounded),
             tooltip: 'Quay lại',
             onPressed: _back,
           ),

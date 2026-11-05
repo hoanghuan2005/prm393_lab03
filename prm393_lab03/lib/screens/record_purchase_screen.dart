@@ -22,6 +22,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_dropdown_field.dart';
 import '../widgets/item_suggestions.dart';
 
 /// Shared Android/web form. Wishlist items are only changed by a successful save.
@@ -314,7 +315,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           leading: IconButton(
             tooltip: 'Quay lại',
             onPressed: busy ? null : _back,
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: const Icon(Icons.chevron_left_rounded),
           ),
           actions: [
             if (_step == 2)
@@ -462,25 +463,25 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           // Re-keyed by value so an applied suggestion shows in the field
           KeyedSubtree(
             key: const ValueKey('purchase-budget-group'),
-            child: DropdownButtonFormField<String>(
+            child: AppDropdownField<String>(
               key: ValueKey('purchase-budget-group-$_budgetGroupId'),
-              initialValue: _budgetGroupId,
-              isExpanded: true,
+              value: _budgetGroupId,
               decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
               items: [
                 for (final group in groups)
-                  DropdownMenuItem(value: group.id, child: Text(group.name)),
+                  AppDropdownItem(
+                    value: group.id,
+                    label: group.name,
+                  ),
               ],
               onChanged: enabled
-                  ? (value) {
-                      if (value != null) {
+                    ? (value) {
                         setState(() {
                           _budgetGroupId = value;
                           _groupChosen = true;
                         });
-                      }
                     }
-                  : null,
+                    : null,
             ),
           ),
           // A new manual purchase starts on "Khác"; edits and wishlist purchases keep their group

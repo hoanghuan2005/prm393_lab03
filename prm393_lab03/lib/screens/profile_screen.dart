@@ -19,10 +19,13 @@ import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
 import '../widgets/section_card.dart';
+import '../widgets/app_header_actions.dart';
 
 /// Screen Profile & Firebase Demo Area
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onProfileTap;
+
+  const ProfileScreen({super.key, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -35,35 +38,22 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 0,
+        leadingWidth: 42,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Text('Cá nhân & Cài đặt'),
         actions: [
-          // Nút công tắc Dark Mode trên AppBar
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  size: 20,
-                  color: isDark ? AppColors.primary : AppColors.onPrimary,
-                ),
-                const SizedBox(width: 4),
-                Switch(
-                  value: isDark,
-                  activeThumbColor: AppColors.primary,
-                  activeTrackColor: theme.colorScheme.primaryContainer,
-                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
-                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-                  onChanged: (bool value) {
-                    themeVm.setThemeMode(
-                      value ? ThemeMode.dark : ThemeMode.light,
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
+          AppHeaderActions(onProfileTap: onProfileTap),
         ],
       ),
       body: SingleChildScrollView(
@@ -110,14 +100,6 @@ class ProfileScreen extends StatelessWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        Text(
-                          'UID: ${authVm.userId ?? "N/A"}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
                   ),
@@ -131,25 +113,8 @@ class ProfileScreen extends StatelessWidget {
               title: 'Giao diện ứng dụng',
               icon: Icons.palette_outlined,
               children: [
-                SwitchListTile(
+                ListTile(
                   contentPadding: EdgeInsets.zero,
-                  secondary: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2C2706)
-                          : AppColors.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isDark
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                      color: isDark ? AppColors.primary : AppColors.onPrimary,
-                      size: 20,
-                    ),
-                  ),
                   title: Text(
                     'Chế độ tối (Dark Mode)',
                     style: TextStyle(
@@ -167,62 +132,10 @@ class ProfileScreen extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  value: isDark,
-                  activeThumbColor: AppColors.primary,
-                  activeTrackColor: theme.colorScheme.primaryContainer,
-                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
-                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-                  onChanged: (bool value) {
-                    themeVm.setThemeMode(
+                  trailing: _ThemeModeSwitch(
+                    isDark: isDark,
+                    onChanged: (value) => themeVm.setThemeMode(
                       value ? ThemeMode.dark : ThemeMode.light,
-                    );
-                  },
-                ),
-                Divider(color: theme.dividerColor, height: 20),
-                // Lựa chọn tự động theo hệ thống
-                InkWell(
-                  onTap: () {
-                    themeVm.setThemeMode(
-                      themeVm.themeMode == ThemeMode.system
-                          ? (isDark ? ThemeMode.dark : ThemeMode.light)
-                          : ThemeMode.system,
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.brightness_auto_rounded,
-                          size: 18,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Tự động theo thiết bị',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Checkbox(
-                          value: themeVm.themeMode == ThemeMode.system,
-                          activeColor: AppColors.primary,
-                          checkColor: AppColors.onPrimary,
-                          onChanged: (bool? checked) {
-                            if (checked == true) {
-                              themeVm.setThemeMode(ThemeMode.system);
-                            } else {
-                              themeVm.setThemeMode(
-                                isDark ? ThemeMode.dark : ThemeMode.light,
-                              );
-                            }
-                          },
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -726,6 +639,63 @@ class ProfileScreen extends StatelessWidget {
 }
 
 /// Uppercase caption above a settings group ("CÀI ĐẶT NHẮC NHỞ")
+class _ThemeModeSwitch extends StatelessWidget {
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  const _ThemeModeSwitch({
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: isDark ? 'Tắt chế độ tối' : 'Bật chế độ tối',
+      child: GestureDetector(
+        onTap: () => onChanged(!isDark),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: 58,
+          height: 34,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.primary
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.primary
+                  : Theme.of(context).colorScheme.outline,
+            ),
+          ),
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 220),
+            alignment: isDark
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                size: 16,
+                color: isDark ? AppColors.onPrimary : AppColors.warning,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupLabel extends StatelessWidget {
   final String text;
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
-import '../widgets/why_i_buy_logo.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 /// Screen 01: Onboarding / Landing Redesign for "Why I Buy"
 class OnboardingScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  static const int _pageCount = 3;
+  static const int _pageCount = 1;
 
   void _onPageChanged(int index) {
     setState(() {
@@ -37,7 +38,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _finishOnboarding() {
-    Navigator.pushReplacementNamed(context, AppRoutes.shell);
+    final route = context.read<AuthViewModel>().isAuthenticated
+        ? AppRoutes.shell
+        : AppRoutes.login;
+    Navigator.pushReplacementNamed(context, route);
   }
 
   @override
@@ -65,16 +69,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2C2706)
-                              : AppColors.primaryContainer,
-                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFFFFD166), Color(0xFFF59E0B)]
+                                : const [Color(0xFFFFC928), Color(0xFFF59E0B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: WhyIBuyLogo(
-                          size: 20,
-                          color: isDark ? AppColors.primary : AppColors.onPrimary,
+                        child: Icon(
+                          Icons.psychology_alt_rounded,
+                          size: 22,
+                          color: AppColors.onPrimary,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -89,26 +106,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-                  if (_currentPage < _pageCount - 1)
-                    TextButton(
-                      onPressed: _finishOnboarding,
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.onSurfaceVariant,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
+                  TextButton(
+                    onPressed: _finishOnboarding,
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
                       ),
-                      child: const Text(
-                        'Bỏ qua',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    child: const Text(
+                      'Bỏ qua',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
-                    )
-                  else
-                    const SizedBox(height: 36),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -118,6 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: PageView(
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _buildFirstSlide(context),
                   _buildSecondSlide(context),
@@ -131,31 +146,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
               child: Column(
                 children: [
-                  // Smooth Indicator Dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pageCount, (index) {
-                      final isActive = index == _currentPage;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 7,
-                        width: isActive ? 24 : 7,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? AppColors.primary
-                              : (isDark
-                                  ? const Color(0xFF333B49)
-                                  : AppColors.outline),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 24),
-
                   // Action Button
                   SizedBox(
                     width: double.infinity,
@@ -174,9 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _currentPage == _pageCount - 1
-                                ? 'Bắt đầu trải nghiệm'
-                                : 'Tiếp tục',
+                            'Bắt đầu trải nghiệm',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -229,14 +217,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Visual illustration card
           Container(
-            height: 240,
+            height: 174,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1B202A) : Colors.white,
+              gradient: LinearGradient(
+                colors: isDark
+                    ? const [Color(0xFF3B3212), Color(0xFF1F2937)]
+                    : const [Color(0xFFFFF8D8), Color(0xFFF1F6F2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: theme.dividerColor),
               boxShadow: [
@@ -252,20 +246,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 // Soft glow circle in the center
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 122,
+                  height: 122,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.2),
+                    color: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.16),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      width: 1,
+                    ),
                   ),
                 ),
                 // Center Icon Logo
                 Container(
-                  width: 76,
-                  height: 76,
+                  width: 74,
+                  height: 74,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD166), AppColors.primary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withValues(alpha: 0.4),
@@ -274,8 +276,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: WhyIBuyLogo(size: 40, color: AppColors.onPrimary),
+                  child: const Icon(
+                    Icons.psychology_alt_rounded,
+                    size: 40,
+                    color: AppColors.onPrimary,
                   ),
                 ),
 
@@ -330,7 +334,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
 
           // Overline Tag
           Container(
@@ -340,7 +344,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'THẤU HIỂU ĐỘNG CƠ',
+              'DÀNH RIÊNG CHO BẠN',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -354,7 +358,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           // Slide Title
           Text(
-            'Hiểu rõ lý do chi tiêu',
+            'Why I Buy?',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
@@ -368,13 +372,106 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           // Description
           Text(
-            'Mỗi khoản mua đều xuất phát từ một lý do: Nhu cầu thiết yếu, Cảm xúc nhất thời hay Đợt sale hấp dẫn. Ghi nhận để hiểu chính mình, không hề phán xét.',
+            'Tiền bạc không chỉ là những con số. Quan sát động cơ tiêu dùng của chính mình để thay đổi nhẹ nhàng hơn.',
             style: TextStyle(
               fontSize: 14,
-              height: 1.5,
+              height: 1.45,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 18),
+          _buildOnboardingBenefit(
+            context,
+            icon: Icons.schedule_rounded,
+            title: 'Ghi lại lý do mua',
+            description: 'Ghi lại món đồ và lý do khiến bạn mua.',
+          ),
+          const SizedBox(height: 8),
+          _buildOnboardingBenefit(
+            context,
+            icon: Icons.insights_outlined,
+            title: 'Nhận ra mô hình chi tiêu',
+            description: 'Nhìn lại động cơ và thời điểm ghi khoản mua.',
+          ),
+          const SizedBox(height: 8),
+          _buildOnboardingBenefit(
+            context,
+            icon: Icons.psychology_alt_outlined,
+            title: 'Hiểu mình, không phán xét',
+            description: 'Nhận diện cảm xúc, hiểu trước khi thay đổi.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOnboardingBenefit(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B2535) : Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE8EDF2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.035),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF3B3212)
+                  : AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 19,
+              color: isDark ? AppColors.primaryLight : AppColors.onPrimary,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.3,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

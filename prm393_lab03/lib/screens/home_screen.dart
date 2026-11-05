@@ -13,6 +13,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/app_header_actions.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -38,14 +39,22 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        titleSpacing: 16,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Trang chủ',
+          onPressed: () => onNavigateTab?.call(0),
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             WhyIBuyLogo(
               size: 26,
               color: isDark ? AppColors.primary : AppColors.onPrimary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               'Trang chủ',
               style: TextStyle(
@@ -57,68 +66,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          // Wishlist icon with badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.bookmark_outline_rounded,
-                  color: isDark ? AppColors.primary : AppColors.onPrimary,
-                  size: 24,
-                ),
-                tooltip: 'Danh sách mong muốn',
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.wishlist);
-                },
-              ),
-              if (wishlistVm.consideringCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${wishlistVm.consideringCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          // User Avatar
-          Padding(
-            padding: const EdgeInsets.only(right: 16, left: 4),
-            child: InkWell(
-              onTap: () {
-                if (onNavigateTab != null) onNavigateTab!(4); // Cá nhân
-              },
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
-                width: 34,
-                height: 34,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: AppColors.onPrimary,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
+          AppHeaderActions(onProfileTap: () => onNavigateTab?.call(4)),
         ],
       ),
       body:
@@ -197,6 +145,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
 
   /// Stacked bar of the month's motives, widest first, in each motive's own color
   List<Widget> _motiveSegments(

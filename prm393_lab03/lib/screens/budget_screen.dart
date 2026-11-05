@@ -80,7 +80,7 @@ class BudgetScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_rounded,
+            Icons.chevron_left_rounded,
             color: AppColors.onPrimary,
           ),
           onPressed: () => Navigator.of(context).pop(),

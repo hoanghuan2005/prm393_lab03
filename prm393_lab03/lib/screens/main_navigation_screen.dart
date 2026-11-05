@@ -128,10 +128,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final theme = Theme.of(context);
     final screens = [
       HomeScreen(onNavigateTab: _navigateToTab),
-      const HistoryScreen(),
-      const PatternsScreen(),
-      const InsightsScreen(),
-      const ProfileScreen(),
+      HistoryScreen(
+        onProfileTap: () => _navigateToTab(4),
+        onBackTap: () => _navigateToTab(0),
+      ),
+      PatternsScreen(
+        onProfileTap: () => _navigateToTab(4),
+        onBackTap: () => _navigateToTab(0),
+      ),
+      InsightsScreen(
+        onProfileTap: () => _navigateToTab(4),
+        onBackTap: () => _navigateToTab(0),
+      ),
+      ProfileScreen(onProfileTap: () => _navigateToTab(4)),
     ];
 
     // Android back on another tab returns to Trang chủ instead of closing the app

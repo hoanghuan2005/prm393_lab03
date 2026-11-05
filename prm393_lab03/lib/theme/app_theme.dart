@@ -74,6 +74,8 @@ class AppTheme {
       // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         elevation: AppDimens.elevationNone,
         centerTitle: false,
@@ -284,6 +286,8 @@ class AppTheme {
       // App Bar: slate-950 bg (Web: `bg-slate-900/60 backdrop-blur`)
       appBarTheme: const AppBarTheme(
         backgroundColor: darkBackground,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: darkTextPrimary,
         elevation: AppDimens.elevationNone,
         centerTitle: false,

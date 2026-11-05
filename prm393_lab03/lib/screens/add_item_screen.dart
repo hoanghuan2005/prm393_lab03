@@ -12,6 +12,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_dropdown_field.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
@@ -200,26 +201,26 @@ class _AddItemScreenState extends State<AddItemScreen> {
               // so an applied suggestion shows in the field.
               KeyedSubtree(
                 key: const ValueKey('wishlist-budget-group'),
-                child: DropdownButtonFormField<String?>(
+                child: AppDropdownField<String?>(
                   key: ValueKey('wishlist-budget-group-$_budgetGroupId'),
-                  initialValue: groups.any((g) => g.id == _budgetGroupId)
+                  value: groups.any((g) => g.id == _budgetGroupId)
                       ? _budgetGroupId
                       : null,
-                  isExpanded: true,
                   decoration: const InputDecoration(
-                    labelText: 'Nhóm ngân sách (không bắt buộc)',
+                      labelText: 'Nhóm ngân sách (không bắt buộc)',
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(
+                    const AppDropdownItem<String?>(
                       value: null,
-                      child: Text('Chưa chọn'),
+                      label: 'Chưa chọn',
                     ),
                     for (final group in groups)
-                      DropdownMenuItem<String?>(
+                      AppDropdownItem<String?>(
                         value: group.id,
-                        child: Text(group.name),
+                        label: group.name,
                       ),
                   ],
+                  enabled: !_isSaving,
                   onChanged: _isSaving
                       ? null
                       : (value) => setState(() => _budgetGroupId = value),

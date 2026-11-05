@@ -12,11 +12,15 @@ import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
+import '../widgets/app_header_actions.dart';
 
 /// Screen 08: Góc nhìn (có AI) from Figma "Why I Buy ver2".
 /// Numbers come from code; AI only rewrites the sentences (spec 7.6).
 class InsightsScreen extends StatelessWidget {
-  const InsightsScreen({super.key});
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onBackTap;
+
+  const InsightsScreen({super.key, this.onProfileTap, this.onBackTap});
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +36,22 @@ class InsightsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        titleSpacing: 16,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Trang chủ',
+          onPressed: onBackTap,
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             WhyIBuyLogo(
               size: 26,
               color: isDark ? AppColors.primary : AppColors.onPrimary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               'Góc nhìn',
               style: TextStyle(
@@ -50,6 +62,9 @@ class InsightsScreen extends StatelessWidget {
             ),
           ],
         ),
+        actions: [
+          AppHeaderActions(onProfileTap: onProfileTap),
+        ],
       ),
       body:
           stateView([
@@ -61,6 +76,8 @@ class InsightsScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _buildIntroHero(context),
+                const SizedBox(height: 16),
                 _buildMonthSelector(context, purchaseVm),
                 const SizedBox(height: 12),
                 _buildAiStatusCard(context, insightsVm),
@@ -97,6 +114,138 @@ class InsightsScreen extends StatelessWidget {
               ],
             ),
           ),
+    );
+  }
+
+  Widget _buildIntroHero(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: 306,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [Color(0xFF24382D), Color(0xFF263746)]
+              : const [Color(0xFFE6F1EC), Color(0xFFE8EEF7)],
+        ),
+        borderRadius: BorderRadius.circular(42),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 136,
+                height: 136,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF344A3D) : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF263B31)
+                          : const Color(0xFFE8F1ED),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.spa_rounded,
+                      size: 52,
+                      color: isDark ? AppColors.primary : AppColors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: -8,
+                bottom: -2,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.primary : const Color(0xFF263B1E),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF344A3D) : const Color(0xFFE6F1EC),
+                      width: 3,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.self_improvement_rounded,
+                    size: 20,
+                    color: isDark ? AppColors.onPrimary : Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF33483B)
+                  : const Color(0xFFDCEBE3),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '◉  Không gian an toàn tài chính',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            'DÀNH RIÊNG CHO BẠN',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Góc nhìn của bạn',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 30,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Quan sát động cơ tiêu dùng của chính mình\nmà không cần tự trách.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.35,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

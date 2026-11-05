@@ -10,6 +10,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_dropdown_field.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/section_card.dart';
@@ -290,20 +291,22 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
             },
           ),
           const SizedBox(height: AppDimens.space12),
-          DropdownButtonFormField<String?>(
+          AppDropdownField<String?>(
             key: const ValueKey('owned-group'),
-            initialValue: groups.any((g) => g.id == _groupId) ? _groupId : null,
-            isExpanded: true,
+            value: groups.any((g) => g.id == _groupId) ? _groupId : null,
             decoration: const InputDecoration(
               labelText: 'Nhóm ngân sách (không bắt buộc)',
             ),
             items: [
-              const DropdownMenuItem<String?>(
+              const AppDropdownItem<String?>(
                 value: null,
-                child: Text('Chưa chọn'),
+                label: 'Chưa chọn',
               ),
               for (final g in groups)
-                DropdownMenuItem<String?>(value: g.id, child: Text(g.name)),
+                AppDropdownItem<String?>(
+                  value: g.id,
+                  label: g.name,
+                ),
             ],
             onChanged: _saving ? null : (v) => setState(() => _groupId = v),
           ),

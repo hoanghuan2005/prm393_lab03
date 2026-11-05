@@ -181,6 +181,111 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authService.signInWithEmail(email: email, password: password);
+      await analyticsService.logLogin(method: 'email');
+      return true;
+    } on FirebaseAuthException catch (e, stack) {
+      _setAuthError(e, stack, reason: 'Email sign-in error');
+      return false;
+    } catch (e, stack) {
+      _setUnexpectedAuthError(e, stack, 'Đăng nhập thất bại.');
+      return false;
+    }
+  }
+
+  Future<bool> createAccount({
+    required String displayName,
+    required String email,
+    required String password,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authService.createAccount(
+        displayName: displayName,
+        email: email,
+        password: password,
+      );
+      await analyticsService.logLogin(method: 'email');
+      return true;
+    } on FirebaseAuthException catch (e, stack) {
+      _setAuthError(e, stack, reason: 'Email account creation error');
+      return false;
+    } catch (e, stack) {
+      _setUnexpectedAuthError(e, stack, 'Tạo tài khoản thất bại.');
+      return false;
+    }
+  }
+
+  Future<bool> sendPasswordReset(String email) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authService.sendPasswordResetEmail(email);
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e, stack) {
+      _setAuthError(e, stack, reason: 'Password reset error');
+      return false;
+    } catch (e, stack) {
+      _setUnexpectedAuthError(
+        e,
+        stack,
+        'Không thể gửi email đặt lại mật khẩu.',
+      );
+      return false;
+    }
+  }
+
+  void _setAuthError(
+    FirebaseAuthException error,
+    StackTrace stack, {
+    required String reason,
+  }) {
+    _status = AuthStatus.error;
+    _errorMessage = switch (error.code) {
+      'invalid-credential' ||
+      'wrong-password' ||
+      'user-not-found' => 'Email hoặc mật khẩu không đúng.',
+      'email-already-in-use' => 'Email này đã được đăng ký.',
+      'invalid-email' => 'Email chưa đúng định dạng.',
+      'weak-password' => 'Mật khẩu cần có ít nhất 6 ký tự.',
+      'too-many-requests' => 'Bạn thử quá nhiều lần. Hãy thử lại sau.',
+      _ => error.message ?? 'Có lỗi xác thực. Vui lòng thử lại.',
+    };
+    unawaited(
+      crashlyticsService.recordHandledError(error, stack, reason: reason),
+    );
+    notifyListeners();
+  }
+
+  void _setUnexpectedAuthError(Object error, StackTrace stack, String message) {
+    _status = AuthStatus.error;
+    _errorMessage = message;
+    unawaited(
+      crashlyticsService.recordHandledError(
+        error,
+        stack,
+        reason: 'Unexpected email auth error',
+      ),
+    );
+    notifyListeners();
+  }
+
   /// Guest / Anonymous sign in for quick testing
   Future<bool> signInAnonymously() async {
     _status = AuthStatus.loading;

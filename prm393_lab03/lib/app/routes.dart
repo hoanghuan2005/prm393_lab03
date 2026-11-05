@@ -16,6 +16,7 @@ import '../screens/history_screen.dart';
 import '../screens/info_text_screen.dart';
 import '../screens/insights_screen.dart';
 import '../screens/item_detail_screen.dart';
+import '../screens/login_screen.dart';
 import '../screens/main_navigation_screen.dart';
 import '../screens/monthly_reflection_screen.dart';
 import '../screens/onboarding_screen.dart';
@@ -51,11 +52,7 @@ class AddItemArgs {
   final String? initialTitle;
   final String? initialUrl;
 
-  const AddItemArgs({
-    this.existing,
-    this.initialTitle,
-    this.initialUrl,
-  });
+  const AddItemArgs({this.existing, this.initialTitle, this.initialUrl});
 }
 
 /// Arguments for [AppRoutes.purchaseDetail]
@@ -104,6 +101,9 @@ class AppRoutes {
 
   /// Main shell with bottom navigation (Trang chủ, Lịch sử, …)
   static const shell = '/home';
+  static const login = '/login';
+  static const signup = '/signup';
+  static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
   static const wishlist = '/wishlist';
   static const wishlistAdd = '/wishlist/add';
@@ -153,6 +153,9 @@ class AppRoutes {
       shell => MainNavigationScreen(
         initialIndex: args is ShellArgs ? args.initialIndex : 0,
       ),
+      login => const LoginScreen(),
+      signup => const LoginScreen(mode: AuthMode.signup),
+      forgotPassword => const LoginScreen(mode: AuthMode.forgotPassword),
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
       wishlistAdd => const AddItemScreen(),

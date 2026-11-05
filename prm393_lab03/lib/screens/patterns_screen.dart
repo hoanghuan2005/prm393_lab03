@@ -11,10 +11,14 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
+import '../widgets/app_header_actions.dart';
 
 /// Screen 07: Mô hình from Figma "Why I Buy ver2"
 class PatternsScreen extends StatefulWidget {
-  const PatternsScreen({super.key});
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onBackTap;
+
+  const PatternsScreen({super.key, this.onProfileTap, this.onBackTap});
 
   @override
   State<PatternsScreen> createState() => _PatternsScreenState();
@@ -87,14 +91,24 @@ class _PatternsScreenState extends State<PatternsScreen> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Trang chủ',
+          onPressed: widget.onBackTap,
+        ),
+        titleSpacing: 0,
         title: Row(
           children: [
             WhyIBuyLogo(
               size: 26,
               color: isDark ? AppColors.primary : AppColors.onPrimary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               'Mô hình',
               style: TextStyle(
@@ -105,6 +119,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
             ),
           ],
         ),
+        actions: [
+          AppHeaderActions(onProfileTap: widget.onProfileTap),
+        ],
       ),
       body:
           stateView([

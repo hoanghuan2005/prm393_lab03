@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/buying_motive.dart';
+import '../models/price_snapshot.dart';
 import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
@@ -400,9 +401,13 @@ class WishlistViewModel extends ChangeNotifier
       );
 
   /// New price snapshot dated now (also fills in a price that was unknown)
-  Future<bool> updatePrice(WishlistItem item, int amountVnd) => _writeItem(
+  Future<bool> updatePrice(
+    WishlistItem item,
+    int amountVnd, {
+    PriceSource source = PriceSource.manual,
+  }) => _writeItem(
     item,
-    (uid) => wishlistService.addPrice(uid, item.id, amountVnd),
+    (uid) => wishlistService.addPrice(uid, item.id, amountVnd, source: source),
     reason: 'updatePrice',
   );
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/price_snapshot.dart';
 import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
@@ -21,6 +22,7 @@ import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
+import '../widgets/shared_price_section.dart';
 import '../widgets/undo_snack_bar.dart';
 import '../widgets/wishlist_card.dart';
 
@@ -221,6 +223,34 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       );
   }
 
+  /// Spec 8.3: other people's price is only a suggestion; it becomes this item's price
+  /// only after the user confirms, and is then never shared again (source community)
+  Future<void> _useSharedPrice(WishlistItem item, int amount) async {
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Dùng giá ${formatVnd(amount)}?',
+      message:
+          'Đây là trung vị giá người khác ghi cho cùng sản phẩm và phân loại. '
+          'Giá trên Shopee có thể đã đổi; bạn nên mở link kiểm tra lại.',
+      confirmLabel: 'Dùng giá này',
+    );
+    if (!ok || !mounted) return;
+    final saved = await _run(
+      (vm) => vm.updatePrice(item, amount, source: PriceSource.community),
+    );
+    if (!saved || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã lưu giá ${formatVnd(amount)} (từ giá người khác ghi).',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   Future<void> _confirmDelete(WishlistItem item) async {
     final confirmed = await ConfirmDialog.show(
       context,
@@ -382,6 +412,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // A-14: every recorded price, compared only when it makes sense (spec 6.5)
             if (item.hasPrice) PriceHistoryPanel(item: item),
+
+            // Spec 8.3: anonymous prices other people recorded for the same variant
+            if (item.status == WishlistStatus.considering)
+              SharedPriceSection(
+                item: item,
+                onUsePrice: _isProcessing
+                    ? null
+                    : (amount) => _useSharedPrice(item, amount),
+              ),
 
             // Psychological Cooldown Box
             if (item.isInCooldown) ...[

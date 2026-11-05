@@ -7,6 +7,7 @@ class PreferencesService {
   static const String _keyDailyReminderEnabled = 'daily_reminder_enabled';
   static const String _keyDailyReminderMinutes = 'daily_reminder_minutes';
   static const String _keyDailyReminderOffered = 'daily_reminder_offered';
+  static const String _keySharePrices = 'share_prices_enabled';
   static const String _keySaleReminderLevel = 'sale_reminder_level';
 
   /// 21:00, the time shown on screen 05a
@@ -46,6 +47,14 @@ class PreferencesService {
 
   /// "Nhắc đợt sale" (spec 8.2): `off` · `big_only` (default) · `all`. Stored on this
   /// device, like every local notification setting.
+  /// "Giá người khác ghi" (spec 8.3): share this device's own fresh prices anonymously.
+  /// On by default; the switch sits next to the comparison on Chi tiết món.
+  Future<bool> getSharePricesEnabled() =>
+      _read((p) => p.getBool(_keySharePrices) ?? true, true);
+
+  Future<void> setSharePricesEnabled(bool enabled) =>
+      _write((p) => p.setBool(_keySharePrices, enabled));
+
   Future<String> getSaleReminderLevel() => _read(
     (p) => p.getString(_keySaleReminderLevel) ?? 'big_only',
     'big_only',

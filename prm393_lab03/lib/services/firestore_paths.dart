@@ -56,6 +56,10 @@ class FirestorePaths {
   DocumentReference<JsonMap> extensionPairing(String pairingId) =>
       db.collection('extensionPairings').doc(pairingId);
 
+  /// "Giá người khác ghi": anonymous reports shared by every user (top level, no uid)
+  CollectionReference<JsonMap> sharedPriceReports(String productKey) =>
+      db.collection('sharedPrices').doc(productKey).collection('reports');
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

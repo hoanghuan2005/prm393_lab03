@@ -59,7 +59,7 @@ App chỉ ghi các trường extension khi có giá trị, nên sửa món trong
 |:---|:---|:-:|:---|
 | `amountVnd` | int | ✓ | 1 … 999.999.999 |
 | `observedAt` | timestamp | ✓ | là timestamp |
-| `source` | string | | nếu có: `manual` · `demo` · `extensionPage` |
+| `source` | string | | nếu có: `manual` · `demo` · `extensionPage` · `community` (giá người khác ghi mà người dùng chọn dùng; không bao giờ chia sẻ lại) |
 | `priceType` | string | | nếu có: `single` (mặc định) · `range` · `flash` · `afterVoucher` |
 | `minVnd`, `maxVnd`, `originalVnd` | int? | | — (khoảng giá: `amountVnd` = `minVnd`; giá gạch ngang) |
 | `confirmation` | string | | — `userConfirmed` (mặc định) · `unconfirmed` (giá đọc từ trang, chưa xác nhận) |
@@ -122,6 +122,23 @@ Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xu�
 | `message` | string | ✓ | 1–1000 ký tự |
 | `appVersion` | string | | `AppConstants.appVersion` |
 | `createdAt` | timestamp | | server time |
+
+## `sharedPrices/{productKey}/reports/{reportId}` – `SharedPriceReport` · ghi bởi `SharedPriceService` · **dữ liệu dùng chung, ẩn danh**
+
+"Giá người khác ghi" (đặc tả 8.3, quyết định 3). Nằm ngoài `users/{uid}`; mọi người đã đăng nhập đều đọc được, nên bản ghi **không chứa uid, tên hay link**.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| *(id)* | string | ✓ | = sha256(`uid|productKey|modelKey`) dạng hex thường; rules tự tính lại, nên mỗi tài khoản Google chỉ có **một bản ghi cho mỗi sản phẩm + phân loại** và không ghi được dưới id người khác |
+| `modelKey` | string | ✓ | `none` hoặc mã phân loại (chỉ chữ số) |
+| `priceType` | string | ✓ | `single` · `range` (cận dưới) · `flash`; không nhận `afterVoucher` |
+| `amountVnd` | int | ✓ | 1 … 999.999.999 |
+| `observedAt` | timestamp | ✓ | trong 3 ngày qua, không ở tương lai (± 5 phút) |
+| `source` | string | ✓ | `manual` · `extensionPage`; không nhận `demo`, `community` |
+
+`productKey` (id document cha) phải dạng `shopee:<shopId>:<itemId>`: lấy từ món extension lưu, hoặc tách từ link Shopee của món nhập tay (`ShopeeLink`, đặc tả 6.4). Chỉ tài khoản không ẩn danh được ghi (khách và extension liên kết chỉ đọc), để một người không thành nhiều người. Tắt "Góp giá của tôi" xoá bản ghi của món đang mở; bản ghi khác hết hiệu lực sau 3 ngày vì không còn được tính. Kiểm chứng bằng Firestore Emulator: 16/16 ca cho phép/từ chối đạt.
+
+Cách so sánh (`SharedPriceSummary`): chỉ cùng sản phẩm, cùng `modelKey`, cùng loại giá, ghi trong 3 ngày; bỏ bản ghi của chính mình; bỏ giá lệch > 30% so với trung vị; cần ≥ 2 người còn lại. Kết quả chỉ là gợi ý, người dùng phải xác nhận mới dùng làm giá của món.
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 

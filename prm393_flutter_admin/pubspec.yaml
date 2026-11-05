@@ -1,5 +1,5 @@
 name: prm393_flutter_admin
-description: "A new Flutter project."
+description: "Why I Buy web admin (Flutter Web on Firebase Hosting): sale calendar, review queue, dashboard and announcements."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,6 +30,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Lab 2 design tokens and components, shared models and Firestore services
+  why_i_buy_core:
+    path: ../packages/core
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -39,12 +45,15 @@ dependencies:
   firebase_core: ^5.1.0
   firebase_auth: ^7.0.1
   cloud_firestore: ^7.1.0
+  firebase_app_check: ^0.5.1
   http: ^1.3.0
   fl_chart: ^1.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Tests turn off runtime font downloads (test/flutter_test_config.dart)
+  google_fonts: ^9.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

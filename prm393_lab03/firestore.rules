@@ -2,11 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    // Role lives in users/{uid}.role ('user' | 'admin'); a missing field means 'user'.
+    // The first admin is set by hand in the Firebase console (see README).
+    function userDoc(uid) { return /databases/$(database)/documents/users/$(uid); }
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'admin@gmail.com';
+      return signedIn() && exists(userDoc(request.auth.uid))
+        && get(userDoc(request.auth.uid)).data.get('role', 'user') == 'admin';
     }
     function d() { return request.resource.data; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function validText(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
     function validTitle() { return d().title is string && d().title.size() > 0 && d().title.size() <= 60; }
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
     function validMoney(v) { return v is int && v > 0 && v <= 999999999; }
@@ -15,7 +22,23 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow write: if isOwner(uid);
+      // Nobody gives themselves a role: a new profile is 'user' (or has no role yet)
+      allow create: if isOwner(uid) && (!('role' in d()) || d().role == 'user');
+      // The owner edits everything but the role; an admin edits only the role, never their own
+      allow update: if (isOwner(uid) && !changed().hasAny(['role']))
+        || (isAdmin() && !isOwner(uid) && changed().hasOnly(['role']) && d().role in ['user', 'admin']);
+      allow delete: if isOwner(uid);
+
+      // Inbox: written by an admin when a sale suggestion is reviewed; the owner only marks it read
+      match /inbox/{messageId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isAdmin()
+          && d().keys().hasOnly(['type', 'title', 'body', 'suggestionId', 'createdAt', 'read'])
+          && d().type in ['suggestion_approved', 'suggestion_rejected']
+          && validText(d().title, 80) && validText(d().body, 500)
+          && d().suggestionId is string && d().read == false && d().createdAt == request.time;
+        allow update: if isOwner(uid) && changed().hasOnly(['read']) && d().read is bool;
+      }
 
       match /purchases/{id} {
         allow read, delete: if isOwner(uid);
@@ -92,10 +115,57 @@ service cloud.firestore {
       }
     }
 
-    match /admin_broadcasts/{id} {
-      allow create: if isAdmin();
-      allow read: if isAdmin();
-      allow update, delete: if false;
+    // Sale calendar managed on the web admin, read by the app. Never deleted: archived instead.
+    function validSaleEvent() {
+      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'source',
+                                 'suggestionId', 'createdAt', 'updatedAt', 'createdBy'])
+        && validText(d().name, 60) && d().date is timestamp
+        && d().type in ['double_day', 'mid_month', 'payday', 'other']
+        && d().confirmed is bool && d().status in ['published', 'archived']
+        && d().source in ['admin', 'suggestion'] && d().updatedAt == request.time;
+    }
+    match /saleEvents/{eventId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.status == 'published');
+      allow create: if isAdmin() && validSaleEvent() && d().status == 'published'
+        && d().createdAt == request.time && d().createdBy == request.auth.uid;
+      allow update: if isAdmin() && validSaleEvent()
+        && !changed().hasAny(['createdAt', 'createdBy', 'source', 'suggestionId']);
+      allow delete: if false;
+    }
+
+    // A user proposes a sale on the app (pending); an admin approves or rejects it with a reason
+    match /saleSuggestions/{suggestionId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && d().uid == request.auth.uid && d().status == 'pending'
+        && d().keys().hasOnly(['uid', 'name', 'date', 'note', 'status', 'createdAt'])
+        && validText(d().name, 60) && d().date is timestamp && optionalNote()
+        && d().createdAt == request.time;
+      allow update: if isAdmin() && resource.data.status == 'pending'
+        && changed().hasOnly(['status', 'reason', 'reviewedAt', 'reviewedBy', 'saleEventId'])
+        && d().reviewedBy == request.auth.uid && d().reviewedAt == request.time
+        && ((d().status == 'approved' && d().saleEventId is string
+              && existsAfter(/databases/$(database)/documents/saleEvents/$(d().saleEventId)))
+            || (d().status == 'rejected' && validText(d().reason, 200)));
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Announcements written on the web admin, shown in every app inbox
+    match /announcements/{announcementId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.status == 'published');
+      allow create: if isAdmin()
+        && d().keys().hasOnly(['title', 'body', 'status', 'createdAt', 'updatedAt', 'createdBy'])
+        && validText(d().title, 80) && validText(d().body, 1000) && d().status == 'published'
+        && d().createdAt == request.time && d().updatedAt == request.time
+        && d().createdBy == request.auth.uid;
+      allow update: if isAdmin() && changed().hasOnly(['status', 'updatedAt'])
+        && d().status in ['published', 'archived'] && d().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // Dashboard aggregation (count / sum) across every user's wishlist: admins only
+    match /{path=**}/wishlistItems/{itemId} {
+      allow list: if isAdmin();
     }
   }
 }

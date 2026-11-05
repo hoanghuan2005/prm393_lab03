@@ -1,56 +1,54 @@
-# Why I Buy - Cổng Quản Trị Hệ Thống (Flutter Web Admin)
+# Why I Buy · Web admin (Flutter Web)
 
-Dự án Cổng Quản Trị (Admin Portal) xây dựng bằng **100% Flutter Web** dành riêng cho đồ án môn **PRM393 - Lập trình Di động**.
+Trang quản trị của hệ thống Why I Buy, dành cho role **admin** (`users/{uid}.role == "admin"`). Không có server riêng: web đọc/ghi thẳng Firestore, quyền do `firestore.rules` quyết định.
 
----
+| Màn hình | Làm gì | Firestore |
+|---|---|---|
+| Đăng nhập | Google Sign-In (popup); tài khoản không phải admin bị đăng xuất kèm thông báo | `users/{uid}.role` |
+| Tổng quan | 7 truy vấn tổng hợp `count()` / `sum()` + biểu đồ trạng thái món | `users`, `saleSuggestions`, `/{path=**}/wishlistItems` |
+| Sự kiện sale (quản lý) | Danh sách, tìm kiếm (không dấu cũng được), thêm, sửa, lưu trữ / khôi phục; chặn hai sự kiện cùng ngày | `saleEvents` (app đọc) |
+| Duyệt đề xuất | Duyệt (batch: tạo sự kiện + đổi trạng thái + hộp thư) hoặc từ chối kèm lý do; app cập nhật ngay | `saleSuggestions`, `saleEvents`, `users/{uid}/inbox` |
+| Thông báo | Form đăng thông báo, hiện ngay trong hộp thư của app; lưu trữ / đăng lại | `announcements` |
 
-## 🌟 Tính Năng Quản Trị Đã Triển Khai
+Kiến trúc MVVM + Provider: `screens/` → `viewmodels/` → `services/` (và service dùng chung trong `../packages/core`) → Firebase SDK. Màn hình không gọi SDK. Token và component Lab 2 (`AppColors`, `AppTextStyles`, `AppDimens`, `AppButton`, `AppTextField`, `SectionCard`, `UiStateBuilder`…) lấy từ `packages/core`.
 
-1. **Dashboard & Chỉ số Thời Gian Thực**:
-   - **Hôm nay có bao nhiêu user mới** (`+48 users`).
-   - **Active users mở app hôm nay (DAU)** (`382 users`).
-   - **Tải app nhưng chưa dùng (Dormant Users)** (`176 users` - đã tải app nhưng 0 purchase, 0 wishlist).
-   - **Tổng chi tiêu đã theo dõi** và tỷ lệ phân bổ động cơ mua sắm (*Cảm xúc, Nhu cầu, Khuyến mãi, Thói quen, Đầu tư*).
-   - **Banner cảnh báo đỏ** lập tức xuất hiện khi có tính năng bị crash.
-
-2. **Quản Lý Người Dùng (Users Screen)**:
-   - Thanh tìm kiếm tức thì theo tên, email, thiết bị, UID.
-   - Thẻ lọc: *Tất cả*, *Mới hôm nay*, *Active hôm nay (DAU)*, *Tải chưa dùng (Dormant)*.
-   - Bảng Data Table chuẩn web hiển thị chi tiêu, số món cân nhắc, thiết bị, ngày hoạt động cuối.
-   - Nút **"Gửi Push"** chuyển sang giao diện gửi thông báo riêng cho từng tài khoản.
-
-3. **Gửi Thông Điệp Push Broadcast (Push Screen)**:
-   - Gửi thông báo đến từng nhóm người dùng, đặc biệt là nhóm **"Tải app nhưng chưa dùng"** để kích hoạt họ quay lại.
-   - 3 mẫu thông điệp 1-Click thông minh: *Kích hoạt user chưa dùng*, *Cân nhắc đêm khuya*, *Tổng kết cuối tuần*.
-   - Khung mô phỏng xem trước thông báo trên màn hình khóa điện thoại (Phone Mockup).
-   - Lưu trữ lịch sử thông báo đã phát vào collection `admin_broadcasts` trên Firestore.
-
-4. **Trợ Lý AI Gợi Ý Câu Hỏi Tự Vấn (AI Assistant Screen)**:
-   - Tích hợp Gemini Behavioral Finance Engine: gợi ý các câu hỏi tự vấn trước khi mua hàng, câu hỏi chi tiêu đêm khuya, câu hỏi chiêm nghiệm cuối tháng.
-   - **Custom AI Prompt**: Nhập bất kỳ món hàng nào (ví dụ: "Giày hiệu", "Trà sữa mỗi ngày"), AI sẽ tự động sinh câu hỏi tự vấn và thông điệp tương ứng.
-   - 1-Click chuyển gợi ý AI thành thông báo Push.
-
-5. **Cảnh Báo Sự Cố & Giám Sát Crash (Crash Monitor Screen)**:
-   - Liệt kê cụ thể **chức năng nào bị crash** (*ShareIntentService*, *PatternsScreen*, *FirebaseAiService*).
-   - Phân loại mức độ: *Fatal*, *Mức cao (High)*, *Cảnh báo (Warning)*.
-   - Thống kê số người dùng bị ảnh hưởng và số lần xuất hiện.
-   - Xem chi tiết **Crash Stack Trace** (file, dòng lỗi).
-   - Nút **"Đánh dấu Đã Sửa"** cập nhật trạng thái lỗi ngay lập tức.
-
-6. **Cơ Chế Dual-Mode (Firebase Live & Demo Mode)**:
-   - Nút bấm trên thanh Header cho phép chuyển đổi tức thì giữa:
-     - **Dữ liệu Demo**: Đầy đủ số liệu sinh động, đẹp mắt, phục vụ demo / chấm điểm ngay cả khi offline.
-     - **Firebase Live**: Kết nối trực tiếp vào Cloud Firestore của dự án `prm393-34056`.
-
----
-
-## 🚀 Cách Chạy Dự Án
-
-Mở Terminal và gõ các lệnh sau:
+## Chạy
 
 ```bash
-cd d:\Ky_8_FA26\PRM393\PRM393_LAB3\prm393_flutter_admin
+cd prm393_flutter_admin
+flutter pub get
 flutter run -d chrome
 ```
 
-Trình duyệt Google Chrome sẽ tự động mở lên với giao diện quản trị Flutter Web!
+Thử trên Firebase Emulator (không đụng dữ liệu thật; cổng Firestore 8085 để không trùng server push 8080):
+
+```bash
+firebase emulators:start --only auth,firestore
+cd prm393_flutter_admin && flutter run -d chrome --dart-define=USE_EMULATORS=true
+```
+
+(Lệnh `firebase` chạy ở thư mục gốc repo, nơi có `firebase.json`.)
+
+Kiểm thử: `flutter test` (ViewModel với service giả, và mọi trang được dựng ở 1366 / 800 / 400 px để bắt lỗi tràn layout).
+
+## Deploy (Firebase Hosting)
+
+URL: **https://prm393-34056.web.app**
+
+```bash
+cd prm393_flutter_admin && flutter build web --release && cd ..
+firebase deploy --only firestore:rules,firestore:indexes,hosting
+```
+
+`firebase.json` ở thư mục gốc repo trỏ tới `prm393_lab03/firestore.rules`, `prm393_lab03/firestore.indexes.json` và `prm393_flutter_admin/build/web` (Firebase CLI không cho thư mục `public` nằm ngoài thư mục chứa `firebase.json`). Trên Windows, nếu PowerShell chặn `firebase.ps1` thì dùng `firebase.cmd`.
+
+## Admin đầu tiên
+
+1. Mở web, đăng nhập Google một lần (sẽ bị từ chối, nhưng tài khoản được tạo trong Authentication).
+2. Firebase Console → Authentication → Users: sao chép UID.
+3. Firestore → `users` → document có ID là UID đó (tạo nếu chưa có) → thêm trường `role` (string) = `admin`.
+4. Đăng nhập lại. Từ đây admin có thể nâng người khác lên admin; không ai tự đổi role của mình.
+
+## Thông báo đẩy (tuỳ chọn)
+
+Thông báo đã tới app qua Firestore, không cần server. Nếu muốn gửi kèm FCM push qua `spring-boot-push` đang chạy trên máy: `flutter run -d chrome --dart-define=PUSH_API_BASE_URL=http://localhost:8080`. Server chỉ nhận yêu cầu của tài khoản có `role == "admin"`.

@@ -1,6 +1,8 @@
 # Mô hình dữ liệu Firestore
 
-Mọi dữ liệu nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/ghi (`firestore.rules`). Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+Dữ liệu cá nhân nằm dưới `users/{uid}`; chỉ chủ tài khoản đọc/ghi (`firestore.rules`). Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+
+Các collection dùng chung giữa app và web admin (`saleEvents`, `saleSuggestions`, `announcements`, `users/{uid}/inbox`) có model và service trong `packages/core` — xem mục [Vai trò và collection dùng chung](#vai-trò-và-collection-dùng-chung-app--web-admin).
 
 ## `users/{uid}` – `UserProfile` · ghi bởi `UserService`, `DemoDataService` (nhóm)
 
@@ -127,13 +129,36 @@ Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xu�
 
 Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`.
 
+## Vai trò và collection dùng chung (app + web admin)
+
+**Vai trò:** `users/{uid}.role` = `user` (mặc định, cũng là khi thiếu trường) hoặc `admin`. Admin đầu tiên được đặt bằng tay trong Firebase Console. Sau đó chỉ admin đổi role của người khác, không ai đổi role của chính mình (kể cả admin). App mobile dành cho `user`; web admin từ chối mọi tài khoản không phải `admin` và đăng xuất kèm thông báo.
+
+| Collection | Trường chính (kiểu) | Tạo | Đọc | Sửa | Xoá | Màn hình |
+|:---|:---|:---|:---|:---|:---|:---|
+| `users/{uid}` | `role` (string: user, admin), `displayName`, `email`, `createdAt`… | Chủ tài khoản (không có role hoặc role = user) | Chủ tài khoản; admin | Chủ tài khoản: mọi trường trừ `role`. Admin: chỉ `role` của người khác | Chủ tài khoản | Cá nhân (app); Tổng quan (web, đếm) |
+| `saleEvents/{id}` | `name` (≤ 60), `date` (timestamp, chỉ ngày), `type` (double_day, mid_month, payday, other), `confirmed` (bool), `status` (published, archived), `source` (admin, suggestion), `suggestionId`?, `createdBy`, `createdAt`, `updatedAt` | Admin (status = published) | Admin: tất cả; người đã đăng nhập: chỉ `published` | Admin (không đổi `createdAt`, `createdBy`, `source`, `suggestionId`) | — (lưu trữ thay vì xoá) | Lịch sale (app); Sự kiện sale (web) |
+| `saleSuggestions/{id}` | `uid`, `name` (≤ 60), `date`, `note`? (≤ 200), `status` (pending, approved, rejected), `reason` (≤ 200, bắt buộc khi rejected), `saleEventId`, `reviewedBy`, `reviewedAt`, `createdAt` | Người dùng, cho chính mình, status = pending | Chủ đề xuất; admin | Admin: pending → approved (kèm `saleEventId` của sự kiện tạo cùng batch) hoặc → rejected (kèm `reason`) | Chủ đề xuất khi còn pending | Đề xuất sale (app); Duyệt đề xuất (web) |
+| `announcements/{id}` | `title` (≤ 80), `body` (≤ 1000), `status` (published, archived), `createdBy`, `createdAt`, `updatedAt` | Admin (status = published) | Admin: tất cả; người đã đăng nhập: chỉ `published` | Admin: chỉ `status` | — | Hộp thư (app); Thông báo (web) |
+| `users/{uid}/inbox/{id}` | `type` (suggestion_approved, suggestion_rejected), `title` (≤ 80), `body` (≤ 500), `suggestionId`, `read` (bool), `createdAt` | Admin (khi duyệt/từ chối) | Chủ tài khoản | Chủ tài khoản: chỉ `read` | Chủ tài khoản | Hộp thư (app) |
+
+**Chuyển trạng thái `saleSuggestions`:** `pending` → `approved` | `rejected`, chỉ admin, chỉ một lần (rules yêu cầu trạng thái cũ là `pending`). Duyệt là một batch: tạo `saleEvents` (source = suggestion) + đổi đề xuất sang `approved` + ghi `inbox` cho người gửi. Từ chối là batch: đổi sang `rejected` kèm lý do + ghi `inbox`.
+
+**Dashboard (web):** chỉ admin được chạy truy vấn tổng hợp trên `/{path=**}/wishlistItems` (rule `list`). `count()` và `sum(latestPriceVnd)` chạy ở hai truy vấn riêng, vì khi có `sum()` Firestore dùng index `status + latestPriceVnd` nên món chưa có giá bị bỏ khỏi cả phép đếm.
+
 ## Index tổng hợp (`firestore.indexes.json`)
 
-| Collection | Trường |
-|:---|:---|
-| `wishlistItems` | `status` ↑, `createdAt` ↓ |
-| `decisions` | `itemId` ↑, `at` ↓ |
-| `purchases` | `budgetGroupId` ↑, `occurredAt` ↓ |
+| Collection | Phạm vi | Trường |
+|:---|:---|:---|
+| `wishlistItems` | collection | `status` ↑, `createdAt` ↓ |
+| `decisions` | collection | `itemId` ↑, `at` ↓ |
+| `purchases` | collection | `budgetGroupId` ↑, `occurredAt` ↓ |
+| `wishlistItems` | collection group | `status` ↑, `latestPriceVnd` ↑ (dashboard `sum`) |
+| `saleEvents` | collection | `status` ↑, `date` ↑ (app: sự kiện đang hiển thị) |
+| `saleSuggestions` | collection | `status` ↑, `createdAt` ↑ / ↓ (hàng chờ duyệt, đã xử lý) |
+| `saleSuggestions` | collection | `uid` ↑, `createdAt` ↓ (đề xuất của tôi) |
+| `announcements` | collection | `status` ↑, `createdAt` ↓ (hộp thư) |
+
+`fieldOverrides`: `wishlistItems.status` có thêm index một trường phạm vi collection group (dashboard `count`).
 
 Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems` theo `createdAt`, `budgetGroups` theo `order`) chỉ dùng index một trường; ba index trên được khai báo sẵn cho truy vấn lọc theo trạng thái / món / nhóm.
 

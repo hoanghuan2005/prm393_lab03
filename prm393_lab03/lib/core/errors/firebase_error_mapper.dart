@@ -5,7 +5,28 @@ import 'app_exception.dart';
 
 const _network = AppException(
   'network',
-  'Không có kết nối mạng. Kiểm tra mạng rồi bấm "Thử lại".',
+  'Không có kết nối mạng. Kiểm tra mạng rồi thử lại.',
+);
+
+/// The user closed or cancelled a sign-in flow; shared by every sign-in method
+const signInCancelled = AppException(
+  'sign-in-cancelled',
+  'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.',
+);
+
+/// Code kept in AppException.code so the sign-in screen can point to the other button
+const accountExistsCode = 'account-exists-with-different-credential';
+
+/// GitHub sign-in, but the email already has an account that signs in with Google
+const accountExistsUseGoogle = AppException(
+  accountExistsCode,
+  'Email này đã có tài khoản đăng nhập bằng Google. Hãy đăng nhập bằng Google, rồi vào Cá nhân → Tài khoản liên kết để thêm GitHub.',
+);
+
+/// Google sign-in, but the email already has an account that signs in with GitHub
+const accountExistsUseGithub = AppException(
+  accountExistsCode,
+  'Email này đã có tài khoản đăng nhập bằng GitHub. Hãy đăng nhập bằng GitHub, rồi vào Cá nhân → Tài khoản liên kết để thêm Google.',
 );
 
 /// Converts errors from Firebase Auth, Firestore and Firebase AI Logic into [AppException]
@@ -15,7 +36,11 @@ AppException mapFirebaseError(Object e) {
   if (e is FirebaseException) return _mapFirebase(e);
   if (e is FirebaseAIException) return _mapAi(e);
   if (_looksLikeNetwork(e.toString())) return _network;
-  return AppException.unknown;
+  return AppException(
+    AppException.unknown.code,
+    AppException.unknown.messageVi,
+    cause: e,
+  );
 }
 
 AppException _mapAuth(FirebaseAuthException e) {
@@ -30,16 +55,41 @@ AppException _mapAuth(FirebaseAuthException e) {
     case 'popup-closed-by-user':
     case 'cancelled-popup-request':
     case 'web-context-canceled':
+    case 'web-context-cancelled':
     case 'sign-in-cancelled':
     case 'canceled':
-      return const AppException(
-        'sign-in-cancelled',
-        'Bạn đã huỷ đăng nhập. Bấm "Thử lại" khi sẵn sàng.',
-      );
+      return signInCancelled;
     case 'popup-blocked':
       return const AppException(
         'popup-blocked',
         'Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép cửa sổ bật lên rồi bấm "Thử lại".',
+      );
+    case accountExistsCode:
+      return accountExistsUseGoogle;
+    case 'credential-already-in-use':
+      return const AppException(
+        'credential-already-in-use',
+        'Tài khoản này đã có dữ liệu Why I Buy riêng nên không liên kết được. Đăng nhập bằng tài khoản đó, xoá dữ liệu hoặc tài khoản, rồi thử lại.',
+      );
+    case 'provider-already-linked':
+      return const AppException(
+        'provider-already-linked',
+        'Cách đăng nhập này đã được liên kết.',
+      );
+    case 'email-already-in-use':
+      return const AppException(
+        'email-already-in-use',
+        'Email của tài khoản này đang thuộc một tài khoản Why I Buy khác.',
+      );
+    case 'requires-recent-login':
+      return const AppException(
+        'requires-recent-login',
+        'Vui lòng đăng xuất và đăng nhập lại rồi thử liên kết.',
+      );
+    case 'no-such-provider':
+      return const AppException(
+        'no-such-provider',
+        'Cách đăng nhập này chưa được liên kết.',
       );
     case 'too-many-requests':
       return const AppException(
@@ -50,6 +100,7 @@ AppException _mapAuth(FirebaseAuthException e) {
       return AppException(
         e.code,
         'Không đăng nhập được. Bấm "Thử lại" sau ít phút.',
+        cause: e,
       );
   }
 }
@@ -81,6 +132,7 @@ AppException _mapFirebase(FirebaseException e) {
       return AppException(
         e.code,
         'Đã có lỗi xảy ra. Bấm "Thử lại" sau ít phút.',
+        cause: e,
       );
   }
 }

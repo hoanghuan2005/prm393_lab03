@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 import '../models/pre_purchase_check.dart';
 import '../models/ui_state.dart';
@@ -57,7 +58,9 @@ class PrePurchaseViewModel extends ChangeNotifier {
           question: text.question,
         );
       } catch (e) {
-        debugPrint('PrePurchase AI unavailable, using template: $e');
+        debugPrint(
+          'PrePurchase AI unavailable, using template: ${describeError(e)}',
+        );
       }
     }
 

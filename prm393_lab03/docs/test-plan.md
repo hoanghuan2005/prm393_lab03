@@ -31,6 +31,24 @@
 
 ---
 
+## 2.1. Tài khoản liên kết
+
+Chạy tay trên Android, tài khoản test có cả Google và GitHub. Lý do và giới hạn: [`decisions.md`](decisions.md) – "Liên kết nhiều cách đăng nhập vào một tài khoản".
+
+| ID | Cách làm | Kỳ vọng | Kết quả | Ảnh |
+|:---:|:---|:---|:---:|:---:|
+| **ACC-01** | Đăng nhập Google, ghi 1 khoản mua ➔ Cá nhân ➔ Tài khoản liên kết ➔ Liên kết GitHub ➔ Đăng xuất ➔ Đăng nhập GitHub | Thấy đúng khoản mua đã ghi (cùng tài khoản) | | |
+| **ACC-02** | Tài khoản mới đăng nhập GitHub ➔ Liên kết Google ➔ Đăng xuất ➔ Đăng nhập Google ➔ Liên kết extension Chrome | Cùng dữ liệu với lúc đăng nhập GitHub; extension liên kết thành công và đồng bộ được | | |
+| **ACC-03** | Đăng nhập Khách, ghi 1 món wishlist ➔ Cá nhân ➔ Liên kết Google | Món vẫn còn; thẻ tài khoản ở Cá nhân không còn ghi "Khách", chú thích dành cho Khách biến mất | | |
+| **ACC-04** | Đang đăng nhập tài khoản A ➔ Liên kết một tài khoản GitHub đã từng dùng riêng trong app | Báo "Tài khoản này đã có dữ liệu Why I Buy riêng nên không liên kết được. …" (`credential-already-in-use`); dữ liệu của A không đổi, dòng GitHub vẫn "Liên kết" | | |
+| **ACC-05** | Đăng xuất ➔ Đăng nhập GitHub với email đã có tài khoản đăng nhập bằng Google | Hiện câu "Email này đã có tài khoản đăng nhập bằng Google. Hãy đăng nhập bằng Google, rồi vào Cá nhân → Tài khoản liên kết để thêm GitHub." ngay trên nút "Đăng nhập với Google" | | |
+| **ACC-06** | Tài khoản chỉ có một cách đăng nhập ➔ Cá nhân ➔ Tài khoản liên kết | Nút "Huỷ liên kết" bị khoá, có chú thích "Phải giữ ít nhất một cách đăng nhập" | | |
+| **ACC-07** | Tài khoản có cả Google và GitHub, extension đã liên kết ➔ Huỷ liên kết Google ➔ Xác nhận | Hộp xác nhận có câu "Extension Why I Buy? chỉ đăng nhập bằng Google. Huỷ liên kết sẽ ngắt đồng bộ với extension."; sau đó extension không đồng bộ được | | |
+| **ACC-08** | Cá nhân ➔ Bấm "Liên kết" ở dòng Google ➔ Đóng cửa sổ chọn tài khoản | Không đổi gì, không có thông báo lỗi; các nút bấm lại được | | |
+| **ACC-09** | Tài khoản tạo bằng GitHub (email Gmail X, chưa liên kết Google) ➔ Đăng xuất ➔ Đăng nhập Google bằng chính Gmail X ➔ Ghi lại thực tế: báo lỗi trùng email (câu L4) hay Firebase tự chuyển tài khoản sang Google; dữ liệu còn không; sau đó đăng nhập GitHub còn được không | | | |
+
+---
+
 ## 3. Kế hoạch phiên kiểm thử thăm dò (Exploratory Testing Session)
 * **Thời lượng**: 20 phút chạy tự do với Google ARTEMIS (Profile Pro).
 * **Mục tiêu**: Thử nghiệm các thao tác vuốt nhanh, xoay màn hình, mất kết nối mạng đột ngột khi đang tải dữ liệu để tìm kiếm lỗi giao diện (*Overflow pixels*) và lỗi rò rỉ trạng thái (*State leaks*).

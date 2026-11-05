@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../app/routes.dart';
 import '../core/constants/app_constants.dart';
+import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
@@ -12,6 +13,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
+import '../viewmodels/linked_accounts_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
@@ -72,59 +74,11 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Card
-            Container(
-              padding: const EdgeInsets.all(AppDimens.space16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: AppDimens.borderLarge,
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      authVm.displayName.isNotEmpty
-                          ? authVm.displayName[0].toUpperCase()
-                          : 'U',
-                      style: AppTextStyles.headlineMedium.copyWith(
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.space16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          authVm.displayName,
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          authVm.user?.email ?? 'Tài khoản ẩn danh / Khách',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          'UID: ${authVm.userId ?? "N/A"}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AccountHeaderCard(),
             const SizedBox(height: AppDimens.space16),
+
+            // Link Google / GitHub to this account (hidden where unsupported)
+            const LinkedAccountsSection(),
 
             // Theme Mode Switch Card
             SectionCard(
@@ -1009,5 +963,235 @@ class FirebaseDemoTools extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Account card at the top of Cá nhân. Never shows the full email or uid.
+class AccountHeaderCard extends StatelessWidget {
+  /// Defaults to [kDebugMode]; tests pass false to check a release build
+  final bool showDebugUid;
+
+  const AccountHeaderCard({super.key, this.showDebugUid = kDebugMode});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authVm = context.watch<AuthViewModel>();
+    // AuthService.displayName falls back to the email when there is no name
+    final rawName = authVm.displayName;
+    final name = rawName.contains('@') ? maskEmail(rawName) : rawName;
+    final uid = authVm.userId;
+    final linkedNames = context.select<LinkedAccountsViewModel, List<String>>(
+      (vm) => vm.linkedProviderNames,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primary,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: AppColors.onPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.space16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  _accountLabel(authVm, linkedNames),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (showDebugUid && uid != null)
+                  Text(
+                    'UID: ${uid.length > 6 ? uid.substring(0, 6) : uid}…',
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Based on isAnonymous, not on having an email: a GitHub account may hide it
+  static String _accountLabel(AuthViewModel authVm, List<String> linkedNames) {
+    if (authVm.isAnonymous) return 'Khách';
+    final email = authVm.user?.email;
+    if (email != null && email.isNotEmpty) return maskEmail(email);
+    // The name is already the title above; list the linked methods instead
+    if (linkedNames.isNotEmpty) return 'Đã liên kết: ${linkedNames.join(', ')}';
+    return 'Tài khoản đã liên kết';
+  }
+}
+
+/// "Tài khoản liên kết": Google and GitHub rows; one action at a time
+class LinkedAccountsSection extends StatelessWidget {
+  const LinkedAccountsSection({super.key});
+
+  static const extensionNote =
+      'Extension Why I Buy? chỉ đăng nhập bằng Google. Huỷ liên kết sẽ ngắt đồng bộ với extension.';
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<LinkedAccountsViewModel>();
+    if (!vm.isAvailable) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.space16),
+      child: SectionCard(
+        title: 'Tài khoản liên kết',
+        icon: Icons.link_rounded,
+        children: [
+          if (vm.isGuest)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppDimens.space8),
+              child: Text(
+                'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          for (final row in vm.rows) _LinkedAccountTile(row: row),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkedAccountTile extends StatelessWidget {
+  final LinkedAccountRow row;
+
+  const _LinkedAccountTile({required this.row});
+
+  bool get _isGoogle => row.providerId == LinkedAccountsViewModel.googleId;
+  String get _name => _isGoogle ? 'Google' : 'GitHub';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final vm = context.read<LinkedAccountsViewModel>();
+    // Every button waits while any row is busy: the ViewModel ignores a second action
+    final locked = context.select<LinkedAccountsViewModel, bool>(
+      (vm) => vm.isBusy,
+    );
+    final isLinked = row.state == LinkState.linked;
+    final showLastNote = isLinked && !row.canUnlink && !vm.isGuest;
+    final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        _isGoogle ? Icons.g_mobiledata : Icons.code_rounded,
+        color: theme.colorScheme.onSurface,
+      ),
+      title: Text(
+        _name,
+        style: AppTextStyles.titleMedium.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
+      subtitle: isLinked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.label == null
+                      ? 'Đã liên kết'
+                      : 'Đã liên kết · ${row.label}',
+                  style: subtitleStyle,
+                ),
+                if (showLastNote)
+                  Text(
+                    'Phải giữ ít nhất một cách đăng nhập',
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            )
+          : null,
+      trailing: switch (row.state) {
+        LinkState.busy => const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        LinkState.linked =>
+          vm.isGuest
+              ? null
+              : TextButton(
+                  onPressed: locked || !row.canUnlink
+                      ? null
+                      : () => _unlink(context, vm),
+                  child: const Text('Huỷ liên kết'),
+                ),
+        LinkState.notLinked => TextButton(
+          onPressed: locked ? null : () => _link(context, vm),
+          child: const Text('Liên kết'),
+        ),
+      },
+    );
+  }
+
+  Future<void> _link(BuildContext context, LinkedAccountsViewModel vm) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await (_isGoogle ? vm.linkGoogle() : vm.linkGithub());
+    _showResult(messenger, vm);
+  }
+
+  Future<void> _unlink(BuildContext context, LinkedAccountsViewModel vm) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Huỷ liên kết $_name?',
+      message: [
+        'Bạn sẽ không đăng nhập bằng $_name được nữa cho tới khi liên kết lại.',
+        if (_isGoogle) LinkedAccountsSection.extensionNote,
+      ].join('\n\n'),
+      confirmLabel: 'Huỷ liên kết',
+      isDanger: true,
+    );
+    if (!ok) return;
+    await vm.unlink(row.providerId);
+    _showResult(messenger, vm);
+  }
+
+  void _showResult(
+    ScaffoldMessengerState messenger,
+    LinkedAccountsViewModel vm,
+  ) {
+    final text = vm.errorMessage ?? vm.successMessage;
+    if (text == null) return;
+    messenger.showSnackBar(SnackBar(content: Text(text)));
+    vm.clearMessages();
   }
 }

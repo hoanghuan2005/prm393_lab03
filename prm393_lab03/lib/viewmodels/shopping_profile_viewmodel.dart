@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/errors/describe_error.dart';
 import '../models/owned_item.dart';
 import '../models/ui_state.dart';
 import '../services/crashlytics_service.dart';
@@ -62,10 +63,14 @@ class ShoppingProfileViewModel extends ChangeNotifier
             notifyListeners();
           },
         );
-    _tagsSubscription = service.watchTags(uid).listen((tags) {
-      _tags = tags;
-      notifyListeners();
-    }, onError: (Object e) => debugPrint('Shopping tags unavailable: $e'));
+    _tagsSubscription = service.watchTags(uid).listen(
+      (tags) {
+        _tags = tags;
+        notifyListeners();
+      },
+      onError: (Object e) =>
+          debugPrint('Shopping tags unavailable: ${describeError(e)}'),
+    );
   }
 
   void _retry(String uid) {

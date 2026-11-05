@@ -4,6 +4,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
 
 /// Service abstraction for Firebase Crashlytics
@@ -39,7 +40,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setUserIdentifier(userId);
     } catch (e) {
-      debugPrint('Crashlytics setUserId error: $e');
+      debugPrint('Crashlytics setUserId error: ${describeError(e)}');
     }
   }
 
@@ -49,7 +50,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setCustomKey(key, value);
     } catch (e) {
-      debugPrint('Crashlytics setCustomKey error: $e');
+      debugPrint('Crashlytics setCustomKey error: ${describeError(e)}');
     }
   }
 
@@ -61,9 +62,12 @@ class CrashlyticsService {
     Map<String, Object>? customKeys,
   }) async {
     if (!PlatformSupport.supportsCrashlytics) {
-      debugPrint(
-        'Handled error (Crashlytics unavailable on this platform): $error',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'Handled error (Crashlytics unavailable on this platform): '
+          '${describeError(error)}',
+        );
+      }
       return;
     }
     try {
@@ -80,7 +84,7 @@ class CrashlyticsService {
       );
       debugPrint('Crashlytics logged non-fatal error: $reason');
     } catch (e) {
-      debugPrint('Crashlytics recordHandledError error: $e');
+      debugPrint('Crashlytics recordHandledError error: ${describeError(e)}');
     }
   }
 

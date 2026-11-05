@@ -42,7 +42,7 @@
 
 | # | Dịch vụ | Package | Dùng cho |
 |:-:|:---|:---|:---|
-| 1 | Authentication | `firebase_auth` | Đăng nhập Google |
+| 1 | Authentication | `firebase_auth` | Đăng nhập Google, GitHub (liên kết được vào cùng một tài khoản), Khách |
 | 2 | Cloud Firestore | `cloud_firestore` | Dữ liệu người dùng theo `users/{uid}/...` |
 | 3 | Analytics | `firebase_analytics` | Sự kiện theo [`docs/analytics-plan.md`](docs/analytics-plan.md) (không PII) |
 | 4 | Crashlytics | `firebase_crashlytics` | Ghi nhận lỗi/crash |

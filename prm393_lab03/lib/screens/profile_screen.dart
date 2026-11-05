@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,10 +21,13 @@ import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
 import '../widgets/section_card.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen Profile & Firebase Demo Area
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onBackTap;
+
+  const ProfileScreen({super.key, this.onBackTap});
 
   @override
   Widget build(BuildContext context) {
@@ -37,34 +40,56 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Cá nhân & Cài đặt'),
-        actions: [
-          // Nút công tắc Dark Mode trên AppBar
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  size: 20,
-                  color: isDark ? AppColors.primary : AppColors.onPrimary,
-                ),
-                const SizedBox(width: 4),
-                Switch(
-                  value: isDark,
-                  activeThumbColor: AppColors.primary,
-                  activeTrackColor: theme.colorScheme.primaryContainer,
-                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
-                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-                  onChanged: (bool value) {
-                    themeVm.setThemeMode(
-                      value ? ThemeMode.dark : ThemeMode.light,
-                    );
-                  },
-                ),
-              ],
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Trang chủ',
+          onPressed: onBackTap,
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Cá nhân',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Đăng xuất',
+            onPressed: () async {
+              final isGuest = authVm.user?.isAnonymous ?? false;
+              final pending = PendingWrites.instance.count;
+              final ok = await ConfirmDialog.show(
+                context,
+                title: 'Đăng xuất?',
+                message: [
+                  if (isGuest) 'Bạn đang dùng tài khoản khách. Sau khi đăng xuất sẽ không đăng nhập lại được tài khoản này, dữ liệu của nó không còn xem được.',
+                  if (pending > 0)
+                    'Còn $pending thay đổi chưa đồng bộ do mất mạng; chúng chỉ được gửi lên khi bạn đăng nhập lại tài khoản này.',
+                  if (!isGuest && pending == 0) 'Dữ liệu vẫn lưu trên tài khoản, đăng nhập lại để xem tiếp.',
+                ].join('\n\n'),
+                confirmLabel: 'Đăng xuất',
+                isDanger: isGuest || pending > 0,
+              );
+              if (ok) await authVm.signOut();
+            },
           ),
         ],
       ),
@@ -89,98 +114,33 @@ class ProfileScreen extends StatelessWidget {
               title: 'Giao diện ứng dụng',
               icon: Icons.palette_outlined,
               children: [
-                SwitchListTile(
+                ListTile(
                   contentPadding: EdgeInsets.zero,
-                  secondary: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2C2706)
-                          : AppColors.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isDark
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                      color: isDark ? AppColors.primary : AppColors.onPrimary,
-                      size: 20,
-                    ),
+                  leading: Icon(
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                    color: AppColors.primary,
                   ),
-                  title: Text(
-                    'Chế độ tối (Dark Mode)',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface,
+                  title: const Text('Chế độ tối'),
+                  trailing: Switch(
+                    value: isDark,
+                    activeTrackColor: AppColors.primary,
+                    inactiveTrackColor:
+                        theme.colorScheme.surfaceContainerHighest,
+                    activeThumbColor: AppColors.onPrimary,
+                    inactiveThumbColor: AppColors.primary,
+                    thumbIcon: WidgetStateProperty.resolveWith(
+                      (states) => Icon(
+                        states.contains(WidgetState.selected)
+                            ? Icons.dark_mode_rounded
+                            : Icons.light_mode_rounded,
+                        color: states.contains(WidgetState.selected)
+                            ? AppColors.primary
+                            : AppColors.onPrimary,
+                        size: 16,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    isDark
-                        ? 'Đang bật nền tối cao cấp, dịu mắt'
-                        : 'Đang bật nền sáng chuẩn',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  value: isDark,
-                  activeThumbColor: AppColors.primary,
-                  activeTrackColor: theme.colorScheme.primaryContainer,
-                  inactiveThumbColor: theme.colorScheme.onSurfaceVariant,
-                  inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-                  onChanged: (bool value) {
-                    themeVm.setThemeMode(
+                    onChanged: (value) => themeVm.setThemeMode(
                       value ? ThemeMode.dark : ThemeMode.light,
-                    );
-                  },
-                ),
-                Divider(color: theme.dividerColor, height: 20),
-                // Lựa chọn tự động theo hệ thống
-                InkWell(
-                  onTap: () {
-                    themeVm.setThemeMode(
-                      themeVm.themeMode == ThemeMode.system
-                          ? (isDark ? ThemeMode.dark : ThemeMode.light)
-                          : ThemeMode.system,
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.brightness_auto_rounded,
-                          size: 18,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Tự động theo thiết bị',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Checkbox(
-                          value: themeVm.themeMode == ThemeMode.system,
-                          activeColor: AppColors.primary,
-                          checkColor: AppColors.onPrimary,
-                          onChanged: (bool? checked) {
-                            if (checked == true) {
-                              themeVm.setThemeMode(ThemeMode.system);
-                            } else {
-                              themeVm.setThemeMode(
-                                isDark ? ThemeMode.dark : ThemeMode.light,
-                              );
-                            }
-                          },
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -980,7 +940,6 @@ class AccountHeaderCard extends StatelessWidget {
     // AuthService.displayName falls back to the email when there is no name
     final rawName = authVm.displayName;
     final name = rawName.contains('@') ? maskEmail(rawName) : rawName;
-    final uid = authVm.userId;
     final linkedNames = context.select<LinkedAccountsViewModel, List<String>>(
       (vm) => vm.linkedProviderNames,
     );
@@ -1021,16 +980,6 @@ class AccountHeaderCard extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                if (showDebugUid && uid != null)
-                  Text(
-                    'UID: ${uid.length > 6 ? uid.substring(0, 6) : uid}…',
-                    style: AppTextStyles.caption.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.7,
-                      ),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
               ],
             ),
           ),
@@ -1102,7 +1051,6 @@ class _LinkedAccountTile extends StatelessWidget {
       (vm) => vm.isBusy,
     );
     final isLinked = row.state == LinkState.linked;
-    final showLastNote = isLinked && !row.canUnlink && !vm.isGuest;
     final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
@@ -1129,13 +1077,6 @@ class _LinkedAccountTile extends StatelessWidget {
                       : 'Đã liên kết · ${row.label}',
                   style: subtitleStyle,
                 ),
-                if (showLastNote)
-                  Text(
-                    'Phải giữ ít nhất một cách đăng nhập',
-                    style: AppTextStyles.caption.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
               ],
             )
           : null,

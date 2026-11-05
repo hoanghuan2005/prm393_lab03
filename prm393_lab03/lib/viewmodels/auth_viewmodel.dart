@@ -93,7 +93,15 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
     notifyListeners();
     unawaited(analyticsService.setUserId(user.uid));
     unawaited(crashlyticsService.setUserId(user.uid));
-    await _prepareUserData(user);
+    try {
+      await _prepareUserData(user).timeout(const Duration(seconds: 15));
+    } catch (e, stack) {
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'User data preparation timed out',
+      );
+    }
 
     if (event != _authEvent) return;
     _status = AuthStatus.authenticated;

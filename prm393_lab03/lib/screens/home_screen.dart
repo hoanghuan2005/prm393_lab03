@@ -50,10 +50,7 @@ class HomeScreen extends StatelessWidget {
         titleSpacing: 0,
         title: Row(
           children: [
-            WhyIBuyLogo(
-              size: 26,
-              color: isDark ? AppColors.primary : AppColors.onPrimary,
-            ),
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
             const SizedBox(width: 4),
             Text(
               'Trang chủ',
@@ -65,9 +62,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          AppHeaderActions(onProfileTap: () => onNavigateTab?.call(4)),
-        ],
+        actions: [AppHeaderActions(onProfileTap: () => onNavigateTab?.call(4))],
       ),
       body:
           stateView([
@@ -145,7 +140,6 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 
   /// Stacked bar of the month's motives, widest first, in each motive's own color
   List<Widget> _motiveSegments(

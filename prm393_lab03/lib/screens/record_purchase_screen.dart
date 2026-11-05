@@ -17,6 +17,7 @@ import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
@@ -69,7 +70,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   @override
   void initState() {
     super.initState();
-    _sessionUid = context.read<PurchaseViewModel>().uid;
+    _sessionUid = context.read<AuthViewModel>().userId;
     final purchase = widget.existingPurchase;
     final item = widget.wishlistItem;
     final amount =
@@ -469,19 +470,16 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               decoration: const InputDecoration(labelText: 'Nhóm ngân sách'),
               items: [
                 for (final group in groups)
-                  AppDropdownItem(
-                    value: group.id,
-                    label: group.name,
-                  ),
+                  AppDropdownItem(value: group.id, label: group.name),
               ],
               onChanged: enabled
-                    ? (value) {
-                        setState(() {
-                          _budgetGroupId = value;
-                          _groupChosen = true;
-                        });
+                  ? (value) {
+                      setState(() {
+                        _budgetGroupId = value;
+                        _groupChosen = true;
+                      });
                     }
-                    : null,
+                  : null,
             ),
           ),
           // A new manual purchase starts on "Khác"; edits and wishlist purchases keep their group

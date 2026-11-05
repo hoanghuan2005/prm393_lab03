@@ -141,7 +141,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onProfileTap: () => _navigateToTab(4),
         onBackTap: () => _navigateToTab(0),
       ),
-      const ProfileScreen(),
+      ProfileScreen(onBackTap: () => _navigateToTab(0)),
     ];
 
     // Android back on another tab returns to Trang chủ instead of closing the app
@@ -225,27 +225,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ? const Color(0xFF64748B)
         : AppColors.navInactive;
 
-    return InkWell(
-      onTap: () => _navigateToTab(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isSelected ? activeIcon : icon,
-            size: 24,
-            color: isSelected ? selectedColor : unselectedColor,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+    return Expanded(
+      child: InkWell(
+        onTap: () => _navigateToTab(index),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 24,
               color: isSelected ? selectedColor : unselectedColor,
             ),
-          ),
-        ],
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? selectedColor : unselectedColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

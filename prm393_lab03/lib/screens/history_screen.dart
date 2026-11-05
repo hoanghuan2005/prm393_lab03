@@ -58,10 +58,7 @@ class HistoryScreen extends StatelessWidget {
         titleSpacing: 0,
         title: Row(
           children: [
-            WhyIBuyLogo(
-              size: 26,
-              color: isDark ? AppColors.primary : AppColors.onPrimary,
-            ),
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
             const SizedBox(width: 4),
             Text(
               'Lịch sử',
@@ -73,9 +70,7 @@ class HistoryScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          AppHeaderActions(onProfileTap: onProfileTap),
-        ],
+        actions: [AppHeaderActions(onProfileTap: onProfileTap)],
       ),
       body:
           stateView([

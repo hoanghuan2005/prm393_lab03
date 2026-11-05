@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
@@ -9,6 +9,8 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
 
 enum AuthMode { login, signup, forgotPassword }
+
+enum _AuthAction { email, google, github, guest }
 
 /// Email authentication plus the existing Google, GitHub and guest options.
 class LoginScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
   late final TextEditingController _confirmPasswordController;
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
+  _AuthAction? _loadingAction;
 
   bool get isSignup => widget.mode == AuthMode.signup;
   bool get isForgotPassword => widget.mode == AuthMode.forgotPassword;
@@ -54,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authVm = context.watch<AuthViewModel>();
-    final isLoading = authVm.status == AuthStatus.loading;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -201,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         : isSignup
                         ? Icons.person_add_alt_1_rounded
                         : Icons.login_rounded,
-                    isLoading: isLoading,
+                    isLoading: _loadingAction == _AuthAction.email,
                     onPressed: _submit,
                   ),
                   const SizedBox(height: 16),
@@ -222,24 +224,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       AppButton(
                         title: 'Đăng nhập với Google',
                         icon: Icons.g_mobiledata,
-                        isLoading: isLoading,
-                        onPressed: () => authVm.signInWithGoogle(),
+                        isLoading: _loadingAction == _AuthAction.google,
+                        onPressed: () => _runAuthAction(
+                          _AuthAction.google,
+                          authVm.signInWithGoogle,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       AppButton(
                         title: 'Đăng nhập với GitHub',
                         icon: Icons.code_rounded,
                         variant: AppButtonVariant.secondary,
-                        isLoading: isLoading,
-                        onPressed: () => authVm.signInWithGithub(),
+                        isLoading: _loadingAction == _AuthAction.github,
+                        onPressed: () => _runAuthAction(
+                          _AuthAction.github,
+                          authVm.signInWithGithub,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       AppButton(
                         title: 'Dùng thử chế độ Khách',
                         icon: Icons.person_outline_rounded,
                         variant: AppButtonVariant.secondary,
-                        isLoading: isLoading,
-                        onPressed: () => authVm.signInAnonymously(),
+                        isLoading: _loadingAction == _AuthAction.guest,
+                        onPressed: () => _runAuthAction(
+                          _AuthAction.guest,
+                          authVm.signInAnonymously,
+                        ),
                       ),
                     ],
                   ],
@@ -277,10 +288,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () => Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.onboarding,
-        ),
+        onPressed: () =>
+            Navigator.pushReplacementNamed(context, AppRoutes.onboarding),
         icon: const Icon(Icons.chevron_left_rounded, size: 24),
         label: const Text('Quay lại'),
         style: TextButton.styleFrom(
@@ -446,31 +455,45 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final authVm = context.read<AuthViewModel>();
-    bool success;
-
-    if (isForgotPassword) {
-      success = await authVm.sendPasswordReset(_emailController.text);
-    } else if (isSignup) {
-      success = await authVm.createAccount(
-        displayName: _nameController.text,
+    await _runAuthAction(_AuthAction.email, () async {
+      if (isForgotPassword) {
+        return authVm.sendPasswordReset(_emailController.text);
+      }
+      if (isSignup) {
+        return authVm.createAccount(
+          displayName: _nameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+      }
+      return authVm.signInWithEmail(
         email: _emailController.text,
         password: _passwordController.text,
       );
-    } else {
-      success = await authVm.signInWithEmail(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-    }
+    });
+  }
 
-    if (!mounted || !success) return;
-    if (isForgotPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.'),
-        ),
-      );
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+  Future<void> _runAuthAction(
+    _AuthAction action,
+    Future<bool> Function() operation,
+  ) async {
+    if (_loadingAction != null) return;
+    setState(() => _loadingAction = action);
+    try {
+      final success = await operation();
+      if (!mounted || !success) return;
+      if (isForgotPassword && action == _AuthAction.email) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.',
+            ),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
+    } finally {
+      if (mounted) setState(() => _loadingAction = null);
     }
   }
 }

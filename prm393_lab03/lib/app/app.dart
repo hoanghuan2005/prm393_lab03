@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/notification_target.dart';
+import '../screens/email_verification_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_navigation_screen.dart';
 import '../services/analytics_service.dart';
@@ -226,6 +227,9 @@ class AuthGate extends StatelessWidget {
           ),
         );
       case AuthStatus.authenticated:
+        if (authVm.requiresEmailVerification) {
+          return const EmailVerificationScreen();
+        }
         return const MainNavigationScreen();
       case AuthStatus.unauthenticated:
       case AuthStatus.error:

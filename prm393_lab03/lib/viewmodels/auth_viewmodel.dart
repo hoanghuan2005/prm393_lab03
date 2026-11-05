@@ -51,6 +51,11 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
 
   /// Guest account; false once a guest links Google / GitHub
   bool get isAnonymous => _currentUser?.isAnonymous ?? false;
+  bool get requiresEmailVerification =>
+      _currentUser != null &&
+      !isAnonymous &&
+      _currentUser!.providerData.any((info) => info.providerId == 'password') &&
+      !_currentUser!.emailVerified;
   String? get errorMessage => _errorMessage;
 
   /// 'google.com' / 'github.com' after account-exists-with-different-credential:
@@ -61,6 +66,38 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   /// uid handed to every user-data ViewModel; null until the user documents are ready
   String? get userId =>
       _status == AuthStatus.authenticated ? _currentUser?.uid : null;
+
+  Future<bool> reloadEmailVerification() async {
+    try {
+      final user = await authService.reloadCurrentUser();
+      if (user == null) return false;
+      _currentUser = user;
+      notifyListeners();
+      return user.emailVerified;
+    } catch (e, stack) {
+      _errorMessage = 'Không thể kiểm tra trạng thái email xác minh.';
+      await crashlyticsService.recordHandledError(
+        e,
+        stack,
+        reason: 'Email verification reload error',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resendEmailVerification() async {
+    try {
+      await authService.sendEmailVerification();
+      return true;
+    } on FirebaseAuthException catch (e, stack) {
+      _setAuthError(e, stack, reason: 'Email verification resend error');
+      return false;
+    } catch (e, stack) {
+      _setUnexpectedAuthError(e, stack, 'Không thể gửi lại email xác minh.');
+      return false;
+    }
+  }
 
   void _init() {
     // userChanges emits the current user right away (AuthGate shows loading until then),
@@ -93,11 +130,18 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
     notifyListeners();
     unawaited(analyticsService.setUserId(user.uid));
     unawaited(crashlyticsService.setUserId(user.uid));
-    await _prepareUserData(user);
-
     if (event != _authEvent) return;
     _status = AuthStatus.authenticated;
     notifyListeners();
+    unawaited(
+      _prepareUserData(user).catchError((Object error, StackTrace stack) async {
+        await crashlyticsService.recordHandledError(
+          error,
+          stack,
+          reason: 'User data preparation failed',
+        );
+      }),
+    );
   }
 
   /// users/{uid} + default budget groups. Failures are logged and never block sign-in.

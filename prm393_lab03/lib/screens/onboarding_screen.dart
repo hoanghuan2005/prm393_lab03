@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
-import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 01: Onboarding / Landing Redesign for "Why I Buy"
 class OnboardingScreen extends StatefulWidget {
@@ -53,8 +53,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -62,38 +60,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             // Top Bar: Logo & Skip Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDark
-                                ? const [Color(0xFFFFD166), Color(0xFFF59E0B)]
-                                : const [Color(0xFFFFC928), Color(0xFFF59E0B)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.psychology_alt_rounded,
-                          size: 22,
-                          color: AppColors.onPrimary,
-                        ),
-                      ),
+                      const WhyIBuyLogo(size: 36, color: AppColors.onPrimary),
                       const SizedBox(width: 8),
                       Text(
                         'Why I Buy?',
@@ -186,14 +162,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Icon(
                         Icons.shield_outlined,
                         size: 14,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.7,
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Dữ liệu an toàn • Không phán xét chi tiêu',
                         style: TextStyle(
                           fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],
@@ -221,114 +201,96 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           // Visual illustration card
           Container(
-            height: 174,
+            height: 220,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
                     ? const [Color(0xFF3B3212), Color(0xFF1F2937)]
-                    : const [Color(0xFFFFF8D8), Color(0xFFF1F6F2)],
+                    : const [Color(0xFFFFF3B0), Color(0xFFF1F6F2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: theme.dividerColor),
+              border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.55),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7),
                 ),
               ],
             ),
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Soft glow circle in the center
-                Container(
-                  width: 122,
-                  height: 122,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.16),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                // Center Icon Logo
-                Container(
-                  width: 74,
-                  height: 74,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD166), AppColors.primary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 136,
+                      height: 136,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF344A3D) : Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.2 : 0.1,
+                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.psychology_alt_rounded,
-                    size: 40,
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-
-                // Motive Badge 1: Nhu cầu (Top Left)
-                Positioned(
-                  top: 24,
-                  left: 20,
-                  child: _buildFloatingBadge(
-                    icon: BuyingMotive.need.icon,
-                    label: BuyingMotive.need.label,
-                    bgColor: isDark ? const Color(0xFF1E1E38) : AppColors.motiveNeedBg,
-                    fgColor: isDark ? const Color(0xFF818CF8) : AppColors.motiveNeed,
-                  ),
-                ),
-
-                // Motive Badge 2: Cảm xúc (Top Right)
-                Positioned(
-                  top: 24,
-                  right: 20,
-                  child: _buildFloatingBadge(
-                    icon: BuyingMotive.emotion.icon,
-                    label: BuyingMotive.emotion.label,
-                    bgColor: isDark ? const Color(0xFF2E1E38) : AppColors.motiveEmotionBg,
-                    fgColor: isDark ? const Color(0xFFA78BFA) : AppColors.motiveEmotion,
-                  ),
-                ),
-
-                // Motive Badge 3: Khuyến mãi (Bottom Left)
-                Positioned(
-                  bottom: 24,
-                  left: 20,
-                  child: _buildFloatingBadge(
-                    icon: BuyingMotive.sale.icon,
-                    label: BuyingMotive.sale.label,
-                    bgColor: isDark ? const Color(0xFF382D1E) : AppColors.motiveSaleBg,
-                    fgColor: isDark ? const Color(0xFFFBBF24) : AppColors.motiveSale,
-                  ),
-                ),
-
-                // Motive Badge 4: Tiện lợi (Bottom Right)
-                Positioned(
-                  bottom: 24,
-                  right: 20,
-                  child: _buildFloatingBadge(
-                    icon: BuyingMotive.convenience.icon,
-                    label: BuyingMotive.convenience.label,
-                    bgColor: isDark ? const Color(0xFF1E3834) : AppColors.motiveConvenienceBg,
-                    fgColor: isDark ? const Color(0xFF2DD4BF) : AppColors.motiveConvenience,
-                  ),
+                      child: Center(
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF263B31)
+                                : const Color(0xFFE8F1ED),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.spa_rounded,
+                            size: 52,
+                            color: isDark
+                                ? AppColors.primary
+                                : AppColors.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -8,
+                      bottom: -2,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.primary
+                              : const Color(0xFF263B1E),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF344A3D)
+                                : const Color(0xFFE6F1EC),
+                            width: 3,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.self_improvement_rounded,
+                          size: 20,
+                          color: isDark ? AppColors.onPrimary : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -340,7 +302,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
+              color: isDark
+                  ? const Color(0xFF2C2706)
+                  : AppColors.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -416,7 +380,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1B2535) : Colors.white,
         borderRadius: BorderRadius.circular(13),
@@ -512,9 +476,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 // Wishlist sample item
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252D3C) : AppColors.surfaceVariant,
+                    color: isDark
+                        ? const Color(0xFF252D3C)
+                        : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -626,7 +595,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                color: isDark
+                    ? const Color(0xFF93C5FD)
+                    : const Color(0xFF1D4ED8),
               ),
             ),
           ),
@@ -704,7 +675,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Icon(
                           Icons.account_balance_wallet_outlined,
                           size: 18,
-                          color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                          color: isDark
+                              ? AppColors.primary
+                              : AppColors.accentNeutral,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -801,7 +774,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF064E3B) : AppColors.successContainer,
+              color: isDark
+                  ? const Color(0xFF064E3B)
+                  : AppColors.successContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -810,7 +785,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: isDark ? const Color(0xFF6EE7B7) : AppColors.onSuccessContainer,
+                color: isDark
+                    ? const Color(0xFF6EE7B7)
+                    : AppColors.onSuccessContainer,
               ),
             ),
           ),
@@ -840,37 +817,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper widget for decorative badge
-  Widget _buildFloatingBadge({
-    required IconData icon,
-    required String label,
-    required Color bgColor,
-    required Color fgColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: fgColor),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: fgColor,
-            ),
           ),
         ],
       ),

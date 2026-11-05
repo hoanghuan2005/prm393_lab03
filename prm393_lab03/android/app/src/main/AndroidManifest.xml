@@ -7,7 +7,8 @@
     <application
         android:label="Why I Buy"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/brand_logo"
+        android:roundIcon="@drawable/brand_logo">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -104,10 +104,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            WhyIBuyLogo(
-              size: 26,
-              color: isDark ? AppColors.primary : AppColors.onPrimary,
-            ),
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
             const SizedBox(width: 4),
             Text(
               'Mô hình',
@@ -119,9 +116,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
             ),
           ],
         ),
-        actions: [
-          AppHeaderActions(onProfileTap: widget.onProfileTap),
-        ],
+        actions: [AppHeaderActions(onProfileTap: widget.onProfileTap)],
       ),
       body:
           stateView([
@@ -136,9 +131,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF252D3C)
-                        : AppColors.divider,
+                    color: isDark ? const Color(0xFF252D3C) : AppColors.divider,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -295,7 +288,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             '${stats.count} khoản đã ghi nhận',
                             style: TextStyle(
                               fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -360,7 +354,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         final sum = m.totalVnd;
                         final count = m.count;
                         final percent = stats.shareOf(sum);
-                        final motivePalette = MotiveColors.of(context).paletteOf(motive);
+                        final motivePalette = MotiveColors.of(context)
+                            .paletteOf(motive);
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(
@@ -399,7 +394,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
-                                                color: theme.colorScheme.onSurface,
+                                                color:
+                                                    theme.colorScheme.onSurface,
                                               ),
                                             ),
                                             Text(
@@ -423,7 +419,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                               '$count khoản chi',
                                               style: TextStyle(
                                                 fontSize: 12,
-                                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.7),
                                               ),
                                             ),
                                             Text(
@@ -431,7 +430,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
-                                                color: theme.colorScheme.onSurfaceVariant,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                             ),
                                           ],

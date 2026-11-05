@@ -15,22 +15,22 @@ class AppHeaderActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final settingsVm = context.watch<SettingsViewModel>();
-    final wishlistVm = context.watch<WishlistViewModel>();
+    // Always provided in the app; a screen tested on its own may leave them out
+    final settingsVm = context.watch<SettingsViewModel?>();
+    final wishlistVm = context.watch<WishlistViewModel?>();
     final iconColor = isDark ? AppColors.primary : AppColors.onPrimary;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _NotificationButton(
-          color: iconColor,
-          settingsVm: settingsVm,
-        ),
-        _WishlistButton(
-          color: iconColor,
-          count: wishlistVm.consideringCount,
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.wishlist),
-        ),
+        if (settingsVm != null)
+          _NotificationButton(color: iconColor, settingsVm: settingsVm),
+        if (wishlistVm != null)
+          _WishlistButton(
+            color: iconColor,
+            count: wishlistVm.consideringCount,
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.wishlist),
+          ),
         Padding(
           padding: const EdgeInsets.only(right: 12, left: 2),
           child: InkWell(

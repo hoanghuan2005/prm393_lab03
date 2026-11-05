@@ -7,6 +7,7 @@ import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/budget_group.dart';
 import '../models/item_suggestion.dart';
+import '../services/analytics_events.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -124,7 +125,14 @@ class _BudgetGroupSuggestionState
             label: Text('Gợi ý nhóm: ${group.name}'),
             tooltip: 'Chạm để chọn nhóm này',
             onPressed: widget.enabled
-                ? () => widget.onApply(suggestion.groupId)
+                ? () {
+                    if (suggestion.fromAi) {
+                      context
+                          .read<ItemSuggestionViewModel?>()
+                          ?.aiResultAccepted(AiFeatures.group);
+                    }
+                    widget.onApply(suggestion.groupId);
+                  }
                 : null,
           ),
           if (suggestion.fromAi) const InsightSourceChip(fromAi: true),
@@ -239,7 +247,14 @@ class _DuplicateHintState
             if (widget.onConfirmDuplicate case final confirm?)
               TextButton.icon(
                 key: const ValueKey('confirm-duplicate'),
-                onPressed: confirm,
+                onPressed: () {
+                  if (matches.any((m) => m.fromAi)) {
+                    context.read<ItemSuggestionViewModel?>()?.aiResultAccepted(
+                      AiFeatures.duplicate,
+                    );
+                  }
+                  confirm();
+                },
                 icon: const Icon(Icons.done_all_rounded, size: 18),
                 label: const Text('Món này trùng với đồ tôi đã có'),
               ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../core/errors/describe_error.dart';
@@ -7,6 +9,7 @@ import '../models/price_offer.dart';
 import '../models/ui_state.dart';
 import '../services/ai_photo_search_service.dart';
 import '../services/ai_price_search_service.dart';
+import '../services/analytics_service.dart';
 import '../services/preferences_service.dart';
 import '../services/remote_config_service.dart';
 
@@ -22,8 +25,12 @@ class PhotoSearchViewModel extends ChangeNotifier {
   final bool Function() _platformSupportsAi;
   final bool Function() _platformSupportsPriceSearch;
 
+  /// Logs ai_result_accepted; optional so tests can leave it out
+  final AppAnalyticsService? analyticsService;
+
   PhotoSearchViewModel({
     required this.aiService,
+    this.analyticsService,
     this.priceSearchService,
     required this.remoteConfigService,
     required this.preferencesService,
@@ -36,6 +43,12 @@ class PhotoSearchViewModel extends ChangeNotifier {
            platformSupportsPriceSearch ??
            (() =>
                PlatformSupport.isMobile && PlatformSupport.supportsFirebaseAi);
+
+  /// The user took an AI result into their data ([AiFeatures])
+  void aiResultAccepted(String feature) => unawaited(
+    analyticsService?.logAiResultAccepted(feature: feature) ??
+        Future<void>.value(),
+  );
 
   static const String aiOffMessage =
       'Tính năng AI đang tắt hoặc chưa hỗ trợ trên thiết bị này. '

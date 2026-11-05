@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'services/admin_service.dart';
 import 'theme/admin_colors.dart';
 import 'screens/admin_main_layout.dart';
+
+/// Same reCAPTCHA Enterprise site key as the mobile app's web build (public by design)
+const _recaptchaSiteKey = '6LfqQQEuAAAAABRHj6KthKFR3Zf7zqV3u3z4h4YO';
+
+/// Local runs: `flutter run -d chrome --dart-define=APP_CHECK_DEBUG_TOKEN=<registered token>`.
+/// Never commit the token.
+const _appCheckDebugToken = String.fromEnvironment('APP_CHECK_DEBUG_TOKEN');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +24,17 @@ void main() async {
     );
   } catch (e) {
     debugPrint('Firebase init web fallback: $e');
+  }
+
+  // Firebase AI Logic only answers requests attested by App Check
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerWeb: _appCheckDebugToken.isEmpty
+          ? ReCaptchaEnterpriseProvider(_recaptchaSiteKey)
+          : WebDebugProvider(debugToken: _appCheckDebugToken),
+    );
+  } catch (e) {
+    debugPrint('App Check not active, AI assistant will show templates: $e');
   }
 
   runApp(

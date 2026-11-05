@@ -12,7 +12,8 @@
 3. **Không gửi thông tin định danh (No PII).** Không gửi email, tên hiển thị, tên món, nội dung tìm kiếm, ghi chú, link sản phẩm. User ID của Analytics và Crashlytics là Firebase `uid`; xoá khi đăng xuất.
 4. **Không gửi số tiền chính xác.** Tiền được gửi dưới dạng `amount_bucket`: `lt_100k` (< 100.000 ₫) · `100k_500k` (100.000–500.000 ₫) · `gt_500k` (> 500.000 ₫). Món chưa có giá: `has_price = 0`, không có `amount_bucket`.
 5. **Mỗi event trả lời một câu hỏi sản phẩm.** Câu hỏi được viết trung tính (không coi "Bỏ qua" là thành công, không nói "tiết kiệm").
-6. Màn hình (`screen_view`) được ghi tự động bởi `FirebaseAnalyticsObserver` theo tên route trong `AppRoutes`.
+6. **Event AI không chứa nội dung.** `ai_request`, `ai_error`, `ai_result_accepted` chỉ có tên tính năng, tên model và loại lỗi; không gửi prompt, tên món hay câu trả lời của AI. Xem `docs/ai-feature.md`.
+7. Màn hình (`screen_view`) được ghi tự động bởi `FirebaseAnalyticsObserver` theo tên route trong `AppRoutes`.
 
 ---
 
@@ -30,6 +31,9 @@
 | 8 | `budget_set` | `budget_group` (string, id nhóm), `amount_bucket` (string), `month` (string `yyyy-MM`) | `BudgetViewModel.setGroupLimits` – lưu thành công, mỗi nhóm có hạn mức > 0 một sự kiện | Người dùng đặt hạn mức cho nhóm nào, ở mức nào? |
 | 9 | `export_report` | `file_format` (string: `pdf`), `item_count` (int: khoản mua + món đã quyết định trong tháng) | `ReportViewModel.generateAndShare` – chia sẻ PDF thành công | Có bao nhiêu người xuất và chia sẻ báo cáo tháng, báo cáo thường có bao nhiêu mục? |
 | 10 | `click_sale_reminder` | `sale_type` (string: `double_day` · `mid_month` · `payday`) | `openFromNotification` (`lib/app/app.dart`) – chạm thông báo FCM có custom data `type` = `sale` khi Remote Config `sale_reminder_enabled` bật, rồi mở "Danh sách cho đợt sale"; `sale_type` lạ được ghi là `other` | Nhắc nhở đợt sale nào được mở nhiều nhất? |
+| 11 | `ai_request` | `ai_feature` (string: `insight` · `decision_reason` · `group` · `duplicate` · `sale_plan` · `pre_purchase` · `photo_search` · `price_search`), `ai_model` (string, từ Remote Config `ai_insight_model`) | `InstrumentedAiService` – mỗi lần gọi Gemini (lớp bọc của service, không phải ViewModel: mọi tính năng AI đi qua một client) | Tính năng AI nào được dùng nhiều nhất, với model nào? |
+| 12 | `ai_error` | `ai_feature` (string), `error_type` (string: `timeout` · `quota` · `network` · `blocked` · `empty_reply` · `unavailable`) | `InstrumentedAiService` – lệnh gọi Gemini thất bại; tính năng vẫn dùng câu mẫu / không gợi ý | AI lỗi ở tính năng nào, vì sao; có cần đổi model hay nới thời gian chờ không? |
+| 13 | `ai_result_accepted` | `ai_feature` (string: `group` · `duplicate` · `photo_search`) | `ItemSuggestionViewModel.aiResultAccepted` (bấm chip nhóm do AI gợi ý, xác nhận món trùng có kết quả AI), `PhotoSearchViewModel.aiResultAccepted` (thêm món từ Tìm bằng ảnh) | Người dùng có nhận gợi ý AI vào dữ liệu của mình không? Tỉ lệ so với `ai_request` cùng `ai_feature`. |
 
 ---
 

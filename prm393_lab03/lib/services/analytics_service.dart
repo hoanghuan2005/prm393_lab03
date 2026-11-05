@@ -125,6 +125,27 @@ class AppAnalyticsService {
     AnalyticsParams.itemCount: itemCount,
   });
 
+  /// [feature]: [AiFeatures]; [model]: the Gemini model name from Remote Config
+  Future<void> logAiRequest({required String feature, required String model}) =>
+      _log(AnalyticsEvents.aiRequest, {
+        AnalyticsParams.aiFeature: feature,
+        AnalyticsParams.aiModel: model,
+      });
+
+  Future<void> logAiResultAccepted({required String feature}) => _log(
+    AnalyticsEvents.aiResultAccepted,
+    {AnalyticsParams.aiFeature: feature},
+  );
+
+  /// [errorType]: [AiErrorTypes]
+  Future<void> logAiError({
+    required String feature,
+    required String errorType,
+  }) => _log(AnalyticsEvents.aiError, {
+    AnalyticsParams.aiFeature: feature,
+    AnalyticsParams.errorType: errorType,
+  });
+
   Future<void> logClickSaleReminder(String saleType) => _log(
     AnalyticsEvents.clickSaleReminder,
     {AnalyticsParams.saleType: saleType},

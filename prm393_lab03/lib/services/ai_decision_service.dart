@@ -14,12 +14,16 @@ class AiDecisionService {
   final AiService generator;
   final Duration timeout;
 
+  /// Three explanations take longer to write; the screen shows the templates meanwhile
+  final Duration planTimeout;
+
   /// Accepted sentences by [DecisionAssessment.cacheKey]
   final Map<String, String> _cache = {};
 
   AiDecisionService({
     required this.generator,
     this.timeout = const Duration(seconds: 12),
+    this.planTimeout = const Duration(seconds: 25),
   });
 
   static const int maxLength = 200;
@@ -90,7 +94,7 @@ Quy tắc bắt buộc:
               'Với mỗi khoá (${data.keys.join(', ')}), viết 1–2 câu giải thích phương án đó.',
           fields: data.keys.toList(),
         )
-        .timeout(timeout);
+        .timeout(planTimeout);
     final explanations = parsePlans(raw, plans);
     if (explanations.isNotEmpty) _planCache[key] = explanations;
     return explanations;

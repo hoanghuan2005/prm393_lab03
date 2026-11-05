@@ -10,6 +10,7 @@ import '../core/formatters/money_format.dart';
 import '../models/item_recognition.dart';
 import '../models/price_offer.dart';
 import '../models/ui_state.dart';
+import '../services/analytics_events.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -152,6 +153,10 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
   }
 
   void _addToWishlist(String name) {
+    // The AI's name prefills the form; the user can still edit it there
+    context.read<PhotoSearchViewModel>().aiResultAccepted(
+      AiFeatures.photoSearch,
+    );
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.wishlistAdd,
       arguments: AddItemArgs(initialTitle: name),

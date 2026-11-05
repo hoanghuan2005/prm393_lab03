@@ -121,8 +121,9 @@ class InsightsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    // A minimum height, not a fixed one: the text wraps at 360 dp and with larger fonts
     return Container(
-      height: 306,
+      constraints: const BoxConstraints(minHeight: 306),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -135,6 +136,7 @@ class InsightsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(42),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
             clipBehavior: Clip.none,
@@ -212,7 +214,7 @@ class InsightsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 20),
           Text(
             'DÀNH RIÊNG CHO BẠN',
             style: TextStyle(

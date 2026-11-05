@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../core/errors/describe_error.dart';
@@ -9,6 +11,7 @@ import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
 import '../services/ai_suggestion_service.dart';
+import '../services/analytics_service.dart';
 import '../services/preferences_service.dart';
 import '../services/remote_config_service.dart';
 
@@ -34,15 +37,25 @@ class ItemSuggestionViewModel extends ChangeNotifier {
   List<WishlistItem> _wishlistItems = const [];
   List<OwnedItem> _ownedItems = const [];
 
+  /// Logs ai_result_accepted; optional so tests can leave it out
+  final AppAnalyticsService? analyticsService;
+
   ItemSuggestionViewModel({
     required this.aiSuggestionService,
     required this.remoteConfigService,
     required this.preferencesService,
+    this.analyticsService,
     bool Function()? platformSupportsAi,
     DateTime Function()? now,
   }) : _platformSupportsAi =
            platformSupportsAi ?? (() => PlatformSupport.supportsFirebaseAi),
        _now = now ?? DateTime.now;
+
+  /// The user took an AI result into their data ([AiFeatures])
+  void aiResultAccepted(String feature) => unawaited(
+    analyticsService?.logAiResultAccepted(feature: feature) ??
+        Future<void>.value(),
+  );
 
   /// Fed by the ProxyProvider; read on demand, so nothing is redrawn
   void updateSources({

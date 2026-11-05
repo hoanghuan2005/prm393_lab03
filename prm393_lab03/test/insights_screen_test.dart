@@ -217,7 +217,9 @@ void main() {
     expect(generator.calls, 1);
     expect(find.text('Khuyến mãi xuất hiện nhiều'), findsOneWidget);
     expect(find.text('AI'), findsWidgets);
-    // Cards the AI did not write keep the template wording
+    // Cards the AI did not write keep the template wording (further down the list)
+    await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
     expect(find.text('Câu mẫu'), findsWidgets);
     expect(tester.takeException(), isNull);
     debugDefaultTargetPlatformOverride = null;

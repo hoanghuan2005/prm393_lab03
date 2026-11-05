@@ -16,6 +16,7 @@ import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
 import '../services/extension_session_service.dart';
 import '../services/feedback_service.dart';
+import '../services/instrumented_ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
 import '../services/purchase_service.dart';
@@ -52,6 +53,23 @@ import '../viewmodels/wishlist_viewmodel.dart';
 /// The three services passed in are created before Firebase starts (FirebaseSetup needs them);
 /// every other service touches Firebase*.instance, so it must only be created after
 /// FirebaseSetup.initialize — Provider.create runs lazily, after runApp.
+InstrumentedAiService _gemini(
+  BuildContext context,
+  RemoteConfigService remoteConfig,
+) {
+  final gemini = FirebaseAiService(
+    modelName: () => remoteConfig.aiInsightModel,
+  );
+  return InstrumentedAiService(
+    text: gemini,
+    image: gemini,
+    web: gemini,
+    modelName: () => remoteConfig.aiInsightModel,
+    promptFor: remoteConfig.aiPromptFor,
+    analyticsService: context.read<AppAnalyticsService>(),
+  );
+}
+
 class AppProviders extends StatelessWidget {
   final CrashlyticsService crashlyticsService;
   final RemoteConfigService remoteConfigService;
@@ -93,12 +111,11 @@ class AppProviders extends StatelessWidget {
         Provider<SharedPriceService>(
           create: (_) => FirestoreSharedPriceService(),
         ),
-        Provider<AiService>(
-          create: (_) => FirebaseAiService(
-            modelName: () => remoteConfigService.aiInsightModel,
-          ),
-        ),
         Provider<AppAnalyticsService>(create: (_) => AppAnalyticsService()),
+        // One Gemini client for every AI feature: prompt from Remote Config, ai_* events
+        Provider<AiService>(
+          create: (context) => _gemini(context, remoteConfigService),
+        ),
         Provider<CrashlyticsService>.value(value: crashlyticsService),
         Provider<RemoteConfigService>.value(value: remoteConfigService),
         Provider<NotificationService>.value(value: notificationService),
@@ -128,11 +145,10 @@ class AppProviders extends StatelessWidget {
         // AI shop prices only show when enable_ai_price_search is on (paid grounding).
         ChangeNotifierProvider(
           create: (context) {
-            final gemini = FirebaseAiService(
-              modelName: () => remoteConfigService.aiInsightModel,
-            );
+            final gemini = _gemini(context, remoteConfigService);
             return PhotoSearchViewModel(
               aiService: AiPhotoSearchService(generator: gemini),
+              analyticsService: context.read<AppAnalyticsService>(),
               priceSearchService: AiPriceSearchService(generator: gemini),
               remoteConfigService: remoteConfigService,
               preferencesService: PreferencesService(),
@@ -325,6 +341,7 @@ class AppProviders extends StatelessWidget {
             ),
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
+            analyticsService: context.read<AppAnalyticsService>(),
           ),
           update: (_, purchaseVm, wishlistVm, profileVm, vm) =>
               vm!..updateSources(

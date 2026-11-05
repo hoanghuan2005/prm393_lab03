@@ -11,6 +11,15 @@ abstract final class AnalyticsEvents {
   static const budgetSet = 'budget_set';
   static const exportReport = 'export_report';
   static const clickSaleReminder = 'click_sale_reminder';
+
+  /// Every call to Gemini (Final assignment section 8)
+  static const aiRequest = 'ai_request';
+
+  /// The user took an AI result into their data (applied, confirmed or used it)
+  static const aiResultAccepted = 'ai_result_accepted';
+
+  /// A call to Gemini failed; the flow went on without AI
+  static const aiError = 'ai_error';
 }
 
 /// Parameter names. No PII: never email, display name, item title, search text or exact
@@ -30,6 +39,44 @@ abstract final class AnalyticsParams {
   static const fileFormat = 'file_format';
   static const itemCount = 'item_count';
   static const saleType = 'sale_type';
+  static const aiFeature = 'ai_feature';
+  static const aiModel = 'ai_model';
+  static const errorType = 'error_type';
+}
+
+/// Values of [AnalyticsParams.aiFeature]: one per AI feature, also the keys of the
+/// Remote Config `ai_prompts` map
+abstract final class AiFeatures {
+  static const insight = 'insight';
+  static const decisionReason = 'decision_reason';
+  static const salePlan = 'sale_plan';
+  static const group = 'group';
+  static const duplicate = 'duplicate';
+  static const prePurchase = 'pre_purchase';
+  static const photoSearch = 'photo_search';
+  static const priceSearch = 'price_search';
+  static const other = 'other';
+
+  static const all = [
+    insight,
+    decisionReason,
+    salePlan,
+    group,
+    duplicate,
+    prePurchase,
+    photoSearch,
+    priceSearch,
+  ];
+}
+
+/// Values of [AnalyticsParams.errorType]
+abstract final class AiErrorTypes {
+  static const timeout = 'timeout';
+  static const quota = 'quota';
+  static const network = 'network';
+  static const blocked = 'blocked';
+  static const emptyReply = 'empty_reply';
+  static const unavailable = 'unavailable';
 }
 
 /// Values of [AnalyticsParams.decision]

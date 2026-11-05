@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
@@ -27,6 +29,11 @@ class RemoteConfigService {
   /// grounding is not in the free Gemini tier, so turn it on only after billing is set up.
   static const String keyEnableAiPriceSearch = 'enable_ai_price_search';
 
+  /// JSON object {feature: system instruction} (feature names: AiFeatures). A feature
+  /// left out, or `{}`, keeps the instruction built into the app. The app still checks
+  /// every reply (numbers, banned words, length), whatever the prompt says.
+  static const String keyAiPrompts = 'ai_prompts';
+
   /// Announced sales (spec 8.2); the team keeps this list in the console. 11.11 is the
   /// spec's confirmed example; other days of the public pattern appear as "dự kiến".
   static const String defaultSaleCalendar =
@@ -43,6 +50,7 @@ class RemoteConfigService {
     keyEnableAiSuggestions: true,
     keySaleCalendar: defaultSaleCalendar,
     keyEnableAiPriceSearch: false,
+    keyAiPrompts: '{}',
   };
 
   bool get _isSupported =>
@@ -107,6 +115,37 @@ class RemoteConfigService {
         ? _remoteConfig.getString(keyAiInsightModel)
         : '';
     return value.isNotEmpty ? value : defaults[keyAiInsightModel] as String;
+  }
+
+  String? _promptsRaw;
+  Map<String, String> _prompts = const {};
+
+  /// System instruction for an AI feature set in the console; null = built-in one
+  String? aiPromptFor(String feature) {
+    final raw = _isSupported ? _remoteConfig.getString(keyAiPrompts) : '';
+    if (raw != _promptsRaw) {
+      _promptsRaw = raw;
+      _prompts = _parsePrompts(raw);
+    }
+    return _prompts[feature];
+  }
+
+  static Map<String, String> _parsePrompts(String raw) {
+    if (raw.trim().isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const {};
+      return {
+        for (final e in decoded.entries)
+          if (e.key is String &&
+              e.value is String &&
+              (e.value as String).trim().isNotEmpty)
+            e.key as String: (e.value as String).trim(),
+      };
+    } on FormatException catch (e) {
+      debugPrint('ai_prompts is not valid JSON: $e');
+      return const {};
+    }
   }
 
   int _getInt(String key) =>

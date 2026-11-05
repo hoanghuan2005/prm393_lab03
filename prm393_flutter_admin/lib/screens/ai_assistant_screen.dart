@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/admin_ai_service.dart';
 import '../services/admin_service.dart';
 import '../models/admin_models.dart';
 import '../theme/admin_colors.dart';
 
 class AiAssistantScreen extends StatefulWidget {
-  const AiAssistantScreen({super.key});
+  /// Replaced in tests; the real one calls Gemini through Firebase AI Logic
+  final AdminAiService? aiService;
+
+  const AiAssistantScreen({super.key, this.aiService});
 
   @override
   State<AiAssistantScreen> createState() => _AiAssistantScreenState();
@@ -15,6 +19,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final TextEditingController _promptController = TextEditingController();
   bool _isGenerating = false;
   AiSuggestion? _customResult;
+  AdminAiResult? _aiResult;
+  late final AdminAiService _ai = widget.aiService ?? AdminAiService();
+  String _model = AdminAiService.defaultModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _ai.loadModel().then((model) {
+      if (mounted) setState(() => _model = model);
+    });
+  }
 
   @override
   void dispose() {
@@ -27,21 +42,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     if (query.isEmpty) return;
 
     setState(() => _isGenerating = true);
-    await Future.delayed(const Duration(milliseconds: 700));
+    // Only the aggregate dashboard numbers and the topic are sent to AI
+    final result = await _ai.suggest(query, context.read<AdminService>().metrics);
 
     if (!mounted) return;
     setState(() {
       _isGenerating = false;
-      _customResult = AiSuggestion(
-        id: 'ai_custom',
-        category: 'custom',
-        categoryLabel: 'Tạo riêng cho: "$query"',
-        question: 'Sau khi sở hữu món đồ "$query", cuộc sống của bạn sẽ thay đổi tích cực ở điểm nào cụ thể nhất?',
-        psychologyInsight: 'Kích thích tư duy hình dung tương lai (Future Visualization). Nếu người dùng không thể nêu ra 1 điểm cụ thể, khả năng cao đây là ham muốn bốc đồng.',
-        suggestedTitle: '💡 Tự hỏi bản thân trước khi chốt đơn "$query"',
-        suggestedBody: 'Món đồ này mang lại giá trị sử dụng lâu dài hay chỉ là cảm xúc thỏa mãn nhất thời? Hãy dành 24 giờ để kiểm chứng nhé!',
-        targetScreen: 'wishlist_add',
-      );
+      _aiResult = result;
+      _customResult = result.suggestion;
     });
   }
 
@@ -108,9 +116,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     children: [
                       Text('Mô hình tích hợp', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
                       const SizedBox(height: 4),
-                      const Text('Gemini 1.5 Flash', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AdminColors.primary)),
+                      Text(_model, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AdminColors.primary)),
                       const SizedBox(height: 2),
-                      const Text('Tương tác: +42%', style: TextStyle(fontSize: 10, color: AdminColors.emerald, fontWeight: FontWeight.w700)),
+                      Text('Remote Config: ai_insight_model', style: TextStyle(fontSize: 10, color: AdminColors.textSecondary)),
+                      const SizedBox(height: 2),
+                      const Text('Chỉ gửi số liệu tổng hợp', style: TextStyle(fontSize: 10, color: AdminColors.emerald, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 );
@@ -232,7 +242,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: AdminColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                              child: const Text('KẾT QUẢ VỪA TẠO BỞI AI', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.primary)),
+                              child: Text(
+                                _aiResult?.fromAi ?? false ? 'AI · $_model' : 'CÂU MẪU (AI KHÔNG DÙNG ĐƯỢC)',
+                                key: const ValueKey('ai-result-label'),
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.primary),
+                              ),
                             ),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
@@ -250,7 +264,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                         const SizedBox(height: 10),
                         Text('"${_customResult!.question}"', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AdminColors.textPrimary)),
                         const SizedBox(height: 8),
-                        Text('Tâm lý học hành vi: ${_customResult!.psychologyInsight}', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
+                        Text('Vì sao hỏi câu này: ${_customResult!.psychologyInsight}', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
+                        const SizedBox(height: 10),
+                        Text('Bản nháp thông báo: ${_customResult!.suggestedTitle} — ${_customResult!.suggestedBody}', style: TextStyle(fontSize: 12, color: AdminColors.textPrimary)),
+                        if (_aiResult?.fallbackReason != null) ...[
+                          const SizedBox(height: 6),
+                          Text(_aiResult!.fallbackReason!, style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
+                        ],
+                        const SizedBox(height: 6),
+                        Text('Kiểm tra và sửa tiêu đề, nội dung ở tab Push trước khi gửi.', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -262,7 +284,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           const SizedBox(height: 24),
 
           // Default AI Questions Grid (Responsive)
-          Text('DANH SÁCH CÂU HỎI TỰ VẤN GỢI Ý', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AdminColors.textSecondary)),
+          Text('CÂU HỎI TỰ VẤN SOẠN SẴN (KHÔNG PHẢI AI)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AdminColors.textSecondary)),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {

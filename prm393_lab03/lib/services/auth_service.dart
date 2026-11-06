@@ -4,8 +4,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/errors/app_exception.dart';
 import '../core/errors/describe_error.dart';
-import '../core/errors/firebase_error_mapper.dart'
-    show accountExistsCode, accountExistsUseGithub;
 import '../firebase/platform_support.dart';
 import 'service_guard.dart';
 
@@ -78,8 +76,6 @@ class AuthService {
       } on FirebaseAuthException catch (e) {
         // Code only: some auth messages carry the email
         debugPrint('AuthService Google FirebaseAuthException: ${e.code}');
-        // The mapper's default text points to Google, which is what just failed
-        if (e.code == accountExistsCode) throw accountExistsUseGithub;
         rethrow;
       } catch (e) {
         debugPrint('AuthService GoogleSignIn Error: ${describeError(e)}');

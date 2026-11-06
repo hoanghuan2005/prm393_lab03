@@ -7,6 +7,7 @@ import '../app/routes.dart';
 import '../core/constants/app_constants.dart';
 import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
+import '../services/auth_service.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -928,10 +929,7 @@ class FirebaseDemoTools extends StatelessWidget {
 
 /// Account card at the top of Cá nhân. Never shows the full email or uid.
 class AccountHeaderCard extends StatelessWidget {
-  /// Defaults to [kDebugMode]; tests pass false to check a release build
-  final bool showDebugUid;
-
-  const AccountHeaderCard({super.key, this.showDebugUid = kDebugMode});
+  const AccountHeaderCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -1051,6 +1049,8 @@ class _LinkedAccountTile extends StatelessWidget {
       (vm) => vm.isBusy,
     );
     final isLinked = row.state == LinkState.linked;
+    // Why "Huỷ liên kết" is disabled: the only sign-in method left
+    final showLastNote = isLinked && !vm.isGuest && !locked && !row.canUnlink;
     final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
@@ -1077,6 +1077,11 @@ class _LinkedAccountTile extends StatelessWidget {
                       : 'Đã liên kết · ${row.label}',
                   style: subtitleStyle,
                 ),
+                if (showLastNote)
+                  Text(
+                    AuthService.lastProvider.messageVi,
+                    style: subtitleStyle,
+                  ),
               ],
             )
           : null,

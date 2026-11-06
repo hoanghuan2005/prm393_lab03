@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/errors/firebase_error_mapper.dart';
 import 'package:prm393_lab03/screens/profile_screen.dart';
+import 'package:prm393_lab03/services/auth_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ import 'support/linked_auth_fakes.dart';
 
 const _googleId = LinkedAccountsViewModel.googleId;
 const _githubId = LinkedAccountsViewModel.githubId;
-const _lastNote = 'Phải giữ ít nhất một cách đăng nhập';
+final _lastNote = AuthService.lastProvider.messageVi;
 const _guestNote =
     'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.';
 
@@ -78,8 +79,7 @@ void main() {
     expect(find.text('Đã liên kết · s…@gmail.com'), findsOneWidget);
     expect(find.textContaining('someone@'), findsNothing);
     expect(_enabled(tester, _button('Google', 'Huỷ liên kết')), isFalse);
-    // The "keep one method" note was removed ("fix ui", 2026-11-05); the button stays disabled
-    expect(find.text(_lastNote), findsNothing);
+    expect(find.text(_lastNote), findsOneWidget);
     expect(_enabled(tester, _button('GitHub', 'Liên kết')), isTrue);
   });
 
@@ -106,6 +106,7 @@ void main() {
     expect(find.text(_guestNote), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Liên kết'), findsNWidgets(2));
     expect(find.text('Huỷ liên kết'), findsNothing);
+    expect(find.text(_lastNote), findsNothing);
   });
 
   testWidgets('hidden where linking is unsupported', (tester) async {

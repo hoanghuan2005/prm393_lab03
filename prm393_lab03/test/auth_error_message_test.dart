@@ -14,15 +14,12 @@ import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
-import 'package:prm393_lab03/widgets/app_button.dart';
 import 'package:provider/provider.dart';
 
 const _accountExistsMessage =
-    'Email này đã có tài khoản đăng nhập bằng Google. Hãy đăng nhập bằng '
-    'Google, rồi vào Cá nhân → Tài khoản liên kết để thêm GitHub.';
-const _accountExistsGithubMessage =
-    'Email này đã có tài khoản đăng nhập bằng GitHub. Hãy đăng nhập bằng '
-    'GitHub, rồi vào Cá nhân → Tài khoản liên kết để thêm Google.';
+    'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách '
+    'bạn đã dùng trước đó (Google, GitHub hoặc email), rồi vào Cá nhân → Tài '
+    'khoản liên kết để thêm cách mới.';
 const _cancelledMessage =
     'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.';
 const _networkMessage = 'Không có kết nối mạng. Kiểm tra mạng rồi thử lại.';
@@ -404,24 +401,26 @@ void main() {
   });
 
   group('account-exists-with-different-credential', () {
-    test('GitHub sign-in points to Google and keeps the code', () async {
-      final vm = _viewModel(
-        _authFailingWith(_authError(accountExistsCode)),
-        _CountingCrashlytics(),
-      );
+    test(
+      'GitHub sign-in shows the neutral message and keeps the code',
+      () async {
+        final vm = _viewModel(
+          _authFailingWith(_authError(accountExistsCode)),
+          _CountingCrashlytics(),
+        );
 
-      await vm.signInWithGithub();
+        await vm.signInWithGithub();
 
-      expect(vm.errorMessage, _accountExistsMessage);
-      expect(vm.suggestedProviderId, 'google.com');
-      expect(
-        mapFirebaseError(_authError(accountExistsCode)).code,
-        'account-exists-with-different-credential',
-      );
-      vm.dispose();
-    });
+        expect(vm.errorMessage, _accountExistsMessage);
+        expect(
+          mapFirebaseError(_authError(accountExistsCode)).code,
+          'account-exists-with-different-credential',
+        );
+        vm.dispose();
+      },
+    );
 
-    test('Google sign-in points to GitHub', () async {
+    test('Google sign-in shows the same message, not recorded', () async {
       final crashlytics = _CountingCrashlytics();
       final service = _authFailingWith(_authError(accountExistsCode));
       final vm = _viewModel(service, crashlytics);
@@ -434,24 +433,47 @@ void main() {
       );
       await vm.signInWithGoogle();
 
-      expect(vm.errorMessage, _accountExistsGithubMessage);
-      expect(vm.suggestedProviderId, 'github.com');
+      expect(vm.errorMessage, _accountExistsMessage);
       expect(crashlytics.handledErrors, 0);
       vm.dispose();
     });
 
-    test('other errors and the next attempt clear the suggestion', () async {
-      final vm = _viewModel(
-        _authFailingWith(_authError(accountExistsCode)),
-        _CountingCrashlytics(),
-      );
-      await vm.signInWithGithub();
-      expect(vm.suggestedProviderId, 'google.com');
+    for (final method in ['google', 'github']) {
+      test(
+        '$method: one neutral message that names no method as the old one',
+        () async {
+          final service = _authFailingWith(_authError(accountExistsCode));
+          final vm = _viewModel(service, _CountingCrashlytics());
+          final signIn = method == 'google'
+              ? service.signInWithGoogle
+              : service.signInWithGithub;
 
-      await vm.signInAnonymously();
-      expect(vm.suggestedProviderId, isNull);
-      vm.dispose();
-    });
+          await expectLater(
+            signIn(),
+            throwsA(
+              isA<AppException>()
+                  .having((e) => e.code, 'code', accountExistsCode)
+                  .having(
+                    (e) => e.messageVi,
+                    'messageVi',
+                    _accountExistsMessage,
+                  ),
+            ),
+          );
+          if (method == 'google') {
+            await vm.signInWithGoogle();
+          } else {
+            await vm.signInWithGithub();
+          }
+
+          expect(vm.status, AuthStatus.error);
+          expect(vm.errorMessage, _accountExistsMessage);
+          expect(vm.errorMessage, isNot(contains('bằng Google')));
+          expect(vm.errorMessage, isNot(contains('bằng GitHub')));
+          vm.dispose();
+        },
+      );
+    }
   });
 
   group('LoginScreen', () {
@@ -519,62 +541,5 @@ void main() {
         expect(find.text(_cancelledMessage), findsOneWidget);
       },
     );
-
-    testWidgets('GitHub collision: the message sits right above the Google '
-        'button', (tester) async {
-      final vm = _viewModel(
-        _authFailingWith(_authError(accountExistsCode)),
-        _CountingCrashlytics(),
-      );
-      await pumpLogin(tester, vm);
-
-      await tester.tap(find.text('Đăng nhập với GitHub'));
-      await tester.pumpAndSettle();
-
-      final banner = tester.getRect(
-        find.byKey(const Key('login-error-banner')),
-      );
-      final google = tester.getRect(find.byKey(const Key('login-google')));
-      final github = tester.getRect(find.byKey(const Key('login-github')));
-      expect(find.text(_accountExistsMessage), findsOneWidget);
-      expect(banner.bottom, lessThanOrEqualTo(google.top));
-      expect(google.top - banner.bottom, lessThan(32));
-      expect(google.top, lessThan(github.top));
-      expect(find.byIcon(Icons.arrow_downward_rounded), findsOneWidget);
-      expect(
-        tester.widget<AppButton>(find.byKey(const Key('login-google'))).variant,
-        AppButtonVariant.primary,
-      );
-    });
-
-    testWidgets('Google collision: the message moves above the GitHub button '
-        'and GitHub becomes the main button', (tester) async {
-      final vm = _viewModel(
-        _authFailingWith(_authError(accountExistsCode)),
-        _CountingCrashlytics(),
-      );
-      await pumpLogin(tester, vm);
-
-      await tester.tap(find.text('Đăng nhập với Google'));
-      await tester.pumpAndSettle();
-
-      final banner = tester.getRect(
-        find.byKey(const Key('login-error-banner')),
-      );
-      final google = tester.getRect(find.byKey(const Key('login-google')));
-      final github = tester.getRect(find.byKey(const Key('login-github')));
-      expect(find.text(_accountExistsGithubMessage), findsOneWidget);
-      expect(banner.top, greaterThanOrEqualTo(google.bottom));
-      expect(banner.bottom, lessThanOrEqualTo(github.top));
-      expect(github.top - banner.bottom, lessThan(32));
-      expect(
-        tester.widget<AppButton>(find.byKey(const Key('login-github'))).variant,
-        AppButtonVariant.primary,
-      );
-      expect(
-        tester.widget<AppButton>(find.byKey(const Key('login-google'))).variant,
-        AppButtonVariant.secondary,
-      );
-    });
   });
 }

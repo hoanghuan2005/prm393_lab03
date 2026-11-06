@@ -26,5 +26,20 @@ String? readText(Object? value) {
   return s == null || s.isEmpty ? null : s;
 }
 
+/// Star rating in (0, 5] rounded to 1 decimal (checked after rounding); anything else is null
+double? readRating(Object? value) {
+  final v = value is num ? value.toDouble() : null;
+  if (v == null || v > 5) return null;
+  final r = (v * 10).round() / 10;
+  return r > 0 ? r : null;
+}
+
+/// A count (int ≥ 0, e.g. number of reviews); anything else is null
+int? readCount(Object? value) {
+  // readInt casts; old extension data may hold text such as "1,2k"
+  final v = value is num ? readInt(value) : null;
+  return v == null || v < 0 ? null : v;
+}
+
 Timestamp? toTimestamp(DateTime? value) =>
     value == null ? null : Timestamp.fromDate(value);

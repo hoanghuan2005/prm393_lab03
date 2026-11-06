@@ -43,13 +43,6 @@ enum HistoryReportSource {
       );
 }
 
-/// A rating in (0, 5] rounded to 1 decimal; anything else is null
-double? _readRating(Object? value) {
-  final v = value is num ? value.toDouble() : null;
-  if (v == null || v <= 0 || v > 5) return null;
-  return (v * 10).round() / 10;
-}
-
 /// priceHistory/{productKey}, productKey = `shopee:<shopId>:<itemId>`
 class PriceHistoryProduct {
   final String productKey;
@@ -135,7 +128,6 @@ class PriceHistoryReport {
 
   factory PriceHistoryReport.fromFirestore(DocumentSnapshot doc) {
     final data = docData(doc);
-    final count = readInt(data['productRatingCount']);
     return PriceHistoryReport(
       id: doc.id,
       amountVnd: readInt(data['amountVnd']) ?? 0,
@@ -144,9 +136,9 @@ class PriceHistoryReport {
       observedAt: readDate(data['observedAt']) ?? DateTime.now(),
       source: HistoryReportSource.fromKey(readString(data['source'])),
       shopName: readText(data['shopName']),
-      productRating: _readRating(data['productRating']),
-      productRatingCount: count == null || count < 0 ? null : count,
-      shopRating: _readRating(data['shopRating']),
+      productRating: readRating(data['productRating']),
+      productRatingCount: readCount(data['productRatingCount']),
+      shopRating: readRating(data['shopRating']),
     );
   }
 

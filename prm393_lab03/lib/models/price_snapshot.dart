@@ -64,6 +64,12 @@ class PriceSnapshot {
   final bool confirmed;
   final String? variantLabel;
 
+  /// Shop and ratings on the page when the extension read this price
+  final String? shopName;
+  final double? productRating;
+  final int? productRatingCount;
+  final double? shopRating;
+
   const PriceSnapshot({
     required this.id,
     required this.amountVnd,
@@ -75,6 +81,10 @@ class PriceSnapshot {
     this.originalVnd,
     this.confirmed = true,
     this.variantLabel,
+    this.shopName,
+    this.productRating,
+    this.productRatingCount,
+    this.shopRating,
   });
 
   bool get isRange =>
@@ -93,6 +103,10 @@ class PriceSnapshot {
       originalVnd: readVnd(data['originalVnd']),
       confirmed: readString(data['confirmation']) != 'unconfirmed',
       variantLabel: readText(data['variantLabel']),
+      shopName: readText(data['shopName']),
+      productRating: readRating(data['productRating']),
+      productRatingCount: readCount(data['productRatingCount']),
+      shopRating: readRating(data['shopRating']),
     );
   }
 
@@ -106,6 +120,10 @@ class PriceSnapshot {
     if (originalVnd != null) 'originalVnd': originalVnd,
     'confirmation': confirmed ? 'userConfirmed' : 'unconfirmed',
     if (variantLabel != null) 'variantLabel': variantLabel,
+    if (shopName != null) 'shopName': shopName,
+    if (productRating != null) 'productRating': productRating,
+    if (productRatingCount != null) 'productRatingCount': productRatingCount,
+    if (shopRating != null) 'shopRating': shopRating,
   };
 
   PriceSnapshot copyWith({
@@ -119,6 +137,10 @@ class PriceSnapshot {
     int? originalVnd,
     bool? confirmed,
     String? variantLabel,
+    String? shopName,
+    double? productRating,
+    int? productRatingCount,
+    double? shopRating,
   }) {
     return PriceSnapshot(
       id: id ?? this.id,
@@ -131,6 +153,10 @@ class PriceSnapshot {
       originalVnd: originalVnd ?? this.originalVnd,
       confirmed: confirmed ?? this.confirmed,
       variantLabel: variantLabel ?? this.variantLabel,
+      shopName: shopName ?? this.shopName,
+      productRating: productRating ?? this.productRating,
+      productRatingCount: productRatingCount ?? this.productRatingCount,
+      shopRating: shopRating ?? this.shopRating,
     );
   }
 
@@ -147,7 +173,11 @@ class PriceSnapshot {
           other.maxVnd == maxVnd &&
           other.originalVnd == originalVnd &&
           other.confirmed == confirmed &&
-          other.variantLabel == variantLabel;
+          other.variantLabel == variantLabel &&
+          other.shopName == shopName &&
+          other.productRating == productRating &&
+          other.productRatingCount == productRatingCount &&
+          other.shopRating == shopRating;
 
   @override
   int get hashCode => Object.hash(
@@ -161,5 +191,9 @@ class PriceSnapshot {
     originalVnd,
     confirmed,
     variantLabel,
+    shopName,
+    productRating,
+    productRatingCount,
+    shopRating,
   );
 }

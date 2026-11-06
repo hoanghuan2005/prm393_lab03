@@ -27,6 +27,13 @@ service cloud.firestore {
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
     function validMoney(v) { return v is int && v > 0 && v <= 999999999; }
     function optionalNote() { return !('note' in d()) || d().note == null || (d().note is string && d().note.size() <= 200); }
+    // Shopee ratings read by the extension (P0-chart): stars in (0, 5], review count int ≥ 0
+    function optionalText(f, max) { return !(f in d()) || text(d()[f], max); }
+    function optionalRating(f) { return !(f in d()) || (d()[f] is number && d()[f] > 0 && d()[f] <= 5); }
+    function optionalCount(f) { return !(f in d()) || (d()[f] is int && d()[f] >= 0); }
+    function validRatings() {
+      return optionalRating('productRating') && optionalRating('shopRating') && optionalCount('productRatingCount');
+    }
     function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
@@ -61,13 +68,16 @@ service cloud.firestore {
           && (!('variantLabel' in d()) || d().variantLabel == null || (d().variantLabel is string && d().variantLabel.size() <= 60))
           && (!('shopName' in d()) || d().shopName == null || (d().shopName is string && d().shopName.size() <= 100))
           && (!('buyIntentAt' in d()) || d().buyIntentAt == null || d().buyIntentAt is timestamp)
+          && validRatings()
           && (d().status != 'purchased' || ('purchaseId' in d() && d().purchaseId is string));
 
         match /priceSnapshots/{sid} {
           allow read, delete: if canAccess(uid);
           allow create: if canAccess(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
             && (!('source' in d()) || d().source in ['manual','demo','extensionPage','community'])
-            && (!('priceType' in d()) || d().priceType in ['single','range','flash','sale','afterVoucher']);
+            && (!('priceType' in d()) || d().priceType in ['single','range','flash','sale','afterVoucher'])
+            // Shop and ratings on the page when the extension read the price
+            && optionalText('shopName', 60) && validRatings();
           allow update: if false;
         }
       }
@@ -167,8 +177,6 @@ service cloud.firestore {
     // "Biểu đồ giá tham khảo": prices per product over time, read by every signed-in user.
     // For now only admins write, and only sample data (isDemo / source 'demo'); user reports
     // open later (G7). afterVoucher is stored but never counted as a list price (app side).
-    function optionalText(f, max) { return !(f in d()) || text(d()[f], max); }
-    function optionalRating(f) { return !(f in d()) || (d()[f] is number && d()[f] > 0 && d()[f] <= 5); }
     function validHistoryProduct(productKey) {
       return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
         && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt'])

@@ -168,6 +168,19 @@ add('wishlistItems', 'user', 'status "waiting" (not in the spec)', false, () => 
 // The extension saves "Giá đang giảm" as priceType 'sale' (E1)
 add('wishlistItems/priceSnapshots', 'user', "save a priceType 'sale' snapshot", true, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-sale'), { amountVnd: 399000, observedAt: now(), source: 'extensionPage', priceType: 'sale' }));
 add('wishlistItems/priceSnapshots', 'user', "save an unknown priceType 'coupon'", false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-coupon'), { amountVnd: 399000, observedAt: now(), source: 'extensionPage', priceType: 'coupon' }));
+// Shopee ratings from the extension (E3): stars in (0, 5], review count int >= 0, shop name <= 60 on a price
+const rated = { productRating: 4.8, productRatingCount: 1200, shopRating: 4.9 };
+const wItem = (extra) => ({ title: 'Tai nghe', status: 'considering', ...extra });
+const wSnap = (extra) => ({ amountVnd: 399000, observedAt: now(), source: 'extensionPage', priceType: 'single', ...extra });
+add('wishlistItems', 'user', 'save an item with Shopee ratings', true, () => setDoc(doc(alice, 'users/alice/wishlistItems/w-rated'), wItem(rated)));
+add('wishlistItems', 'user', 'save productRating 6', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w-bad1'), wItem({ productRating: 6 })));
+add('wishlistItems', 'user', 'save shopRating 0', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w-bad2'), wItem({ shopRating: 0 })));
+add('wishlistItems', 'user', "save productRatingCount as text '1,2k'", false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w-bad3'), wItem({ productRatingCount: '1,2k' })));
+add('wishlistItems', 'user', 'save productRatingCount -1', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w-bad4'), wItem({ productRatingCount: -1 })));
+add('wishlistItems/priceSnapshots', 'user', 'save a price with shop name and ratings', true, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-rated'), wSnap({ shopName: 'Shop Mây', ...rated })));
+add('wishlistItems/priceSnapshots', 'user', 'save a price with a 61-character shop name', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-bad1'), wSnap({ shopName: 'x'.repeat(61) })));
+add('wishlistItems/priceSnapshots', 'user', 'save a price with productRating 5.5', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-bad2'), wSnap({ productRating: 5.5 })));
+add('wishlistItems/priceSnapshots', 'user', 'save a price with productRatingCount 1.5', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-bad3'), wSnap({ productRatingCount: 1.5 })));
 add('wishlistItems/priceSnapshots', 'user', 'edit a recorded price', false, () => updateDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 2 }));
 add('decisions', 'user', 'unknown choice', false, () => setDoc(doc(alice, 'users/alice/decisions/d2'), { choice: 'maybe' }));
 add('feedback', 'user', 'edit a sent feedback', false, () => updateDoc(doc(bob, 'users/bob/feedback/f1'), { message: 'sửa' }));

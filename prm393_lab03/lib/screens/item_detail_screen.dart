@@ -24,6 +24,7 @@ import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/shared_price_section.dart';
+import '../widgets/shopee_rating_line.dart';
 import '../widgets/undo_snack_bar.dart';
 import '../widgets/wishlist_card.dart';
 
@@ -371,6 +372,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     Text(
                       'Phân loại: ${item.variantLabel}',
                       style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                  // Ratings the extension read on Shopee; nothing when unknown
+                  if (item.productRating != null ||
+                      item.shopRating != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    ShopeeRatingLine(
+                      key: const ValueKey('item-ratings'),
+                      productRating: item.productRating,
+                      productRatingCount: item.productRatingCount,
+                      shopName: item.shopName,
+                      shopRating: item.shopRating,
                     ),
                   ],
                   const SizedBox(height: AppDimens.space12),

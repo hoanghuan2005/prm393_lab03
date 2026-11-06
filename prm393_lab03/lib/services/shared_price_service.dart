@@ -57,6 +57,8 @@ class FirestoreSharedPriceService implements SharedPriceService {
     final amount = data['amountVnd'];
     final at = data['observedAt'];
     if (amount is! int || at is! Timestamp) return null;
+    // Sample data never counts as a real person's price (rules refuse it; old data may not)
+    if (data['source'] == 'demo') return null;
     return SharedPriceReport(
       amountVnd: amount,
       priceType: PriceType.fromKey(data['priceType'] as String?),

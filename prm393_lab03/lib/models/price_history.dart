@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'firestore_fields.dart';
+import 'shopee_link.dart';
 
 /// Price kinds of "Biểu đồ giá tham khảo". Separate from [PriceType] of the
 /// personal price snapshots, which has no [sale].
@@ -70,6 +71,10 @@ class PriceHistoryProduct {
     this.isDemo = false,
     required this.createdAt,
   });
+
+  /// Product page on Shopee; null for sample data (made-up ids, never opened)
+  String? get shopeeUrl =>
+      isDemo ? null : ShopeeLink.fromProductKey(productKey)?.canonicalUrl;
 
   factory PriceHistoryProduct.fromFirestore(DocumentSnapshot doc) {
     final data = docData(doc);

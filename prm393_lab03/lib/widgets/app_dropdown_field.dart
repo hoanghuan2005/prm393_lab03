@@ -43,9 +43,7 @@ class AppDropdownField<T> extends StatelessWidget {
       constraints: BoxConstraints.tightFor(width: renderBox.size.width),
       elevation: 8,
       color: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: AppDimens.borderMedium,
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderMedium),
       items: [
         for (var index = 0; index < items.length; index++)
           PopupMenuItem<int>(

@@ -309,7 +309,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final matchingShopItems = wishlistVm.allItems.where((other) {
       if (other.id == item.id) return false;
       final otherTokens = titleTokens(other.title);
-      return compareTitles(currentTokens, otherTokens) == TitleSimilarity.likely;
+      return compareTitles(currentTokens, otherTokens) ==
+          TitleSimilarity.likely;
     }).toList();
     final canDecide = item.status == WishlistStatus.considering;
     final needsPurchase =
@@ -407,7 +408,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       MotiveChip(motive: item.displayMotive),
                       if (item.shopName != null && item.shopName!.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
@@ -416,9 +420,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.storefront_outlined, size: 13, color: AppColors.textSecondary),
+                              const Icon(
+                                Icons.storefront_outlined,
+                                size: 13,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(width: 4),
-                              Text(item.shopName!, style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                item.shopName!,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -617,7 +630,6 @@ class _ReviewInfo extends StatelessWidget {
   }
 }
 
-
 /// Section displaying price comparison across different shops for the same product
 class _ShopPriceComparisonSection extends StatelessWidget {
   final WishlistItem currentItem;
@@ -655,12 +667,18 @@ class _ShopPriceComparisonSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.compare_arrows_rounded, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.compare_arrows_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: AppDimens.space8),
               Expanded(
                 child: Text(
                   'So sánh giá các cửa hàng (${allOffers.length} shop)',
-                  style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -668,14 +686,22 @@ class _ShopPriceComparisonSection extends StatelessWidget {
           const SizedBox(height: AppDimens.space12),
           ...allOffers.map((offer) {
             final isCurrent = offer.id == currentItem.id;
-            final isLowest = lowestItem != null && offer.id == lowestItem.id && validPrices.length > 1;
+            final isLowest =
+                lowestItem != null &&
+                offer.id == lowestItem.id &&
+                validPrices.length > 1;
             final shopTitle = offer.shopName?.isNotEmpty == true
                 ? offer.shopName!
-                : (offer.url?.contains('shopee') == true ? 'Shopee' : 'Cửa hàng khác');
+                : (offer.url?.contains('shopee') == true
+                      ? 'Shopee'
+                      : 'Cửa hàng khác');
 
             return Container(
               margin: const EdgeInsets.only(bottom: AppDimens.space8),
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space12,
+                vertical: AppDimens.space8,
+              ),
               decoration: BoxDecoration(
                 color: isCurrent
                     ? AppColors.primary.withValues(alpha: 0.08)
@@ -684,7 +710,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                 border: Border.all(
                   color: isLowest
                       ? const Color(0xFF10B981)
-                      : (isCurrent ? AppColors.primary.withValues(alpha: 0.4) : AppColors.divider),
+                      : (isCurrent
+                            ? AppColors.primary.withValues(alpha: 0.4)
+                            : AppColors.divider),
                   width: isLowest ? 1.5 : 1,
                 ),
               ),
@@ -693,7 +721,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   Icon(
                     Icons.storefront_outlined,
                     size: 18,
-                    color: isLowest ? const Color(0xFF10B981) : AppColors.textSecondary,
+                    color: isLowest
+                        ? const Color(0xFF10B981)
+                        : AppColors.textSecondary,
                   ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
@@ -706,7 +736,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                               child: Text(
                                 shopTitle,
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: isCurrent || isLowest ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isCurrent || isLowest
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -715,28 +747,45 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                             if (isCurrent) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'Đang xem',
-                                  style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                             if (isLowest) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  color: const Color(0xFF10B981)
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'Rẻ nhất ⭐',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -745,7 +794,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                         if (offer.url != null && offer.url!.isNotEmpty)
                           Text(
                             offer.url!,
-                            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -756,7 +807,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   Text(
                     formatVnd(offer.latestPriceVnd),
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: isLowest ? const Color(0xFF10B981) : AppColors.textPrimary,
+                      color: isLowest
+                          ? const Color(0xFF10B981)
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -774,7 +827,11 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.savings_outlined, color: Color(0xFF10B981), size: 18),
+                  const Icon(
+                    Icons.savings_outlined,
+                    color: Color(0xFF10B981),
+                    size: 18,
+                  ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(

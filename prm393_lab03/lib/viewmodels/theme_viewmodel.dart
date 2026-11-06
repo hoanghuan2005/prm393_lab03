@@ -61,4 +61,3 @@ class ThemeViewModel extends ChangeNotifier {
     await setThemeMode(currentDark ? ThemeMode.light : ThemeMode.dark);
   }
 }
-

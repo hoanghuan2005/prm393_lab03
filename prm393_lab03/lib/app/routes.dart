@@ -177,7 +177,9 @@ class AppRoutes {
         initialPrice: args is AddItemArgs ? args.initialPrice : null,
         initialImageUrl: args is AddItemArgs ? args.initialImageUrl : null,
         shopName: args is AddItemArgs ? args.shopName : null,
-        productDescription: args is AddItemArgs ? args.productDescription : null,
+        productDescription: args is AddItemArgs
+            ? args.productDescription
+            : null,
       ),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,

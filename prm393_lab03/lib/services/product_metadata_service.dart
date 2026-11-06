@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+
 import 'shopee_url_parser.dart';
 
 /// Normalized product information extracted from a shared link or metadata.
@@ -71,7 +73,10 @@ class ProductMetadataService {
 
     String finalUrl = cleanUrl;
     if (ShopeeUrlParser.isShortenedUrl(cleanUrl)) {
-      finalUrl = await ShopeeUrlParser.resolveRedirect(cleanUrl, timeout: timeout);
+      finalUrl = await ShopeeUrlParser.resolveRedirect(
+        cleanUrl,
+        timeout: timeout,
+      );
     }
 
     // Try extracting title from URL slug first (instant, doesn't need network)
@@ -95,8 +100,7 @@ class ProductMetadataService {
       if (uri == null) return metadata;
 
       final client = HttpClient()..connectionTimeout = timeout;
-      client.userAgent =
-          'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+      client.userAgent = 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
       final request = await client.getUrl(uri);
       request.followRedirects = true;
@@ -171,8 +175,10 @@ class ProductMetadataService {
 
     if (title == null || title.isEmpty || isGenericSiteTitle(title)) {
       // Fallback A: <title> tag
-      final titleTagMatch = RegExp(r'<title>([^<]+)</title>', caseSensitive: false)
-          .firstMatch(html);
+      final titleTagMatch = RegExp(
+        r'<title>([^<]+)</title>',
+        caseSensitive: false,
+      ).firstMatch(html);
       final rawTag = titleTagMatch?.group(1)?.trim();
       if (rawTag != null && rawTag.isNotEmpty) {
         final clean = rawTag
@@ -187,7 +193,8 @@ class ProductMetadataService {
 
     if (title == null || title.isEmpty || isGenericSiteTitle(title)) {
       // Fallback B: JSON initialState item title
-      final jsonTitleMatch = RegExp(r'"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"').firstMatch(html);
+      final jsonTitleMatch = RegExp(r'"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"')
+          .firstMatch(html);
       if (jsonTitleMatch != null) {
         final raw = jsonTitleMatch.group(1)!;
         if (raw.isNotEmpty && raw.length > 5 && !isGenericSiteTitle(raw)) {
@@ -207,13 +214,16 @@ class ProductMetadataService {
     ).firstMatch(html);
     final ogImg = ogImgMatch?.group(1) ?? ogImgMatch?.group(2);
 
-    if (ogImg != null && ogImg.trim().isNotEmpty && !_isShopeeBrandLogo(ogImg)) {
+    if (ogImg != null &&
+        ogImg.trim().isNotEmpty &&
+        !_isShopeeBrandLogo(ogImg)) {
       imageUrl = ogImg.trim();
     }
 
     // Fallback: search for Shopee image hash in HTML/JSON (e.g. "image":"vn-11134207-81ztc-mloysk0pcoi089")
     if (imageUrl == null || _isShopeeBrandLogo(imageUrl)) {
-      final imgHashMatch = RegExp(r'"image"\s*:\s*"([a-zA-Z0-9_\-]+)"').firstMatch(html);
+      final imgHashMatch = RegExp(r'"image"\s*:\s*"([a-zA-Z0-9_\-]+)"')
+          .firstMatch(html);
       if (imgHashMatch != null) {
         final hash = imgHashMatch.group(1)!;
         if (hash.isNotEmpty && hash != 'null' && hash.length > 10) {
@@ -234,8 +244,10 @@ class ProductMetadataService {
         description = d;
       }
       // Try extracting shop name from description if format is: "Mua sắm [Sản phẩm] tại [Shop] trên Shopee..."
-      final shopMatch = RegExp(r'tại\s+([^,.]+?)\s+trên\s+Shopee', caseSensitive: false)
-          .firstMatch(d);
+      final shopMatch = RegExp(
+        r'tại\s+([^,.]+?)\s+trên\s+Shopee',
+        caseSensitive: false,
+      ).firstMatch(d);
       if (shopMatch != null) {
         shopName = shopMatch.group(1)?.trim();
       }
@@ -249,7 +261,8 @@ class ProductMetadataService {
       ).firstMatch(html);
       final rawPrice = ogPriceMatch?.group(1) ?? ogPriceMatch?.group(2);
       if (rawPrice != null) {
-        final parsed = double.tryParse(rawPrice)?.toInt() ??
+        final parsed =
+            double.tryParse(rawPrice)?.toInt() ??
             int.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9]'), ''));
         if (parsed != null && parsed > 0) {
           price = parsed;

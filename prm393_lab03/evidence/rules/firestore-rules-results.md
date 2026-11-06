@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T13:50:48.090Z.
-Tổng: 148 ca · Qua: 148 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T14:42:38.361Z.
+Tổng: 190 ca · Qua: 190 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 
 | ID | Collection | Role | Operation | Expected | Result |
@@ -146,11 +146,53 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-138 | sharedPrices/reports | user | add a uid field | Denied | Pass |
 | R-139 | sharedPrices/reports | guest | share a price | Denied | Pass |
 | R-140 | sharedPrices/reports | guest | read prices | Allowed | Pass |
-| R-141 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
-| R-142 | extensionPairings | user | list pairings | Denied | Pass |
-| R-143 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
-| R-144 | extensionPairings | staff | list pairings | Denied | Pass |
-| R-145 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
-| R-146 | extensionPairings | admin | list pairings | Denied | Pass |
-| R-147 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
-| R-148 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |
+| R-141 | priceHistory | user | read a product | Allowed | Pass |
+| R-142 | priceHistory/reports | user | read reports | Allowed | Pass |
+| R-143 | productGroups | user | read a group | Allowed | Pass |
+| R-144 | priceHistory | staff | read a product | Allowed | Pass |
+| R-145 | priceHistory/reports | staff | read reports | Allowed | Pass |
+| R-146 | productGroups | staff | read a group | Allowed | Pass |
+| R-147 | priceHistory | admin | read a product | Allowed | Pass |
+| R-148 | priceHistory/reports | admin | read reports | Allowed | Pass |
+| R-149 | productGroups | admin | read a group | Allowed | Pass |
+| R-150 | priceHistory | user | create a demo product | Denied | Pass |
+| R-151 | priceHistory/reports | user | create a demo report | Denied | Pass |
+| R-152 | priceHistory/reports | user | delete a demo report | Denied | Pass |
+| R-153 | productGroups | user | create a demo group | Denied | Pass |
+| R-154 | priceHistory | staff | create a demo product | Denied | Pass |
+| R-155 | priceHistory/reports | staff | create a demo report | Denied | Pass |
+| R-156 | priceHistory/reports | staff | delete a demo report | Denied | Pass |
+| R-157 | productGroups | staff | create a demo group | Denied | Pass |
+| R-158 | priceHistory | user | create a non-demo product | Denied | Pass |
+| R-159 | priceHistory | admin | create a demo product | Allowed | Pass |
+| R-160 | priceHistory | admin | delete a demo product | Allowed | Pass |
+| R-161 | priceHistory | admin | create with a 121-character title | Denied | Pass |
+| R-162 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
+| R-163 | priceHistory | admin | create a non-demo product (opens in G7) | Denied | Pass |
+| R-164 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
+| R-165 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
+| R-166 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
+| R-167 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
+| R-168 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
+| R-169 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
+| R-170 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
+| R-171 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
+| R-172 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
+| R-173 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
+| R-174 | priceHistory/reports | admin | non-demo source 'manual' (opens in G7) | Denied | Pass |
+| R-175 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
+| R-176 | priceHistory/reports | admin | add a uid field | Denied | Pass |
+| R-177 | productGroups | admin | create a demo group | Allowed | Pass |
+| R-178 | productGroups | admin | delete a demo group | Allowed | Pass |
+| R-179 | productGroups | admin | create a non-demo group | Denied | Pass |
+| R-180 | priceHistory | signed out | read a product | Denied | Pass |
+| R-181 | priceHistory/reports | signed out | read reports | Denied | Pass |
+| R-182 | productGroups | signed out | read a group | Denied | Pass |
+| R-183 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
+| R-184 | extensionPairings | user | list pairings | Denied | Pass |
+| R-185 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
+| R-186 | extensionPairings | staff | list pairings | Denied | Pass |
+| R-187 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
+| R-188 | extensionPairings | admin | list pairings | Denied | Pass |
+| R-189 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
+| R-190 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |

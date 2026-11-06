@@ -264,8 +264,7 @@ class PrePurchaseRules {
           MoodAnswer.down =>
             'Bạn đang buồn hoặc chán. Mua sắm lúc này có thể là một cách tìm '
                 'lại cảm giác dễ chịu.',
-          MoodAnswer.stressed =>
-            'Bạn đang căng thẳng. Món đồ có thể đang hứa hẹn một chút nhẹ nhõm.',
+          MoodAnswer.stressed => 'Bạn đang căng thẳng. Món đồ có thể đang hứa hẹn một chút nhẹ nhõm.',
           MoodAnswer.calm =>
             'Bạn đang bình thường, nên mong muốn này ít bị cảm xúc nhất thời '
                 'chi phối.',
@@ -303,10 +302,8 @@ class PrePurchaseRules {
         UsageAnswer.daily =>
           'Bạn nghĩ mình sẽ dùng món này hằng ngày, nó sẽ là một phần thói quen '
               'của bạn.',
-        UsageAnswer.weekly =>
-          'Bạn nghĩ mình sẽ dùng món này vài lần mỗi tuần.',
-        UsageAnswer.sometimes =>
-          'Bạn nghĩ mình chỉ dùng món này thỉnh thoảng.',
+        UsageAnswer.weekly => 'Bạn nghĩ mình sẽ dùng món này vài lần mỗi tuần.',
+        UsageAnswer.sometimes => 'Bạn nghĩ mình chỉ dùng món này thỉnh thoảng.',
         UsageAnswer.unsure =>
           'Bạn chưa hình dung rõ mình sẽ dùng món này lúc nào.',
       },

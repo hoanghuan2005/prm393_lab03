@@ -164,6 +164,58 @@ service cloud.firestore {
         && rid == sharedReportId(productKey, resource.data.modelKey);
     }
 
+    // "Biểu đồ giá tham khảo": prices per product over time, read by every signed-in user.
+    // For now only admins write, and only sample data (isDemo / source 'demo'); user reports
+    // open later (G7). afterVoucher is stored but never counted as a list price (app side).
+    function optionalText(f, max) { return !(f in d()) || text(d()[f], max); }
+    function optionalRating(f) { return !(f in d()) || (d()[f] is number && d()[f] > 0 && d()[f] <= 5); }
+    function validHistoryProduct(productKey) {
+      return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+        && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt'])
+        && text(d().title, 120) && text(d().shopName, 60)
+        && d().shopId is string && d().itemId is string
+        && productKey == 'shopee:' + d().shopId + ':' + d().itemId
+        && optionalText('groupId', 128)
+        && d().isDemo is bool && d().createdAt is timestamp;
+    }
+    function validHistoryReport() {
+      return d().keys().hasOnly(['amountVnd','priceType','modelKey','observedAt','source','shopName',
+                                 'productRating','productRatingCount','shopRating'])
+        && validMoney(d().amountVnd)
+        && d().priceType in ['single','range','flash','sale','afterVoucher']
+        && d().modelKey is string && d().modelKey.matches('^(none|[0-9]{1,20})$')
+        && d().observedAt is timestamp
+        && d().source in ['manual','extensionPage','demo']
+        && optionalText('shopName', 60)
+        && optionalRating('productRating') && optionalRating('shopRating')
+        && (!('productRatingCount' in d()) || (d().productRatingCount is int && d().productRatingCount >= 0));
+    }
+    match /priceHistory/{productKey} {
+      allow read: if request.auth != null;
+      allow create: if isAdmin() && validHistoryProduct(productKey) && d().isDemo == true;
+      allow update: if isAdmin() && resource.data.isDemo == true
+        && validHistoryProduct(productKey) && d().isDemo == true;
+      allow delete: if isAdmin() && resource.data.isDemo == true;
+
+      // Sample report id: demo<n>_<modelKey>_<yyyyMMdd>
+      match /reports/{rid} {
+        allow read: if request.auth != null;
+        allow create: if isAdmin() && validHistoryReport() && d().source == 'demo'
+          && rid.matches('^demo[0-9]{1,6}_' + d().modelKey + '_[0-9]{8}$');
+        allow update: if isAdmin() && resource.data.source == 'demo'
+          && validHistoryReport() && d().source == 'demo' && d().modelKey == resource.data.modelKey;
+        allow delete: if isAdmin() && resource.data.source == 'demo';
+      }
+    }
+    match /productGroups/{groupId} {
+      allow read: if request.auth != null;
+      allow create, update: if isAdmin() && d().isDemo == true
+        && (resource == null || resource.data.isDemo == true)
+        && d().keys().hasOnly(['name','productKeys','isDemo'])
+        && text(d().name, 120) && d().productKeys is list && d().productKeys.size() <= 50;
+      allow delete: if isAdmin() && resource.data.isDemo == true;
+    }
+
     // QR linking: the extension (anonymous) creates a pending request and shows its id as a QR.
     // Only someone holding the id can read it (no list); a signed-in, non-anonymous app user
     // approves it for their own uid or rejects it, once.

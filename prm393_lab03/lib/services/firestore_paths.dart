@@ -60,6 +60,19 @@ class FirestorePaths {
   CollectionReference<JsonMap> sharedPriceReports(String productKey) =>
       db.collection('sharedPrices').doc(productKey).collection('reports');
 
+  /// "Biểu đồ giá tham khảo": shared per product (top level, no uid)
+  CollectionReference<JsonMap> priceHistory() => db.collection('priceHistory');
+  DocumentReference<JsonMap> priceHistoryProduct(String productKey) =>
+      priceHistory().doc(productKey);
+  CollectionReference<JsonMap> priceHistoryReports(String productKey) =>
+      priceHistoryProduct(productKey).collection('reports');
+
+  /// The same item in several shops, grouped by hand
+  CollectionReference<JsonMap> productGroups() =>
+      db.collection('productGroups');
+  DocumentReference<JsonMap> productGroup(String groupId) =>
+      productGroups().doc(groupId);
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

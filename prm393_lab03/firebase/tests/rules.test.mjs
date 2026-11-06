@@ -53,6 +53,12 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   for (const [id, uid] of [['sg-1', 'alice'], ['sg-2', 'alice'], ['sg-3', 'alice'], ['sg-bob', 'bob']]) {
     await setDoc(doc(db, `saleSuggestions/${id}`), suggestion(uid));
   }
+  await setDoc(doc(db, `priceHistory/${key}`), demoProduct());
+  await setDoc(doc(db, 'priceHistory/shopee:1:2'), demoProduct('1', '2'));
+  await setDoc(doc(db, `priceHistory/${key}/reports/demo1_none_20261101`), demoReport());
+  await setDoc(doc(db, `priceHistory/${key}/reports/demo2_none_20261101`), demoReport());
+  await setDoc(doc(db, 'productGroups/g1'), demoGroup());
+  await setDoc(doc(db, 'productGroups/g2'), demoGroup());
   await setDoc(doc(db, 'extensionPairings/p1'), {
     anonUid: 'ext-1', deviceLabel: 'Chrome', status: 'pending', createdAt: now(),
   });
@@ -108,6 +114,19 @@ const message = (by, extra = {}) => ({
   title: 'Trả lời góp ý', body: 'Nhóm đã ghi nhận', kind: 'feedback_reply', refId: 'f1',
   createdAt: serverTimestamp(), createdBy: by, readAt: null, ...extra,
 });
+
+function demoProduct(shopId = '446089250', itemId = '44081797761', extra = {}) {
+  return { title: 'Tai nghe Bluetooth', shopId, itemId, shopName: 'Shop mẫu', isDemo: true, createdAt: now(), ...extra };
+}
+function demoReport(extra = {}) {
+  return {
+    amountVnd: 420000, priceType: 'single', modelKey: 'none', observedAt: now(), source: 'demo',
+    shopName: 'Shop mẫu', productRating: 4.8, productRatingCount: 120, shopRating: 4.9, ...extra,
+  };
+}
+function demoGroup(extra = {}) {
+  return { name: 'Tai nghe Bluetooth', productKeys: [key], isDemo: true, ...extra };
+}
 
 // ---------- Cases: [collection, role, operation, allowed, run] ----------
 const cases = [];
@@ -220,6 +239,45 @@ for (const [role, [uid, db]] of Object.entries(actors)) {
 add('sharedPrices/reports', 'user', 'add a uid field', false, () => setDoc(doc(alice, 'sharedPrices', key, 'reports', reportId('alice')), { ...report, uid: 'alice' }));
 add('sharedPrices/reports', 'guest', 'share a price', false, () => setDoc(doc(guest, 'sharedPrices', key, 'reports', reportId('guest-1')), report));
 add('sharedPrices/reports', 'guest', 'read prices', true, () => getDocs(collection(guest, 'sharedPrices', key, 'reports')));
+
+// priceHistory, priceHistory/reports, productGroups ("Biểu đồ giá tham khảo"): admins write sample data only
+const hReport = (db, rid) => doc(db, 'priceHistory', key, 'reports', rid);
+for (const [role, [, db]] of Object.entries(actors)) {
+  add('priceHistory', role, 'read a product', true, () => getDoc(doc(db, `priceHistory/${key}`)));
+  add('priceHistory/reports', role, 'read reports', true, () => getDocs(collection(db, 'priceHistory', key, 'reports')));
+  add('productGroups', role, 'read a group', true, () => getDoc(doc(db, 'productGroups/g1')));
+}
+for (const [role, db] of [['user', alice], ['staff', sam]]) {
+  add('priceHistory', role, 'create a demo product', false, () => setDoc(doc(db, 'priceHistory/shopee:3:4'), demoProduct('3', '4')));
+  add('priceHistory/reports', role, 'create a demo report', false, () => setDoc(hReport(db, 'demo9_none_20261102'), demoReport()));
+  add('priceHistory/reports', role, 'delete a demo report', false, () => deleteDoc(hReport(db, 'demo1_none_20261101')));
+  add('productGroups', role, 'create a demo group', false, () => setDoc(doc(db, 'productGroups/g3'), demoGroup()));
+}
+add('priceHistory', 'user', 'create a non-demo product', false, () => setDoc(doc(alice, 'priceHistory/shopee:3:4'), demoProduct('3', '4', { isDemo: false })));
+add('priceHistory', 'admin', 'create a demo product', true, () => setDoc(doc(ada, 'priceHistory/shopee:5:6'), demoProduct('5', '6', { groupId: 'g1' })));
+add('priceHistory', 'admin', 'delete a demo product', true, () => deleteDoc(doc(ada, 'priceHistory/shopee:1:2')));
+add('priceHistory', 'admin', 'create with a 121-character title', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { title: 'x'.repeat(121) })));
+add('priceHistory', 'admin', 'create with a 61-character shop name', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { shopName: 'x'.repeat(61) })));
+add('priceHistory', 'admin', 'create a non-demo product (opens in G7)', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { isDemo: false })));
+add('priceHistory', 'admin', 'shopId/itemId not matching the key', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '9')));
+add('priceHistory/reports', 'admin', 'create a demo report', true, () => setDoc(hReport(ada, 'demo3_none_20261102'), demoReport()));
+add('priceHistory/reports', 'admin', "create priceType 'sale'", true, () => setDoc(hReport(ada, 'demo4_none_20261102'), demoReport({ priceType: 'sale' })));
+add('priceHistory/reports', 'admin', "create priceType 'afterVoucher'", true, () => setDoc(hReport(ada, 'demo5_123_20261102'), demoReport({ priceType: 'afterVoucher', modelKey: '123' })));
+add('priceHistory/reports', 'admin', 'delete a demo report', true, () => deleteDoc(hReport(ada, 'demo2_none_20261101')));
+add('priceHistory/reports', 'admin', 'productRating 6', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ productRating: 6 })));
+add('priceHistory/reports', 'admin', 'shopRating 0', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ shopRating: 0 })));
+add('priceHistory/reports', 'admin', 'productRatingCount -1', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ productRatingCount: -1 })));
+add('priceHistory/reports', 'admin', "unknown priceType 'coupon'", false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ priceType: 'coupon' })));
+add('priceHistory/reports', 'admin', 'amountVnd 0', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ amountVnd: 0 })));
+add('priceHistory/reports', 'admin', "non-demo source 'manual' (opens in G7)", false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ source: 'manual' })));
+add('priceHistory/reports', 'admin', 'id not matching modelKey', false, () => setDoc(hReport(ada, 'demo6_999_20261102'), demoReport()));
+add('priceHistory/reports', 'admin', 'add a uid field', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ uid: 'ada' })));
+add('productGroups', 'admin', 'create a demo group', true, () => setDoc(doc(ada, 'productGroups/g4'), demoGroup()));
+add('productGroups', 'admin', 'delete a demo group', true, () => deleteDoc(doc(ada, 'productGroups/g2')));
+add('productGroups', 'admin', 'create a non-demo group', false, () => setDoc(doc(ada, 'productGroups/g5'), demoGroup({ isDemo: false })));
+add('priceHistory', 'signed out', 'read a product', false, () => getDoc(doc(nobody, `priceHistory/${key}`)));
+add('priceHistory/reports', 'signed out', 'read reports', false, () => getDocs(collection(nobody, 'priceHistory', key, 'reports')));
+add('productGroups', 'signed out', 'read a group', false, () => getDoc(doc(nobody, 'productGroups/g1')));
 
 // extensionPairings
 for (const [role, [, db]] of Object.entries(actors)) {

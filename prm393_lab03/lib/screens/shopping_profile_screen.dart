@@ -298,15 +298,9 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
               labelText: 'Nhóm ngân sách (không bắt buộc)',
             ),
             items: [
-              const AppDropdownItem<String?>(
-                value: null,
-                label: 'Chưa chọn',
-              ),
+              const AppDropdownItem<String?>(value: null, label: 'Chưa chọn'),
               for (final g in groups)
-                AppDropdownItem<String?>(
-                  value: g.id,
-                  label: g.name,
-                ),
+                AppDropdownItem<String?>(value: g.id, label: g.name),
             ],
             onChanged: _saving ? null : (v) => setState(() => _groupId = v),
           ),

@@ -94,7 +94,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
       _productDescription = widget.productDescription;
 
       final url = _urlController.text.trim();
-      if (url.isNotEmpty && (_titleController.text.trim().isEmpty || _imageUrl == null)) {
+      if (url.isNotEmpty &&
+          (_titleController.text.trim().isEmpty || _imageUrl == null)) {
         _loadMetadata(url);
       }
     }
@@ -107,7 +108,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
     try {
       final meta = await ProductMetadataService.fetch(
         url,
-        existingTitle: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : null,
+        existingTitle: _titleController.text.trim().isNotEmpty
+            ? _titleController.text.trim()
+            : null,
         existingPrice: parseVnd(_priceController.text),
       );
 
@@ -116,18 +119,25 @@ class _AddItemScreenState extends State<AddItemScreen> {
       setState(() {
         _isLoadingMetadata = false;
         final currentTitle = _titleController.text.trim();
-        final shouldUpdateTitle = currentTitle.isEmpty ||
+        final shouldUpdateTitle =
+            currentTitle.isEmpty ||
             currentTitle.toLowerCase().startsWith('cơ hội sở hữu') ||
             currentTitle.toLowerCase().startsWith('chia sẻ sản phẩm') ||
-            (meta.title != null && meta.title!.isNotEmpty && currentTitle.length < 20);
+            (meta.title != null &&
+                meta.title!.isNotEmpty &&
+                currentTitle.length < 20);
 
         if (shouldUpdateTitle && meta.title != null && meta.title!.isNotEmpty) {
           _titleController.text = meta.title!;
         }
-        if (_priceController.text.trim().isEmpty && meta.priceVnd != null && meta.priceVnd! > 0) {
-          _priceController.text = formatVnd(meta.priceVnd!).replaceAll(' ₫', '');
+        if (_priceController.text.trim().isEmpty &&
+            meta.priceVnd != null &&
+            meta.priceVnd! > 0) {
+          _priceController.text = formatVnd(meta.priceVnd!)
+              .replaceAll(' ₫', '');
         }
-        final hasBrandLogo = _imageUrl != null &&
+        final hasBrandLogo =
+            _imageUrl != null &&
             (_imageUrl!.contains('deo.shopeemobile.com') ||
                 _imageUrl!.contains('26c9324913c021677768c36975d635ef'));
         if ((_imageUrl == null || hasBrandLogo) && meta.imageUrl != null) {
@@ -136,7 +146,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
         if (_shopName == null && meta.shopName != null) {
           _shopName = meta.shopName;
         }
-        if (_shopController.text.trim().isEmpty && meta.shopName != null && meta.shopName!.isNotEmpty) {
+        if (_shopController.text.trim().isEmpty &&
+            meta.shopName != null &&
+            meta.shopName!.isNotEmpty) {
           _shopController.text = meta.shopName!;
         }
         if (_productDescription == null && meta.description != null) {
@@ -190,7 +202,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
             budgetGroupId: _budgetGroupId,
             priority: _priority,
             imageUrl: _imageUrl,
-            shopName: _shopController.text.trim().isNotEmpty ? _shopController.text.trim() : _shopName,
+            shopName: _shopController.text.trim().isNotEmpty
+                ? _shopController.text.trim()
+                : _shopName,
             saveChannel: widget.initialUrl != null || _imageUrl != null
                 ? SaveChannel.share
                 : SaveChannel.manual,
@@ -318,9 +332,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEE4D2D).withValues(alpha: 0.12),
+                                color: const Color(0xFFEE4D2D)
+                                    .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
@@ -335,13 +353,18 @@ class _AddItemScreenState extends State<AddItemScreen> {
                             ValueListenableBuilder<TextEditingValue>(
                               valueListenable: _shopController,
                               builder: (_, val, _) {
-                                final name = val.text.trim().isNotEmpty ? val.text.trim() : _shopName;
-                                if (name == null || name.isEmpty) return const SizedBox.shrink();
+                                final name = val.text.trim().isNotEmpty
+                                    ? val.text.trim()
+                                    : _shopName;
+                                if (name == null || name.isEmpty)
+                                  return const SizedBox.shrink();
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     'Shop: $name',
-                                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),

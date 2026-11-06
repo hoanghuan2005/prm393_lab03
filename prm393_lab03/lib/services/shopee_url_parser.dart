@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 /// Utility to recognize, extract, and normalize Shopee URLs and shared text.
@@ -51,8 +52,7 @@ class ShopeeUrlParser {
       if (uri == null) return url;
 
       final client = HttpClient()..connectionTimeout = timeout;
-      client.userAgent =
-          'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+      client.userAgent = 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
       final request = await client.getUrl(uri);
       request.followRedirects = true;
@@ -79,7 +79,8 @@ class ShopeeUrlParser {
         final html = utf8.decode(bytes, allowMalformed: true);
 
         // Subcase 2a: var CONFIG = { httpUrl: "https:\/\/shopee.vn\/product\/..." }
-        final httpUrlMatch = RegExp(r'httpUrl\s*:\s*"([^"]+)"').firstMatch(html);
+        final httpUrlMatch = RegExp(r'httpUrl\s*:\s*"([^"]+)"')
+            .firstMatch(html);
         if (httpUrlMatch != null) {
           var target = httpUrlMatch.group(1)!;
           target = target.replaceAll(r'\/', '/').replaceAll(r'\u0026', '&');
@@ -218,22 +219,34 @@ class ShopeeUrlParser {
     );
     // Remove seller promotional brackets like [FREESHIP XTRA], [CHÍNH HÃNG], [BH 12T]
     text = text.replaceAll(
-      RegExp(r'\[(?:freeship|chính hãng|chinh hang|mã giảm|hot|xả kho|xa kho|bh|sale|voucher|sốc|cực sốc)[^\]]*\]', caseSensitive: false),
+      RegExp(
+        r'\[(?:freeship|chính hãng|chinh hang|mã giảm|hot|xả kho|xa kho|bh|sale|voucher|sốc|cực sốc)[^\]]*\]',
+        caseSensitive: false,
+      ),
       '',
     );
     text = text.replaceAll(RegExp(r'【[^】]*】'), '');
 
     // Remove promotional suffixes like "BH 12 tháng", "Chính hãng 100%", "Giá rẻ"
     text = text.replaceAll(
-      RegExp(r'\b(?:bh|bảo hành)\s*\d+\s*(?:tháng|năm|t)\b', caseSensitive: false),
+      RegExp(
+        r'\b(?:bh|bảo hành)\s*\d+\s*(?:tháng|năm|t)\b',
+        caseSensitive: false,
+      ),
       '',
     );
     text = text.replaceAll(
-      RegExp(r'\b(?:chính hãng\s*100%|chính hãng|giá rẻ|cao cấp|freeship\s*xtra|freeship)\b', caseSensitive: false),
+      RegExp(
+        r'\b(?:chính hãng\s*100%|chính hãng|giá rẻ|cao cấp|freeship\s*xtra|freeship)\b',
+        caseSensitive: false,
+      ),
       '',
     );
 
-    text = text.replaceAll(RegExp(r'^[M|m]ua\s+(?:ngay\s+)?(?:sản\s+phẩm\s+)?'), '');
+    text = text.replaceAll(
+      RegExp(r'^[M|m]ua\s+(?:ngay\s+)?(?:sản\s+phẩm\s+)?'),
+      '',
+    );
     text = text.replaceAll(RegExp(r'[\-|:•\s.!]+$'), '');
     text = text.replaceAll(RegExp(r'^[\-|:•\s.!]+'), '');
     text = text.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
@@ -248,7 +261,10 @@ class ShopeeUrlParser {
     final sub = trimmed.substring(0, maxLength);
     final lastSpace = sub.lastIndexOf(' ');
     if (lastSpace > 15) {
-      return sub.substring(0, lastSpace).replaceAll(RegExp(r'[,\-|:•\s.!]+$'), '').trim();
+      return sub
+          .substring(0, lastSpace)
+          .replaceAll(RegExp(r'[,\-|:•\s.!]+$'), '')
+          .trim();
     }
     return sub.trim();
   }

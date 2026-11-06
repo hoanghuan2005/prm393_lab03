@@ -155,10 +155,16 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
+        // Wrap: the badge and the range buttons share a line when they fit
+        Wrap(
+          alignment: _view.isDemo
+              ? WrapAlignment.spaceBetween
+              : WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppDimens.space8,
+          runSpacing: AppDimens.space8,
           children: [
             if (_view.isDemo) const DemoDataBadge(),
-            const Spacer(),
             SegmentedButton<PriceHistoryRange>(
               key: const ValueKey('price-range'),
               showSelectedIcon: false,
@@ -375,7 +381,8 @@ class _LegendItem extends StatelessWidget {
           painter: _LineSamplePainter(series.color, series.dash),
         ),
         const SizedBox(width: AppDimens.space4),
-        Text(series.name, style: AppTextStyles.labelMedium),
+        // A long shop name wraps instead of overflowing
+        Flexible(child: Text(series.name, style: AppTextStyles.labelMedium)),
       ],
     );
   }

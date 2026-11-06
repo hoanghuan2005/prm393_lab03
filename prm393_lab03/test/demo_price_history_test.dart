@@ -5,6 +5,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/utils/price_history_ids.dart';
+import 'package:prm393_lab03/models/price_history.dart';
 import 'package:prm393_lab03/services/demo_price_history_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
@@ -503,4 +504,9 @@ class _FakeDemoService implements DemoPriceHistoryService {
     clearCalls++;
     return 0;
   }
+
+  List<ProductGroup> groups = const [];
+
+  @override
+  Future<List<ProductGroup>> demoGroups() async => groups;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/price_history_demo_viewmodel.dart';
@@ -57,6 +58,25 @@ class PriceHistoryDemoSection extends StatelessWidget {
             variant: AppButtonVariant.danger,
             onPressed: vm.isBusy ? null : () => _clear(context, vm),
           ),
+          if (vm.groups.isNotEmpty) ...[
+            const SizedBox(height: AppDimens.space16),
+            Text('Mở biểu đồ nhóm mẫu', style: AppTextStyles.labelLarge),
+            for (final g in vm.groups)
+              ListTile(
+                key: ValueKey('demo-group-${g.id}'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.show_chart_rounded),
+                title: Text(g.name, style: AppTextStyles.bodyMedium),
+                subtitle: Text('${g.productKeys.length} shop', style: muted),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.priceHistory,
+                  arguments: PriceHistoryArgs(groupId: g.id),
+                ),
+              ),
+          ],
         ],
       ),
     );

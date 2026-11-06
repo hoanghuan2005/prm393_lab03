@@ -24,6 +24,7 @@ import '../screens/patterns_screen.dart';
 import '../screens/photo_search_screen.dart';
 import '../screens/pre_purchase_result_screen.dart';
 import '../screens/pre_purchase_screen.dart';
+import '../screens/price_history_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
@@ -44,6 +45,14 @@ class ItemDetailArgs {
   final WishlistItem item;
 
   const ItemDetailArgs(this.item);
+}
+
+/// Arguments for [AppRoutes.priceHistory]: a product (can switch to its group) or a group
+class PriceHistoryArgs {
+  final String? productKey;
+  final String? groupId;
+
+  const PriceHistoryArgs({this.productKey, this.groupId});
 }
 
 /// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
@@ -124,6 +133,9 @@ class AppRoutes {
 
   /// A-15: items of the same budget group side by side (args: [ItemDetailArgs])
   static const wishlistCompare = '/wishlist/compare';
+
+  /// "Giá tham khảo" (PriceHistoryArgs)
+  static const priceHistory = '/price-history';
   static const recordPurchase = '/purchase/record';
   static const purchaseDetail = '/purchase/detail';
   static const history = '/history';
@@ -218,6 +230,13 @@ class AppRoutes {
       wishlistCompare when args is ItemDetailArgs => CompareItemsScreen(
         item: args.item,
       ),
+      priceHistory
+          when args is PriceHistoryArgs &&
+              (args.productKey != null || args.groupId != null) =>
+        PriceHistoryScreen.withViewModel(
+          productKey: args.productKey,
+          groupId: args.groupId,
+        ),
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),

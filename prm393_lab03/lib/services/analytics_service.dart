@@ -146,6 +146,17 @@ class AppAnalyticsService {
     AnalyticsParams.errorType: errorType,
   });
 
+  /// [mode]: `product` or `group`; no product key or title is sent
+  Future<void> logViewPriceHistory({
+    required String mode,
+    required int rangeDays,
+    required bool isDemo,
+  }) => _log(AnalyticsEvents.viewPriceHistory, {
+    AnalyticsParams.mode: mode,
+    AnalyticsParams.rangeDays: rangeDays,
+    AnalyticsParams.isDemo: isDemo ? 1 : 0,
+  });
+
   Future<void> logClickSaleReminder(String saleType) => _log(
     AnalyticsEvents.clickSaleReminder,
     {AnalyticsParams.saleType: saleType},

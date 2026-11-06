@@ -20,6 +20,7 @@ import '../services/feedback_service.dart';
 import '../services/instrumented_ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
+import '../services/price_history_service.dart';
 import '../services/purchase_service.dart';
 import '../services/reflection_service.dart';
 import '../services/remote_config_service.dart';
@@ -106,6 +107,10 @@ class AppProviders extends StatelessWidget {
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
         Provider<DemoPriceHistoryService>(
           create: (_) => FirestoreDemoPriceHistoryService(),
+        ),
+        // "Giá tham khảo": the service only; each screen creates its own ViewModel
+        Provider<PriceHistoryService>(
+          create: (_) => FirestorePriceHistoryService(),
         ),
         Provider<ExtensionSessionService>(
           create: (_) => FirestoreExtensionSessionService(),

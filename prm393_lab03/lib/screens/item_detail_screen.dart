@@ -19,6 +19,7 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/decision_card_panel.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/price_history_entry_card.dart';
 import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
@@ -463,6 +464,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // A-14: every recorded price, compared only when it makes sense (spec 6.5)
             if (item.hasPrice) PriceHistoryPanel(item: item),
+
+            // "Giá tham khảo" from priceHistory; nothing without data
+            if (item.productKey case final key?)
+              PriceHistoryEntryCard(productKey: key),
 
             // Spec 8.3: anonymous prices other people recorded for the same variant
             if (item.status == WishlistStatus.considering)

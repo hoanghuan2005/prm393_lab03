@@ -20,6 +20,9 @@ abstract final class AnalyticsEvents {
 
   /// A call to Gemini failed; the flow went on without AI
   static const aiError = 'ai_error';
+
+  /// "Giá tham khảo" chart shown (opened or period changed)
+  static const viewPriceHistory = 'view_price_history';
 }
 
 /// Parameter names. No PII: never email, display name, item title, search text or exact
@@ -42,6 +45,11 @@ abstract final class AnalyticsParams {
   static const aiFeature = 'ai_feature';
   static const aiModel = 'ai_model';
   static const errorType = 'error_type';
+
+  /// view_price_history: `product` · `group`; days of the period; 0/1
+  static const mode = 'mode';
+  static const rangeDays = 'range_days';
+  static const isDemo = 'is_demo';
 }
 
 /// Values of [AnalyticsParams.aiFeature]: one per AI feature, also the keys of the

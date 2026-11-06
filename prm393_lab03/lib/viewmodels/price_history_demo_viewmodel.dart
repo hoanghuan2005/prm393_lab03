@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../models/price_history.dart';
+
 import '../services/crashlytics_service.dart';
 import '../services/demo_price_history_service.dart';
 import '../services/user_service.dart';
@@ -28,6 +30,7 @@ class PriceHistoryDemoViewModel extends ChangeNotifier with ErrorReporting {
   int _done = 0;
   int _total = 0;
   String? _errorMessage;
+  List<ProductGroup> _groups = const [];
   bool _disposed = false;
 
   bool get isAdmin => _isAdmin;
@@ -37,6 +40,9 @@ class PriceHistoryDemoViewModel extends ChangeNotifier with ErrorReporting {
   int get done => _done;
   int get total => _total;
   String? get errorMessage => _errorMessage;
+
+  /// Sample groups to open as a chart (loaded for admins, refreshed after seed / clear)
+  List<ProductGroup> get groups => _groups;
 
   void updateUid(String? uid) {
     if (uid == _uid) return;
@@ -58,7 +64,20 @@ class PriceHistoryDemoViewModel extends ChangeNotifier with ErrorReporting {
   void _setAdmin(bool value) {
     if (value == _isAdmin) return;
     _isAdmin = value;
+    if (!value) _groups = const [];
     _notify();
+    if (value) loadGroups();
+  }
+
+  Future<void> loadGroups() async {
+    try {
+      final groups = await demoService.demoGroups();
+      if (_disposed || !_isAdmin) return;
+      _groups = groups;
+      _notify();
+    } catch (_) {
+      // The list is a shortcut only; the buttons still work without it
+    }
   }
 
   /// Number of documents written; null on error ([errorMessage])
@@ -93,6 +112,7 @@ class PriceHistoryDemoViewModel extends ChangeNotifier with ErrorReporting {
     } finally {
       _isBusy = false;
       _notify();
+      if (!_disposed && _isAdmin) await loadGroups();
     }
   }
 

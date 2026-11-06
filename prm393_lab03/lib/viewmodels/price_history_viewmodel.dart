@@ -5,6 +5,7 @@ import '../models/daily_price.dart';
 import '../models/price_history.dart';
 import '../models/sale_event.dart';
 import '../models/ui_state.dart';
+import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/price_history_service.dart';
 import 'error_reporting.dart';
@@ -115,9 +116,13 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
   final CrashlyticsService? crashlyticsService;
   final DateTime Function() _now;
 
+  /// view_price_history after each result; null for previews (Chi tiết món card)
+  final AppAnalyticsService? analytics;
+
   PriceHistoryViewModel({
     required this.service,
     this.crashlyticsService,
+    this.analytics,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -214,8 +219,23 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
     };
     final comparison = _group == null ? null : compareGroup(points);
     final summary = _summarize(days, points, _products);
+    final isDemo =
+        (_group?.isDemo ?? false) ||
+        _products.values.any((p) => p?.isDemo ?? false);
+    analytics?.logViewPriceHistory(
+      mode: _group == null ? 'product' : 'group',
+      rangeDays: _range.days,
+      isDemo: isDemo,
+    );
     if (summary.daysWithData == 0) {
-      _set(const UiEmpty(message: notEnoughData));
+      final longer = _range != PriceHistoryRange.longest;
+      _set(
+        UiEmpty(
+          message: notEnoughData,
+          actionTitle: longer ? 'Xem ${PriceHistoryRange.longest.label}' : null,
+          onAction: longer ? () => setRange(PriceHistoryRange.longest) : null,
+        ),
+      );
       return;
     }
     final firstDay = days.first;

@@ -34,6 +34,7 @@
 | 11 | `ai_request` | `ai_feature` (string: `insight` · `decision_reason` · `group` · `duplicate` · `sale_plan` · `pre_purchase` · `photo_search` · `price_search`), `ai_model` (string, từ Remote Config `ai_insight_model`) | `InstrumentedAiService` – mỗi lần gọi Gemini (lớp bọc của service, không phải ViewModel: mọi tính năng AI đi qua một client) | Tính năng AI nào được dùng nhiều nhất, với model nào? |
 | 12 | `ai_error` | `ai_feature` (string), `error_type` (string: `timeout` · `quota` · `network` · `blocked` · `empty_reply` · `unavailable`) | `InstrumentedAiService` – lệnh gọi Gemini thất bại; tính năng vẫn dùng câu mẫu / không gợi ý | AI lỗi ở tính năng nào, vì sao; có cần đổi model hay nới thời gian chờ không? |
 | 13 | `ai_result_accepted` | `ai_feature` (string: `group` · `duplicate` · `photo_search`) | `ItemSuggestionViewModel.aiResultAccepted` (bấm chip nhóm do AI gợi ý, xác nhận món trùng có kết quả AI), `PhotoSearchViewModel.aiResultAccepted` (thêm món từ Tìm bằng ảnh) | Người dùng có nhận gợi ý AI vào dữ liệu của mình không? Tỉ lệ so với `ai_request` cùng `ai_feature`. |
+| 14 | `view_price_history` | `mode` (string: `product` · `group`), `range_days` (int: 7 · 30 · 90), `is_demo` (0/1) | `PriceHistoryViewModel` – mỗi lần biểu đồ "Giá tham khảo" có kết quả (mở màn, đổi khoảng ngày, đổi "Chỉ món này / Cả nhóm"); thẻ nhỏ ở Chi tiết món không ghi | Người dùng có xem giá tham khảo không, xem một món hay cả nhóm, khoảng ngày nào; bao nhiêu lượt là dữ liệu mẫu? |
 
 ---
 

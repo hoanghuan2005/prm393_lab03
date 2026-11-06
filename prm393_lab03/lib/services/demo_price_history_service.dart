@@ -19,6 +19,9 @@ abstract interface class DemoPriceHistoryService {
   /// Deletes only sample documents (priceHistory isDemo, their 'demo' reports,
   /// productGroups isDemo); returns documents deleted
   Future<int> clearDemo({DemoProgress? onProgress});
+
+  /// Sample groups (productGroups isDemo), in seed order
+  Future<List<ProductGroup>> demoGroups();
 }
 
 class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
@@ -70,6 +73,18 @@ class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
     return _commit([
       for (final ref in refs) (WriteBatch b) => b.delete(ref),
     ], onProgress);
+  });
+
+  @override
+  Future<List<ProductGroup>> demoGroups() => guard(() async {
+    final snapshot = await _paths
+        .productGroups()
+        .where('isDemo', isEqualTo: true)
+        .get();
+    int order(ProductGroup g) =>
+        int.tryParse(g.id.replaceFirst('demo-group-', '')) ?? 1 << 20;
+    return snapshot.docs.map(ProductGroup.fromFirestore).toList()
+      ..sort((a, b) => order(a).compareTo(order(b)));
   });
 
   /// Published sale days of the web calendar; none when they cannot be read

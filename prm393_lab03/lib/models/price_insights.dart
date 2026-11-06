@@ -36,13 +36,25 @@ class PriceInsights {
 
   PriceSnapshot? get latest {
     final list = comparable;
-    return list.isEmpty ? null : list.first;
+    return list.isEmpty ? null : _mainOf(list, list.first);
   }
 
   /// "Giá lúc lưu": the first record
   PriceSnapshot? get saved {
     final list = comparable;
-    return list.isEmpty ? null : list.last;
+    return list.isEmpty ? null : _mainOf(list, list.last);
+  }
+
+  /// One page reading can save a "Giá đang giảm" next to the regular price (same
+  /// observedAt); like the extension, the regular price is the main one
+  static PriceSnapshot _mainOf(List<PriceSnapshot> list, PriceSnapshot edge) {
+    if (edge.priceType != PriceType.sale) return edge;
+    for (final s in list) {
+      if (s.observedAt == edge.observedAt && s.priceType != PriceType.sale) {
+        return s;
+      }
+    }
+    return edge;
   }
 
   static PriceFreshness freshnessOf(PriceSnapshot s, DateTime now) =>

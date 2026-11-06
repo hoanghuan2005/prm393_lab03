@@ -165,6 +165,9 @@ add('purchases', 'admin', "edit bob's purchase", false, () => updateDoc(doc(ada,
 add('wishlistItems', 'admin', "delete bob's item", false, () => deleteDoc(doc(ada, 'users/bob/wishlistItems/w1')));
 add('purchases', 'user', 'create with amount 0', false, () => setDoc(doc(alice, 'users/alice/purchases/p2'), { title: 'x', amountVnd: 0, motive: 'want', occurredAt: now() }));
 add('wishlistItems', 'user', 'status "waiting" (not in the spec)', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w2'), { title: 'x', status: 'waiting' }));
+// The extension saves "Giá đang giảm" as priceType 'sale' (E1)
+add('wishlistItems/priceSnapshots', 'user', "save a priceType 'sale' snapshot", true, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-sale'), { amountVnd: 399000, observedAt: now(), source: 'extensionPage', priceType: 'sale' }));
+add('wishlistItems/priceSnapshots', 'user', "save an unknown priceType 'coupon'", false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s-coupon'), { amountVnd: 399000, observedAt: now(), source: 'extensionPage', priceType: 'coupon' }));
 add('wishlistItems/priceSnapshots', 'user', 'edit a recorded price', false, () => updateDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 2 }));
 add('decisions', 'user', 'unknown choice', false, () => setDoc(doc(alice, 'users/alice/decisions/d2'), { choice: 'maybe' }));
 add('feedback', 'user', 'edit a sent feedback', false, () => updateDoc(doc(bob, 'users/bob/feedback/f1'), { message: 'sửa' }));

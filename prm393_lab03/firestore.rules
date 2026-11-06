@@ -67,7 +67,7 @@ service cloud.firestore {
           allow read, delete: if canAccess(uid);
           allow create: if canAccess(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
             && (!('source' in d()) || d().source in ['manual','demo','extensionPage','community'])
-            && (!('priceType' in d()) || d().priceType in ['single','range','flash','afterVoucher']);
+            && (!('priceType' in d()) || d().priceType in ['single','range','flash','sale','afterVoucher']);
           allow update: if false;
         }
       }

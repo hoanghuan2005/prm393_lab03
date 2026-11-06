@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T14:42:38.361Z.
-Tổng: 190 ca · Qua: 190 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T16:16:48.529Z.
+Tổng: 192 ca · Qua: 192 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 
 | ID | Collection | Role | Operation | Expected | Result |
@@ -84,115 +84,117 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-76 | wishlistItems | admin | delete bob's item | Denied | Pass |
 | R-77 | purchases | user | create with amount 0 | Denied | Pass |
 | R-78 | wishlistItems | user | status "waiting" (not in the spec) | Denied | Pass |
-| R-79 | wishlistItems/priceSnapshots | user | edit a recorded price | Denied | Pass |
-| R-80 | decisions | user | unknown choice | Denied | Pass |
-| R-81 | feedback | user | edit a sent feedback | Denied | Pass |
-| R-82 | reflections | user | rating 6 | Denied | Pass |
-| R-83 | extensionSessions | user | status "hacked" | Denied | Pass |
-| R-84 | inbox | user | read own messages | Allowed | Pass |
-| R-85 | inbox | user | mark a message read | Allowed | Pass |
-| R-86 | inbox | user | change the text of a message | Denied | Pass |
-| R-87 | inbox | user | write a message to self | Denied | Pass |
-| R-88 | inbox | user | read bob's messages | Denied | Pass |
-| R-89 | inbox | staff | send a message to alice | Allowed | Pass |
-| R-90 | inbox | staff | send a message signed as someone else | Denied | Pass |
-| R-91 | inbox | staff | read alice's messages | Denied | Pass |
-| R-92 | inbox | admin | send a message to bob | Allowed | Pass |
-| R-93 | inbox | admin | send a message with an extra field | Denied | Pass |
-| R-94 | announcements | user | list published | Allowed | Pass |
-| R-95 | announcements | user | list without the status filter | Denied | Pass |
-| R-96 | announcements | user | read an archived one | Denied | Pass |
-| R-97 | announcements | user | post an announcement | Denied | Pass |
-| R-98 | announcements | staff | post an announcement | Allowed | Pass |
-| R-99 | announcements | staff | archive a published one | Allowed | Pass |
-| R-100 | announcements | staff | republish an archived one | Denied | Pass |
-| R-101 | announcements | staff | delete one | Denied | Pass |
-| R-102 | announcements | admin | post an announcement | Allowed | Pass |
-| R-103 | announcements | admin | post with a 501-character body | Denied | Pass |
-| R-104 | announcements | signed out | list published | Denied | Pass |
-| R-105 | saleEvents | user | read a published sale | Allowed | Pass |
-| R-106 | saleEvents | user | read a draft | Denied | Pass |
-| R-107 | saleEvents | user | create a sale | Denied | Pass |
-| R-108 | saleEvents | staff | create a draft | Allowed | Pass |
-| R-109 | saleEvents | staff | publish a draft | Allowed | Pass |
-| R-110 | saleEvents | staff | republish an archived sale | Denied | Pass |
-| R-111 | saleEvents | staff | unknown sale type | Denied | Pass |
-| R-112 | saleEvents | admin | archive a published sale | Allowed | Pass |
-| R-113 | saleEvents | admin | delete a sale | Denied | Pass |
-| R-114 | saleSuggestions | user | propose a sale (pending) | Allowed | Pass |
-| R-115 | saleSuggestions | user | propose one already approved | Denied | Pass |
-| R-116 | saleSuggestions | user | propose in bob's name | Denied | Pass |
-| R-117 | saleSuggestions | user | read own suggestion | Allowed | Pass |
-| R-118 | saleSuggestions | user | read bob's suggestion | Denied | Pass |
-| R-119 | saleSuggestions | user | approve own suggestion | Denied | Pass |
-| R-120 | saleSuggestions | staff | approve (event + suggestion + inbox in one batch) | Allowed | Pass |
-| R-121 | saleSuggestions | staff | approve the same suggestion again | Denied | Pass |
-| R-122 | saleSuggestions | staff | reject without a reason | Denied | Pass |
-| R-123 | saleSuggestions | staff | reject with a reason | Allowed | Pass |
-| R-124 | saleSuggestions | admin | list the review queue | Allowed | Pass |
-| R-125 | saleSuggestions | admin | propose in alice's name | Denied | Pass |
-| R-126 | saleSuggestions | admin | reject signed as someone else | Denied | Pass |
-| R-127 | (collection group) wishlistItems | admin | count skipped items of every user | Allowed | Pass |
-| R-128 | (collection group) wishlistItems | staff | count skipped items of every user | Denied | Pass |
-| R-129 | (collection group) wishlistItems | user | count skipped items of every user | Denied | Pass |
-| R-130 | (collection group) purchases | admin | count every purchase | Allowed | Pass |
-| R-131 | (collection group) purchases | staff | count every purchase | Denied | Pass |
-| R-132 | sharedPrices/reports | user | share own price (hashed id) | Allowed | Pass |
-| R-133 | sharedPrices/reports | user | write under bob's id | Denied | Pass |
-| R-134 | sharedPrices/reports | staff | share own price (hashed id) | Allowed | Pass |
-| R-135 | sharedPrices/reports | staff | write under bob's id | Denied | Pass |
-| R-136 | sharedPrices/reports | admin | share own price (hashed id) | Allowed | Pass |
-| R-137 | sharedPrices/reports | admin | write under bob's id | Denied | Pass |
-| R-138 | sharedPrices/reports | user | add a uid field | Denied | Pass |
-| R-139 | sharedPrices/reports | guest | share a price | Denied | Pass |
-| R-140 | sharedPrices/reports | guest | read prices | Allowed | Pass |
-| R-141 | priceHistory | user | read a product | Allowed | Pass |
-| R-142 | priceHistory/reports | user | read reports | Allowed | Pass |
-| R-143 | productGroups | user | read a group | Allowed | Pass |
-| R-144 | priceHistory | staff | read a product | Allowed | Pass |
-| R-145 | priceHistory/reports | staff | read reports | Allowed | Pass |
-| R-146 | productGroups | staff | read a group | Allowed | Pass |
-| R-147 | priceHistory | admin | read a product | Allowed | Pass |
-| R-148 | priceHistory/reports | admin | read reports | Allowed | Pass |
-| R-149 | productGroups | admin | read a group | Allowed | Pass |
-| R-150 | priceHistory | user | create a demo product | Denied | Pass |
-| R-151 | priceHistory/reports | user | create a demo report | Denied | Pass |
-| R-152 | priceHistory/reports | user | delete a demo report | Denied | Pass |
-| R-153 | productGroups | user | create a demo group | Denied | Pass |
-| R-154 | priceHistory | staff | create a demo product | Denied | Pass |
-| R-155 | priceHistory/reports | staff | create a demo report | Denied | Pass |
-| R-156 | priceHistory/reports | staff | delete a demo report | Denied | Pass |
-| R-157 | productGroups | staff | create a demo group | Denied | Pass |
-| R-158 | priceHistory | user | create a non-demo product | Denied | Pass |
-| R-159 | priceHistory | admin | create a demo product | Allowed | Pass |
-| R-160 | priceHistory | admin | delete a demo product | Allowed | Pass |
-| R-161 | priceHistory | admin | create with a 121-character title | Denied | Pass |
-| R-162 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
-| R-163 | priceHistory | admin | create a non-demo product (opens in G7) | Denied | Pass |
-| R-164 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
-| R-165 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
-| R-166 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
-| R-167 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
-| R-168 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
-| R-169 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
-| R-170 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
-| R-171 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
-| R-172 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
-| R-173 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
-| R-174 | priceHistory/reports | admin | non-demo source 'manual' (opens in G7) | Denied | Pass |
-| R-175 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
-| R-176 | priceHistory/reports | admin | add a uid field | Denied | Pass |
-| R-177 | productGroups | admin | create a demo group | Allowed | Pass |
-| R-178 | productGroups | admin | delete a demo group | Allowed | Pass |
-| R-179 | productGroups | admin | create a non-demo group | Denied | Pass |
-| R-180 | priceHistory | signed out | read a product | Denied | Pass |
-| R-181 | priceHistory/reports | signed out | read reports | Denied | Pass |
-| R-182 | productGroups | signed out | read a group | Denied | Pass |
-| R-183 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
-| R-184 | extensionPairings | user | list pairings | Denied | Pass |
-| R-185 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
-| R-186 | extensionPairings | staff | list pairings | Denied | Pass |
-| R-187 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
-| R-188 | extensionPairings | admin | list pairings | Denied | Pass |
-| R-189 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
-| R-190 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |
+| R-79 | wishlistItems/priceSnapshots | user | save a priceType 'sale' snapshot | Allowed | Pass |
+| R-80 | wishlistItems/priceSnapshots | user | save an unknown priceType 'coupon' | Denied | Pass |
+| R-81 | wishlistItems/priceSnapshots | user | edit a recorded price | Denied | Pass |
+| R-82 | decisions | user | unknown choice | Denied | Pass |
+| R-83 | feedback | user | edit a sent feedback | Denied | Pass |
+| R-84 | reflections | user | rating 6 | Denied | Pass |
+| R-85 | extensionSessions | user | status "hacked" | Denied | Pass |
+| R-86 | inbox | user | read own messages | Allowed | Pass |
+| R-87 | inbox | user | mark a message read | Allowed | Pass |
+| R-88 | inbox | user | change the text of a message | Denied | Pass |
+| R-89 | inbox | user | write a message to self | Denied | Pass |
+| R-90 | inbox | user | read bob's messages | Denied | Pass |
+| R-91 | inbox | staff | send a message to alice | Allowed | Pass |
+| R-92 | inbox | staff | send a message signed as someone else | Denied | Pass |
+| R-93 | inbox | staff | read alice's messages | Denied | Pass |
+| R-94 | inbox | admin | send a message to bob | Allowed | Pass |
+| R-95 | inbox | admin | send a message with an extra field | Denied | Pass |
+| R-96 | announcements | user | list published | Allowed | Pass |
+| R-97 | announcements | user | list without the status filter | Denied | Pass |
+| R-98 | announcements | user | read an archived one | Denied | Pass |
+| R-99 | announcements | user | post an announcement | Denied | Pass |
+| R-100 | announcements | staff | post an announcement | Allowed | Pass |
+| R-101 | announcements | staff | archive a published one | Allowed | Pass |
+| R-102 | announcements | staff | republish an archived one | Denied | Pass |
+| R-103 | announcements | staff | delete one | Denied | Pass |
+| R-104 | announcements | admin | post an announcement | Allowed | Pass |
+| R-105 | announcements | admin | post with a 501-character body | Denied | Pass |
+| R-106 | announcements | signed out | list published | Denied | Pass |
+| R-107 | saleEvents | user | read a published sale | Allowed | Pass |
+| R-108 | saleEvents | user | read a draft | Denied | Pass |
+| R-109 | saleEvents | user | create a sale | Denied | Pass |
+| R-110 | saleEvents | staff | create a draft | Allowed | Pass |
+| R-111 | saleEvents | staff | publish a draft | Allowed | Pass |
+| R-112 | saleEvents | staff | republish an archived sale | Denied | Pass |
+| R-113 | saleEvents | staff | unknown sale type | Denied | Pass |
+| R-114 | saleEvents | admin | archive a published sale | Allowed | Pass |
+| R-115 | saleEvents | admin | delete a sale | Denied | Pass |
+| R-116 | saleSuggestions | user | propose a sale (pending) | Allowed | Pass |
+| R-117 | saleSuggestions | user | propose one already approved | Denied | Pass |
+| R-118 | saleSuggestions | user | propose in bob's name | Denied | Pass |
+| R-119 | saleSuggestions | user | read own suggestion | Allowed | Pass |
+| R-120 | saleSuggestions | user | read bob's suggestion | Denied | Pass |
+| R-121 | saleSuggestions | user | approve own suggestion | Denied | Pass |
+| R-122 | saleSuggestions | staff | approve (event + suggestion + inbox in one batch) | Allowed | Pass |
+| R-123 | saleSuggestions | staff | approve the same suggestion again | Denied | Pass |
+| R-124 | saleSuggestions | staff | reject without a reason | Denied | Pass |
+| R-125 | saleSuggestions | staff | reject with a reason | Allowed | Pass |
+| R-126 | saleSuggestions | admin | list the review queue | Allowed | Pass |
+| R-127 | saleSuggestions | admin | propose in alice's name | Denied | Pass |
+| R-128 | saleSuggestions | admin | reject signed as someone else | Denied | Pass |
+| R-129 | (collection group) wishlistItems | admin | count skipped items of every user | Allowed | Pass |
+| R-130 | (collection group) wishlistItems | staff | count skipped items of every user | Denied | Pass |
+| R-131 | (collection group) wishlistItems | user | count skipped items of every user | Denied | Pass |
+| R-132 | (collection group) purchases | admin | count every purchase | Allowed | Pass |
+| R-133 | (collection group) purchases | staff | count every purchase | Denied | Pass |
+| R-134 | sharedPrices/reports | user | share own price (hashed id) | Allowed | Pass |
+| R-135 | sharedPrices/reports | user | write under bob's id | Denied | Pass |
+| R-136 | sharedPrices/reports | staff | share own price (hashed id) | Allowed | Pass |
+| R-137 | sharedPrices/reports | staff | write under bob's id | Denied | Pass |
+| R-138 | sharedPrices/reports | admin | share own price (hashed id) | Allowed | Pass |
+| R-139 | sharedPrices/reports | admin | write under bob's id | Denied | Pass |
+| R-140 | sharedPrices/reports | user | add a uid field | Denied | Pass |
+| R-141 | sharedPrices/reports | guest | share a price | Denied | Pass |
+| R-142 | sharedPrices/reports | guest | read prices | Allowed | Pass |
+| R-143 | priceHistory | user | read a product | Allowed | Pass |
+| R-144 | priceHistory/reports | user | read reports | Allowed | Pass |
+| R-145 | productGroups | user | read a group | Allowed | Pass |
+| R-146 | priceHistory | staff | read a product | Allowed | Pass |
+| R-147 | priceHistory/reports | staff | read reports | Allowed | Pass |
+| R-148 | productGroups | staff | read a group | Allowed | Pass |
+| R-149 | priceHistory | admin | read a product | Allowed | Pass |
+| R-150 | priceHistory/reports | admin | read reports | Allowed | Pass |
+| R-151 | productGroups | admin | read a group | Allowed | Pass |
+| R-152 | priceHistory | user | create a demo product | Denied | Pass |
+| R-153 | priceHistory/reports | user | create a demo report | Denied | Pass |
+| R-154 | priceHistory/reports | user | delete a demo report | Denied | Pass |
+| R-155 | productGroups | user | create a demo group | Denied | Pass |
+| R-156 | priceHistory | staff | create a demo product | Denied | Pass |
+| R-157 | priceHistory/reports | staff | create a demo report | Denied | Pass |
+| R-158 | priceHistory/reports | staff | delete a demo report | Denied | Pass |
+| R-159 | productGroups | staff | create a demo group | Denied | Pass |
+| R-160 | priceHistory | user | create a non-demo product | Denied | Pass |
+| R-161 | priceHistory | admin | create a demo product | Allowed | Pass |
+| R-162 | priceHistory | admin | delete a demo product | Allowed | Pass |
+| R-163 | priceHistory | admin | create with a 121-character title | Denied | Pass |
+| R-164 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
+| R-165 | priceHistory | admin | create a non-demo product (opens in G7) | Denied | Pass |
+| R-166 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
+| R-167 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
+| R-168 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
+| R-169 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
+| R-170 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
+| R-171 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
+| R-172 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
+| R-173 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
+| R-174 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
+| R-175 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
+| R-176 | priceHistory/reports | admin | non-demo source 'manual' (opens in G7) | Denied | Pass |
+| R-177 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
+| R-178 | priceHistory/reports | admin | add a uid field | Denied | Pass |
+| R-179 | productGroups | admin | create a demo group | Allowed | Pass |
+| R-180 | productGroups | admin | delete a demo group | Allowed | Pass |
+| R-181 | productGroups | admin | create a non-demo group | Denied | Pass |
+| R-182 | priceHistory | signed out | read a product | Denied | Pass |
+| R-183 | priceHistory/reports | signed out | read reports | Denied | Pass |
+| R-184 | productGroups | signed out | read a group | Denied | Pass |
+| R-185 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
+| R-186 | extensionPairings | user | list pairings | Denied | Pass |
+| R-187 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
+| R-188 | extensionPairings | staff | list pairings | Denied | Pass |
+| R-189 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
+| R-190 | extensionPairings | admin | list pairings | Denied | Pass |
+| R-191 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
+| R-192 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |

@@ -117,6 +117,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
     if (s.source == PriceSource.community) return 'Từ giá người khác';
     if (!s.confirmed) return 'Chưa xác nhận';
     if (s.priceType == PriceType.flash) return 'Flash Sale';
+    if (s.priceType == PriceType.sale) return 'Giá đang giảm';
     return null;
   }
 }

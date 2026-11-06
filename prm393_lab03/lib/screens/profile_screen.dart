@@ -21,6 +21,7 @@ import '../viewmodels/theme_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
+import '../widgets/price_history_demo_section.dart';
 import '../widgets/section_card.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -328,6 +329,9 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppDimens.space16),
+
+            // Sample data of "Biểu đồ giá tham khảo" (admins only)
+            const PriceHistoryDemoSection(),
 
             if (kDebugMode) ...[
               AppButton(

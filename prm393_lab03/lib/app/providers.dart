@@ -14,6 +14,7 @@ import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
+import '../services/demo_price_history_service.dart';
 import '../services/extension_session_service.dart';
 import '../services/feedback_service.dart';
 import '../services/instrumented_ai_service.dart';
@@ -39,6 +40,7 @@ import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/linked_accounts_viewmodel.dart';
 import '../viewmodels/photo_search_viewmodel.dart';
 import '../viewmodels/pre_purchase_viewmodel.dart';
+import '../viewmodels/price_history_demo_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
@@ -102,6 +104,9 @@ class AppProviders extends StatelessWidget {
           create: (_) => FirestoreReflectionService(),
         ),
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
+        Provider<DemoPriceHistoryService>(
+          create: (_) => FirestoreDemoPriceHistoryService(),
+        ),
         Provider<ExtensionSessionService>(
           create: (_) => FirestoreExtensionSessionService(),
         ),
@@ -283,6 +288,15 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthViewModel, ShoppingProfileViewModel>(
           create: (context) => ShoppingProfileViewModel(
             service: context.read<ShoppingProfileService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
+        // "Dữ liệu giá mẫu" (Firebase Demo Area): admins only, role read from users/{uid}
+        ChangeNotifierProxyProvider<AuthViewModel, PriceHistoryDemoViewModel>(
+          create: (context) => PriceHistoryDemoViewModel(
+            demoService: context.read<DemoPriceHistoryService>(),
+            userService: context.read<UserService>(),
             crashlyticsService: crashlyticsService,
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),

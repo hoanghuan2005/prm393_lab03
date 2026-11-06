@@ -73,6 +73,9 @@ class FirestorePaths {
   DocumentReference<JsonMap> productGroup(String groupId) =>
       productGroups().doc(groupId);
 
+  /// Lịch sale managed on the web; the app reads published ones only
+  CollectionReference<JsonMap> saleEvents() => db.collection('saleEvents');
+
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>
       user(uid).collection('reflections');

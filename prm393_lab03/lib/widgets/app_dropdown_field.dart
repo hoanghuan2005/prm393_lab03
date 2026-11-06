@@ -53,7 +53,7 @@ class AppDropdownField<T> extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: items[index].value == value
-                  ? BoxDecoration(
+                  ? const BoxDecoration(
                       color: AppColors.primaryContainer,
                       borderRadius: AppDimens.borderSmall,
                     )

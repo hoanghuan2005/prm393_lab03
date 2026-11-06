@@ -185,12 +185,11 @@ void main() {
     expect(find.textContaining(_uid), findsNothing);
   });
 
-  testWidgets('debug builds show only the first 6 characters of the UID', (
-    tester,
-  ) async {
+  // The debug UID line was removed from the card ("fix ui", 2026-11-05)
+  testWidgets('debug builds show no UID line either', (tester) async {
     await _pump(tester, _User(isAnonymous: true), showDebugUid: true);
 
-    expect(find.text('UID: abcdef…'), findsOneWidget);
+    expect(find.textContaining('UID'), findsNothing);
     expect(find.textContaining(_uid), findsNothing);
   });
 }

@@ -78,7 +78,8 @@ void main() {
     expect(find.text('Đã liên kết · s…@gmail.com'), findsOneWidget);
     expect(find.textContaining('someone@'), findsNothing);
     expect(_enabled(tester, _button('Google', 'Huỷ liên kết')), isFalse);
-    expect(find.text(_lastNote), findsOneWidget);
+    // The "keep one method" note was removed ("fix ui", 2026-11-05); the button stays disabled
+    expect(find.text(_lastNote), findsNothing);
     expect(_enabled(tester, _button('GitHub', 'Liên kết')), isTrue);
   });
 

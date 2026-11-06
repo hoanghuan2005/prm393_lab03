@@ -7,12 +7,12 @@ import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/app_header_actions.dart';
 import '../widgets/insight_source_chip.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
-import '../widgets/app_header_actions.dart';
 
 /// Screen 08: Góc nhìn (có AI) from Figma "Why I Buy ver2".
 /// Numbers come from code; AI only rewrites the sentences (spec 7.6).

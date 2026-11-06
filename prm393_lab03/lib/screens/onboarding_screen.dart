@@ -136,18 +136,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
                       onPressed: _nextPage,
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             'Bắt đầu trải nghiệm',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_rounded, size: 20),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_rounded, size: 20),
                         ],
                       ),
                     ),

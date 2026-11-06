@@ -356,8 +356,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                 final name = val.text.trim().isNotEmpty
                                     ? val.text.trim()
                                     : _shopName;
-                                if (name == null || name.isEmpty)
+                                if (name == null || name.isEmpty) {
                                   return const SizedBox.shrink();
+                                }
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(

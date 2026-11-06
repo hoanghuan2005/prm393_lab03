@@ -8,10 +8,10 @@ import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../widgets/app_header_actions.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
-import '../widgets/app_header_actions.dart';
 
 /// Screen 07: Mô hình from Figma "Why I Buy ver2"
 class PatternsScreen extends StatefulWidget {

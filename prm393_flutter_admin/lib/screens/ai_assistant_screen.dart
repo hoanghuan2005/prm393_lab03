@@ -1,367 +1,291 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:why_i_buy_core/why_i_buy_core.dart';
+
 import '../services/admin_ai_service.dart';
-import '../services/admin_service.dart';
-import '../models/admin_models.dart';
-import '../theme/admin_colors.dart';
+import '../utils/tokens.dart';
+import '../viewmodels/ai_assistant_viewmodel.dart';
+import '../viewmodels/announcements_viewmodel.dart';
+import '../viewmodels/shell_viewmodel.dart';
+import '../widgets/admin_page.dart';
+import '../widgets/message_box.dart';
+import '../widgets/status_badge.dart';
 
+/// "AI gợi ý câu hỏi tiếp theo": Gemini drafts a self-reflection question and a
+/// message from aggregate numbers only. Its output is labelled and only fills
+/// the announcement form, where staff edit it before anything is sent.
 class AiAssistantScreen extends StatefulWidget {
-  /// Replaced in tests; the real one calls Gemini through Firebase AI Logic
-  final AdminAiService? aiService;
-
-  const AiAssistantScreen({super.key, this.aiService});
+  const AiAssistantScreen({super.key});
 
   @override
   State<AiAssistantScreen> createState() => _AiAssistantScreenState();
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  final TextEditingController _promptController = TextEditingController();
-  bool _isGenerating = false;
-  AiSuggestion? _customResult;
-  AdminAiResult? _aiResult;
-  late final AdminAiService _ai = widget.aiService ?? AdminAiService();
-  String _model = AdminAiService.defaultModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _ai.loadModel().then((model) {
-      if (mounted) setState(() => _model = model);
-    });
-  }
+  final _formKey = GlobalKey<FormState>();
+  final _topic = TextEditingController();
 
   @override
   void dispose() {
-    _promptController.dispose();
+    _topic.dispose();
     super.dispose();
   }
 
-  void _generateCustom() async {
-    final query = _promptController.text.trim();
-    if (query.isEmpty) return;
+  void _suggest() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    context.read<AiAssistantViewModel>().suggest(_topic.text);
+  }
 
-    setState(() => _isGenerating = true);
-    // Only the aggregate dashboard numbers and the topic are sent to AI
-    final result = await _ai.suggest(query, context.read<AdminService>().metrics);
+  void _useIdea(String idea) {
+    _topic.text = idea;
+    _suggest();
+  }
 
-    if (!mounted) return;
-    setState(() {
-      _isGenerating = false;
-      _aiResult = result;
-      _customResult = result.suggestion;
-    });
+  void _apply(AdminAiResult result) {
+    context.read<AnnouncementsViewModel>().prefill(
+      AnnouncementDraft(
+        title: result.suggestion.suggestedTitle,
+        body: result.suggestion.suggestedBody,
+        source: result.fromAi
+            ? 'AI gợi ý (${result.model})'
+            : 'Câu mẫu của nhóm',
+      ),
+    );
+    context.read<ShellViewModel>().goTo(AdminSection.announcements);
   }
 
   @override
   Widget build(BuildContext context) {
-    final admin = context.watch<AdminService>();
+    final vm = context.watch<AiAssistantViewModel>();
+    final t = context.tokens;
+    // A suggestion asked from another page (dashboard) fills the field too
+    final asked = vm.lastTopic;
+    if (asked != null && _topic.text.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _topic.text.isEmpty) _topic.text = asked;
+      });
+    }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AdminPage(
+      title: 'Trợ lý AI',
+      subtitle:
+          'Gemini gợi ý câu hỏi tự vấn và lời nhắn cho người dùng. Chỉ gửi số liệu '
+          'tổng hợp, không gửi tên, email hay UID của ai.',
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: AppDimens.space32),
         children: [
-          // Banner (Flat, No Gradient, Fully Responsive)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AdminColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AdminColors.border),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 700;
-
-                final textSection = Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AdminColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.psychology_rounded, size: 14, color: AdminColors.primary),
-                          SizedBox(width: 4),
-                          Text('GEMINI AI BEHAVIORAL FINANCE ENGINE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.primary)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'AI Gợi Ý Câu Hỏi Tự Vấn (Next Question) & Thông Điệp Đồng Cảm',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminColors.textPrimary),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Dựa trên triết lý Why I Buy: Không phán xét hay ngăn cản, mà đồng hành cùng người dùng bằng những câu hỏi gợi mở để kích hoạt tư duy phản biện trước khi mua sắm.',
-                      style: TextStyle(fontSize: 12, color: AdminColors.textSecondary, height: 1.4),
-                    ),
-                  ],
-                );
-
-                final badgeSection = Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AdminColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AdminColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      Text('Mô hình tích hợp', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(_model, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AdminColors.primary)),
-                      const SizedBox(height: 2),
-                      Text('Remote Config: ai_insight_model', style: TextStyle(fontSize: 10, color: AdminColors.textSecondary)),
-                      const SizedBox(height: 2),
-                      const Text('Chỉ gửi số liệu tổng hợp', style: TextStyle(fontSize: 10, color: AdminColors.emerald, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                );
-
-                if (isNarrow) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      textSection,
-                      const SizedBox(height: 16),
-                      badgeSection,
-                    ],
-                  );
-                }
-
-                return Row(
-                  children: [
-                    Expanded(child: textSection),
-                    const SizedBox(width: 20),
-                    badgeSection,
-                  ],
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Custom Prompt Input (Responsive)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AdminColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AdminColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.auto_awesome_rounded, size: 18, color: AdminColors.primary),
-                    const SizedBox(width: 8),
-                    Text('TẠO CÂU HỎI & THÔNG ĐIỆP THEO NGỮ CẢNH TÙY CHỌN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AdminColors.textSecondary)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 600;
-
-                    final textField = TextField(
-                      controller: _promptController,
-                      style: TextStyle(fontSize: 13, color: AdminColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Ví dụ: Giày thể thao hàng hiệu, Trà sữa mỗi ngày, Đồ công nghệ mùa sale...',
-                        hintStyle: TextStyle(fontSize: 13, color: AdminColors.textSecondary),
-                        filled: true,
-                        fillColor: AdminColors.surfaceLight,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AdminColors.border)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AdminColors.border)),
-                        focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide(color: AdminColors.primary, width: 1.5)),
-                      ),
-                    );
-
-                    final submitButton = ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AdminColors.primary,
-                        foregroundColor: AdminColors.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: _isGenerating ? null : _generateCustom,
-                      icon: _isGenerating
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AdminColors.onPrimary))
-                          : const Icon(Icons.flash_on_rounded, size: 16),
-                      label: Text(
-                        _isGenerating ? 'AI đang suy nghĩ...' : 'Tạo Gợi Ý Thông Minh',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-                      ),
-                    );
-
-                    if (isNarrow) {
-                      return Column(
-                        children: [
-                          textField,
-                          const SizedBox(height: 10),
-                          SizedBox(width: double.infinity, child: submitButton),
-                        ],
-                      );
-                    }
-
-                    return Row(
-                      children: [
-                        Expanded(child: textField),
-                        const SizedBox(width: 12),
-                        submitButton,
-                      ],
-                    );
-                  },
-                ),
-
-                if (_customResult != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AdminColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AdminColors.primary.withValues(alpha: 0.4)),
-                    ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimens.space20),
+              child: Wrap(
+                spacing: AppDimens.space24,
+                runSpacing: AppDimens.space16,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: AdminColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                              child: Text(
-                                _aiResult?.fromAi ?? false ? 'AI · $_model' : 'CÂU MẪU (AI KHÔNG DÙNG ĐƯỢC)',
-                                key: const ValueKey('ai-result-label'),
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.primary),
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AdminColors.primary,
-                                foregroundColor: AdminColors.onPrimary,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () => admin.applyAiSuggestionToPush(_customResult!),
-                              icon: const Icon(Icons.campaign_rounded, size: 12),
-                              label: const Text('Áp dụng vào Push Notification', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                            ),
-                          ],
+                        const StatusBadge(
+                          label: 'GEMINI · FIREBASE AI LOGIC',
+                          tone: BadgeTone.primary,
+                          icon: Icons.auto_awesome,
                         ),
-                        const SizedBox(height: 10),
-                        Text('"${_customResult!.question}"', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AdminColors.textPrimary)),
-                        const SizedBox(height: 8),
-                        Text('Vì sao hỏi câu này: ${_customResult!.psychologyInsight}', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
-                        const SizedBox(height: 10),
-                        Text('Bản nháp thông báo: ${_customResult!.suggestedTitle} — ${_customResult!.suggestedBody}', style: TextStyle(fontSize: 12, color: AdminColors.textPrimary)),
-                        if (_aiResult?.fallbackReason != null) ...[
-                          const SizedBox(height: 6),
-                          Text(_aiResult!.fallbackReason!, style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
-                        ],
-                        const SizedBox(height: 6),
-                        Text('Kiểm tra và sửa tiêu đề, nội dung ở tab Push trước khi gửi.', style: TextStyle(fontSize: 11, color: AdminColors.textSecondary)),
+                        const SizedBox(height: AppDimens.space8),
+                        Text(
+                          'Câu hỏi tự vấn và thông điệp đồng cảm',
+                          style: t.text(AppTextStyles.titleLarge),
+                        ),
+                        const SizedBox(height: AppDimens.space4),
+                        Text(
+                          'Theo triết lý Why I Buy: không phán xét hay ngăn cản, mà '
+                          'đồng hành bằng những câu hỏi gợi mở trước khi mua.',
+                          style: t.text(AppTextStyles.bodyMedium),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(AppDimens.space16),
+                    decoration: BoxDecoration(
+                      color: t.surfaceMuted,
+                      borderRadius: AppDimens.borderMedium,
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Mô hình',
+                          style: t.text(AppTextStyles.labelMedium),
+                        ),
+                        Text(
+                          vm.model,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          'Remote Config: ${AdminAiService.modelKey}',
+                          style: t.text(AppTextStyles.caption),
+                        ),
                       ],
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Default AI Questions Grid (Responsive)
-          Text('CÂU HỎI TỰ VẤN SOẠN SẴN (KHÔNG PHẢI AI)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AdminColors.textSecondary)),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth > 800 ? 2 : 1;
-
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  mainAxisExtent: 220,
+          const SizedBox(height: AppDimens.space16),
+          SectionCard(
+            title: 'Tạo gợi ý theo chủ đề',
+            icon: Icons.bolt_outlined,
+            children: [
+              Form(
+                key: _formKey,
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    final field = AppTextField(
+                      controller: _topic,
+                      hint: 'Ví dụ: Giày thể thao hàng hiệu, Trà sữa mỗi ngày…',
+                      validator: AiAssistantViewModel.validateTopic,
+                    );
+                    final button = AppButton(
+                      title: 'Tạo Gợi Ý Thông Minh',
+                      icon: Icons.auto_awesome,
+                      width: 240,
+                      isLoading: vm.isLoading,
+                      onPressed: _suggest,
+                    );
+                    return c.maxWidth < 640
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              field,
+                              const SizedBox(height: AppDimens.space12),
+                              button,
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: field),
+                              const SizedBox(width: AppDimens.space12),
+                              button,
+                            ],
+                          );
+                  },
                 ),
-                itemCount: admin.aiSuggestions.length,
-                itemBuilder: (context, index) {
-                  final item = admin.aiSuggestions[index];
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AdminColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AdminColors.border),
+              ),
+              const SizedBox(height: AppDimens.space12),
+              Wrap(
+                spacing: AppDimens.space8,
+                runSpacing: AppDimens.space8,
+                children: [
+                  for (final idea in AiAssistantViewModel.topicIdeas)
+                    ActionChip(
+                      avatar: const Icon(Icons.lightbulb_outline, size: 18),
+                      label: Text(idea),
+                      onPressed: vm.isLoading ? null : () => _useIdea(idea),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AdminColors.primary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                item.categoryLabel,
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.primary),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              '"${item.question}"',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AdminColors.textPrimary, height: 1.3),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item.psychologyInsight,
-                              style: TextStyle(fontSize: 11, color: AdminColors.textSecondary, height: 1.3),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AdminColors.surfaceLight,
-                            foregroundColor: AdminColors.textPrimary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: () => admin.applyAiSuggestionToPush(item),
-                          icon: const Icon(Icons.campaign_rounded, size: 12, color: AdminColors.primary),
-                          label: const Text('Gửi thông điệp này cho user', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.space16),
+          switch (vm.state) {
+            UiSuccess<AdminAiResult>(:final data) => _ResultCard(
+              result: data,
+              onApply: () => _apply(data),
+            ),
+            UiLoading<AdminAiResult>() => const SizedBox(
+              height: 160,
+              child: LoadingView(message: 'Gemini đang viết…'),
+            ),
+            _ => const SizedBox.shrink(),
+          },
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultCard extends StatelessWidget {
+  final AdminAiResult result;
+  final VoidCallback onApply;
+
+  const _ResultCard({required this.result, required this.onApply});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final s = result.suggestion;
+    Widget block(String label, String text, {bool quote = false}) => Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: t.text(AppTextStyles.labelMedium)),
+          const SizedBox(height: AppDimens.space4),
+          Text(
+            quote ? '"$text"' : text,
+            style: t.text(
+              quote ? AppTextStyles.titleMedium : AppTextStyles.bodyLarge,
+            ),
           ),
         ],
+      ),
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.space20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: AppDimens.space8,
+              runSpacing: AppDimens.space8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                StatusBadge(
+                  label: result.fromAi
+                      ? 'AI · ${result.model}'
+                      : 'CÂU MẪU (AI KHÔNG DÙNG ĐƯỢC)',
+                  tone: result.fromAi ? BadgeTone.primary : BadgeTone.neutral,
+                  icon: result.fromAi ? Icons.auto_awesome : Icons.edit_note,
+                ),
+                StatusBadge(
+                  label: s.category == 'dormant'
+                      ? 'Người cài app chưa dùng'
+                      : 'Mọi người dùng',
+                ),
+              ],
+            ),
+            if (result.fallbackReason != null) ...[
+              const SizedBox(height: AppDimens.space12),
+              MessageBox(message: result.fallbackReason!),
+            ],
+            const SizedBox(height: AppDimens.space16),
+            block('Câu hỏi tự vấn', s.question, quote: true),
+            block('Vì sao hỏi câu này', s.psychologyInsight),
+            block('Tiêu đề thông báo', s.suggestedTitle),
+            block('Nội dung thông báo', s.suggestedBody),
+            const SizedBox(height: AppDimens.space4),
+            const MessageBox(
+              tone: MessageTone.warning,
+              message:
+                  'Đây là bản nháp. Bấm "Dùng cho thông báo" để điền vào form, '
+                  'đọc và sửa tiêu đề, nội dung ở mục Thông báo rồi mới đăng.',
+            ),
+            const SizedBox(height: AppDimens.space16),
+            AppButton(
+              title: 'Dùng cho thông báo',
+              icon: Icons.campaign_outlined,
+              width: 240,
+              onPressed: onApply,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,7 +5,7 @@
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import {
   doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where,
-  serverTimestamp, Timestamp,
+  serverTimestamp, Timestamp, writeBatch, collectionGroup, getCountFromServer,
 } from 'firebase/firestore';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -50,6 +50,9 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'saleEvents/s-pub'), saleEvent('sam', 'published', now()));
   await setDoc(doc(db, 'saleEvents/s-draft'), saleEvent('sam', 'draft', now()));
   await setDoc(doc(db, 'saleEvents/s-old'), saleEvent('sam', 'archived', now()));
+  for (const [id, uid] of [['sg-1', 'alice'], ['sg-2', 'alice'], ['sg-3', 'alice'], ['sg-bob', 'bob']]) {
+    await setDoc(doc(db, `saleSuggestions/${id}`), suggestion(uid));
+  }
   await setDoc(doc(db, 'extensionPairings/p1'), {
     anonUid: 'ext-1', deviceLabel: 'Chrome', status: 'pending', createdAt: now(),
   });
@@ -81,6 +84,26 @@ const newAnnouncement = (by, status = 'published') => ({
   title: 'Tính năng mới', body: 'Đã có so sánh giá', status, createdAt: serverTimestamp(), createdBy: by, updatedAt: serverTimestamp(),
 });
 const newSale = (by, status, extra = {}) => ({ ...saleEvent(by, status, serverTimestamp()), ...extra });
+function suggestion(uid, extra = {}) {
+  return { uid, name: '12.12', date: Timestamp.fromDate(new Date('2026-12-12')), note: 'Shopee đã công bố', status: 'pending', createdAt: now(), ...extra };
+}
+const newSuggestion = (uid, extra = {}) => ({ ...suggestion(uid), createdAt: serverTimestamp(), ...extra });
+/** The web review queue's approve: publish the event, close the suggestion, tell the user */
+function approve(db, by, suggestionId, ownerUid, eventId) {
+  const batch = writeBatch(db);
+  batch.set(doc(db, `saleEvents/${eventId}`), newSale(by, 'published', { suggestionId }));
+  batch.update(doc(db, `saleSuggestions/${suggestionId}`), {
+    status: 'approved', saleEventId: eventId, reviewedAt: serverTimestamp(), reviewedBy: by,
+  });
+  batch.set(doc(db, `users/${ownerUid}/inbox/r-${suggestionId}`), {
+    title: 'Đề xuất sale đã được duyệt', body: '"12.12" đã có trong Lịch sale.', kind: 'suggestion_reply',
+    refId: suggestionId, createdAt: serverTimestamp(), createdBy: by,
+  });
+  return batch.commit();
+}
+const reject = (db, by, id, reason) => updateDoc(doc(db, `saleSuggestions/${id}`), {
+  status: 'rejected', reviewedAt: serverTimestamp(), reviewedBy: by, ...(reason ? { reason } : {}),
+});
 const message = (by, extra = {}) => ({
   title: 'Trả lời góp ý', body: 'Nhóm đã ghi nhận', kind: 'feedback_reply', refId: 'f1',
   createdAt: serverTimestamp(), createdBy: by, readAt: null, ...extra,
@@ -113,9 +136,14 @@ for (const [role, [uid, db]] of Object.entries(actors)) {
     add(label(path), role, 'create own', true, () => setDoc(doc(db, path), data));
   }
   for (const [path] of privateDocs('bob')) {
-    add(label(path), role, "read bob's", false, () => getDoc(doc(db, path)));
+    const adminCounts = role === 'admin' && ['purchases', 'wishlistItems'].includes(label(path));
+    add(label(path), role, adminCounts ? "read bob's (web user list counts)" : "read bob's", adminCounts,
+      () => getDoc(doc(db, path)));
   }
 }
+// Admins only read (counts on the web); they never change a user's data
+add('purchases', 'admin', "edit bob's purchase", false, () => updateDoc(doc(ada, 'users/bob/purchases/p1'), { amountVnd: 1 }));
+add('wishlistItems', 'admin', "delete bob's item", false, () => deleteDoc(doc(ada, 'users/bob/wishlistItems/w1')));
 add('purchases', 'user', 'create with amount 0', false, () => setDoc(doc(alice, 'users/alice/purchases/p2'), { title: 'x', amountVnd: 0, motive: 'want', occurredAt: now() }));
 add('wishlistItems', 'user', 'status "waiting" (not in the spec)', false, () => setDoc(doc(alice, 'users/alice/wishlistItems/w2'), { title: 'x', status: 'waiting' }));
 add('wishlistItems/priceSnapshots', 'user', 'edit a recorded price', false, () => updateDoc(doc(alice, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 2 }));
@@ -159,6 +187,29 @@ add('saleEvents', 'staff', 'republish an archived sale', false, () => updateDoc(
 add('saleEvents', 'staff', 'unknown sale type', false, () => setDoc(doc(sam, 'saleEvents/s3'), newSale('sam', 'draft', { type: 'black_friday' })));
 add('saleEvents', 'admin', 'archive a published sale', true, () => updateDoc(doc(ada, 'saleEvents/s-pub'), { status: 'archived', updatedAt: serverTimestamp(), updatedBy: 'ada' }));
 add('saleEvents', 'admin', 'delete a sale', false, () => deleteDoc(doc(ada, 'saleEvents/s2')));
+
+// saleSuggestions (cross-role flow: app proposes → web approves or rejects with a reason)
+add('saleSuggestions', 'user', 'propose a sale (pending)', true, () => setDoc(doc(alice, 'saleSuggestions/n1'), newSuggestion('alice')));
+add('saleSuggestions', 'user', 'propose one already approved', false, () => setDoc(doc(alice, 'saleSuggestions/n2'), newSuggestion('alice', { status: 'approved' })));
+add('saleSuggestions', 'user', "propose in bob's name", false, () => setDoc(doc(alice, 'saleSuggestions/n3'), newSuggestion('bob')));
+add('saleSuggestions', 'user', 'read own suggestion', true, () => getDoc(doc(alice, 'saleSuggestions/sg-1')));
+add('saleSuggestions', 'user', "read bob's suggestion", false, () => getDoc(doc(alice, 'saleSuggestions/sg-bob')));
+add('saleSuggestions', 'user', 'approve own suggestion', false, () => approve(alice, 'alice', 'sg-2', 'alice', 'ev-alice'));
+add('saleSuggestions', 'staff', 'approve (event + suggestion + inbox in one batch)', true, () => approve(sam, 'sam', 'sg-1', 'alice', 'ev-1'));
+add('saleSuggestions', 'staff', 'approve the same suggestion again', false, () => approve(sam, 'sam', 'sg-1', 'alice', 'ev-2'));
+add('saleSuggestions', 'staff', 'reject without a reason', false, () => reject(sam, 'sam', 'sg-2'));
+add('saleSuggestions', 'staff', 'reject with a reason', true, () => reject(sam, 'sam', 'sg-2', 'Chưa có thông báo chính thức từ shop'));
+add('saleSuggestions', 'admin', 'list the review queue', true, () => getDocs(query(collection(ada, 'saleSuggestions'), where('status', '==', 'pending'))));
+add('saleSuggestions', 'admin', "propose in alice's name", false, () => setDoc(doc(ada, 'saleSuggestions/n4'), newSuggestion('alice')));
+add('saleSuggestions', 'admin', 'reject signed as someone else', false, () => reject(ada, 'sam', 'sg-3', 'x'));
+
+// Web dashboard: collection-group count / sum, admins only
+const skipped = (db) => getCountFromServer(query(collectionGroup(db, 'wishlistItems'), where('status', '==', 'skipped')));
+add('(collection group) wishlistItems', 'admin', 'count skipped items of every user', true, () => skipped(ada));
+add('(collection group) wishlistItems', 'staff', 'count skipped items of every user', false, () => skipped(sam));
+add('(collection group) wishlistItems', 'user', 'count skipped items of every user', false, () => skipped(alice));
+add('(collection group) purchases', 'admin', 'count every purchase', true, () => getCountFromServer(collectionGroup(ada, 'purchases')));
+add('(collection group) purchases', 'staff', 'count every purchase', false, () => getCountFromServer(collectionGroup(sam, 'purchases')));
 
 // sharedPrices (anonymous price reports)
 const report = { modelKey: 'none', priceType: 'single', amountVnd: 420000, observedAt: now(), source: 'manual' };

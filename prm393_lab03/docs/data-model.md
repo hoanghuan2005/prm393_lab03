@@ -9,10 +9,12 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | Collection | Create | Read | Update | Delete | Màn hình dùng |
 |:---|:---|:---|:---|:---|:---|
 | `users/{uid}` | Chủ tài khoản lần đầu đăng nhập, `role = user` | Chủ tài khoản; staff, admin | Chủ tài khoản (không đổi `role`); admin chỉ đổi `role` của người khác | Chủ tài khoản | Cá nhân; web danh sách người dùng |
-| `users/{uid}/purchases`, `wishlistItems` (+ `priceSnapshots`), `decisions`, `budgetGroups`, `budgets`, `reflections`, `ownedItems`, `feedback`, `extensionSessions` | Chủ tài khoản (một số: cả extension đã liên kết) | Chủ tài khoản (+ extension) | Chủ tài khoản; `priceSnapshots`, `decisions`, `feedback` không sửa | Chủ tài khoản | Các màn mobile; **staff/admin không đọc được** |
+| `users/{uid}/purchases`, `wishlistItems` (+ `priceSnapshots`), `decisions`, `budgetGroups`, `budgets`, `reflections`, `ownedItems`, `feedback`, `extensionSessions` | Chủ tài khoản (một số: cả extension đã liên kết) | Chủ tài khoản (+ extension) | Chủ tài khoản; `priceSnapshots`, `decisions`, `feedback` không sửa | Chủ tài khoản | Các màn mobile; **staff không đọc được**; admin chỉ **đọc** `purchases`, `wishlistItems` (đếm cho web, không sửa/xoá) |
 | `users/{uid}/inbox` | Staff, admin | Chủ tài khoản | Chủ tài khoản, chỉ `readAt` | Chủ tài khoản | Hộp thư mobile; web gửi tin riêng |
 | `announcements` | Staff, admin (`status = published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Hộp thư mobile; web form thông báo |
 | `saleEvents` | Staff, admin (`draft` hoặc `published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Lịch sale mobile; web quản lý đợt sale |
+| `saleSuggestions` | Người dùng (không ẩn danh), cho chính mình, `status = pending` | Người đề xuất; staff, admin | Staff, admin: `pending` → `approved` (cùng batch tạo `saleEvents`) hoặc `rejected` (kèm `reason`), một lần | Người đề xuất khi còn `pending` | Đề xuất sale mobile; web duyệt đề xuất |
+| `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard | — | — | Web tổng quan |
 | `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
 | `extensionPairings` | Extension (ẩn danh) | Ai có id (không liệt kê được) | Tài khoản không ẩn danh: duyệt/từ chối 1 lần | Extension | Liên kết extension |
 
@@ -174,7 +176,7 @@ Cách so sánh (`SharedPriceSummary`): chỉ cùng sản phẩm, cùng `modelKey
 |:---|:---|:-:|:---|
 | `title` | string | ✓ | 1–80 ký tự |
 | `body` | string | ✓ | 1–500 ký tự |
-| `kind` | string | ✓ | `message` · `feedback_reply` |
+| `kind` | string | ✓ | `message` · `feedback_reply` · `suggestion_reply` (kết quả duyệt đề xuất sale) |
 | `refId` | string? | | id liên quan (ví dụ góp ý được trả lời), ≤ 128 |
 | `createdAt` | timestamp | ✓ | server time |
 | `createdBy` | string | ✓ | uid người gửi (staff/admin), phải là người đang ghi |
@@ -208,6 +210,27 @@ Mobile phải truy vấn có `where('status', '==', 'published')`, nếu không 
 | `status` | string | ✓ | `draft` · `published` · `archived` |
 | `updatedAt` | timestamp | ✓ | server time |
 | `updatedBy` | string | ✓ | uid người ghi |
+| `suggestionId` | string? | | đặt khi sự kiện được tạo từ đề xuất của người dùng (batch duyệt), ≤ 128 |
+
+Chuyển trạng thái: `draft` → `draft` · `published` · `archived`; `published` → `published` · `archived`; `archived` là cuối (không khôi phục, không sửa).
+
+## `saleSuggestions/{id}` – đề xuất đợt sale · tạo trên app, duyệt trên web
+
+Luồng liên vai trò của Final Assignment: người dùng đề xuất một đợt sale trên app (`pending`) → staff duyệt hoặc từ chối kèm lý do trên web → app của người gửi cập nhật ngay (đề xuất của tôi + `inbox`, `kind = suggestion_reply`).
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `uid` | string | ✓ | phải là người tạo |
+| `name` | string | ✓ | 1–40 ký tự (thành tên `saleEvents` khi duyệt) |
+| `date` | timestamp | ✓ | ngày sale |
+| `note` | string? | | ≤ 200 ký tự (nguồn: "Shopee đã đăng banner…") |
+| `status` | string | ✓ | tạo: `pending`; staff đổi một lần sang `approved` · `rejected` |
+| `createdAt` | timestamp | ✓ | server time |
+| `reason` | string | khi `rejected` | 1–200 ký tự, người gửi đọc trong hộp thư |
+| `saleEventId` | string | khi `approved` | id `saleEvents` tạo trong cùng batch (`existsAfter`) |
+| `reviewedBy`, `reviewedAt` | string, timestamp | khi duyệt | uid staff đang ghi, server time |
+
+Duyệt là một batch: tạo `saleEvents` (`status = published`, `suggestionId`) + đổi đề xuất sang `approved` + ghi `users/{uid}/inbox`. Từ chối: đổi sang `rejected` kèm `reason` + ghi `inbox`. Code: `packages/core` (`FirestoreSaleSuggestionService`).
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 
@@ -215,11 +238,18 @@ Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt 
 
 ## Index tổng hợp (`firestore.indexes.json`)
 
-| Collection | Trường |
-|:---|:---|
-| `wishlistItems` | `status` ↑, `createdAt` ↓ |
-| `decisions` | `itemId` ↑, `at` ↓ |
-| `purchases` | `budgetGroupId` ↑, `occurredAt` ↓ |
+| Collection | Phạm vi | Trường |
+|:---|:---|:---|
+| `wishlistItems` | collection | `status` ↑, `createdAt` ↓ |
+| `decisions` | collection | `itemId` ↑, `at` ↓ |
+| `purchases` | collection | `budgetGroupId` ↑, `occurredAt` ↓ |
+| `wishlistItems` | collection group | `status` ↑, `latestPriceVnd` ↑ (dashboard: `sum` giá món bỏ qua) |
+| `saleEvents` | collection | `status` ↑, `date` ↑ (app: lịch sale đang hiển thị) |
+| `saleSuggestions` | collection | `status` ↑, `createdAt` ↑ / ↓ (web: hàng chờ duyệt, đã xử lý) |
+| `saleSuggestions` | collection | `uid` ↑, `createdAt` ↓ (app: đề xuất của tôi) |
+| `announcements` | collection | `status` ↑, `createdAt` ↓ (app: hộp thư) |
+
+`fieldOverrides` (index một trường phạm vi collection group cho dashboard): `wishlistItems.status`, `wishlistItems.createdAt`, `purchases.createdAt`, `purchases.motive`, `purchases.amountVnd`. Trên dashboard, `count()` món bỏ qua và `sum(latestPriceVnd)` chạy ở hai truy vấn riêng: khi có `sum()` Firestore đi theo index `status + latestPriceVnd` nên món chưa có giá bị bỏ khỏi cả phép đếm.
 
 Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems` theo `createdAt`, `budgetGroups` theo `order`) chỉ dùng index một trường; ba index trên được khai báo sẵn cho truy vấn lọc theo trạng thái / món / nhóm.
 

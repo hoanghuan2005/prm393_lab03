@@ -13,11 +13,6 @@ service cloud.firestore {
     // Owner, or a linked extension (data the extension syncs: wishlist, prices, decisions, budgets…)
     function canAccess(uid) { return isOwner(uid) || linkedDevice(uid); }
     function isAnonymous() { return request.auth.token.firebase.sign_in_provider == 'anonymous'; }
-    function isAdmin() {
-      return request.auth != null
-        && (request.auth.uid == 'cvuPP4HXuKcJdVNepkxbjWUdqTY2'
-          || request.auth.token.email == 'admin@gmail.com');
-    }
     // Roles (Final 6): users/{uid}.role is 'user' (also when the field or the document is
     // missing), 'staff' or 'admin'. The first admin is set in the Firebase console; after that
     // only an admin changes roles, and nobody changes their own.
@@ -129,7 +124,7 @@ service cloud.firestore {
         allow create: if isStaff()
           && d().keys().hasOnly(['title', 'body', 'kind', 'refId', 'createdAt', 'createdBy', 'readAt'])
           && text(d().title, 80) && text(d().body, 500)
-          && d().kind in ['message', 'feedback_reply']
+          && d().kind in ['message', 'feedback_reply', 'suggestion_reply']
           && (!('refId' in d()) || text(d().refId, 128))
           && d().createdAt == request.time && d().createdBy == request.auth.uid
           && (!('readAt' in d()) || d().readAt == null);
@@ -205,8 +200,11 @@ service cloud.firestore {
 
     // Lịch sale managed on the web (the team follows the shops' official announcements).
     function validSaleEvent() {
-      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'updatedAt', 'updatedBy'])
+      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'updatedAt', 'updatedBy',
+                                 'suggestionId'])
         && text(d().name, 40) && d().date is timestamp
+        // Set once, by the batch that approves a user's suggestion
+        && (!('suggestionId' in d()) || text(d().suggestionId, 128))
         && d().type in ['double_day', 'mid_month', 'payday', 'other']
         && d().confirmed is bool
         && d().updatedAt == request.time && d().updatedBy == request.auth.uid;
@@ -219,6 +217,35 @@ service cloud.firestore {
         && ((resource.data.status == 'draft' && d().status in ['draft', 'published', 'archived'])
           || (resource.data.status == 'published' && d().status in ['published', 'archived']));
       allow delete: if false;
+    }
+
+    // Đề xuất đợt sale (cross-role flow): a user proposes a sale on the app (pending);
+    // staff approve it (the same batch publishes the saleEvent and writes the user's
+    // inbox) or reject it with a reason. Only pending → approved | rejected, once.
+    match /saleSuggestions/{id} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isStaff());
+      allow create: if request.auth != null && !isAnonymous()
+        && d().uid == request.auth.uid && d().status == 'pending'
+        && d().keys().hasOnly(['uid', 'name', 'date', 'note', 'status', 'createdAt'])
+        && text(d().name, 40) && d().date is timestamp && optionalNote()
+        && d().createdAt == request.time;
+      allow update: if isStaff() && resource.data.status == 'pending'
+        && d().diff(resource.data).affectedKeys().hasOnly(['status', 'reason', 'reviewedAt', 'reviewedBy', 'saleEventId'])
+        && d().reviewedBy == request.auth.uid && d().reviewedAt == request.time
+        && ((d().status == 'approved' && d().saleEventId is string
+              && existsAfter(/databases/$(database)/documents/saleEvents/$(d().saleEventId)))
+          || (d().status == 'rejected' && text(d().reason, 200)));
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Web dashboard: count / sum over every user's wishlist and purchases (collection
+    // group queries). Admins only; staff see the dashboard without these figures.
+    match /{path=**}/wishlistItems/{itemId} {
+      allow list: if isAdmin();
+    }
+    match /{path=**}/purchases/{purchaseId} {
+      allow list: if isAdmin();
     }
 
   }

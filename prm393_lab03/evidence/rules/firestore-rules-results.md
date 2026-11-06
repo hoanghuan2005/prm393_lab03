@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-05T16:14:19.441Z.
-Tổng: 128 ca · Qua: 128 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T13:50:48.090Z.
+Tổng: 148 ca · Qua: 148 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 
 | ID | Collection | Role | Operation | Expected | Result |
@@ -70,8 +70,8 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-62 | ownedItems | admin | create own | Allowed | Pass |
 | R-63 | budgets | admin | create own | Allowed | Pass |
 | R-64 | reflections | admin | create own | Allowed | Pass |
-| R-65 | purchases | admin | read bob's | Denied | Pass |
-| R-66 | wishlistItems | admin | read bob's | Denied | Pass |
+| R-65 | purchases | admin | read bob's (web user list counts) | Allowed | Pass |
+| R-66 | wishlistItems | admin | read bob's (web user list counts) | Allowed | Pass |
 | R-67 | wishlistItems/priceSnapshots | admin | read bob's | Denied | Pass |
 | R-68 | extensionSessions | admin | read bob's | Denied | Pass |
 | R-69 | decisions | admin | read bob's | Denied | Pass |
@@ -80,57 +80,77 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-72 | ownedItems | admin | read bob's | Denied | Pass |
 | R-73 | budgets | admin | read bob's | Denied | Pass |
 | R-74 | reflections | admin | read bob's | Denied | Pass |
-| R-75 | purchases | user | create with amount 0 | Denied | Pass |
-| R-76 | wishlistItems | user | status "waiting" (not in the spec) | Denied | Pass |
-| R-77 | wishlistItems/priceSnapshots | user | edit a recorded price | Denied | Pass |
-| R-78 | decisions | user | unknown choice | Denied | Pass |
-| R-79 | feedback | user | edit a sent feedback | Denied | Pass |
-| R-80 | reflections | user | rating 6 | Denied | Pass |
-| R-81 | extensionSessions | user | status "hacked" | Denied | Pass |
-| R-82 | inbox | user | read own messages | Allowed | Pass |
-| R-83 | inbox | user | mark a message read | Allowed | Pass |
-| R-84 | inbox | user | change the text of a message | Denied | Pass |
-| R-85 | inbox | user | write a message to self | Denied | Pass |
-| R-86 | inbox | user | read bob's messages | Denied | Pass |
-| R-87 | inbox | staff | send a message to alice | Allowed | Pass |
-| R-88 | inbox | staff | send a message signed as someone else | Denied | Pass |
-| R-89 | inbox | staff | read alice's messages | Denied | Pass |
-| R-90 | inbox | admin | send a message to bob | Allowed | Pass |
-| R-91 | inbox | admin | send a message with an extra field | Denied | Pass |
-| R-92 | announcements | user | list published | Allowed | Pass |
-| R-93 | announcements | user | list without the status filter | Denied | Pass |
-| R-94 | announcements | user | read an archived one | Denied | Pass |
-| R-95 | announcements | user | post an announcement | Denied | Pass |
-| R-96 | announcements | staff | post an announcement | Allowed | Pass |
-| R-97 | announcements | staff | archive a published one | Allowed | Pass |
-| R-98 | announcements | staff | republish an archived one | Denied | Pass |
-| R-99 | announcements | staff | delete one | Denied | Pass |
-| R-100 | announcements | admin | post an announcement | Allowed | Pass |
-| R-101 | announcements | admin | post with a 501-character body | Denied | Pass |
-| R-102 | announcements | signed out | list published | Denied | Pass |
-| R-103 | saleEvents | user | read a published sale | Allowed | Pass |
-| R-104 | saleEvents | user | read a draft | Denied | Pass |
-| R-105 | saleEvents | user | create a sale | Denied | Pass |
-| R-106 | saleEvents | staff | create a draft | Allowed | Pass |
-| R-107 | saleEvents | staff | publish a draft | Allowed | Pass |
-| R-108 | saleEvents | staff | republish an archived sale | Denied | Pass |
-| R-109 | saleEvents | staff | unknown sale type | Denied | Pass |
-| R-110 | saleEvents | admin | archive a published sale | Allowed | Pass |
-| R-111 | saleEvents | admin | delete a sale | Denied | Pass |
-| R-112 | sharedPrices/reports | user | share own price (hashed id) | Allowed | Pass |
-| R-113 | sharedPrices/reports | user | write under bob's id | Denied | Pass |
-| R-114 | sharedPrices/reports | staff | share own price (hashed id) | Allowed | Pass |
-| R-115 | sharedPrices/reports | staff | write under bob's id | Denied | Pass |
-| R-116 | sharedPrices/reports | admin | share own price (hashed id) | Allowed | Pass |
-| R-117 | sharedPrices/reports | admin | write under bob's id | Denied | Pass |
-| R-118 | sharedPrices/reports | user | add a uid field | Denied | Pass |
-| R-119 | sharedPrices/reports | guest | share a price | Denied | Pass |
-| R-120 | sharedPrices/reports | guest | read prices | Allowed | Pass |
-| R-121 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
-| R-122 | extensionPairings | user | list pairings | Denied | Pass |
-| R-123 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
-| R-124 | extensionPairings | staff | list pairings | Denied | Pass |
-| R-125 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
-| R-126 | extensionPairings | admin | list pairings | Denied | Pass |
-| R-127 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
-| R-128 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |
+| R-75 | purchases | admin | edit bob's purchase | Denied | Pass |
+| R-76 | wishlistItems | admin | delete bob's item | Denied | Pass |
+| R-77 | purchases | user | create with amount 0 | Denied | Pass |
+| R-78 | wishlistItems | user | status "waiting" (not in the spec) | Denied | Pass |
+| R-79 | wishlistItems/priceSnapshots | user | edit a recorded price | Denied | Pass |
+| R-80 | decisions | user | unknown choice | Denied | Pass |
+| R-81 | feedback | user | edit a sent feedback | Denied | Pass |
+| R-82 | reflections | user | rating 6 | Denied | Pass |
+| R-83 | extensionSessions | user | status "hacked" | Denied | Pass |
+| R-84 | inbox | user | read own messages | Allowed | Pass |
+| R-85 | inbox | user | mark a message read | Allowed | Pass |
+| R-86 | inbox | user | change the text of a message | Denied | Pass |
+| R-87 | inbox | user | write a message to self | Denied | Pass |
+| R-88 | inbox | user | read bob's messages | Denied | Pass |
+| R-89 | inbox | staff | send a message to alice | Allowed | Pass |
+| R-90 | inbox | staff | send a message signed as someone else | Denied | Pass |
+| R-91 | inbox | staff | read alice's messages | Denied | Pass |
+| R-92 | inbox | admin | send a message to bob | Allowed | Pass |
+| R-93 | inbox | admin | send a message with an extra field | Denied | Pass |
+| R-94 | announcements | user | list published | Allowed | Pass |
+| R-95 | announcements | user | list without the status filter | Denied | Pass |
+| R-96 | announcements | user | read an archived one | Denied | Pass |
+| R-97 | announcements | user | post an announcement | Denied | Pass |
+| R-98 | announcements | staff | post an announcement | Allowed | Pass |
+| R-99 | announcements | staff | archive a published one | Allowed | Pass |
+| R-100 | announcements | staff | republish an archived one | Denied | Pass |
+| R-101 | announcements | staff | delete one | Denied | Pass |
+| R-102 | announcements | admin | post an announcement | Allowed | Pass |
+| R-103 | announcements | admin | post with a 501-character body | Denied | Pass |
+| R-104 | announcements | signed out | list published | Denied | Pass |
+| R-105 | saleEvents | user | read a published sale | Allowed | Pass |
+| R-106 | saleEvents | user | read a draft | Denied | Pass |
+| R-107 | saleEvents | user | create a sale | Denied | Pass |
+| R-108 | saleEvents | staff | create a draft | Allowed | Pass |
+| R-109 | saleEvents | staff | publish a draft | Allowed | Pass |
+| R-110 | saleEvents | staff | republish an archived sale | Denied | Pass |
+| R-111 | saleEvents | staff | unknown sale type | Denied | Pass |
+| R-112 | saleEvents | admin | archive a published sale | Allowed | Pass |
+| R-113 | saleEvents | admin | delete a sale | Denied | Pass |
+| R-114 | saleSuggestions | user | propose a sale (pending) | Allowed | Pass |
+| R-115 | saleSuggestions | user | propose one already approved | Denied | Pass |
+| R-116 | saleSuggestions | user | propose in bob's name | Denied | Pass |
+| R-117 | saleSuggestions | user | read own suggestion | Allowed | Pass |
+| R-118 | saleSuggestions | user | read bob's suggestion | Denied | Pass |
+| R-119 | saleSuggestions | user | approve own suggestion | Denied | Pass |
+| R-120 | saleSuggestions | staff | approve (event + suggestion + inbox in one batch) | Allowed | Pass |
+| R-121 | saleSuggestions | staff | approve the same suggestion again | Denied | Pass |
+| R-122 | saleSuggestions | staff | reject without a reason | Denied | Pass |
+| R-123 | saleSuggestions | staff | reject with a reason | Allowed | Pass |
+| R-124 | saleSuggestions | admin | list the review queue | Allowed | Pass |
+| R-125 | saleSuggestions | admin | propose in alice's name | Denied | Pass |
+| R-126 | saleSuggestions | admin | reject signed as someone else | Denied | Pass |
+| R-127 | (collection group) wishlistItems | admin | count skipped items of every user | Allowed | Pass |
+| R-128 | (collection group) wishlistItems | staff | count skipped items of every user | Denied | Pass |
+| R-129 | (collection group) wishlistItems | user | count skipped items of every user | Denied | Pass |
+| R-130 | (collection group) purchases | admin | count every purchase | Allowed | Pass |
+| R-131 | (collection group) purchases | staff | count every purchase | Denied | Pass |
+| R-132 | sharedPrices/reports | user | share own price (hashed id) | Allowed | Pass |
+| R-133 | sharedPrices/reports | user | write under bob's id | Denied | Pass |
+| R-134 | sharedPrices/reports | staff | share own price (hashed id) | Allowed | Pass |
+| R-135 | sharedPrices/reports | staff | write under bob's id | Denied | Pass |
+| R-136 | sharedPrices/reports | admin | share own price (hashed id) | Allowed | Pass |
+| R-137 | sharedPrices/reports | admin | write under bob's id | Denied | Pass |
+| R-138 | sharedPrices/reports | user | add a uid field | Denied | Pass |
+| R-139 | sharedPrices/reports | guest | share a price | Denied | Pass |
+| R-140 | sharedPrices/reports | guest | read prices | Allowed | Pass |
+| R-141 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
+| R-142 | extensionPairings | user | list pairings | Denied | Pass |
+| R-143 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
+| R-144 | extensionPairings | staff | list pairings | Denied | Pass |
+| R-145 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
+| R-146 | extensionPairings | admin | list pairings | Denied | Pass |
+| R-147 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
+| R-148 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |

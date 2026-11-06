@@ -1,0 +1,21 @@
+name: why_i_buy_core
+description: >-
+  Shared code of the Why I Buy system: Lab 2 design tokens and components,
+  Firestore models and services used by both the mobile app and the web admin.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore: ^7.0.0
+  google_fonts: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  fake_cloud_firestore: ^4.5.0

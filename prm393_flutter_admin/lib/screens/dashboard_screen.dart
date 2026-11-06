@@ -1,672 +1,495 @@
+import 'dart:math' as math;
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:why_i_buy_core/why_i_buy_core.dart';
 
-import '../models/admin_models.dart';
-import '../services/admin_service.dart';
-import '../theme/admin_colors.dart';
+import '../models/dashboard_stats.dart';
+import '../utils/formatters.dart';
+import '../utils/tokens.dart';
+import '../viewmodels/ai_assistant_viewmodel.dart';
+import '../viewmodels/dashboard_viewmodel.dart';
+import '../viewmodels/shell_viewmodel.dart';
+import '../viewmodels/users_viewmodel.dart';
+import '../widgets/admin_page.dart';
+import '../widgets/message_box.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/status_badge.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
-  String _formatVnd(int amount) {
-    return NumberFormat.currency(
-      locale: 'vi_VN',
-      symbol: '₫',
-      decimalDigits: 0,
-    ).format(amount);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final admin = context.watch<AdminService>();
-    final metrics = admin.metrics;
-    final activeCrashes = admin.isLiveFirebase
-        ? const <CrashReport>[]
-        : admin.crashes.where((c) => !c.isResolved).toList();
-    final usersCount = metrics.totalUsers;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (admin.isLiveFirebase && admin.liveDataError != null) ...[
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AdminColors.rose.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AdminColors.rose.withValues(alpha: 0.4),
-                ),
-              ),
-              child: Text(
-                admin.liveDataError!,
-                style: TextStyle(color: AdminColors.rose, fontSize: 12),
-              ),
-            ),
-          ],
-          // 1. Crash Alert Banner (Flat, No Gradient, Fully Responsive)
-          if (activeCrashes.isNotEmpty) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AdminColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AdminColors.rose.withValues(alpha: 0.35),
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 700;
-
-                  final alertContent = Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AdminColors.rose.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.error_outline_rounded,
-                          color: AdminColors.rose,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  'Cảnh báo: Có ${activeCrashes.length} tính năng bị crash trong phiên bản gần nhất!',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: AdminColors.textPrimary,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AdminColors.rose,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'ƯU TIÊN CAO',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Chức năng: ${activeCrashes.map((c) => c.feature).join(' • ')} (Gây ảnh hưởng ${activeCrashes.fold(0, (acc, c) => acc + c.affectedUsers)} thiết bị).',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AdminColors.rose.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-
-                  final actionButton = ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AdminColors.rose,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => admin.selectTab(4), // Jump to Crashes Tab
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                    label: const Text(
-                      'Xem & Sửa ngay',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  );
-
-                  if (isNarrow) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        alertContent,
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: actionButton,
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(child: alertContent),
-                      const SizedBox(width: 16),
-                      actionButton,
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-
-          // 2. Core 4 Metrics Cards (Guaranteed mainAxisExtent, never overflows bottom)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              int crossAxisCount = 4;
-              double mainAxisExtent = 140;
-
-              if (constraints.maxWidth > 1050) {
-                crossAxisCount = 4;
-                mainAxisExtent = 140;
-              } else if (constraints.maxWidth > 520) {
-                crossAxisCount = 2;
-                mainAxisExtent = 145;
-              } else {
-                crossAxisCount = 1;
-                mainAxisExtent = 135;
-              }
-
-              return GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  mainAxisExtent: mainAxisExtent,
-                ),
-                itemCount: 4,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return StatCard(
-                      title: 'User Mới Hôm Nay',
-                      value: '+${metrics.newUsersToday}',
-                      subtitle: 'Tài khoản đăng ký mới',
-                      icon: Icons.person_add_rounded,
-                      accentColor: AdminColors.emerald,
-                      trendText: admin.isLiveFirebase ? '--' : '+24.5%',
-                      isTrendPositive: true,
-                      onTap: () => admin.selectTab(1),
-                    );
-                  } else if (index == 1) {
-                    return StatCard(
-                      title: 'Active Users (DAU)',
-                      value: '${metrics.activeUsersToday}',
-                      subtitle:
-                          '${usersCount == 0 ? 0 : ((metrics.activeUsersToday / usersCount) * 100).toStringAsFixed(1)}% trên tổng $usersCount users',
-                      icon: Icons.bolt_rounded,
-                      accentColor: AdminColors.amber,
-                      trendText: admin.isLiveFirebase ? '--' : '+12.8%',
-                      isTrendPositive: true,
-                      onTap: () => admin.selectTab(1),
-                    );
-                  } else if (index == 2) {
-                    return StatCard(
-                      title: 'Tải App Nhưng Chưa Dùng',
-                      value: '${metrics.dormantUsers}',
-                      subtitle: '0 món cân nhắc, 0 chi tiêu',
-                      icon: Icons.person_off_rounded,
-                      accentColor: AdminColors.purple,
-                      trendText: 'Cần kích hoạt',
-                      isTrendPositive: false,
-                      onTap: () => admin.selectTab(1),
-                    );
-                  } else {
-                    return StatCard(
-                      title: 'Tổng Chi Tiêu Đã Ghi',
-                      value: _formatVnd(metrics.totalSpendingVnd),
-                      subtitle:
-                          '${metrics.totalWishlistItems} món đang cân nhắc',
-                      icon: Icons.attach_money_rounded,
-                      accentColor: AdminColors.blue,
-                      trendText: '+18.2%',
-                      isTrendPositive: true,
-                    );
-                  }
-                },
-              );
-            },
-          ),
-
-          const SizedBox(height: 24),
-
-          // 3. Growth Callout for Dormant Users (Flat, No Gradient, Responsive)
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: AdminColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AdminColors.purple.withValues(alpha: 0.35),
-              ),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 750;
-
-                final textSection = Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AdminColors.purple.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: AdminColors.purple.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 14,
-                            color: AdminColors.purple,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'CƠ HỘI TĂNG TRƯỞNG (GROWTH OPPORTUNITY)',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: AdminColors.purple,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Có ${metrics.dormantUsers} người dùng tải app nhưng chưa thêm món đồ nào',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AdminColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Họ có thể thấy ngại việc nhập liệu thủ công. Hãy gửi thông báo Push giới thiệu tính năng "Chia sẻ link từ Shopee / Lazada" chỉ với 1 chạm để kích hoạt họ trải nghiệm ngay!',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AdminColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                );
-
-                final actionButtons = Wrap(
-                  spacing: 10,
-                  runSpacing: 8,
-                  alignment: isNarrow ? WrapAlignment.start : WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AdminColors.primary,
-                        foregroundColor: AdminColors.onPrimary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        admin.draftTarget = 'dormant';
-                        admin.draftTitle = '👋 Bạn đã thử chia sẻ link mua sắm vào Why I Buy chưa?';
-                        admin.draftBody = 'Bấm Chia sẻ từ Shopee hoặc Lazada -> chọn Why I Buy, bạn sẽ có ngay 48 giờ để cân nhắc trước khi chốt đơn!';
-                        admin.selectTab(2); // Jump to Push Tab
-                      },
-                      icon: const Icon(Icons.campaign_rounded, size: 16),
-                      label: const Text(
-                        'Gửi Push Kích Hoạt Ngay',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: AdminColors.textSecondary,
-                      ),
-                      onPressed: () => admin.selectTab(3), // Jump to AI Tab
-                      icon: const Icon(
-                        Icons.psychology_rounded,
-                        size: 16,
-                        color: AdminColors.primary,
-                      ),
-                      label: const Text(
-                        'Nhờ AI Soạn Lời Nhắn',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-
-                if (isNarrow) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      textSection,
-                      const SizedBox(height: 16),
-                      actionButtons,
-                    ],
-                  );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(child: textSection),
-                    const SizedBox(width: 20),
-                    actionButtons,
-                  ],
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 4. Motives Breakdown & Trends Summary (Responsive Layout)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 900;
-
-              final motivesCard = Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: AdminColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AdminColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PHÂN BỔ ĐỘNG CƠ MUA SẮM',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AdminColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Top lý do thêm món cân nhắc',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AdminColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _buildMotiveRow(
-                      'Cảm xúc (Emotion)',
-                      38,
-                      AdminColors.purple,
-                    ),
-                    _buildMotiveRow(
-                      'Nhu cầu thật (Need)',
-                      32,
-                      AdminColors.blue,
-                    ),
-                    _buildMotiveRow(
-                      'Khuyến mãi / Sale (Promotion)',
-                      16,
-                      const Color(0xFFEC4899),
-                    ),
-                    _buildMotiveRow('Thói quen (Habit)', 9, AdminColors.amber),
-                    _buildMotiveRow(
-                      'Đầu tư (Investment)',
-                      5,
-                      AdminColors.emerald,
-                    ),
-                  ],
-                ),
-              );
-
-              final stabilityCard = Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: AdminColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AdminColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'SỨC KHỎE HỆ THỐNG & ĐỘ ỔN ĐỊNH',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AdminColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Tỷ lệ phiên không lỗi (Crash-Free)',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AdminColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AdminColors.emerald.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            admin.isLiveFirebase
-                                ? '--'
-                                : '${metrics.crashFreeUsersRate}%',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: AdminColors.emerald,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AdminColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AdminColors.border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _MiniSummaryItem(
-                            label: 'Android Users',
-                            value: admin.isLiveFirebase ? '--' : '78.4%',
-                          ),
-                          _MiniSummaryItem(
-                            label: 'iOS Users',
-                            value: admin.isLiveFirebase ? '--' : '21.6%',
-                          ),
-                          _MiniSummaryItem(
-                            label: 'Tỷ lệ Mở Push',
-                            value: admin.isLiveFirebase ? '--' : '41.2%',
-                          ),
-                          _MiniSummaryItem(
-                            label: 'Thời gian nghĩ TB',
-                            value: admin.isLiveFirebase ? '--' : '38 Giờ',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '💡 Lưu ý: Hệ thống tự động theo dõi các sự kiện mở app và bóc tách link chia sẻ. Khi có bản cập nhật mới, các báo cáo crash sẽ tự động phân loại theo tên tính năng trong Crash Monitor.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AdminColors.textMuted,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (isNarrow) {
-                return Column(
-                  children: [
-                    motivesCard,
-                    const SizedBox(height: 16),
-                    stabilityCard,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 4, child: motivesCard),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 6, child: stabilityCard),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMotiveRow(String label, int percent, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AdminColors.textPrimary,
-                ),
-              ),
-              Text(
-                '$percent%',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percent / 100,
-              minHeight: 6,
-              backgroundColor: AdminColors.surfaceLight,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-        ],
+    final vm = context.watch<DashboardViewModel>();
+    return AdminPage(
+      title: 'Tổng quan',
+      subtitle:
+          'Số liệu thật từ Firestore: đếm và cộng ngay trên máy chủ (count / sum), '
+          'không tải từng document về trình duyệt.',
+      actions: [
+        AppButton(
+          title: 'Làm mới',
+          icon: Icons.refresh,
+          variant: AppButtonVariant.secondary,
+          width: 140,
+          isLoading: vm.isLoading,
+          onPressed: vm.load,
+        ),
+      ],
+      child: UiStateBuilder<DashboardStats>(
+        state: vm.state,
+        loadingMessage: 'Đang tính số liệu…',
+        emptyIcon: Icons.insights_outlined,
+        builder: (context, stats) => _DashboardBody(stats: stats),
       ),
     );
   }
 }
 
-class _MiniSummaryItem extends StatelessWidget {
-  final String label;
-  final String value;
+class _DashboardBody extends StatelessWidget {
+  final DashboardStats stats;
 
-  const _MiniSummaryItem({required this.label, required this.value});
+  const _DashboardBody({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    context.watch<AdminService>();
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: AdminColors.textPrimary,
-          ),
+    final a = stats.activity;
+    final cards = <Widget>[
+      StatCard(
+        icon: Icons.person_add_alt_1_outlined,
+        label: 'Người dùng mới hôm nay',
+        value: '+${stats.newUsersToday}',
+        caption: '${stats.newUsersLast7Days} người trong 7 ngày qua',
+        tone: BadgeTone.success,
+      ),
+      if (a != null)
+        StatCard(
+          icon: Icons.bolt_outlined,
+          label: 'Hoạt động hôm nay',
+          value: '${a.activeUsersToday}',
+          caption:
+              'Người đã thêm món hoặc ghi khoản mua hôm nay, '
+              'trên tổng ${stats.totalUsers} người',
+          tone: BadgeTone.warning,
         ),
-        const SizedBox(height: 2),
+      if (a != null)
+        StatCard(
+          icon: Icons.person_off_outlined,
+          label: 'Cài app nhưng chưa dùng',
+          value: a.dormantUsers == null ? '—' : '${a.dormantUsers}',
+          caption: a.dormantUsers == null
+              ? 'Quá nhiều người dùng để đếm từng người'
+              : '0 món cân nhắc, 0 khoản mua',
+          tone: BadgeTone.error,
+          chip: (a.dormantUsers ?? 0) > 0 ? 'Cần kích hoạt' : null,
+        ),
+      if (a != null)
+        StatCard(
+          icon: Icons.payments_outlined,
+          label: 'Tổng chi tiêu đã ghi',
+          value: formatVnd(a.totalSpendingVnd),
+          caption:
+              '${a.purchaseCount} khoản mua · ${a.considering} món đang cân nhắc',
+          tone: BadgeTone.info,
+        ),
+      StatCard(
+        icon: Icons.people_alt_outlined,
+        label: 'Tổng người dùng',
+        value: '${stats.totalUsers}',
+        caption: 'Tài khoản đã đăng nhập vào app',
+      ),
+      StatCard(
+        icon: Icons.fact_check_outlined,
+        label: 'Đề xuất chờ duyệt',
+        value: '${stats.pendingSuggestions}',
+        caption: 'Xem ở mục "Duyệt đề xuất"',
+        tone: BadgeTone.warning,
+        chip: stats.pendingSuggestions > 0 ? 'Cần xử lý' : null,
+      ),
+      if (a != null)
+        StatCard(
+          icon: Icons.do_not_disturb_on_outlined,
+          label: 'Món đã bỏ qua',
+          value: '${a.skipped}',
+          caption: a.skipRate == null
+              ? 'Chưa có món nào được quyết định'
+              : 'Bằng ${(a.skipRate! * 100).round()}% số món đã quyết định',
+          tone: BadgeTone.success,
+        ),
+      if (a != null)
+        StatCard(
+          icon: Icons.savings_outlined,
+          label: 'Giá trị tránh chi',
+          value: formatVnd(a.skippedValueVnd),
+          caption:
+              'Giá đã ghi của ${a.skippedWithPrice}/${a.skipped} món bỏ qua '
+              '(món chưa có giá không tính)',
+          tone: BadgeTone.success,
+        ),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: AppDimens.space32),
+      children: [
+        if (a == null) ...[
+          const MessageBox(
+            message:
+                'Các chỉ số về món cân nhắc và khoản mua của người dùng chỉ admin '
+                'xem được (firestore.rules). Nhân viên thấy số người dùng và đề xuất.',
+          ),
+          const SizedBox(height: AppDimens.space16),
+        ],
+        if ((a?.dormantUsers ?? 0) > 0) ...[
+          _GrowthCard(dormant: a!.dormantUsers!),
+          const SizedBox(height: AppDimens.space16),
+        ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = AppDimens.space16;
+            final w = constraints.maxWidth;
+            final columns = w >= 1000 ? 4 : (w >= 640 ? 2 : 1);
+            final cardWidth = (w - gap * (columns - 1)) / columns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final card in cards)
+                  SizedBox(width: cardWidth, child: card),
+              ],
+            );
+          },
+        ),
+        if (a != null) ...[
+          const SizedBox(height: AppDimens.space24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final motives = SectionCard(
+                title: 'Phân bổ động cơ mua sắm',
+                icon: Icons.pie_chart_outline,
+                children: [_MotiveBars(activity: a)],
+              );
+              final outcomes = SectionCard(
+                title: 'Kết quả cân nhắc của người dùng',
+                icon: Icons.bar_chart,
+                children: [_StatusChart(activity: a)],
+              );
+              if (constraints.maxWidth < 960) {
+                return Column(
+                  children: [
+                    motives,
+                    const SizedBox(height: AppDimens.space16),
+                    outcomes,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: motives),
+                  const SizedBox(width: AppDimens.space16),
+                  Expanded(child: outcomes),
+                ],
+              );
+            },
+          ),
+        ],
+        const SizedBox(height: AppDimens.space12),
         Text(
-          label,
-          style: TextStyle(fontSize: 11, color: AdminColors.textSecondary),
+          'Cập nhật lúc ${formatDateTime(stats.loadedAt)}',
+          style: context.tokens.text(AppTextStyles.labelMedium),
         ),
       ],
+    );
+  }
+}
+
+/// "Cơ hội tăng trưởng": the dormant users and what staff can do about them
+class _GrowthCard extends StatelessWidget {
+  final int dormant;
+
+  const _GrowthCard({required this.dormant});
+
+  void _showUsers(BuildContext context) {
+    context.read<UsersViewModel>().setFilter(UserFilter.dormant);
+    context.read<ShellViewModel>().goTo(AdminSection.users);
+  }
+
+  void _askAi(BuildContext context) {
+    context.read<ShellViewModel>().goTo(AdminSection.assistant);
+    context.read<AiAssistantViewModel>().suggest(
+      AiAssistantViewModel.topicIdeas.first,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const StatusBadge(
+          label: 'CƠ HỘI TĂNG TRƯỞNG',
+          tone: BadgeTone.primary,
+          icon: Icons.auto_awesome,
+        ),
+        const SizedBox(height: AppDimens.space8),
+        Text(
+          'Có $dormant người cài app nhưng chưa thêm món nào',
+          style: t.text(AppTextStyles.titleLarge),
+        ),
+        const SizedBox(height: AppDimens.space4),
+        Text(
+          'Có thể họ ngại nhập tay. Nhắc họ về tính năng chia sẻ link từ Shopee / '
+          'Lazada để thêm món chỉ với một chạm.',
+          style: t.text(AppTextStyles.bodyMedium),
+        ),
+      ],
+    );
+    final buttons = Wrap(
+      spacing: AppDimens.space8,
+      runSpacing: AppDimens.space8,
+      children: [
+        AppButton(
+          title: 'Xem danh sách',
+          icon: Icons.people_alt_outlined,
+          width: 180,
+          onPressed: () => _showUsers(context),
+        ),
+        AppButton(
+          title: 'Nhờ AI soạn lời nhắn',
+          icon: Icons.auto_awesome_outlined,
+          variant: AppButtonVariant.secondary,
+          width: 220,
+          onPressed: () => _askAi(context),
+        ),
+      ],
+    );
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.space20),
+      decoration: BoxDecoration(
+        color: t.primaryContainer,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.6)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => constraints.maxWidth < 760
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  text,
+                  const SizedBox(height: AppDimens.space16),
+                  buttons,
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(child: text),
+                  const SizedBox(width: AppDimens.space16),
+                  buttons,
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Share of purchases per motive, as labelled bars (text + value, not colour only)
+class _MotiveBars extends StatelessWidget {
+  final ActivityStats activity;
+
+  const _MotiveBars({required this.activity});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final total = activity.motives.values.fold(0, (a, b) => a + b);
+    if (total == 0) {
+      return Text(
+        'Chưa có khoản mua nào được ghi.',
+        style: t.text(AppTextStyles.bodyMedium),
+      );
+    }
+    final rows = activity.motives.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Column(
+      children: [
+        for (final e in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppDimens.space12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        motiveLabels[e.key] ?? e.key,
+                        style: t.text(AppTextStyles.labelLarge),
+                      ),
+                    ),
+                    Text(
+                      '${(e.value * 100 / total).round()}% · ${e.value}',
+                      style: t.text(AppTextStyles.labelMedium),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimens.space4),
+                ClipRRect(
+                  borderRadius: AppDimens.borderPill,
+                  child: LinearProgressIndicator(
+                    value: e.value / total,
+                    minHeight: 8,
+                    backgroundColor: t.surfaceMuted,
+                    color: _motiveColor(e.key),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Text(
+          'Tính trên $total khoản mua.',
+          style: t.text(AppTextStyles.labelMedium),
+        ),
+      ],
+    );
+  }
+
+  static Color _motiveColor(String key) => switch (key) {
+    'need' => AppColors.motiveNeed,
+    'want' => AppColors.motiveWant,
+    'sale' => AppColors.motiveSale,
+    'emotion' => AppColors.motiveEmotion,
+    'social' => AppColors.motiveSocial,
+    'convenience' => AppColors.motiveConvenience,
+    'ads' => AppColors.motiveAds,
+    _ => AppColors.motiveOther,
+  };
+}
+
+class _StatusChart extends StatelessWidget {
+  final ActivityStats activity;
+
+  const _StatusChart({required this.activity});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final bars = [
+      ('Đang cân nhắc', activity.considering, AppColors.info),
+      ('Đã mua', activity.purchased, AppColors.accentNeutral),
+      ('Đã bỏ qua', activity.skipped, AppColors.success),
+    ];
+    final maxValue = bars.map((b) => b.$2).fold(0, math.max);
+    final maxY = math.max(4, (maxValue * 1.2).ceil()).toDouble();
+    final interval = math.max(1, (maxY / 4).ceil()).toDouble();
+
+    return Semantics(
+      label:
+          'Biểu đồ cột: ${bars.map((b) => '${b.$1} ${b.$2} món').join(', ')}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'App đạt mục tiêu khi tỷ lệ bỏ qua tăng: người dùng mua ít món bốc đồng hơn.',
+            style: t.text(AppTextStyles.bodyMedium),
+          ),
+          const SizedBox(height: AppDimens.space16),
+          SizedBox(
+            height: 220,
+            child: ExcludeSemantics(
+              child: BarChart(
+                BarChartData(
+                  maxY: maxY,
+                  alignment: BarChartAlignment.spaceAround,
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
+                    drawVerticalLine: false,
+                    horizontalInterval: interval,
+                    getDrawingHorizontalLine: (_) =>
+                        FlLine(color: t.divider, strokeWidth: 1),
+                  ),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(),
+                    rightTitles: const AxisTitles(),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: interval,
+                        getTitlesWidget: (value, meta) => SideTitleWidget(
+                          meta: meta,
+                          child: Text(
+                            value.toInt().toString(),
+                            style: t.text(AppTextStyles.labelMedium),
+                          ),
+                        ),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        getTitlesWidget: (value, meta) => SideTitleWidget(
+                          meta: meta,
+                          child: Text(
+                            bars[value.toInt()].$1,
+                            style: t.text(AppTextStyles.labelMedium),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  barGroups: [
+                    for (var i = 0; i < bars.length; i++)
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: bars[i].$2.toDouble(),
+                            color: bars[i].$3,
+                            width: 40,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(AppDimens.radiusSmall),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimens.space12),
+          // Values as text too: the chart never relies on colour alone
+          Wrap(
+            spacing: AppDimens.space16,
+            runSpacing: AppDimens.space8,
+            children: [
+              for (final (label, value, color) in bars)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: AppDimens.borderSmall,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimens.space6),
+                    Text(
+                      '$label: $value',
+                      style: t.text(AppTextStyles.labelLarge),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

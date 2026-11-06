@@ -28,30 +28,49 @@ void main() {
   });
 
   test(
-    'one reading with a sale and a regular price: the regular one is main',
+    'like the extension: with any regular price, sale prices are not main',
     () {
-      final reading = _now.subtract(const Duration(hours: 1));
-      final first = _now.subtract(const Duration(days: 2));
       final insights = PriceInsights([
-        _s('old-sale', 380000, PriceType.sale, at: first),
-        _s('old', 450000, PriceType.single, at: first),
-        _s('sale', 399000, PriceType.sale, at: reading),
-        _s('regular', 459000, PriceType.single, at: reading),
+        _s(
+          'old',
+          450000,
+          PriceType.single,
+          at: _now.subtract(const Duration(days: 2)),
+        ),
+        _s(
+          'old-sale',
+          380000,
+          PriceType.sale,
+          at: _now.subtract(const Duration(days: 1)),
+        ),
+        _s(
+          'regular',
+          459000,
+          PriceType.single,
+          at: _now.subtract(const Duration(hours: 2)),
+        ),
+        _s(
+          'sale',
+          399000,
+          PriceType.sale,
+          at: _now.subtract(const Duration(hours: 1)),
+        ),
+        _s('voucher', 350000, PriceType.afterVoucher, at: _now),
       ], now: _now);
 
       expect(insights.latest?.id, 'regular');
       expect(insights.saved?.id, 'old');
-      // A sale price is a real price: it still counts for the lowest one
-      expect(insights.lowest?.id, 'old-sale');
+      expect(insights.comparable.map((s) => s.id), ['regular', 'old']);
+      expect(insights.changeSinceSavedPercent, 2);
     },
   );
 
-  test('a sale price alone is the main price', () {
+  test('only sale prices: they are the main ones', () {
     final insights = PriceInsights([
       _s(
-        'regular',
+        'first-sale',
         459000,
-        PriceType.single,
+        PriceType.sale,
         at: _now.subtract(const Duration(days: 1)),
       ),
       _s(
@@ -63,6 +82,7 @@ void main() {
     ], now: _now);
 
     expect(insights.latest?.id, 'sale');
+    expect(insights.saved?.id, 'first-sale');
     expect(insights.changeSinceSavedPercent, -13);
   });
 

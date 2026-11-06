@@ -90,7 +90,7 @@ App chỉ ghi các trường extension khi có giá trị, nên sửa món trong
 | `amountVnd` | int | ✓ | 1 … 999.999.999 |
 | `observedAt` | timestamp | ✓ | là timestamp |
 | `source` | string | | nếu có: `manual` · `demo` · `extensionPage` · `community` (giá người khác ghi mà người dùng chọn dùng; không bao giờ chia sẻ lại) |
-| `priceType` | string | | nếu có: `single` (mặc định) · `range` · `flash` · `sale` (giá đang giảm; cùng lần đọc có giá thường thì giá thường là giá chính; không chia sẻ lên `sharedPrices`) · `afterVoucher` |
+| `priceType` | string | | nếu có: `single` (mặc định) · `range` · `flash` · `sale` (giá đang giảm; như extension: món có giá khác thì giá sale không làm giá chính / so sánh; không chia sẻ lên `sharedPrices`) · `afterVoucher` |
 | `minVnd`, `maxVnd`, `originalVnd` | int? | | — (khoảng giá: `amountVnd` = `minVnd`; giá gạch ngang) |
 | `confirmation` | string | | — `userConfirmed` (mặc định) · `unconfirmed` (giá đọc từ trang, chưa xác nhận) |
 | `variantLabel` | string? | | — |

@@ -28,8 +28,8 @@ enum PriceType {
   range('range'),
   flash('flash'),
 
-  /// "Giá đang giảm" read by the extension; when the same reading also has the
-  /// regular price, that one is the main price (see [PriceInsights])
+  /// "Giá đang giảm" read by the extension; only the main price when the item has
+  /// no other price (see [PriceInsights.comparable])
   sale('sale'),
 
   /// Personal reference only: never the item's main price, never compared with list prices

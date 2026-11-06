@@ -30,31 +30,25 @@ class PriceInsights {
     : history = [...snapshots]
         ..sort((a, b) => b.observedAt.compareTo(a.observedAt));
 
-  /// Snapshots used for comparisons, newest first
-  List<PriceSnapshot> get comparable =>
-      history.where((s) => s.priceType != PriceType.afterVoucher).toList();
+  /// Snapshots used for comparisons, newest first. Like the extension: "Giá đang
+  /// giảm" (sale) only counts when the item has no other price
+  List<PriceSnapshot> get comparable {
+    final listed = history
+        .where((s) => s.priceType != PriceType.afterVoucher)
+        .toList();
+    final regular = listed.where((s) => s.priceType != PriceType.sale).toList();
+    return regular.isEmpty ? listed : regular;
+  }
 
   PriceSnapshot? get latest {
     final list = comparable;
-    return list.isEmpty ? null : _mainOf(list, list.first);
+    return list.isEmpty ? null : list.first;
   }
 
   /// "Giá lúc lưu": the first record
   PriceSnapshot? get saved {
     final list = comparable;
-    return list.isEmpty ? null : _mainOf(list, list.last);
-  }
-
-  /// One page reading can save a "Giá đang giảm" next to the regular price (same
-  /// observedAt); like the extension, the regular price is the main one
-  static PriceSnapshot _mainOf(List<PriceSnapshot> list, PriceSnapshot edge) {
-    if (edge.priceType != PriceType.sale) return edge;
-    for (final s in list) {
-      if (s.observedAt == edge.observedAt && s.priceType != PriceType.sale) {
-        return s;
-      }
-    }
-    return edge;
+    return list.isEmpty ? null : list.last;
   }
 
   static PriceFreshness freshnessOf(PriceSnapshot s, DateTime now) =>

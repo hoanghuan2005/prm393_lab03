@@ -1,0 +1,14 @@
+{
+  "name": "why-i-buy-rules-tests",
+  "private": true,
+  "type": "module",
+  "description": "Firestore Security Rules tests, run against the Emulator",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-why-i-buy --config ../../firebase.json \"node rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.10.0",
+    "firebase-tools": "^14.27.0"
+  }
+}

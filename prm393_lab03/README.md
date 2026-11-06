@@ -95,3 +95,27 @@ Không có file thì app vẫn chạy, Góc nhìn hiện câu mẫu thay cho l�
 cd prm393_lab03/e2e_test
 pytest -v
 ```
+
+### 4.3. Vai trò và admin đầu tiên
+
+Vai trò nằm ở trường `role` của `users/{uid}`: `user` (mặc định), `staff`, `admin`.
+
+1. Admin đăng nhập web admin một lần để có tài khoản (uid) trong Authentication.
+2. Trên **Firebase Console → Firestore**, tạo hoặc sửa document `users/<uid của admin>` với trường `role` = `"admin"` (string). Đây là cách duy nhất tạo admin đầu tiên; rules không cho ai tự đổi vai trò của mình.
+3. Sau đó admin đổi vai trò người khác (chỉ trường `role`).
+
+Admin đầu tiên của nhóm: *(điền email tài khoản admin ở đây)*.
+
+Web admin chỉ nhận `staff` và `admin`; tài khoản khác bị đăng xuất kèm thông báo. Sau khi sửa `firestore.rules` cần **Publish** lại trên Console.
+
+### 4.4. Chạy test Security Rules trên Emulator
+
+Cần Node.js 18+ và Java 21+ (có thể dùng Java đi kèm Android Studio: `C:Program FilesAndroidAndroid Studiojbrin`).
+
+```bash
+cd firebase/tests
+npm install
+npm test
+```
+
+`npm test` bật Firestore Emulator (cổng 8089, vì 8080 dùng cho `spring-boot-push`), chạy `rules.test.mjs` rồi tắt. Kết quả từng ca được ghi vào `evidence/rules/firestore-rules-results.md`.

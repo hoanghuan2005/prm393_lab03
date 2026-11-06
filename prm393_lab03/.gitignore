@@ -60,3 +60,7 @@ e2e_test/results/
 .env
 
 # KHÔNG thêm android/app/google-services.json vào đây — nhóm cần file này trong repo.
+
+# Firestore rules tests (firebase/tests)
+firebase/tests/node_modules/
+firestore-debug.log

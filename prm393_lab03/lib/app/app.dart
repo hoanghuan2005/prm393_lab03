@@ -30,6 +30,8 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> appScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
+final List<SharedItemData> _pendingSharedData = [];
+
 /// Opens the Wishlist filtered to "Cần xem lại" (tapped review reminder)
 void openReviewDueList() {
   final context = appNavigatorKey.currentContext;
@@ -41,12 +43,19 @@ void openReviewDueList() {
 /// Opens AddItemScreen with shared product title & url (from Android Share Sheet)
 void openAddItemWithSharedData(SharedItemData data) {
   final context = appNavigatorKey.currentContext;
-  if (context == null) return;
+  if (context == null || context.read<AuthViewModel>().userId == null) {
+    _pendingSharedData.add(data);
+    return;
+  }
   appNavigatorKey.currentState?.pushNamed(
     AppRoutes.wishlistAdd,
     arguments: AddItemArgs(
-      initialTitle: data.title,
-      initialUrl: data.url,
+      initialTitle: data.title.isNotEmpty ? data.title : null,
+      initialUrl: data.url.isNotEmpty ? data.url : null,
+      initialPrice: data.priceVnd,
+      initialImageUrl: data.imageUrl,
+      shopName: data.shopName,
+      productDescription: data.description,
     ),
   );
 }
@@ -230,10 +239,38 @@ class AuthGate extends StatelessWidget {
         if (authVm.requiresEmailVerification) {
           return const EmailVerificationScreen();
         }
-        return const MainNavigationScreen();
+        return const _AuthenticatedHome();
       case AuthStatus.unauthenticated:
       case AuthStatus.error:
         return const LoginScreen();
     }
   }
+}
+
+class _AuthenticatedHome extends StatefulWidget {
+  const _AuthenticatedHome();
+
+  @override
+  State<_AuthenticatedHome> createState() => _AuthenticatedHomeState();
+}
+
+class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final service = context.read<ShareIntentService>();
+      final pending = <SharedItemData>[..._pendingSharedData];
+      _pendingSharedData.clear();
+      final initial = service.consumeInitialData();
+      if (initial != null) pending.add(initial);
+      for (final data in pending) {
+        openAddItemWithSharedData(data);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const MainNavigationScreen();
 }

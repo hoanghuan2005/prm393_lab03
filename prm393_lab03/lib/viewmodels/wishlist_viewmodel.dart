@@ -292,6 +292,9 @@ class WishlistViewModel extends ChangeNotifier
     String? productUrl,
     String? budgetGroupId,
     int priority = WishlistItem.defaultPriority,
+    String? imageUrl,
+    String? shopName,
+    SaveChannel saveChannel = SaveChannel.manual,
   }) async {
     try {
       final uid = _uid;
@@ -307,6 +310,9 @@ class WishlistViewModel extends ChangeNotifier
         url: productUrl,
         budgetGroupId: budgetGroupId,
         priority: priority,
+        imageUrl: imageUrl,
+        shopName: shopName,
+        saveChannel: saveChannel,
         coolingOffDays: _coolingOffDays,
       );
 

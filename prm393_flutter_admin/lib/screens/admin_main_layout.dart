@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+
 import '../services/admin_service.dart';
 import '../theme/admin_colors.dart';
 import 'dashboard_screen.dart';
@@ -47,7 +48,10 @@ class AdminMainLayout extends StatelessWidget {
               children: [
                 // Brand Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 20,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -58,7 +62,9 @@ class AdminMainLayout extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: AdminColors.primary.withValues(alpha: 0.35),
+                              color: AdminColors.primary.withValues(
+                                alpha: 0.35,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -67,7 +73,11 @@ class AdminMainLayout extends StatelessWidget {
                         alignment: Alignment.center,
                         child: const Text(
                           'W',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AdminColors.onPrimary),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AdminColors.onPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -87,15 +97,29 @@ class AdminMainLayout extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AdminColors.primary.withValues(alpha: 0.2),
+                                    color: AdminColors.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: AdminColors.primary.withValues(alpha: 0.4), width: 0.6),
+                                    border: Border.all(
+                                      color: AdminColors.primary.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      width: 0.6,
+                                    ),
                                   ),
                                   child: const Text(
                                     'FLUTTER',
-                                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: AdminColors.primary),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                      color: AdminColors.primary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -103,7 +127,10 @@ class AdminMainLayout extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               'Admin Web Portal',
-                              style: TextStyle(fontSize: 11, color: AdminColors.textSecondary),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AdminColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -117,10 +144,17 @@ class AdminMainLayout extends StatelessWidget {
                 // Nav Items (Fixed to never wrap lines)
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 12,
+                    ),
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 10, bottom: 8, top: 4),
+                        padding: const EdgeInsets.only(
+                          left: 10,
+                          bottom: 8,
+                          top: 4,
+                        ),
                         child: Text(
                           'MENU ĐIỀU HÀNH',
                           style: TextStyle(
@@ -131,9 +165,27 @@ class AdminMainLayout extends StatelessWidget {
                           ),
                         ),
                       ),
-                      _buildNavItem(context, 0, 'Tổng quan & Chỉ số', Icons.dashboard_rounded, admin.selectedTabIndex == 0),
-                      _buildNavItem(context, 1, 'Quản lý Người dùng', Icons.people_alt_rounded, admin.selectedTabIndex == 1),
-                      _buildNavItem(context, 2, 'Gửi Thông điệp (Push)', Icons.campaign_rounded, admin.selectedTabIndex == 2),
+                      _buildNavItem(
+                        context,
+                        0,
+                        'Tổng quan & Chỉ số',
+                        Icons.dashboard_rounded,
+                        admin.selectedTabIndex == 0,
+                      ),
+                      _buildNavItem(
+                        context,
+                        1,
+                        'Quản lý Người dùng',
+                        Icons.people_alt_rounded,
+                        admin.selectedTabIndex == 1,
+                      ),
+                      _buildNavItem(
+                        context,
+                        2,
+                        'Gửi Thông điệp (Push)',
+                        Icons.campaign_rounded,
+                        admin.selectedTabIndex == 2,
+                      ),
                       _buildNavItem(
                         context,
                         3,
@@ -148,7 +200,9 @@ class AdminMainLayout extends StatelessWidget {
                         'Cảnh báo Sự cố / Crash',
                         Icons.warning_amber_rounded,
                         admin.selectedTabIndex == 4,
-                        badge: admin.activeCrashesCount > 0 ? '${admin.activeCrashesCount} lỗi' : null,
+                        badge: admin.activeCrashesCount > 0
+                            ? '${admin.activeCrashesCount} lỗi'
+                            : null,
                         badgeColor: AdminColors.rose,
                       ),
                     ],
@@ -172,7 +226,11 @@ class AdminMainLayout extends StatelessWidget {
                           color: AdminColors.emerald.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.smartphone_rounded, size: 18, color: AdminColors.emerald),
+                        child: const Icon(
+                          Icons.smartphone_rounded,
+                          size: 18,
+                          color: AdminColors.emerald,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -190,7 +248,10 @@ class AdminMainLayout extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               'Firebase: prm393-34056',
-                              style: TextStyle(fontSize: 10, color: AdminColors.textSecondary),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AdminColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -212,7 +273,9 @@ class AdminMainLayout extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 28),
                   decoration: BoxDecoration(
                     color: AdminColors.sidebar,
-                    border: Border(bottom: BorderSide(color: AdminColors.border)),
+                    border: Border(
+                      bottom: BorderSide(color: AdminColors.border),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -240,7 +303,10 @@ class AdminMainLayout extends StatelessWidget {
                               onTap: () => admin.toggleTheme(),
                               borderRadius: BorderRadius.circular(10),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AdminColors.surfaceLight,
                                   borderRadius: BorderRadius.circular(10),
@@ -250,13 +316,19 @@ class AdminMainLayout extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      admin.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                      admin.isDarkMode
+                                          ? Icons.light_mode_rounded
+                                          : Icons.dark_mode_rounded,
                                       size: 16,
-                                      color: admin.isDarkMode ? AdminColors.primary : AdminColors.purple,
+                                      color: admin.isDarkMode
+                                          ? AdminColors.primary
+                                          : AdminColors.purple,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      admin.isDarkMode ? 'Chế độ Sáng' : 'Chế độ Tối',
+                                      admin.isDarkMode
+                                          ? 'Chế độ Sáng'
+                                          : 'Chế độ Tối',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
@@ -273,15 +345,26 @@ class AdminMainLayout extends StatelessWidget {
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: admin.isLiveFirebase
-                                    ? AdminColors.emerald.withValues(alpha: 0.15)
-                                    : AdminColors.primary.withValues(alpha: 0.15),
-                                foregroundColor: admin.isLiveFirebase ? AdminColors.emerald : AdminColors.primary,
+                                    ? AdminColors.emerald.withValues(
+                                        alpha: 0.15,
+                                      )
+                                    : AdminColors.primary.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                foregroundColor: admin.isLiveFirebase
+                                    ? AdminColors.emerald
+                                    : AdminColors.primary,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   side: BorderSide(
-                                    color: admin.isLiveFirebase ? AdminColors.emerald : AdminColors.primary,
+                                    color: admin.isLiveFirebase
+                                        ? AdminColors.emerald
+                                        : AdminColors.primary,
                                     width: 0.8,
                                   ),
                                 ),
@@ -289,8 +372,13 @@ class AdminMainLayout extends StatelessWidget {
                               onPressed: () => admin.toggleLiveFirebase(),
                               icon: const Icon(Icons.storage_rounded, size: 16),
                               label: Text(
-                                admin.isLiveFirebase ? 'Nguồn: Firebase Live' : 'Nguồn: Dữ liệu Demo',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                                admin.isLiveFirebase
+                                    ? 'Nguồn: Firebase Live'
+                                    : 'Nguồn: Dữ liệu Demo',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -301,16 +389,28 @@ class AdminMainLayout extends StatelessWidget {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: AdminColors.primary),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AdminColors.primary,
+                                      ),
                                     )
-                                  : Icon(Icons.refresh_rounded, color: AdminColors.textSecondary, size: 20),
-                              onPressed: () => admin.fetchFirebaseData(),
+                                  : Icon(
+                                      Icons.refresh_rounded,
+                                      color: AdminColors.textSecondary,
+                                      size: 20,
+                                    ),
+                              onPressed: admin.isLiveFirebase
+                                  ? () => admin.fetchFirebaseData()
+                                  : null,
                             ),
                             const SizedBox(width: 10),
 
                             // Admin avatar
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: AdminColors.surfaceLight,
                                 borderRadius: BorderRadius.circular(10),
@@ -322,26 +422,45 @@ class AdminMainLayout extends StatelessWidget {
                                   const CircleAvatar(
                                     radius: 12,
                                     backgroundColor: AdminColors.primary,
-                                    child: Text('AD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AdminColors.onPrimary)),
+                                    child: Text(
+                                      'AD',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        color: AdminColors.onPrimary,
+                                      ),
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Admin Quản Trị',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AdminColors.textPrimary),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AdminColors.textPrimary,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
                                     tooltip: 'Đăng xuất',
-                                    icon: const Icon(Icons.logout_rounded, size: 18),
+                                    icon: const Icon(
+                                      Icons.logout_rounded,
+                                      size: 18,
+                                    ),
                                     color: AdminColors.rose,
                                     onPressed: () async {
                                       try {
                                         await FirebaseAuth.instance.signOut();
                                       } catch (error) {
                                         if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Đăng xuất thất bại: $error')),
-                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Đăng xuất thất bại: $error',
+                                                ),
+                                              ),
+                                            );
                                       }
                                     },
                                   ),
@@ -389,10 +508,14 @@ class AdminMainLayout extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? AdminColors.primary.withValues(alpha: 0.15) : Colors.transparent,
+              color: isSelected
+                  ? AdminColors.primary.withValues(alpha: 0.15)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? AdminColors.primary.withValues(alpha: 0.4) : Colors.transparent,
+                color: isSelected
+                    ? AdminColors.primary.withValues(alpha: 0.4)
+                    : Colors.transparent,
                 width: 0.8,
               ),
             ),
@@ -402,12 +525,16 @@ class AdminMainLayout extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: isSelected ? AdminColors.primary : AdminColors.surfaceLight,
+                    color: isSelected
+                        ? AdminColors.primary
+                        : AdminColors.surfaceLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
-                    color: isSelected ? AdminColors.onPrimary : AdminColors.textSecondary,
+                    color: isSelected
+                        ? AdminColors.onPrimary
+                        : AdminColors.textSecondary,
                     size: 16,
                   ),
                 ),
@@ -417,8 +544,12 @@ class AdminMainLayout extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: 12.5,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected ? AdminColors.textPrimary : AdminColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      color: isSelected
+                          ? AdminColors.textPrimary
+                          : AdminColors.textSecondary,
                     ),
                     maxLines: 1,
                     softWrap: false,
@@ -428,12 +559,19 @@ class AdminMainLayout extends StatelessWidget {
                 if (badge != null) ...[
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: (badgeColor ?? AdminColors.primary).withValues(alpha: 0.2),
+                      color: (badgeColor ?? AdminColors.primary).withValues(
+                        alpha: 0.2,
+                      ),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: (badgeColor ?? AdminColors.primary).withValues(alpha: 0.3),
+                        color: (badgeColor ?? AdminColors.primary).withValues(
+                          alpha: 0.3,
+                        ),
                         width: 0.8,
                       ),
                     ),

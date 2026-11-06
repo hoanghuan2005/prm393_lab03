@@ -51,8 +51,20 @@ class AddItemArgs {
   final WishlistItem? existing;
   final String? initialTitle;
   final String? initialUrl;
+  final int? initialPrice;
+  final String? initialImageUrl;
+  final String? shopName;
+  final String? productDescription;
 
-  const AddItemArgs({this.existing, this.initialTitle, this.initialUrl});
+  const AddItemArgs({
+    this.existing,
+    this.initialTitle,
+    this.initialUrl,
+    this.initialPrice,
+    this.initialImageUrl,
+    this.shopName,
+    this.productDescription,
+  });
 }
 
 /// Arguments for [AppRoutes.purchaseDetail]
@@ -158,7 +170,15 @@ class AppRoutes {
       forgotPassword => const LoginScreen(mode: AuthMode.forgotPassword),
       onboarding => const OnboardingScreen(),
       wishlist => const WishlistScreen(),
-      wishlistAdd => const AddItemScreen(),
+      wishlistAdd => AddItemScreen(
+        existing: args is AddItemArgs ? args.existing : null,
+        initialTitle: args is AddItemArgs ? args.initialTitle : null,
+        initialUrl: args is AddItemArgs ? args.initialUrl : null,
+        initialPrice: args is AddItemArgs ? args.initialPrice : null,
+        initialImageUrl: args is AddItemArgs ? args.initialImageUrl : null,
+        shopName: args is AddItemArgs ? args.shopName : null,
+        productDescription: args is AddItemArgs ? args.productDescription : null,
+      ),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,
       ),
@@ -166,6 +186,10 @@ class AppRoutes {
         existing: args.existing,
         initialTitle: args.initialTitle,
         initialUrl: args.initialUrl,
+        initialPrice: args.initialPrice,
+        initialImageUrl: args.initialImageUrl,
+        shopName: args.shopName,
+        productDescription: args.productDescription,
       ),
       itemDetail when args is ItemDetailArgs => ItemDetailScreen(
         item: args.item,

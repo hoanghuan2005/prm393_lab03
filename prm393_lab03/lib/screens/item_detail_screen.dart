@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/item_suggestion.dart';
 import '../models/price_snapshot.dart';
 import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
@@ -302,7 +303,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final item = _currentItem(context.watch<WishlistViewModel>());
+    final wishlistVm = context.watch<WishlistViewModel>();
+    final item = _currentItem(wishlistVm);
+    final currentTokens = titleTokens(item.title);
+    final matchingShopItems = wishlistVm.allItems.where((other) {
+      if (other.id == item.id) return false;
+      final otherTokens = titleTokens(other.title);
+      return compareTitles(currentTokens, otherTokens) == TitleSimilarity.likely;
+    }).toList();
     final canDecide = item.status == WishlistStatus.considering;
     final needsPurchase =
         item.status == WishlistStatus.purchased && item.purchaseId == null;
@@ -397,6 +405,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      if (item.shopName != null && item.shopName!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.storefront_outlined, size: 13, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(item.shopName!, style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
                       if (item.isFromExtension)
                         WishlistCard.fromExtensionChip(),
                       Text(
@@ -421,6 +446,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ? null
                     : (amount) => _useSharedPrice(item, amount),
               ),
+
+            // Comparison between multiple shops in Wishlist
+            _ShopPriceComparisonSection(
+              currentItem: item,
+              matchingItems: matchingShopItems,
+            ),
 
             // Psychological Cooldown Box
             if (item.isInCooldown) ...[
@@ -580,6 +611,184 @@ class _ReviewInfo extends StatelessWidget {
           ),
           const SizedBox(width: AppDimens.space12),
           Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Section displaying price comparison across different shops for the same product
+class _ShopPriceComparisonSection extends StatelessWidget {
+  final WishlistItem currentItem;
+  final List<WishlistItem> matchingItems;
+
+  const _ShopPriceComparisonSection({
+    required this.currentItem,
+    required this.matchingItems,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (matchingItems.isEmpty) return const SizedBox.shrink();
+
+    final allOffers = [currentItem, ...matchingItems];
+    final validPrices = allOffers.where((i) => i.hasPrice).toList()
+      ..sort((a, b) => a.latestPriceVnd!.compareTo(b.latestPriceVnd!));
+
+    final lowestItem = validPrices.isNotEmpty ? validPrices.first : null;
+    final highestItem = validPrices.length > 1 ? validPrices.last : null;
+    final savings = (lowestItem != null && highestItem != null)
+        ? highestItem.latestPriceVnd! - lowestItem.latestPriceVnd!
+        : 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimens.space20),
+      padding: const EdgeInsets.all(AppDimens.space16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.compare_arrows_rounded, color: AppColors.primary, size: 20),
+              const SizedBox(width: AppDimens.space8),
+              Expanded(
+                child: Text(
+                  'So sánh giá các cửa hàng (${allOffers.length} shop)',
+                  style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.space12),
+          ...allOffers.map((offer) {
+            final isCurrent = offer.id == currentItem.id;
+            final isLowest = lowestItem != null && offer.id == lowestItem.id && validPrices.length > 1;
+            final shopTitle = offer.shopName?.isNotEmpty == true
+                ? offer.shopName!
+                : (offer.url?.contains('shopee') == true ? 'Shopee' : 'Cửa hàng khác');
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppDimens.space8),
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space8),
+              decoration: BoxDecoration(
+                color: isCurrent
+                    ? AppColors.primary.withValues(alpha: 0.08)
+                    : AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isLowest
+                      ? const Color(0xFF10B981)
+                      : (isCurrent ? AppColors.primary.withValues(alpha: 0.4) : AppColors.divider),
+                  width: isLowest ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.storefront_outlined,
+                    size: 18,
+                    color: isLowest ? const Color(0xFF10B981) : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: AppDimens.space8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                shopTitle,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontWeight: isCurrent || isLowest ? FontWeight.bold : FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isCurrent) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Đang xem',
+                                  style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                            if (isLowest) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Rẻ nhất ⭐',
+                                  style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (offer.url != null && offer.url!.isNotEmpty)
+                          Text(
+                            offer.url!,
+                            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppDimens.space8),
+                  Text(
+                    formatVnd(offer.latestPriceVnd),
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: isLowest ? const Color(0xFF10B981) : AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (savings > 0 && lowestItem != null) ...[
+            const SizedBox(height: AppDimens.space6),
+            Container(
+              padding: const EdgeInsets.all(AppDimens.space8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.savings_outlined, color: Color(0xFF10B981), size: 18),
+                  const SizedBox(width: AppDimens.space8),
+                  Expanded(
+                    child: Text(
+                      'Tiết kiệm ${formatVnd(savings)} nếu mua tại ${lowestItem.shopName ?? 'shop rẻ nhất'}!',
+                      style: AppTextStyles.caption.copyWith(
+                        color: const Color(0xFF047857),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

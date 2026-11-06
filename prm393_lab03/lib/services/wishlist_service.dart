@@ -25,6 +25,8 @@ abstract interface class WishlistService {
     String? budgetGroupId,
     int priority = WishlistItem.defaultPriority,
     SaveChannel saveChannel = SaveChannel.manual,
+    String? imageUrl,
+    String? shopName,
     required int coolingOffDays,
   });
 
@@ -83,6 +85,8 @@ class FirestoreWishlistService implements WishlistService {
     String? budgetGroupId,
     int priority = WishlistItem.defaultPriority,
     SaveChannel saveChannel = SaveChannel.manual,
+    String? imageUrl,
+    String? shopName,
     required int coolingOffDays,
   }) => guard(() async {
     final createdAt = DateTime.now();
@@ -101,6 +105,8 @@ class FirestoreWishlistService implements WishlistService {
       latestPriceVnd: price,
       latestPriceAt: price == null ? null : createdAt,
       saveChannel: saveChannel,
+      imageUrl: imageUrl,
+      shopName: shopName,
       note: note,
       createdAt: createdAt,
     );

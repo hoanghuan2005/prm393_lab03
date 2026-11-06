@@ -54,6 +54,7 @@ class WishlistItem {
   final String? variantLabel;
   final String? modelId;
   final String? imageUrl;
+  final String? shopName;
 
   /// The user pressed "Mua" in the extension; only the app records the purchase
   final DateTime? buyIntentAt;
@@ -81,6 +82,7 @@ class WishlistItem {
     this.variantLabel,
     this.modelId,
     this.imageUrl,
+    this.shopName,
     this.buyIntentAt,
   });
 
@@ -161,6 +163,7 @@ class WishlistItem {
       variantLabel: readText(data['variantLabel']),
       modelId: readText(data['modelId']),
       imageUrl: readText(data['imageUrl']),
+      shopName: readText(data['shopName']),
       buyIntentAt: readDate(data['buyIntentAt']),
     );
   }
@@ -190,6 +193,7 @@ class WishlistItem {
       if (variantLabel != null) 'variantLabel': variantLabel,
       if (modelId != null) 'modelId': modelId,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (shopName != null) 'shopName': shopName,
       if (buyIntentAt != null) 'buyIntentAt': toTimestamp(buyIntentAt),
     };
   }
@@ -217,6 +221,7 @@ class WishlistItem {
     String? variantLabel,
     String? modelId,
     String? imageUrl,
+    String? shopName,
     DateTime? buyIntentAt,
     bool clearBuyIntent = false,
   }) {
@@ -243,6 +248,7 @@ class WishlistItem {
       variantLabel: variantLabel ?? this.variantLabel,
       modelId: modelId ?? this.modelId,
       imageUrl: imageUrl ?? this.imageUrl,
+      shopName: shopName ?? this.shopName,
       buyIntentAt: clearBuyIntent ? null : buyIntentAt ?? this.buyIntentAt,
     );
   }
@@ -273,6 +279,7 @@ class WishlistItem {
           other.variantLabel == variantLabel &&
           other.modelId == modelId &&
           other.imageUrl == imageUrl &&
+          other.shopName == shopName &&
           other.buyIntentAt == buyIntentAt;
 
   @override

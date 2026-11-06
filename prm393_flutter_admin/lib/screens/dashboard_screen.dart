@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+
+import '../models/admin_models.dart';
 import '../services/admin_service.dart';
 import '../theme/admin_colors.dart';
 import '../widgets/stat_card.dart';
@@ -9,20 +11,45 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   String _formatVnd(int amount) {
-    return NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   @override
   Widget build(BuildContext context) {
     final admin = context.watch<AdminService>();
     final metrics = admin.metrics;
-    final activeCrashes = admin.crashes.where((c) => !c.isResolved).toList();
+    final activeCrashes = admin.isLiveFirebase
+        ? const <CrashReport>[]
+        : admin.crashes.where((c) => !c.isResolved).toList();
+    final usersCount = metrics.totalUsers;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (admin.isLiveFirebase && admin.liveDataError != null) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AdminColors.rose.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AdminColors.rose.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Text(
+                admin.liveDataError!,
+                style: TextStyle(color: AdminColors.rose, fontSize: 12),
+              ),
+            ),
+          ],
           // 1. Crash Alert Banner (Flat, No Gradient, Fully Responsive)
           if (activeCrashes.isNotEmpty) ...[
             Container(
@@ -31,7 +58,9 @@ class DashboardScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AdminColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AdminColors.rose.withValues(alpha: 0.35)),
+                border: Border.all(
+                  color: AdminColors.rose.withValues(alpha: 0.35),
+                ),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -46,7 +75,11 @@ class DashboardScreen extends StatelessWidget {
                           color: AdminColors.rose.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.error_outline_rounded, color: AdminColors.rose, size: 24),
+                        child: const Icon(
+                          Icons.error_outline_rounded,
+                          color: AdminColors.rose,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -67,14 +100,21 @@ class DashboardScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AdminColors.rose,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
                                     'ƯU TIÊN CAO',
-                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -82,7 +122,10 @@ class DashboardScreen extends StatelessWidget {
                             const SizedBox(height: 6),
                             Text(
                               'Chức năng: ${activeCrashes.map((c) => c.feature).join(' • ')} (Gây ảnh hưởng ${activeCrashes.fold(0, (acc, c) => acc + c.affectedUsers)} thiết bị).',
-                              style: TextStyle(fontSize: 12, color: AdminColors.rose.withValues(alpha: 0.9)),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AdminColors.rose.withValues(alpha: 0.9),
+                              ),
                             ),
                           ],
                         ),
@@ -95,12 +138,23 @@ class DashboardScreen extends StatelessWidget {
                       backgroundColor: AdminColors.rose,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () => admin.selectTab(4), // Jump to Crashes Tab
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                    label: const Text('Xem & Sửa ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Xem & Sửa ngay',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   );
 
                   if (isNarrow) {
@@ -164,7 +218,7 @@ class DashboardScreen extends StatelessWidget {
                       subtitle: 'Tài khoản đăng ký mới',
                       icon: Icons.person_add_rounded,
                       accentColor: AdminColors.emerald,
-                      trendText: '+24.5%',
+                      trendText: admin.isLiveFirebase ? '--' : '+24.5%',
                       isTrendPositive: true,
                       onTap: () => admin.selectTab(1),
                     );
@@ -172,10 +226,11 @@ class DashboardScreen extends StatelessWidget {
                     return StatCard(
                       title: 'Active Users (DAU)',
                       value: '${metrics.activeUsersToday}',
-                      subtitle: '${((metrics.activeUsersToday / metrics.totalUsers) * 100).toStringAsFixed(1)}% trên tổng ${metrics.totalUsers} users',
+                      subtitle:
+                          '${usersCount == 0 ? 0 : ((metrics.activeUsersToday / usersCount) * 100).toStringAsFixed(1)}% trên tổng $usersCount users',
                       icon: Icons.bolt_rounded,
                       accentColor: AdminColors.amber,
-                      trendText: '+12.8%',
+                      trendText: admin.isLiveFirebase ? '--' : '+12.8%',
                       isTrendPositive: true,
                       onTap: () => admin.selectTab(1),
                     );
@@ -194,7 +249,8 @@ class DashboardScreen extends StatelessWidget {
                     return StatCard(
                       title: 'Tổng Chi Tiêu Đã Ghi',
                       value: _formatVnd(metrics.totalSpendingVnd),
-                      subtitle: '${metrics.totalWishlistItems} món đang cân nhắc',
+                      subtitle:
+                          '${metrics.totalWishlistItems} món đang cân nhắc',
                       icon: Icons.attach_money_rounded,
                       accentColor: AdminColors.blue,
                       trendText: '+18.2%',
@@ -214,7 +270,9 @@ class DashboardScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: AdminColors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AdminColors.purple.withValues(alpha: 0.35)),
+              border: Border.all(
+                color: AdminColors.purple.withValues(alpha: 0.35),
+              ),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -224,20 +282,33 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AdminColors.purple.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AdminColors.purple.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AdminColors.purple.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome_rounded, size: 14, color: AdminColors.purple),
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 14,
+                            color: AdminColors.purple,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'CƠ HỘI TĂNG TRƯỞNG (GROWTH OPPORTUNITY)',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AdminColors.purple),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AdminColors.purple,
+                            ),
                           ),
                         ],
                       ),
@@ -254,7 +325,11 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       'Họ có thể thấy ngại việc nhập liệu thủ công. Hãy gửi thông báo Push giới thiệu tính năng "Chia sẻ link từ Shopee / Lazada" chỉ với 1 chạm để kích hoạt họ trải nghiệm ngay!',
-                      style: TextStyle(fontSize: 12, color: AdminColors.textSecondary, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AdminColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 );
@@ -270,8 +345,13 @@ class DashboardScreen extends StatelessWidget {
                         backgroundColor: AdminColors.primary,
                         foregroundColor: AdminColors.onPrimary,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () {
                         admin.draftTarget = 'dormant';
@@ -280,15 +360,31 @@ class DashboardScreen extends StatelessWidget {
                         admin.selectTab(2); // Jump to Push Tab
                       },
                       icon: const Icon(Icons.campaign_rounded, size: 16),
-                      label: const Text('Gửi Push Kích Hoạt Ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                      label: const Text(
+                        'Gửi Push Kích Hoạt Ngay',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                     TextButton.icon(
                       style: TextButton.styleFrom(
                         foregroundColor: AdminColors.textSecondary,
                       ),
                       onPressed: () => admin.selectTab(3), // Jump to AI Tab
-                      icon: const Icon(Icons.psychology_rounded, size: 16, color: AdminColors.primary),
-                      label: const Text('Nhờ AI Soạn Lời Nhắn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                      icon: const Icon(
+                        Icons.psychology_rounded,
+                        size: 16,
+                        color: AdminColors.primary,
+                      ),
+                      label: const Text(
+                        'Nhờ AI Soạn Lời Nhắn',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -335,19 +431,43 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       'PHÂN BỔ ĐỘNG CƠ MUA SẮM',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AdminColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AdminColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Top lý do thêm món cân nhắc',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AdminColors.textPrimary),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AdminColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 18),
-                    _buildMotiveRow('Cảm xúc (Emotion)', 38, AdminColors.purple),
-                    _buildMotiveRow('Nhu cầu thật (Need)', 32, AdminColors.blue),
-                    _buildMotiveRow('Khuyến mãi / Sale (Promotion)', 16, const Color(0xFFEC4899)),
+                    _buildMotiveRow(
+                      'Cảm xúc (Emotion)',
+                      38,
+                      AdminColors.purple,
+                    ),
+                    _buildMotiveRow(
+                      'Nhu cầu thật (Need)',
+                      32,
+                      AdminColors.blue,
+                    ),
+                    _buildMotiveRow(
+                      'Khuyến mãi / Sale (Promotion)',
+                      16,
+                      const Color(0xFFEC4899),
+                    ),
                     _buildMotiveRow('Thói quen (Habit)', 9, AdminColors.amber),
-                    _buildMotiveRow('Đầu tư (Investment)', 5, AdminColors.emerald),
+                    _buildMotiveRow(
+                      'Đầu tư (Investment)',
+                      5,
+                      AdminColors.emerald,
+                    ),
                   ],
                 ),
               );
@@ -371,25 +491,42 @@ class DashboardScreen extends StatelessWidget {
                             children: [
                               Text(
                                 'SỨC KHỎE HỆ THỐNG & ĐỘ ỔN ĐỊNH',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AdminColors.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AdminColors.textSecondary,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Tỷ lệ phiên không lỗi (Crash-Free)',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AdminColors.textPrimary),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AdminColors.textPrimary,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AdminColors.emerald.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            '${metrics.crashFreeUsersRate}%',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AdminColors.emerald),
+                            admin.isLiveFirebase
+                                ? '--'
+                                : '${metrics.crashFreeUsersRate}%',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: AdminColors.emerald,
+                            ),
                           ),
                         ),
                       ],
@@ -405,17 +542,33 @@ class DashboardScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _MiniSummaryItem(label: 'Android Users', value: '78.4%'),
-                          _MiniSummaryItem(label: 'iOS Users', value: '21.6%'),
-                          _MiniSummaryItem(label: 'Tỷ lệ Mở Push', value: '41.2%'),
-                          _MiniSummaryItem(label: 'Thời gian nghĩ TB', value: '38 Giờ'),
+                          _MiniSummaryItem(
+                            label: 'Android Users',
+                            value: admin.isLiveFirebase ? '--' : '78.4%',
+                          ),
+                          _MiniSummaryItem(
+                            label: 'iOS Users',
+                            value: admin.isLiveFirebase ? '--' : '21.6%',
+                          ),
+                          _MiniSummaryItem(
+                            label: 'Tỷ lệ Mở Push',
+                            value: admin.isLiveFirebase ? '--' : '41.2%',
+                          ),
+                          _MiniSummaryItem(
+                            label: 'Thời gian nghĩ TB',
+                            value: admin.isLiveFirebase ? '--' : '38 Giờ',
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       '💡 Lưu ý: Hệ thống tự động theo dõi các sự kiện mở app và bóc tách link chia sẻ. Khi có bản cập nhật mới, các báo cáo crash sẽ tự động phân loại theo tên tính năng trong Crash Monitor.',
-                      style: TextStyle(fontSize: 11, color: AdminColors.textMuted, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AdminColors.textMuted,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
@@ -455,8 +608,22 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AdminColors.textPrimary)),
-              Text('$percent%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AdminColors.textPrimary,
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -497,10 +664,7 @@ class _MiniSummaryItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AdminColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 11, color: AdminColors.textSecondary),
         ),
       ],
     );

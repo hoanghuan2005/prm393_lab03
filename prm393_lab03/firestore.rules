@@ -14,7 +14,9 @@ service cloud.firestore {
     function canAccess(uid) { return isOwner(uid) || linkedDevice(uid); }
     function isAnonymous() { return request.auth.token.firebase.sign_in_provider == 'anonymous'; }
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'admin@gmail.com';
+      return request.auth != null
+        && (request.auth.uid == 'cvuPP4HXuKcJdVNepkxbjWUdqTY2'
+          || request.auth.token.email == 'admin@gmail.com');
     }
     function d() { return request.resource.data; }
     function validTitle() { return d().title is string && d().title.size() > 0 && d().title.size() <= 60; }
@@ -28,7 +30,7 @@ service cloud.firestore {
       allow write: if isOwner(uid);
 
       match /purchases/{id} {
-        allow read: if canAccess(uid);
+        allow read: if isAdmin() || canAccess(uid);
         allow delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && validTitle() && validMoney(d().amountVnd)
           && validMotive(d().motive) && d().occurredAt is timestamp && optionalNote()
@@ -36,7 +38,8 @@ service cloud.firestore {
       }
 
       match /wishlistItems/{id} {
-        allow read, delete: if canAccess(uid);
+        allow read: if isAdmin() || canAccess(uid);
+        allow delete: if canAccess(uid);
         allow create, update: if canAccess(uid) && validTitle()
           && d().status in ['considering','purchased','skipped']
           && (!('motive' in d()) || d().motive == null || validMotive(d().motive))
@@ -45,6 +48,7 @@ service cloud.firestore {
           && optionalNote()
           // Chrome extension fields; only the app's purchase batch marks an item purchased
           && (!('variantLabel' in d()) || d().variantLabel == null || (d().variantLabel is string && d().variantLabel.size() <= 60))
+          && (!('shopName' in d()) || d().shopName == null || (d().shopName is string && d().shopName.size() <= 100))
           && (!('buyIntentAt' in d()) || d().buyIntentAt == null || d().buyIntentAt is timestamp)
           && (d().status != 'purchased' || ('purchaseId' in d() && d().purchaseId is string));
 

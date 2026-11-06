@@ -5,6 +5,7 @@ import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
 import '../models/wishlist_item.dart';
+import '../services/product_metadata_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -25,12 +26,20 @@ class AddItemScreen extends StatefulWidget {
   /// Prefilled name for a new item (e.g. the AI guess from "Chụp để tìm")
   final String? initialTitle;
   final String? initialUrl;
+  final int? initialPrice;
+  final String? initialImageUrl;
+  final String? shopName;
+  final String? productDescription;
 
   const AddItemScreen({
     super.key,
     this.existing,
     this.initialTitle,
     this.initialUrl,
+    this.initialPrice,
+    this.initialImageUrl,
+    this.shopName,
+    this.productDescription,
   });
 
   @override
@@ -42,11 +51,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _titleController = TextEditingController();
   final _priceController = TextEditingController();
   final _urlController = TextEditingController();
+  final _shopController = TextEditingController();
 
   BuyingMotive _selectedMotive = BuyingMotive.emotion;
   String? _budgetGroupId;
   int _priority = WishlistItem.defaultPriority;
   bool _isSaving = false;
+  String? _imageUrl;
+  String? _shopName;
+  String? _productDescription;
+  bool _isLoadingMetadata = false;
 
   bool get _isEdit => widget.existing != null;
 
@@ -57,16 +71,86 @@ class _AddItemScreenState extends State<AddItemScreen> {
     if (item != null) {
       _titleController.text = item.title;
       _urlController.text = item.url ?? '';
+      _shopController.text = item.shopName ?? '';
       _selectedMotive = item.displayMotive;
       _budgetGroupId = item.budgetGroupId;
       _priority = item.priority;
-    } else if (widget.initialTitle case final title?) {
-      _titleController.text = title;
+      _imageUrl = item.imageUrl;
+    } else {
+      if (widget.initialTitle case final title?) {
+        _titleController.text = title;
+      }
       if (widget.initialUrl case final url?) {
         _urlController.text = url;
       }
-    } else if (widget.initialUrl case final url?) {
-      _urlController.text = url;
+      if (widget.initialPrice case final price?) {
+        _priceController.text = formatVnd(price).replaceAll(' ₫', '');
+      }
+      _imageUrl = widget.initialImageUrl;
+      _shopName = widget.shopName;
+      if (widget.shopName case final s?) {
+        _shopController.text = s;
+      }
+      _productDescription = widget.productDescription;
+
+      final url = _urlController.text.trim();
+      if (url.isNotEmpty && (_titleController.text.trim().isEmpty || _imageUrl == null)) {
+        _loadMetadata(url);
+      }
+    }
+  }
+
+  Future<void> _loadMetadata(String url) async {
+    if (!mounted) return;
+    setState(() => _isLoadingMetadata = true);
+
+    try {
+      final meta = await ProductMetadataService.fetch(
+        url,
+        existingTitle: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : null,
+        existingPrice: parseVnd(_priceController.text),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingMetadata = false;
+        final currentTitle = _titleController.text.trim();
+        final shouldUpdateTitle = currentTitle.isEmpty ||
+            currentTitle.toLowerCase().startsWith('cơ hội sở hữu') ||
+            currentTitle.toLowerCase().startsWith('chia sẻ sản phẩm') ||
+            (meta.title != null && meta.title!.isNotEmpty && currentTitle.length < 20);
+
+        if (shouldUpdateTitle && meta.title != null && meta.title!.isNotEmpty) {
+          _titleController.text = meta.title!;
+        }
+        if (_priceController.text.trim().isEmpty && meta.priceVnd != null && meta.priceVnd! > 0) {
+          _priceController.text = formatVnd(meta.priceVnd!).replaceAll(' ₫', '');
+        }
+        final hasBrandLogo = _imageUrl != null &&
+            (_imageUrl!.contains('deo.shopeemobile.com') ||
+                _imageUrl!.contains('26c9324913c021677768c36975d635ef'));
+        if ((_imageUrl == null || hasBrandLogo) && meta.imageUrl != null) {
+          _imageUrl = meta.imageUrl;
+        }
+        if (_shopName == null && meta.shopName != null) {
+          _shopName = meta.shopName;
+        }
+        if (_shopController.text.trim().isEmpty && meta.shopName != null && meta.shopName!.isNotEmpty) {
+          _shopController.text = meta.shopName!;
+        }
+        if (_productDescription == null && meta.description != null) {
+          _productDescription = meta.description;
+        }
+        if (meta.url.isNotEmpty && meta.url != _urlController.text.trim()) {
+          _urlController.text = meta.url;
+        }
+      });
+    } catch (e) {
+      debugPrint('AddItemScreen metadata load error: $e');
+      if (mounted) {
+        setState(() => _isLoadingMetadata = false);
+      }
     }
   }
 
@@ -75,6 +159,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     _titleController.dispose();
     _priceController.dispose();
     _urlController.dispose();
+    _shopController.dispose();
     super.dispose();
   }
 
@@ -104,6 +189,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
             productUrl: url.isNotEmpty ? url : null,
             budgetGroupId: _budgetGroupId,
             priority: _priority,
+            imageUrl: _imageUrl,
+            shopName: _shopController.text.trim().isNotEmpty ? _shopController.text.trim() : _shopName,
+            saveChannel: widget.initialUrl != null || _imageUrl != null
+                ? SaveChannel.share
+                : SaveChannel.manual,
           );
 
     if (mounted) {
@@ -156,6 +246,115 @@ class _AddItemScreenState extends State<AddItemScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_isLoadingMetadata) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: AppDimens.space16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.space16,
+                    vertical: AppDimens.space12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: AppDimens.borderMedium,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: AppDimens.space12),
+                      Expanded(
+                        child: Text(
+                          'Đang tự động lấy thông tin từ Shopee...',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: AppDimens.space16),
+                  padding: const EdgeInsets.all(AppDimens.space12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: AppDimens.borderMedium,
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _imageUrl!,
+                          width: 68,
+                          height: 68,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 68,
+                            height: 68,
+                            color: AppColors.background,
+                            child: const Icon(
+                              Icons.shopping_bag_outlined,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppDimens.space12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEE4D2D).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Shopee',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFEE4D2D),
+                                ),
+                              ),
+                            ),
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _shopController,
+                              builder: (_, val, _) {
+                                final name = val.text.trim().isNotEmpty ? val.text.trim() : _shopName;
+                                if (name == null || name.isEmpty) return const SizedBox.shrink();
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Shop: $name',
+                                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // Product Title Input
               AppTextField(
                 label: 'Tên sản phẩm *',
@@ -197,6 +396,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: AppDimens.space16),
 
+              // Shop Name Input
+              AppTextField(
+                label: 'Tên cửa hàng / Shop (Tùy chọn)',
+                hint: 'Ví dụ: Shopee Mall, Shop Thời Trang...',
+                controller: _shopController,
+                prefixIcon: Icons.storefront_outlined,
+              ),
+              const SizedBox(height: AppDimens.space16),
+
               // Budget group: prefilled when the item is bought later. Re-keyed by value
               // so an applied suggestion shows in the field.
               KeyedSubtree(
@@ -207,7 +415,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       ? _budgetGroupId
                       : null,
                   decoration: const InputDecoration(
-                      labelText: 'Nhóm ngân sách (không bắt buộc)',
+                    labelText: 'Nhóm ngân sách (không bắt buộc)',
                   ),
                   items: [
                     const AppDropdownItem<String?>(

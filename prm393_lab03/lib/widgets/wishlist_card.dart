@@ -76,6 +76,15 @@ class WishlistCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
+                if (item.shopName != null) ...[
+                  const SizedBox(height: AppDimens.space4),
+                  Text(
+                    'Shop: ${item.shopName}',
+                    style: AppTextStyles.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: AppDimens.space12),
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,

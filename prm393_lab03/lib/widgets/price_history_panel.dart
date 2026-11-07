@@ -328,11 +328,21 @@ class _RecordRow extends StatelessWidget {
   /// Extension prices: "Sau voucher" is a personal reference, an unread-back page price
   /// is "Chưa xác nhận"
   static String? _tagFor(PriceSnapshot s) {
-    if (s.priceType == PriceType.afterVoucher) return 'Sau voucher';
+    if (s.priceType == PriceType.afterVoucher) {
+      return s.saleLabel == null
+          ? 'Sau voucher'
+          : 'Sau voucher · ${s.saleLabel}';
+    }
     if (s.source == PriceSource.community) return 'Từ giá người khác';
     if (!s.confirmed) return 'Chưa xác nhận';
+    if (s.priceType == PriceType.sale) {
+      final parts = [
+        if (s.discountPercent > 0) '-${s.discountPercent}%',
+        s.saleLabel ?? 'Đang giảm',
+      ];
+      return parts.join(' · ');
+    }
     if (s.priceType == PriceType.flash) return 'Flash Sale';
-    if (s.priceType == PriceType.sale) return 'Giá đang giảm';
     return null;
   }
 }

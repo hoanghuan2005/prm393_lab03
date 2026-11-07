@@ -191,6 +191,42 @@ void main() {
       expect(insights.changeSinceSavedPercent, -10);
       expect(insights.lowest, isNull); // only 2 comparable records
     });
+
+    test(
+      'sale prices (SteamDB) are listed apart from the regular price',
+      () async {
+        final db = FakeFirebaseFirestore();
+        final ref = _items(db).doc('a').collection('priceSnapshots').doc('s');
+        await ref.set({
+          'amountVnd': 140000,
+          'originalVnd': 200000,
+          'priceType': 'sale',
+          'saleLabel': '11.11',
+          'observedAt': Timestamp.fromDate(_now),
+        });
+        final sale = PriceSnapshot.fromFirestore(await ref.get());
+        expect(sale.priceType, PriceType.sale);
+        expect(sale.saleLabel, '11.11');
+        expect(sale.discountPercent, 30);
+        expect(sale.toMap()['saleLabel'], '11.11');
+
+        final regular = PriceSnapshot(
+          id: 'r',
+          amountVnd: 200000,
+          observedAt: _now,
+        );
+        final insights = PriceInsights([regular, sale], now: _now);
+        expect(
+          insights.latest!.amountVnd,
+          200000,
+        ); // the regular price stays the main one
+        expect(insights.lowestSale!.saleLabel, '11.11');
+        expect(insights.notes.last, contains('Giảm thấp nhất: '));
+        expect(insights.notes.last, contains('-30%'));
+        // Only sale prices recorded: they are still compared
+        expect(PriceInsights([sale], now: _now).latest!.amountVnd, 140000);
+      },
+    );
   });
 
   group('ExtensionLinkViewModel', () {

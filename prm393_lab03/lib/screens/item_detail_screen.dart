@@ -387,6 +387,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       shopRating: item.shopRating,
                     ),
                   ],
+                  if (item.shopName != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Shop: ${item.shopName}',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                  if (item.vouchers case final vouchers? when vouchers.isNotEmpty) ...[
+                    const SizedBox(height: AppDimens.space8),
+                    Text(
+                      'Voucher đã lưu'
+                      '${item.vouchersAt != null ? ' (${formatDate(item.vouchersAt!)})' : ''}:',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    for (final v in vouchers)
+                      Text('• $v', style: AppTextStyles.caption),
+                  ],
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(item.latestPriceVnd),

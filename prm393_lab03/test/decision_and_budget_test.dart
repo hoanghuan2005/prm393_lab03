@@ -295,6 +295,7 @@ void main() {
       'Bỏ qua goes back with a 5-second "Hoàn tác" that restores the item',
       (tester) async {
         await openDetail(tester);
+        await tester.ensureVisible(find.text('Bỏ qua'));
         await tester.tap(find.text('Bỏ qua'));
         await tester.pumpAndSettle();
 

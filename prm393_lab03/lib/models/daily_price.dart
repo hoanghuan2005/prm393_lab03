@@ -29,6 +29,9 @@ class DailyPricePoint {
   final int? minVnd;
   final int? medianVnd;
 
+  /// Highest kept list price, with the same rule as [minVnd]
+  final int? maxVnd;
+
   /// List-price reports kept after the filter (afterVoucher not counted)
   final int reportCount;
 
@@ -55,6 +58,7 @@ class DailyPricePoint {
     required this.day,
     this.minVnd,
     this.medianVnd,
+    this.maxVnd,
     this.reportCount = 0,
     this.afterVoucherCount = 0,
     this.afterVoucherMinVnd,
@@ -137,6 +141,7 @@ DailyPricePoint _point(DateTime day, List<PriceHistoryReport> reports) {
     day: day,
     minVnd: enough ? prices.first : null,
     medianVnd: enough ? _medianInt(prices) : null,
+    maxVnd: enough ? prices.last : null,
     reportCount: kept.length,
     afterVoucherCount: vouchers.length,
     afterVoucherMinVnd: voucherPrices.length >= minReportsPerDay

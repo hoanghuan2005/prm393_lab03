@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/app/routes.dart';
 import 'package:prm393_lab03/models/price_history.dart';
+import 'package:prm393_lab03/models/price_insights.dart';
+import 'package:prm393_lab03/models/price_snapshot.dart';
+import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/screens/dev/price_chart_gallery.dart';
 import 'package:prm393_lab03/screens/price_history_screen.dart';
 import 'package:prm393_lab03/services/analytics_service.dart';
@@ -226,6 +229,102 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: card('shopee:1:2')));
       await tester.pump();
       expect(find.text('Giá tham khảo'), findsNothing);
+    });
+  });
+
+  group('"Giá lúc bạn lưu" from Chi tiết món (G5c)', () {
+    final savedAt = DateTime.utc(2026, 10, 1, 3);
+    WishlistItem item({String? variant = 'Đen'}) => WishlistItem(
+      id: 'i',
+      title: 'Tai nghe',
+      createdAt: savedAt,
+      productKey: _keys.first,
+      variantLabel: variant,
+      latestPriceVnd: 600000,
+    );
+    PriceInsights insights(List<PriceSnapshot> snapshots) =>
+        PriceInsights(snapshots, now: DateTime.utc(2026, 11, 12));
+    PriceSnapshot snap(
+      int vnd, {
+      int days = 0,
+      PriceType type = PriceType.single,
+      PriceSource source = PriceSource.manual,
+      String? variant = 'Đen',
+      int? max,
+    }) => PriceSnapshot(
+      id: 's$vnd-$days',
+      amountVnd: vnd,
+      observedAt: savedAt.add(Duration(days: days)),
+      priceType: type,
+      source: source,
+      variantLabel: variant,
+      minVnd: max == null ? null : vnd,
+      maxVnd: max,
+    );
+
+    test('the first list price, for the variant the item has', () {
+      final saved = savedPriceOf(
+        item(),
+        insights([snap(650000), snap(600000, days: 5)]),
+      );
+      expect((saved!.vnd, saved.savedAt), (650000, savedAt));
+    });
+
+    test('left out when it does not compare', () {
+      expect(savedPriceOf(item(), null), isNull);
+      expect(
+        savedPriceOf(item(variant: 'Trắng'), insights([snap(650000)])),
+        isNull,
+        reason: 'another variant',
+      );
+      expect(
+        savedPriceOf(
+          item(),
+          insights([snap(600000, type: PriceType.range, max: 700000)]),
+        ),
+        isNull,
+        reason: 'a range',
+      );
+      expect(
+        savedPriceOf(
+          item(),
+          insights([snap(580000, type: PriceType.afterVoucher)]),
+        ),
+        isNull,
+        reason: 'after voucher only',
+      );
+      expect(
+        savedPriceOf(
+          item(),
+          insights([snap(600000, source: PriceSource.community)]),
+        ),
+        isNull,
+        reason: 'a price from other people',
+      );
+    });
+
+    testWidgets('the route passes it to the chart', (tester) async {
+      await _open(
+        tester,
+        InMemoryPriceHistoryService.sample(DateTime.now()),
+        args: PriceHistoryArgs(
+          productKey: _keys.first,
+          savedPrice: SavedPrice(
+            vnd: 640000,
+            savedAt: DateTime.now().subtract(const Duration(days: 40)),
+          ),
+        ),
+      );
+
+      expect(find.text('Giá lúc bạn lưu'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('price-milestone-saved')),
+          matching: find.text('640.000 ₫'),
+        ),
+        findsOneWidget,
+      );
+      _expectNeutral();
     });
   });
 

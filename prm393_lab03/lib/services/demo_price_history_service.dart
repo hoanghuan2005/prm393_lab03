@@ -128,7 +128,9 @@ class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
 typedef DemoDoc = ({String path, Map<String, dynamic> data});
 
 /// Generates the sample set. Pure and seeded: the same day gives the same data.
-/// All names (products, brands, shops) are made up.
+/// All names (products, brands, shops) are made up. A shop's list price holds for
+/// 3–10 days and only changes for a sale or an adjustment; reports of the same day
+/// and shop differ by under 1%, apart from ~5% far-off ones for the 30% filter.
 ///
 /// G8: every product of a group shares a productCode (source 'demo', set here, no AI),
 /// under titles written differently by each shop; each product sells 1–2 variants of
@@ -236,18 +238,26 @@ abstract final class DemoPriceHistoryData {
       final base = vnd(basePriceVnd);
       final fakeRaise = 1.2 + rng.nextDouble() * 0.1;
       var ratingCount = 20 + rng.nextInt(800);
+      // The shop's list price holds for 3–10 days, then it adjusts it (±4%)
+      var shopPrice = base;
+      var holdDays = 0;
 
       for (var i = firstDay; i < days; i++) {
         ratingCount += rng.nextInt(6);
         final date = dates[i];
-        // ±5% around the base price
-        var listPrice = base * (0.95 + rng.nextDouble() * 0.1);
+        if (holdDays-- <= 0) {
+          shopPrice = vnd(base * (0.96 + rng.nextDouble() * 0.08));
+          holdDays = 2 + rng.nextInt(8);
+        }
+        var listPrice = shopPrice.toDouble();
         // "Giảm giá ảo": the price goes up in the 5 days before a sale
         final soonSale = [for (var k = 1; k <= 5; k++) sale[i + k]]
             .contains(true);
         if (fake && (soonSale || sale[i])) listPrice *= fakeRaise;
         final discount = 0.10 + rng.nextDouble() * 0.20;
-        final dayPrice = sale[i] ? listPrice * (1 - discount) : listPrice;
+        final dayPrice = vnd(sale[i] ? listPrice * (1 - discount) : listPrice);
+        // Same-day reports differ by under 1%: ±0.4% in steps of 1.000 đ
+        final jitter = dayPrice * 4 ~/ 1000 ~/ 1000;
 
         if (rng.nextDouble() < 0.4) continue;
         final count = _reportsPerDay[rng.nextInt(_reportsPerDay.length)];
@@ -258,15 +268,21 @@ abstract final class DemoPriceHistoryData {
                     ? HistoryPriceType.flash
                     : HistoryPriceType.sale)
               : HistoryPriceType.single;
-          var amount = dayPrice * (0.99 + rng.nextDouble() * 0.02);
+          // Most reports see the very same price
+          var amount =
+              (dayPrice +
+                      (jitter > 0 && rng.nextDouble() < 0.3
+                          ? (rng.nextInt(2 * jitter + 1) - jitter) * 1000
+                          : 0))
+                  .toDouble();
           final roll = rng.nextDouble();
           if (roll < 0.05) {
             // After a voucher: 5–15% under the day's price
             type = HistoryPriceType.afterVoucher;
             amount = dayPrice * (0.85 + rng.nextDouble() * 0.10);
           } else if (roll < 0.08) {
+            // A price range: its lowest price, the listed one
             type = HistoryPriceType.range;
-            amount = dayPrice * (0.96 + rng.nextDouble() * 0.04);
           } else if (roll < 0.13) {
             // Outlier: more than 30% away from the median
             type = HistoryPriceType.single;

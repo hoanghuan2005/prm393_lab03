@@ -3,14 +3,35 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../core/formatters/money_format.dart';
+import '../models/price_insights.dart';
+import '../models/price_snapshot.dart';
 import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
 import '../services/price_history_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/price_history_viewmodel.dart';
 import '../viewmodels/same_product_viewmodel.dart';
 import 'demo_data_badge.dart';
+import 'price_history_chart.dart';
+
+/// "Giá lúc bạn lưu" for the chart (G5c): the item's first list price
+/// ([PriceInsights.saved]), only when it compares with the shops' list prices: one
+/// price (not a range, not after voucher) the user recorded for the variant the item
+/// has now. Null otherwise.
+SavedPrice? savedPriceOf(WishlistItem item, PriceInsights? insights) {
+  final s = insights?.saved;
+  if (s == null ||
+      s.amountVnd <= 0 ||
+      s.isRange ||
+      s.priceType == PriceType.afterVoucher ||
+      s.source == PriceSource.community ||
+      s.variantLabel?.trim() != item.variantLabel?.trim()) {
+    return null;
+  }
+  return SavedPrice(vnd: s.amountVnd, savedAt: s.observedAt);
+}
 
 /// Chi tiết món: "Giá tham khảo" when priceHistory has data for [productKey]
 /// (lowest price of 30 days, days with data); tapping opens the chart. Nothing while
@@ -63,6 +84,15 @@ class PriceHistoryEntryCard extends StatelessWidget {
               sameProduct: switch (item) {
                 final i? =>
                   context.read<SameProductViewModel?>()?.stateFor(i)?.links,
+                null => null,
+              },
+              savedPrice: switch (item) {
+                final i? => savedPriceOf(
+                  i,
+                  context.read<DecisionSupportViewModel?>()?.priceInsightsFor(
+                    i,
+                  ),
+                ),
                 null => null,
               },
             ),

@@ -222,6 +222,82 @@ void main() {
       expect(outliers / total, inInclusiveRange(0.02, 0.09));
     });
 
+    /// List prices (not afterVoucher) of each product and Vietnamese day, sorted
+    Map<String, Map<DateTime, List<int>>> listPricesByDay() {
+      final byDay = <String, Map<DateTime, List<int>>>{};
+      for (final r in reports.where((r) => r.type != 'afterVoucher')) {
+        final vn = r.observedAt.toUtc().add(PriceHistoryIds.vietnamOffset);
+        ((byDay[r.productKey] ??= {})[DateTime.utc(
+                  vn.year,
+                  vn.month,
+                  vn.day,
+                )] ??=
+                [])
+            .add(r.amount);
+      }
+      for (final days in byDay.values) {
+        for (final prices in days.values) {
+          prices.sort();
+        }
+      }
+      return byDay;
+    }
+
+    /// (first, last) index of the largest run of [sorted] within 1% of its first
+    (int, int) samePrice(List<int> sorted) {
+      var best = (0, 0);
+      for (var j = 0; j < sorted.length; j++) {
+        var k = j;
+        while (k + 1 < sorted.length && sorted[k + 1] <= sorted[j] * 1.01) {
+          k++;
+        }
+        if (k - j > best.$2 - best.$1) best = (j, k);
+      }
+      return best;
+    }
+
+    test('same day, same shop: list prices within 1%, except ~5% far-off '
+        'reports for the 30% filter', () {
+      var total = 0;
+      var far = 0;
+      for (final days in listPricesByDay().values) {
+        for (final prices in days.values) {
+          final (first, last) = samePrice(prices);
+          final ref = prices[first];
+          for (var j = 0; j < prices.length; j++) {
+            total++;
+            if (j >= first && j <= last) continue;
+            far++;
+            expect((prices[j] - ref).abs(), greaterThan(ref * 0.3));
+          }
+        }
+      }
+      expect(far / total, inInclusiveRange(0.02, 0.09));
+    });
+
+    test('a shop\'s price holds for days: it changes on few of them', () {
+      var pairs = 0;
+      var changes = 0;
+      for (final days in listPricesByDay().values) {
+        final price = {
+          for (final MapEntry(:key, :value) in days.entries)
+            key: value[samePrice(value).$1],
+        };
+        for (final MapEntry(key: day, value: p) in price.entries) {
+          final next = day.add(const Duration(days: 1));
+          final q = price[next];
+          if (q == null || _isPatternSale(day) || _isPatternSale(next)) {
+            continue;
+          }
+          pairs++;
+          if ((q - p).abs() > p * 0.01) changes++;
+        }
+      }
+      expect(pairs, greaterThan(500));
+      // Daily random prices would change on ~80% of the days
+      expect(changes / pairs, inInclusiveRange(0.03, 0.25));
+    });
+
     test('~15% reports without ratings; rating count grows', () {
       final unrated = reports.where((r) => r.data['productRating'] == null);
       expect(unrated.length / reports.length, inInclusiveRange(0.1, 0.2));

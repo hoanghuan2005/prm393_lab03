@@ -29,11 +29,15 @@ class PriceHistoryScreen extends StatefulWidget {
   /// Real product (G8): the shops of "Cùng món ở shop khác" for "Cả nhóm"
   final SameProductLinks? sameProduct;
 
+  /// "Giá lúc bạn lưu" of the item on Chi tiết món, when it can be compared
+  final SavedPrice? savedPrice;
+
   const PriceHistoryScreen({
     super.key,
     this.productKey,
     this.groupId,
     this.sameProduct,
+    this.savedPrice,
   }) : assert(productKey != null || groupId != null);
 
   /// The route: a ViewModel for this screen only, from the services in context
@@ -41,6 +45,7 @@ class PriceHistoryScreen extends StatefulWidget {
     String? productKey,
     String? groupId,
     SameProductLinks? sameProduct,
+    SavedPrice? savedPrice,
   }) => ChangeNotifierProvider(
     create: (context) {
       final vm = PriceHistoryViewModel(
@@ -59,6 +64,7 @@ class PriceHistoryScreen extends StatefulWidget {
       productKey: productKey,
       groupId: groupId,
       sameProduct: sameProduct,
+      savedPrice: savedPrice,
     ),
   );
 
@@ -129,7 +135,11 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
             const SizedBox(height: AppDimens.space16),
           ],
           if (state is UiSuccess<PriceHistoryView>)
-            _Content(view: state.data, onRange: vm.setRange)
+            _Content(
+              view: state.data,
+              onRange: vm.setRange,
+              savedPrice: widget.savedPrice,
+            )
           else
             SizedBox(
               height: 320,
@@ -153,7 +163,8 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
           ],
           Text(
             'Giá do người dùng và extension ghi lại trên Shopee, chỉ để tham '
-            'khảo. Ngày không đủ báo cáo được để trống.',
+            'khảo. Ngày chưa có giá mới giữ giá gần nhất tối đa 7 ngày (nét '
+            'đứt, mờ hơn); lâu hơn thì để trống.',
             style: AppTextStyles.labelMedium.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -167,8 +178,9 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
 class _Content extends StatelessWidget {
   final PriceHistoryView view;
   final ValueChanged<PriceHistoryRange> onRange;
+  final SavedPrice? savedPrice;
 
-  const _Content({required this.view, required this.onRange});
+  const _Content({required this.view, required this.onRange, this.savedPrice});
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +191,11 @@ class _Content extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PriceHistoryChart(view: view, onRangeChanged: onRange),
+        PriceHistoryChart(
+          view: view,
+          onRangeChanged: onRange,
+          savedPrice: savedPrice,
+        ),
         if (view.isGroup) ...[
           const SizedBox(height: AppDimens.space16),
           SectionCard(

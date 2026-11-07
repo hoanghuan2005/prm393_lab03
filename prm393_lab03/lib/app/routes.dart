@@ -33,6 +33,7 @@ import '../screens/reminder_permission_screen.dart';
 import '../screens/sale_screens.dart';
 import '../screens/shopping_profile_screen.dart';
 import '../screens/wishlist_screen.dart';
+import '../widgets/price_history_chart.dart' show SavedPrice;
 
 /// Arguments for [AppRoutes.shell]
 class ShellArgs {
@@ -56,7 +57,15 @@ class PriceHistoryArgs {
   /// Real product (G8): the same item in other shops, for "Cả nhóm"
   final SameProductLinks? sameProduct;
 
-  const PriceHistoryArgs({this.productKey, this.groupId, this.sameProduct});
+  /// "Giá lúc bạn lưu" line of the chart (G5c)
+  final SavedPrice? savedPrice;
+
+  const PriceHistoryArgs({
+    this.productKey,
+    this.groupId,
+    this.sameProduct,
+    this.savedPrice,
+  });
 }
 
 /// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
@@ -241,6 +250,7 @@ class AppRoutes {
           productKey: args.productKey,
           groupId: args.groupId,
           sameProduct: args.sameProduct,
+          savedPrice: args.savedPrice,
         ),
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),

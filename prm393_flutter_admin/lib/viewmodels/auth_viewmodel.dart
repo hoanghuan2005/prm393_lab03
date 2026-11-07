@@ -89,14 +89,26 @@ class AuthViewModel extends ChangeNotifier with SafeNotifier {
     await _auth.signOut();
   }
 
-  Future<void> signIn() async {
+  Future<void> signIn() => _signIn(_auth.signInWithGoogle);
+
+  /// Email / password; the same role check applies after sign-in
+  Future<void> signInWithEmail(String email, String password) {
+    if (email.trim().isEmpty || password.isEmpty) {
+      _message = 'Nhập email và mật khẩu.';
+      _set(AuthSignedOut(message: _message));
+      return Future.value();
+    }
+    return _signIn(() => _auth.signInWithEmail(email, password));
+  }
+
+  Future<void> _signIn(Future<void> Function() attempt) async {
     final current = _state;
     if (current is AuthSignedOut && current.signingIn) return;
     _message = null;
     _set(const AuthSignedOut(signingIn: true));
     try {
       // Success is handled by authStateChanges (role check, then the admin pages)
-      await _auth.signInWithGoogle();
+      await attempt();
     } on SignInException catch (e) {
       _message = signInMessage(e.failure);
       _set(AuthSignedOut(message: _message));
@@ -118,6 +130,9 @@ class AuthViewModel extends ChangeNotifier with SafeNotifier {
     SignInFailure.popupBlocked => 'Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép popup cho trang này rồi thử lại.',
     SignInFailure.network => _networkMessage,
     SignInFailure.unauthorizedDomain => 'Tên miền này chưa có trong Authorized domains của Firebase Authentication.',
+    SignInFailure.wrongCredentials => 'Email hoặc mật khẩu không đúng.',
+    SignInFailure.tooManyAttempts =>
+      'Bạn đã thử sai quá nhiều lần. Đợi vài phút rồi thử lại.',
     SignInFailure.unknown => 'Đăng nhập không thành công. Vui lòng thử lại.',
   };
 

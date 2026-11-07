@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:prm393_flutter_admin/models/dashboard_stats.dart';
+import 'package:prm393_flutter_admin/models/shopee_voucher.dart';
 import 'package:prm393_flutter_admin/models/user_summary.dart';
 import 'package:prm393_flutter_admin/services/admin_auth_service.dart';
 import 'package:prm393_flutter_admin/services/dashboard_service.dart';
 import 'package:prm393_flutter_admin/services/push_service.dart';
+import 'package:prm393_flutter_admin/services/shopee_voucher_service.dart';
 import 'package:prm393_flutter_admin/services/user_directory_service.dart';
 import 'package:why_i_buy_core/why_i_buy_core.dart';
 
@@ -27,6 +29,16 @@ class FakeAuthService implements AdminAuthService {
 
   @override
   Future<void> signInWithGoogle() async {
+    final failure = failNextSignIn;
+    failNextSignIn = null;
+    if (failure != null) throw failure;
+  }
+
+  String? lastEmail;
+
+  @override
+  Future<void> signInWithEmail(String email, String password) async {
+    lastEmail = email;
     final failure = failNextSignIn;
     failNextSignIn = null;
     if (failure != null) throw failure;
@@ -254,5 +266,20 @@ class FakePushService implements PushService {
     calls++;
     if (failure != null) throw failure!;
     return 3;
+  }
+}
+
+class FakeShopeeVoucherService implements ShopeeVoucherService {
+  final controller = StreamController<List<ShopeeVoucher>>.broadcast();
+  final List<String> deleted = [];
+  Object? deleteError;
+
+  @override
+  Stream<List<ShopeeVoucher>> watchVouchers() => controller.stream;
+
+  @override
+  Future<void> delete(String id) async {
+    if (deleteError != null) throw deleteError!;
+    deleted.add(id);
   }
 }

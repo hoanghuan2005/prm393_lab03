@@ -84,6 +84,32 @@ void main() {
       await vm.signIn();
       expect((vm.state as AuthSignedOut).message, contains('huỷ đăng nhập'));
     });
+
+    test('email sign-in: empty fields, wrong password, then success', () async {
+      auth.emit(null);
+      await pump();
+
+      await vm.signInWithEmail('  ', '');
+      expect((vm.state as AuthSignedOut).message, 'Nhập email và mật khẩu.');
+      expect(auth.lastEmail, isNull);
+
+      auth.failNextSignIn = const SignInException(
+        SignInFailure.wrongCredentials,
+      );
+      await vm.signInWithEmail('admin@x.com', 'sai');
+      expect(
+        (vm.state as AuthSignedOut).message,
+        'Email hoặc mật khẩu không đúng.',
+      );
+
+      await vm.signInWithEmail('admin@x.com', 'dung');
+      expect(auth.lastEmail, 'admin@x.com');
+      // The role check that follows is the same as for Google sign-in
+      auth.emit(const AdminAccount(uid: 'admin-1', email: 'admin@x.com'));
+      await pump();
+      await pump();
+      expect(vm.state, isA<AuthAdmin>());
+    });
   });
 
   group('DashboardViewModel', () {

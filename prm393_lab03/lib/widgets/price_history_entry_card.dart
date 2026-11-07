@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/money_format.dart';
 import '../models/ui_state.dart';
+import '../models/wishlist_item.dart';
 import '../services/price_history_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/price_history_viewmodel.dart';
+import '../viewmodels/same_product_viewmodel.dart';
 import 'demo_data_badge.dart';
 
 /// Chi tiết món: "Giá tham khảo" when priceHistory has data for [productKey]
@@ -16,7 +18,10 @@ import 'demo_data_badge.dart';
 class PriceHistoryEntryCard extends StatelessWidget {
   final String productKey;
 
-  const PriceHistoryEntryCard({super.key, required this.productKey});
+  /// The item on Chi tiết món: its "Cùng món ở shop khác" become "Cả nhóm" (G8)
+  final WishlistItem? item;
+
+  const PriceHistoryEntryCard({super.key, required this.productKey, this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +58,14 @@ class PriceHistoryEntryCard extends StatelessWidget {
           onTap: () => Navigator.pushNamed(
             context,
             AppRoutes.priceHistory,
-            arguments: PriceHistoryArgs(productKey: productKey),
+            arguments: PriceHistoryArgs(
+              productKey: productKey,
+              sameProduct: switch (item) {
+                final i? =>
+                  context.read<SameProductViewModel?>()?.stateFor(i)?.links,
+                null => null,
+              },
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(AppDimens.space16),

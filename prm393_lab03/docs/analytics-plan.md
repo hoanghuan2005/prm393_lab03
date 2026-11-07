@@ -35,6 +35,8 @@
 | 12 | `ai_error` | `ai_feature` (string), `error_type` (string: `timeout` · `quota` · `network` · `blocked` · `empty_reply` · `unavailable`) | `InstrumentedAiService` – lệnh gọi Gemini thất bại; tính năng vẫn dùng câu mẫu / không gợi ý | AI lỗi ở tính năng nào, vì sao; có cần đổi model hay nới thời gian chờ không? |
 | 13 | `ai_result_accepted` | `ai_feature` (string: `group` · `duplicate` · `photo_search`) | `ItemSuggestionViewModel.aiResultAccepted` (bấm chip nhóm do AI gợi ý, xác nhận món trùng có kết quả AI), `PhotoSearchViewModel.aiResultAccepted` (thêm món từ Tìm bằng ảnh) | Người dùng có nhận gợi ý AI vào dữ liệu của mình không? Tỉ lệ so với `ai_request` cùng `ai_feature`. |
 | 14 | `view_price_history` | `mode` (string: `product` · `group`), `range_days` (int: 7 · 30 · 90), `is_demo` (0/1) | `PriceHistoryViewModel` – mỗi lần biểu đồ "Giá tham khảo" có kết quả (mở màn, đổi khoảng ngày, đổi "Chỉ món này / Cả nhóm"); thẻ nhỏ ở Chi tiết món không ghi | Người dùng có xem giá tham khảo không, xem một món hay cả nhóm, khoảng ngày nào; bao nhiêu lượt là dữ liệu mẫu? |
+| 15 | `view_same_product` | `result_count` (int: 1–3), `is_demo` (0/1) | `SameProductViewModel` – mỗi lần mở Chi tiết món mà thẻ "Cùng món ở shop khác" có ít nhất 1 shop | Thẻ ghép cùng món có hiện thường xuyên không, thường có mấy shop? |
+| 16 | `hide_same_product_match` | – | `SameProductViewModel.hide` – bấm "Không phải món này" trên một dòng | Ghép tự động (mã món do AI) sai bao nhiêu, so với `view_same_product`? |
 
 ---
 

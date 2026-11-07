@@ -4,6 +4,7 @@ import '../core/utils/price_history_ids.dart';
 import '../models/daily_price.dart';
 import '../models/price_history.dart';
 import '../models/sale_event.dart';
+import '../models/same_product.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
@@ -130,6 +131,11 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
   PriceHistoryRange _range = PriceHistoryRange.month;
   String? _productKey;
   String? _groupId;
+
+  /// G8, real products: the item and the same item in other shops, one variant
+  List<String>? _sameKeys;
+  String? _sameVariant;
+  String _sameName = '';
   int _load = 0;
   bool _disposed = false;
 
@@ -143,16 +149,36 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
   PriceHistoryRange get range => _range;
   String? get productKey => _productKey;
   String? get groupId => _groupId;
+  bool get isSameProduct => _sameKeys != null;
 
   Future<void> openProduct(String productKey) {
     _productKey = productKey;
     _groupId = null;
+    _sameKeys = null;
     return _fetch();
   }
 
+  /// Sample data only (productGroups)
   Future<void> openGroup(String groupId) {
     _groupId = groupId;
     _productKey = null;
+    _sameKeys = null;
+    return _fetch();
+  }
+
+  /// "Cả nhóm" of a real product (G8): [productKeys] = the item and the shops of
+  /// "Cùng món ở shop khác", same productCode. Only reports of [variantCode] count
+  /// (null: listings without variants). Shown like a group named [name].
+  Future<void> openSameProduct(
+    List<String> productKeys, {
+    String? variantCode,
+    required String name,
+  }) {
+    _sameKeys = productKeys;
+    _sameVariant = variantCode;
+    _sameName = name;
+    _productKey = null;
+    _groupId = null;
     return _fetch();
   }
 
@@ -171,7 +197,7 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
           .subtract(PriceHistoryIds.vietnamOffset);
 
   Future<void> _fetch() async {
-    if (_productKey == null && _groupId == null) return;
+    if (_productKey == null && _groupId == null && _sameKeys == null) return;
     final load = ++_load;
     _set(const UiLoading());
     try {
@@ -182,15 +208,39 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
       if (_groupId case final id?) {
         group = await service.fetchGroup(id);
         keys = group?.productKeys ?? const [];
+      } else if (_sameKeys case final same?) {
+        keys = same;
       } else {
         keys = [_productKey!];
       }
-      final results = await Future.wait([
+      var results = await Future.wait([
         for (final k in keys) service.fetchReports(k, from),
       ]);
       final products = await Future.wait([
         for (final k in keys) service.watchProduct(k).first,
       ]);
+      if (_sameKeys != null) {
+        // The same variant in every shop; drawn like a group
+        results = [
+          for (var i = 0; i < keys.length; i++)
+            [
+              for (final r in results[i])
+                if (products[i] case final p?
+                    when SameProduct.matchesVariant(
+                      p,
+                      r.modelKey,
+                      _sameVariant,
+                    ))
+                  r,
+            ],
+        ];
+        group = ProductGroup(
+          id: '',
+          name: _sameName,
+          productKeys: keys,
+          isDemo: products.any((p) => p?.isDemo ?? false),
+        );
+      }
       final sales = await service.fetchSaleEvents(from, now);
       if (load != _load || _disposed) return;
       _group = group;

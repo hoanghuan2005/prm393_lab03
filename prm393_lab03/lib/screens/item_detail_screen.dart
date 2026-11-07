@@ -24,6 +24,7 @@ import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
+import '../widgets/same_product_card.dart';
 import '../widgets/shared_price_section.dart';
 import '../widgets/shopee_rating_line.dart';
 import '../widgets/undo_snack_bar.dart';
@@ -466,8 +467,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             if (item.hasPrice) PriceHistoryPanel(item: item),
 
             // "Giá tham khảo" from priceHistory; nothing without data
-            if (item.productKey case final key?)
-              PriceHistoryEntryCard(productKey: key),
+            if (item.productKey case final key?) ...[
+              PriceHistoryEntryCard(productKey: key, item: item),
+              // G8: the same item and variant in other shops (automatic match)
+              SameProductCard(item: item),
+            ],
 
             // Spec 8.3: anonymous prices other people recorded for the same variant
             if (item.status == WishlistStatus.considering)

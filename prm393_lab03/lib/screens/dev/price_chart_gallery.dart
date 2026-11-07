@@ -222,4 +222,13 @@ class InMemoryPriceHistoryService implements PriceHistoryService {
     for (final e in sales)
       if (!e.date.isBefore(from) && !e.date.isAfter(to)) e,
   ];
+
+  @override
+  Future<List<PriceHistoryProduct>> findSameProduct(
+    String productCode, {
+    required bool isDemo,
+  }) async => [
+    for (final p in products.values)
+      if (p.productCode == productCode && p.isDemo == isDemo) p,
+  ];
 }

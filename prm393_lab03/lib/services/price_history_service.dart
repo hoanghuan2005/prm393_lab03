@@ -23,6 +23,12 @@ abstract interface class PriceHistoryService {
 
   /// Published sale days between [from] and [to], both included
   Future<List<SaleEvent>> fetchSaleEvents(DateTime from, DateTime to);
+
+  /// G8: listings with this productCode, sample data only with sample data
+  Future<List<PriceHistoryProduct>> findSameProduct(
+    String productCode, {
+    required bool isDemo,
+  });
 }
 
 class FirestorePriceHistoryService implements PriceHistoryService {
@@ -33,6 +39,9 @@ class FirestorePriceHistoryService implements PriceHistoryService {
 
   /// 90 days × up to 6 reports a day, with room to spare
   static const int maxReports = 1000;
+
+  /// Listings of one item read at most (each one costs a report query)
+  static const int maxSameProducts = 20;
 
   @override
   Stream<PriceHistoryProduct?> watchProduct(String productKey) => guardStream(
@@ -57,6 +66,21 @@ class FirestorePriceHistoryService implements PriceHistoryService {
         .limit(maxReports)
         .get();
     return snapshot.docs.map(PriceHistoryReport.fromFirestore).toList();
+  });
+
+  @override
+  Future<List<PriceHistoryProduct>> findSameProduct(
+    String productCode, {
+    required bool isDemo,
+  }) => guard(() async {
+    // Two equality filters: served without a composite index
+    final snapshot = await _paths
+        .priceHistory()
+        .where('productCode', isEqualTo: productCode)
+        .where('isDemo', isEqualTo: isDemo)
+        .limit(maxSameProducts)
+        .get();
+    return snapshot.docs.map(PriceHistoryProduct.fromFirestore).toList();
   });
 
   @override

@@ -23,6 +23,10 @@ abstract final class AnalyticsEvents {
 
   /// "Giá tham khảo" chart shown (opened or period changed)
   static const viewPriceHistory = 'view_price_history';
+
+  /// G8 "Cùng món ở shop khác": shown on Chi tiết món / a match hidden by the user
+  static const viewSameProduct = 'view_same_product';
+  static const hideSameProductMatch = 'hide_same_product_match';
 }
 
 /// Parameter names. No PII: never email, display name, item title, search text or exact

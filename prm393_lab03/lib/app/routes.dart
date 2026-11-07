@@ -6,6 +6,7 @@ import '../models/buying_motive.dart';
 import '../models/pre_purchase_check.dart';
 import '../models/purchase_item.dart';
 import '../models/sale_event.dart';
+import '../models/same_product.dart';
 import '../models/wishlist_item.dart';
 import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
@@ -52,7 +53,10 @@ class PriceHistoryArgs {
   final String? productKey;
   final String? groupId;
 
-  const PriceHistoryArgs({this.productKey, this.groupId});
+  /// Real product (G8): the same item in other shops, for "Cả nhóm"
+  final SameProductLinks? sameProduct;
+
+  const PriceHistoryArgs({this.productKey, this.groupId, this.sameProduct});
 }
 
 /// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
@@ -236,6 +240,7 @@ class AppRoutes {
         PriceHistoryScreen.withViewModel(
           productKey: args.productKey,
           groupId: args.groupId,
+          sameProduct: args.sameProduct,
         ),
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),

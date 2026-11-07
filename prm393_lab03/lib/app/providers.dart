@@ -19,6 +19,7 @@ import '../services/demo_data_service.dart';
 import '../services/demo_price_history_service.dart';
 import '../services/extension_session_service.dart';
 import '../services/feedback_service.dart';
+import '../services/hidden_match_service.dart';
 import '../services/instrumented_ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
@@ -48,6 +49,7 @@ import '../viewmodels/price_history_demo_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
+import '../viewmodels/same_product_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/shared_price_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
@@ -114,6 +116,10 @@ class AppProviders extends StatelessWidget {
         // "Giá tham khảo": the service only; each screen creates its own ViewModel
         Provider<PriceHistoryService>(
           create: (_) => FirestorePriceHistoryService(),
+        ),
+        // "Không phải món này" of "Cùng món ở shop khác" (G8)
+        Provider<HiddenMatchService>(
+          create: (_) => FirestoreHiddenMatchService(),
         ),
         // The user's own prices sent anonymously to "Giá tham khảo" (G7)
         Provider<PriceHistoryContributionService>(
@@ -334,6 +340,15 @@ class AppProviders extends StatelessWidget {
               auth.userId,
               canContribute: !(auth.user?.isAnonymous ?? true),
             ),
+        ),
+        // "Cùng món ở shop khác" on Chi tiết món (G8): hidden matches are per user
+        ChangeNotifierProxyProvider<AuthViewModel, SameProductViewModel>(
+          create: (context) => SameProductViewModel(
+            service: context.read<PriceHistoryService>(),
+            hiddenService: context.read<HiddenMatchService>(),
+            analytics: context.read<AppAnalyticsService>(),
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
         // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
         ChangeNotifierProxyProvider5<

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../core/formatters/rating_format.dart';
+import '../models/same_product.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
@@ -21,30 +22,45 @@ class PriceHistoryScreen extends StatefulWidget {
   /// Opened from a product (Chi tiết món); can switch to its group
   final String? productKey;
 
-  /// Opened on a group (Firebase Demo Area), or the product's group once known
+  /// Opened on a group (Firebase Demo Area), or the product's group once known.
+  /// Sample data only: a real product's groupId is ignored (G8).
   final String? groupId;
 
-  const PriceHistoryScreen({super.key, this.productKey, this.groupId})
-    : assert(productKey != null || groupId != null);
+  /// Real product (G8): the shops of "Cùng món ở shop khác" for "Cả nhóm"
+  final SameProductLinks? sameProduct;
+
+  const PriceHistoryScreen({
+    super.key,
+    this.productKey,
+    this.groupId,
+    this.sameProduct,
+  }) : assert(productKey != null || groupId != null);
 
   /// The route: a ViewModel for this screen only, from the services in context
-  static Widget withViewModel({String? productKey, String? groupId}) =>
-      ChangeNotifierProvider(
-        create: (context) {
-          final vm = PriceHistoryViewModel(
-            service: context.read<PriceHistoryService>(),
-            analytics: context.read<AppAnalyticsService>(),
-            crashlyticsService: context.read<CrashlyticsService>(),
-          );
-          if (productKey != null) {
-            vm.openProduct(productKey);
-          } else {
-            vm.openGroup(groupId!);
-          }
-          return vm;
-        },
-        child: PriceHistoryScreen(productKey: productKey, groupId: groupId),
+  static Widget withViewModel({
+    String? productKey,
+    String? groupId,
+    SameProductLinks? sameProduct,
+  }) => ChangeNotifierProvider(
+    create: (context) {
+      final vm = PriceHistoryViewModel(
+        service: context.read<PriceHistoryService>(),
+        analytics: context.read<AppAnalyticsService>(),
+        crashlyticsService: context.read<CrashlyticsService>(),
       );
+      if (productKey != null) {
+        vm.openProduct(productKey);
+      } else {
+        vm.openGroup(groupId!);
+      }
+      return vm;
+    },
+    child: PriceHistoryScreen(
+      productKey: productKey,
+      groupId: groupId,
+      sameProduct: sameProduct,
+    ),
+  );
 
   @override
   State<PriceHistoryScreen> createState() => _PriceHistoryScreenState();
@@ -54,19 +70,33 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
   late String? _groupId = widget.groupId;
   String? _title;
 
+  /// Whether the opened product is sample data, once loaded
+  bool? _isDemo;
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<PriceHistoryViewModel>();
     final theme = Theme.of(context);
     final state = vm.state;
+    final key = widget.productKey;
     if (state case UiSuccess(:final data)) {
       // Remember the product's group and the title across loads
-      final key = widget.productKey;
-      _groupId ??= key == null ? null : data.products[key]?.groupId;
+      final product = key == null ? null : data.products[key];
+      if (product != null) {
+        _isDemo ??= product.isDemo;
+        // A real product may still hold a groupId from before G8: not used
+        if (product.isDemo) _groupId ??= product.groupId;
+      }
       _title =
           data.group?.name ?? data.products.values.firstOrNull?.title ?? _title;
     }
-    final canSwitch = widget.productKey != null && _groupId != null;
+    final same = widget.sameProduct;
+    final canSame =
+        key != null &&
+        _isDemo == false &&
+        (same?.productKeys.isNotEmpty ?? false);
+    final canGroup = key != null && _isDemo != false && _groupId != null;
+    final canSwitch = canSame || canGroup;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Giá tham khảo')),
@@ -85,10 +115,16 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
                 ButtonSegment(value: false, label: Text('Chỉ món này')),
                 ButtonSegment(value: true, label: Text('Cả nhóm')),
               ],
-              selected: {vm.groupId != null},
-              onSelectionChanged: (s) => s.single
-                  ? vm.openGroup(_groupId!)
-                  : vm.openProduct(widget.productKey!),
+              selected: {vm.groupId != null || vm.isSameProduct},
+              onSelectionChanged: (s) => !s.single
+                  ? vm.openProduct(key)
+                  : canSame
+                  ? vm.openSameProduct(
+                      [key, ...same!.productKeys],
+                      variantCode: same.variantCode,
+                      name: _title ?? '',
+                    )
+                  : vm.openGroup(_groupId!),
             ),
             const SizedBox(height: AppDimens.space16),
           ],
@@ -104,6 +140,17 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
               ),
             ),
           const SizedBox(height: AppDimens.space16),
+          if (vm.isSameProduct) ...[
+            Text(
+              'Các shop được ghép tự động theo mã món và phân loại, có thể chưa '
+              'đúng. Chỉ tính giá của cùng phân loại.',
+              key: const ValueKey('same-product-note'),
+              style: AppTextStyles.labelMedium.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppDimens.space8),
+          ],
           Text(
             'Giá do người dùng và extension ghi lại trên Shopee, chỉ để tham '
             'khảo. Ngày không đủ báo cáo được để trống.',

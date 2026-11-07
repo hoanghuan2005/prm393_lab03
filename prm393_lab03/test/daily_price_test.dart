@@ -513,4 +513,13 @@ class _FakeService implements PriceHistoryService {
   @override
   Stream<PriceHistoryProduct?> watchProduct(String productKey) =>
       Stream.value(products[productKey]);
+
+  @override
+  Future<List<PriceHistoryProduct>> findSameProduct(
+    String productCode, {
+    required bool isDemo,
+  }) async => [
+    for (final p in products.values)
+      if (p.productCode == productCode && p.isDemo == isDemo) p,
+  ];
 }

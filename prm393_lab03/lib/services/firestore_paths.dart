@@ -42,6 +42,10 @@ class FirestorePaths {
   CollectionReference<JsonMap> ownedItems(String uid) =>
       user(uid).collection('ownedItems');
 
+  /// G8: "Cùng món ở shop khác" matches the user hid (id = that productKey)
+  CollectionReference<JsonMap> hiddenMatches(String uid) =>
+      user(uid).collection('hiddenMatches');
+
   /// "Gửi góp ý" messages (create only)
   CollectionReference<JsonMap> feedback(String uid) =>
       user(uid).collection('feedback');

@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/models/daily_price.dart';
@@ -194,7 +195,8 @@ List<String> _details(WidgetTester tester) => [
       matching: find.byType(Text),
     ),
   ))
-    t.data!,
+    // A line with a shop link is a Text.rich
+    t.data ?? t.textSpan!.toPlainText(),
 ];
 
 DailyPricePoint _p(
@@ -983,4 +985,67 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('shop links in the day details', () {
+    /// Two real-looking Shopee products: A 100k, B 120k on the last 2 days
+    InMemoryPriceHistoryService linked({bool demo = false}) =>
+        InMemoryPriceHistoryService(
+          products: {
+            'shopee:11:21': _product('shopee:11:21', 'Shop A', demo: demo),
+            'shopee:12:22': _product('shopee:12:22', 'Shop B', demo: demo),
+          },
+          reports: {
+            'shopee:11:21': [..._two(100000, 1), ..._two(100000, 0)],
+            'shopee:12:22': [..._two(120000, 1), ..._two(120000, 0)],
+          },
+          groupKeys: const ['shopee:11:21', 'shopee:12:22'],
+        );
+
+    test('lowest and highest shop open their own Shopee listing', () async {
+      final view = await _view(linked(), group: true);
+      final shops = [
+        for (final l in describeDay(view, bandOf(view), 6)) ?l.shop,
+      ];
+      expect([for (final s in shops) (s.name, s.url)], [
+        ('Shop A', 'https://shopee.vn/product/11/21'),
+        ('Shop B', 'https://shopee.vn/product/12/22'),
+      ]);
+    });
+
+    test('sample shops are named but have no Shopee link', () async {
+      final view = await _view(linked(demo: true), group: true);
+      final shops = [
+        for (final l in describeDay(view, bandOf(view), 6)) ?l.shop,
+      ];
+      expect([for (final s in shops) s.name], ['Shop A', 'Shop B']);
+      expect([for (final s in shops) s.url], [null, null]);
+    });
+
+    testWidgets('the shop name is the link; a sample shop says it has no page', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        await _view(linked(demo: true), group: true),
+        selected: 6,
+      );
+      expect(_details(tester), contains('Thấp nhất: 100.000 ₫ · Shop A'));
+
+      final line = tester.widget<Text>(
+        find.byKey(const ValueKey('price-day-shop-shopee:11:21')),
+      );
+      final link = (line.textSpan! as TextSpan).children!
+          .whereType<TextSpan>()
+          .singleWhere((s) => s.recognizer != null);
+      expect(link.text, 'Shop A');
+      expect(link.style!.decoration, TextDecoration.underline);
+
+      (link.recognizer! as TapGestureRecognizer).onTap!();
+      await tester.pump();
+      expect(
+        find.text('Shop A là shop mẫu, không có trang Shopee thật.'),
+        findsOneWidget,
+      );
+    });
+  });
 }

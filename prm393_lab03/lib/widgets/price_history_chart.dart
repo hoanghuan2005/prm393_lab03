@@ -1,12 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/daily_price.dart';
 import '../models/sale_event.dart';
+import '../models/shopee_link.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -288,6 +291,10 @@ class BandDay {
   final int? highVnd;
   final String? highShop;
 
+  /// Product key of [lowShop] / [highShop] (to open that shop's listing)
+  final String? lowKey;
+  final String? highKey;
+
   /// Index of the day [lowVnd] / [highVnd] were recorded (this day, or earlier when
   /// the shop's price is kept); null means this day
   final int? lowFrom;
@@ -309,6 +316,8 @@ class BandDay {
     this.lowShop,
     this.highVnd,
     this.highShop,
+    this.lowKey,
+    this.highKey,
     this.lowFrom,
     this.highFrom,
     this.shopCount = 0,
@@ -344,7 +353,8 @@ List<BandDay> computeBand(
   };
 
   BandDay at(int i) {
-    // (price, recorded on, shop name, point of that day) of each shop in the band
+    // (price, recorded on, shop name, point of that day, product key) of each shop
+    // in the band
     final picks = [
       for (final MapEntry(:key, :value) in filled.entries)
         if (value.elementAtOrNull(i) case final f?)
@@ -353,18 +363,21 @@ List<BandDay> computeBand(
             f.sourceIndex,
             pointsByShop[key]![f.sourceIndex].shopName ?? shopNames[key],
             pointsByShop[key]![f.sourceIndex],
+            key,
           ),
     ];
     if (picks.isEmpty) return BandDay(day: dayOf(i));
     final newest = picks.map((p) => p.$2).reduce(math.max);
     if (single) {
-      final (low, from, shop, p) = picks.single;
+      final (low, from, shop, p, key) = picks.single;
       return BandDay(
         day: dayOf(i),
         lowVnd: low,
         lowShop: shop,
         highVnd: p.maxVnd ?? low,
         highShop: shop,
+        lowKey: key,
+        highKey: key,
         lowFrom: from,
         highFrom: from,
         shopCount: 1,
@@ -383,6 +396,8 @@ List<BandDay> computeBand(
       lowShop: low.$3,
       highVnd: high.$1,
       highShop: high.$3,
+      lowKey: low.$5,
+      highKey: high.$5,
       lowFrom: low.$2,
       highFrom: high.$2,
       shopCount: picks.length,
@@ -1050,7 +1065,64 @@ class DayDetailLine {
   final bool muted;
   final bool tag;
 
-  const DayDetailLine(this.text, {this.muted = false, this.tag = false});
+  /// The shop named in [text], drawn as a link to its listing
+  final ShopLink? shop;
+
+  const DayDetailLine(
+    this.text, {
+    this.muted = false,
+    this.tag = false,
+    this.shop,
+  });
+}
+
+/// A shop named in the day details: tapping it opens that shop's listing on Shopee
+class ShopLink {
+  final String name;
+  final String productKey;
+
+  /// Shopee page of the product at that shop; null for sample data (made-up shops)
+  final String? url;
+
+  const ShopLink({required this.name, required this.productKey, this.url});
+}
+
+/// [shop] of [productKey] in [view]: the product's Shopee link, none for samples
+ShopLink? shopLinkOf(PriceHistoryView view, String? shop, String? productKey) {
+  if (shop == null || productKey == null) return null;
+  final product = view.products[productKey];
+  return ShopLink(
+    name: shop,
+    productKey: productKey,
+    url: product != null
+        ? product.shopeeUrl
+        : view.isDemo
+        ? null
+        : ShopeeLink.fromProductKey(productKey)?.canonicalUrl,
+  );
+}
+
+/// Opens [shop]'s listing on Shopee (the app when installed); a sample shop has no
+/// real page, so a short message says so instead
+Future<void> openShopLink(BuildContext context, ShopLink shop) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  void say(String text) => messenger
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  final url = shop.url;
+  if (url == null) {
+    say('${shop.name} là shop mẫu, không có trang Shopee thật.');
+    return;
+  }
+  var ok = false;
+  try {
+    ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  } catch (_) {
+    ok = false;
+  }
+  if (!ok) say('Chưa mở được Shopee. Thử lại sau.');
 }
 
 /// Details of day [i]: date; lowest price and shop; highest price and shop when it
@@ -1083,12 +1155,14 @@ List<DayDetailLine> describeDay(
     lines.add(
       DayDetailLine(
         'Thấp nhất: ${formatVnd(low)}${at(b.lowShop)}${from(b.lowFrom)}',
+        shop: shopLinkOf(view, b.lowShop, b.lowKey),
       ),
     );
     if (b.highVnd case final high? when high != low) {
       lines.add(
         DayDetailLine(
           'Cao nhất: ${formatVnd(high)}${at(b.highShop)}${from(b.highFrom)}',
+          shop: shopLinkOf(view, b.highShop, b.highKey),
         ),
       );
     }
@@ -1200,8 +1274,10 @@ class _DayDetails extends StatelessWidget {
       ),
       child: Semantics(
         liveRegion: true,
-        child: Wrap(
-          direction: Axis.vertical,
+        // A Column, not a vertical Wrap: a long line (shop name, "ghi ngày") wraps
+        // inside the panel instead of overflowing on a narrow phone
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: AppDimens.space4,
           children: [
             for (final (k, line) in lines.indexed)
@@ -1216,6 +1292,14 @@ class _DayDetails extends StatelessWidget {
                     borderRadius: AppDimens.borderSmall,
                   ),
                   child: Text(line.text, style: AppTextStyles.labelMedium),
+                )
+              else if (line.shop case final shop?)
+                _ShopLinkText(
+                  text: line.text,
+                  shop: shop,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
                 )
               else
                 Text(
@@ -1232,6 +1316,67 @@ class _DayDetails extends StatelessWidget {
                 ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A day-details line whose shop name is a link ([openShopLink]); the rest of the
+/// line stays plain text
+class _ShopLinkText extends StatefulWidget {
+  final String text;
+  final ShopLink shop;
+  final TextStyle style;
+
+  const _ShopLinkText({
+    required this.text,
+    required this.shop,
+    required this.style,
+  });
+
+  @override
+  State<_ShopLinkText> createState() => _ShopLinkTextState();
+}
+
+class _ShopLinkTextState extends State<_ShopLinkText> {
+  late final _tap = TapGestureRecognizer()
+    ..onTap = () => openShopLink(context, widget.shop);
+
+  @override
+  void dispose() {
+    _tap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = widget.text;
+    final name = widget.shop.name;
+    // "Thấp nhất: 490.000 ₫ · <shop> · ghi ngày 21/10": the shop follows the first " · "
+    final marker = text.indexOf(' · $name');
+    if (marker < 0) return Text(text, style: widget.style);
+    final start = marker + 3;
+    final end = start + name.length;
+    final link = Theme.of(context).colorScheme.primary;
+    return Text.rich(
+      key: ValueKey('price-day-shop-${widget.shop.productKey}'),
+      TextSpan(
+        style: widget.style,
+        children: [
+          TextSpan(text: text.substring(0, start)),
+          TextSpan(
+            text: name,
+            recognizer: _tap,
+            mouseCursor: SystemMouseCursors.click,
+            style: TextStyle(
+              color: link,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+              decorationColor: link,
+            ),
+          ),
+          TextSpan(text: text.substring(end)),
+        ],
       ),
     );
   }

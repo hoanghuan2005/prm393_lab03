@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T17:22:44.881Z.
-Tổng: 201 ca · Qua: 201 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-06T18:45:33.590Z.
+Tổng: 231 ca · Qua: 231 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 
 | ID | Collection | Role | Operation | Expected | Result |
@@ -174,36 +174,66 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-166 | priceHistory/reports | staff | create a demo report | Denied | Pass |
 | R-167 | priceHistory/reports | staff | delete a demo report | Denied | Pass |
 | R-168 | productGroups | staff | create a demo group | Denied | Pass |
-| R-169 | priceHistory | user | create a non-demo product | Denied | Pass |
-| R-170 | priceHistory | admin | create a demo product | Allowed | Pass |
-| R-171 | priceHistory | admin | delete a demo product | Allowed | Pass |
-| R-172 | priceHistory | admin | create with a 121-character title | Denied | Pass |
-| R-173 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
-| R-174 | priceHistory | admin | create a non-demo product (opens in G7) | Denied | Pass |
-| R-175 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
-| R-176 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
-| R-177 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
-| R-178 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
-| R-179 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
-| R-180 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
-| R-181 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
-| R-182 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
-| R-183 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
-| R-184 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
-| R-185 | priceHistory/reports | admin | non-demo source 'manual' (opens in G7) | Denied | Pass |
-| R-186 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
-| R-187 | priceHistory/reports | admin | add a uid field | Denied | Pass |
-| R-188 | productGroups | admin | create a demo group | Allowed | Pass |
-| R-189 | productGroups | admin | delete a demo group | Allowed | Pass |
-| R-190 | productGroups | admin | create a non-demo group | Denied | Pass |
-| R-191 | priceHistory | signed out | read a product | Denied | Pass |
-| R-192 | priceHistory/reports | signed out | read reports | Denied | Pass |
-| R-193 | productGroups | signed out | read a group | Denied | Pass |
-| R-194 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
-| R-195 | extensionPairings | user | list pairings | Denied | Pass |
-| R-196 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
-| R-197 | extensionPairings | staff | list pairings | Denied | Pass |
-| R-198 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
-| R-199 | extensionPairings | admin | list pairings | Denied | Pass |
-| R-200 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
-| R-201 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |
+| R-169 | priceHistory | admin | create a demo product | Allowed | Pass |
+| R-170 | priceHistory | admin | delete a demo product | Allowed | Pass |
+| R-171 | priceHistory | admin | create with a 121-character title | Denied | Pass |
+| R-172 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
+| R-173 | priceHistory | admin | create a non-demo product with a device createdAt | Denied | Pass |
+| R-174 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
+| R-175 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
+| R-176 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
+| R-177 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
+| R-178 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
+| R-179 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
+| R-180 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
+| R-181 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
+| R-182 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
+| R-183 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
+| R-184 | priceHistory/reports | admin | source 'manual' under a sample id | Denied | Pass |
+| R-185 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
+| R-186 | priceHistory/reports | admin | add a uid field | Denied | Pass |
+| R-187 | productGroups | admin | create a demo group | Allowed | Pass |
+| R-188 | productGroups | admin | delete a demo group | Allowed | Pass |
+| R-189 | productGroups | admin | create a non-demo group | Denied | Pass |
+| R-190 | priceHistory/reports | user | report own price (hashed id) | Allowed | Pass |
+| R-191 | priceHistory/reports | user | write under bob's id | Denied | Pass |
+| R-192 | priceHistory/reports | staff | report own price (hashed id) | Allowed | Pass |
+| R-193 | priceHistory/reports | staff | write under bob's id | Denied | Pass |
+| R-194 | priceHistory/reports | admin | report own price (hashed id) | Allowed | Pass |
+| R-195 | priceHistory/reports | admin | write under bob's id | Denied | Pass |
+| R-196 | priceHistory/reports | user | update own report of today | Allowed | Pass |
+| R-197 | priceHistory/reports | user | afterVoucher keeps its type | Allowed | Pass |
+| R-198 | priceHistory/reports | user | observed 2 days ago (id of that day) | Allowed | Pass |
+| R-199 | priceHistory/reports | user | observed 4 days ago | Denied | Pass |
+| R-200 | priceHistory/reports | user | id of another day | Denied | Pass |
+| R-201 | priceHistory/reports | user | source 'demo' under own id | Denied | Pass |
+| R-202 | priceHistory/reports | user | add a uid field | Denied | Pass |
+| R-203 | priceHistory/reports | user | delete bob's report | Denied | Pass |
+| R-204 | priceHistory/reports | user | real report into a sample product (isDemo) | Denied | Pass |
+| R-205 | priceHistory/reports | user | report for a product that does not exist | Denied | Pass |
+| R-206 | priceHistory/reports | user | new product + report in one batch | Allowed | Pass |
+| R-207 | priceHistory/reports | guest | report own price | Denied | Pass |
+| R-208 | priceHistory | user | create a real product | Allowed | Pass |
+| R-209 | priceHistory | user | create a real product without a shop name | Allowed | Pass |
+| R-210 | priceHistory | user | create a real product with a device createdAt | Denied | Pass |
+| R-211 | priceHistory | user | create a product marked as sample | Denied | Pass |
+| R-212 | priceHistory | user | change the title of a real product | Denied | Pass |
+| R-213 | priceHistory | user | change a shop name already set | Denied | Pass |
+| R-214 | priceHistory | user | move a real product to another group | Denied | Pass |
+| R-215 | priceHistory | user | change isDemo of a real product | Denied | Pass |
+| R-216 | priceHistory | user | fill an empty shop name | Allowed | Pass |
+| R-217 | priceHistory | user | fill an empty group | Allowed | Pass |
+| R-218 | priceHistory | user | turn a sample product into a real one | Denied | Pass |
+| R-219 | priceHistory | user | delete a real product | Denied | Pass |
+| R-220 | priceHistory | guest | create a real product | Denied | Pass |
+| R-221 | priceHistory | signed out | read a product | Denied | Pass |
+| R-222 | priceHistory/reports | signed out | read reports | Denied | Pass |
+| R-223 | productGroups | signed out | read a group | Denied | Pass |
+| R-224 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
+| R-225 | extensionPairings | user | list pairings | Denied | Pass |
+| R-226 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
+| R-227 | extensionPairings | staff | list pairings | Denied | Pass |
+| R-228 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
+| R-229 | extensionPairings | admin | list pairings | Denied | Pass |
+| R-230 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
+| R-231 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |

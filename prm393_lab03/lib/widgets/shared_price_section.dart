@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/formatters/money_format.dart';
+import '../models/price_insights.dart';
 import '../models/price_snapshot.dart';
 import '../models/shared_price.dart';
 import '../models/wishlist_item.dart';
@@ -26,14 +27,15 @@ class SharedPriceSection extends StatefulWidget {
 class _SharedPriceSectionState extends State<SharedPriceSection> {
   /// The user's latest comparable price once their history has loaded (Lịch sử giá).
   /// Until then the comparison loads without it, so a failed history never blocks it.
-  PriceSnapshot? _mine(BuildContext context) => context
-      .watch<DecisionSupportViewModel?>()
-      ?.priceInsightsFor(widget.item)
-      ?.latest;
+  PriceInsights? _insights(BuildContext context) =>
+      context.watch<DecisionSupportViewModel?>()?.priceInsightsFor(widget.item);
 
-  void _requestLoad(SharedPriceViewModel vm, PriceSnapshot? mine) {
+  void _requestLoad(SharedPriceViewModel vm, PriceInsights? insights) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) vm.load(widget.item, mine: mine);
+      if (!mounted) return;
+      vm.load(widget.item, mine: insights?.latest);
+      // "Giá tham khảo" (G7): the user's fresh prices, each sent once
+      if (insights != null) vm.reportHistory(widget.item, insights.history);
     });
   }
 
@@ -47,7 +49,8 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
   Widget build(BuildContext context) {
     final vm = context.watch<SharedPriceViewModel?>();
     if (vm == null) return const SizedBox.shrink();
-    final mine = _mine(context);
+    final insights = _insights(context);
+    final mine = insights?.latest;
     final state = vm.stateFor(widget.item, mine: mine);
     if (state.status == SharedPriceStatus.unsupported) {
       return Padding(
@@ -58,7 +61,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
         ),
       );
     }
-    _requestLoad(vm, mine);
+    _requestLoad(vm, insights);
 
     return Card(
       key: const ValueKey('shared-prices'),
@@ -196,7 +199,9 @@ class _SharingSwitch extends StatelessWidget {
       title: const Text('Góp giá của tôi (ẩn danh)'),
       subtitle: Text(
         'Chỉ gửi giá, loại giá và ngày ghi của món có link Shopee; không gửi tên, '
-        'link hay tài khoản. Giá đã góp hết hiệu lực sau ${SharedPriceSummary.windowDays} ngày.',
+        'link hay tài khoản. Giá đã góp hết hiệu lực sau ${SharedPriceSummary.windowDays} ngày. '
+        'Giá cũng được lưu ẩn danh vào biểu đồ "Giá tham khảo" (kèm tên món, tên shop '
+        'và đánh giá nếu có).',
         style: AppTextStyles.labelMedium,
       ),
     );

@@ -175,8 +175,23 @@ service cloud.firestore {
     }
 
     // "Biểu đồ giá tham khảo": prices per product over time, read by every signed-in user.
-    // For now only admins write, and only sample data (isDemo / source 'demo'); user reports
-    // open later (G7). afterVoucher is stored but never counted as a list price (app side).
+    // Admins write sample data (isDemo / source 'demo'); signed-in non-guest users add their
+    // own anonymous price per day (G7). afterVoucher is stored but never counted as a list
+    // price (app side).
+    function isContributor() { return request.auth != null && !isAnonymous(); }
+    // yyyyMMdd of t in Vietnam (UTC+7), like PriceHistoryIds.dayKey in the app
+    function vnDayKey(t) {
+      let vn = t + duration.value(7, 'h');
+      return string(vn.year())
+        + (vn.month() < 10 ? '0' : '') + string(vn.month())
+        + (vn.day() < 10 ? '0' : '') + string(vn.day());
+    }
+    // sha256("uid|productKey|modelKey|yyyyMMdd"): one report per person, variant and day;
+    // the uid itself is never stored
+    function historyReportId(productKey, modelKey, observedAt) {
+      return hashing.sha256(request.auth.uid + '|' + productKey + '|' + modelKey + '|'
+        + vnDayKey(observedAt)).toHexString().lower();
+    }
     function validHistoryProduct(productKey) {
       return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
         && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt'])
@@ -185,6 +200,23 @@ service cloud.firestore {
         && productKey == 'shopee:' + d().shopId + ':' + d().itemId
         && optionalText('groupId', 128)
         && d().isDemo is bool && d().createdAt is timestamp;
+    }
+    // A user's product: like G1, isDemo false, shopName may be missing until someone knows it
+    function validRealProduct(productKey) {
+      return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+        && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt'])
+        && text(d().title, 120) && optionalText('shopName', 60)
+        && d().shopId is string && d().itemId is string
+        && productKey == 'shopee:' + d().shopId + ':' + d().itemId
+        && optionalText('groupId', 128)
+        && d().isDemo == false && d().createdAt is timestamp;
+    }
+    // Only shopName / groupId change, and each was missing or null before
+    function onlyFillsEmpty() {
+      let changed = d().diff(resource.data).affectedKeys();
+      return changed.hasOnly(['shopName', 'groupId'])
+        && (!changed.hasAny(['shopName']) || resource.data.get('shopName', null) == null)
+        && (!changed.hasAny(['groupId']) || resource.data.get('groupId', null) == null);
     }
     function validHistoryReport() {
       return d().keys().hasOnly(['amountVnd','priceType','modelKey','observedAt','source','shopName',
@@ -204,10 +236,26 @@ service cloud.firestore {
       allow update: if isAdmin() && resource.data.isDemo == true
         && validHistoryProduct(productKey) && d().isDemo == true;
       allow delete: if isAdmin() && resource.data.isDemo == true;
+      // G7: a real product, created by the first user who reports a price for it (shop
+      // name may still be unknown). Later users only fill a field that is still empty
+      // (shopName, groupId); title, ids, isDemo and createdAt never change. No delete.
+      allow create: if isContributor() && validRealProduct(productKey)
+        && d().createdAt == request.time;
+      allow update: if isContributor() && resource.data.isDemo == false
+        && validRealProduct(productKey) && onlyFillsEmpty();
 
       // Sample report id: demo<n>_<modelKey>_<yyyyMMdd>
       match /reports/{rid} {
         allow read: if request.auth != null;
+        // G7: the user's own price, under their hashed id only, observed within 3 days
+        allow create, update: if isContributor()
+          && productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+          && validHistoryReport() && d().source in ['manual', 'extensionPage']
+          && rid == historyReportId(productKey, d().modelKey, d().observedAt)
+          // Never into sample data; getAfter also sees a product created in the same batch
+          && getAfter(/databases/$(database)/documents/priceHistory/$(productKey)).data.isDemo == false
+          && d().observedAt <= request.time + duration.value(5, 'm')
+          && d().observedAt > request.time - duration.value(3, 'd');
         allow create: if isAdmin() && validHistoryReport() && d().source == 'demo'
           && rid.matches('^demo[0-9]{1,6}_' + d().modelKey + '_[0-9]{8}$');
         allow update: if isAdmin() && resource.data.source == 'demo'

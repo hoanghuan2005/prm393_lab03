@@ -32,6 +32,14 @@ const actors = { user: ['alice', alice], staff: ['sam', sam], admin: ['ada', ada
 const now = () => Timestamp.now();
 const key = 'shopee:446089250:44081797761';
 const reportId = (uid) => createHash('sha256').update(`${uid}|${key}|none`).digest('hex');
+// priceHistory report id (G7): sha256(uid|productKey|modelKey|yyyyMMdd), day in Vietnam (UTC+7)
+const vnDay = (at) => at.toDate().toISOString().slice(0, 10).replaceAll('-', '');
+const vnTime = (at) => Timestamp.fromMillis(at.toMillis() + 7 * 3600e3);
+// Real (non-sample) product that user reports go to; sample products refuse them (G7b)
+const realKey = 'shopee:9:10';
+const historyId = (uid, at, modelKey = 'none', productKey = realKey) =>
+  createHash('sha256').update(`${uid}|${productKey}|${modelKey}|${vnDay(vnTime(at))}`).digest('hex');
+const daysAgo = (days) => Timestamp.fromMillis(Date.now() - days * 86400e3);
 
 // ---------- Seed (rules off) ----------
 await env.withSecurityRulesDisabled(async (ctx) => {
@@ -57,6 +65,10 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'priceHistory/shopee:1:2'), demoProduct('1', '2'));
   await setDoc(doc(db, `priceHistory/${key}/reports/demo1_none_20261101`), demoReport());
   await setDoc(doc(db, `priceHistory/${key}/reports/demo2_none_20261101`), demoReport());
+  await setDoc(doc(db, `priceHistory/${realKey}`), demoProduct('9', '10', { isDemo: false, groupId: 'g1' }));
+  await setDoc(doc(db, `priceHistory/${realKey}/reports/${historyId('bob', daysAgo(1))}`), userReport(daysAgo(1)));
+  // Real product whose shop name and group are still unknown
+  await setDoc(doc(db, 'priceHistory/shopee:15:16'), { title: 'Sạc dự phòng', shopId: '15', itemId: '16', isDemo: false, createdAt: now() });
   await setDoc(doc(db, 'productGroups/g1'), demoGroup());
   await setDoc(doc(db, 'productGroups/g2'), demoGroup());
   await setDoc(doc(db, 'extensionPairings/p1'), {
@@ -122,6 +134,13 @@ function demoReport(extra = {}) {
   return {
     amountVnd: 420000, priceType: 'single', modelKey: 'none', observedAt: now(), source: 'demo',
     shopName: 'Shop mẫu', productRating: 4.8, productRatingCount: 120, shopRating: 4.9, ...extra,
+  };
+}
+// A user's own price (G7): no uid, name or link
+function userReport(observedAt, extra = {}) {
+  return {
+    amountVnd: 410000, priceType: 'single', modelKey: 'none', observedAt, source: 'extensionPage',
+    shopName: 'Shop thật', productRating: 4.7, productRatingCount: 35, shopRating: 4.8, ...extra,
   };
 }
 function demoGroup(extra = {}) {
@@ -269,12 +288,11 @@ for (const [role, db] of [['user', alice], ['staff', sam]]) {
   add('priceHistory/reports', role, 'delete a demo report', false, () => deleteDoc(hReport(db, 'demo1_none_20261101')));
   add('productGroups', role, 'create a demo group', false, () => setDoc(doc(db, 'productGroups/g3'), demoGroup()));
 }
-add('priceHistory', 'user', 'create a non-demo product', false, () => setDoc(doc(alice, 'priceHistory/shopee:3:4'), demoProduct('3', '4', { isDemo: false })));
 add('priceHistory', 'admin', 'create a demo product', true, () => setDoc(doc(ada, 'priceHistory/shopee:5:6'), demoProduct('5', '6', { groupId: 'g1' })));
 add('priceHistory', 'admin', 'delete a demo product', true, () => deleteDoc(doc(ada, 'priceHistory/shopee:1:2')));
 add('priceHistory', 'admin', 'create with a 121-character title', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { title: 'x'.repeat(121) })));
 add('priceHistory', 'admin', 'create with a 61-character shop name', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { shopName: 'x'.repeat(61) })));
-add('priceHistory', 'admin', 'create a non-demo product (opens in G7)', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { isDemo: false })));
+add('priceHistory', 'admin', 'create a non-demo product with a device createdAt', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { isDemo: false })));
 add('priceHistory', 'admin', 'shopId/itemId not matching the key', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '9')));
 add('priceHistory/reports', 'admin', 'create a demo report', true, () => setDoc(hReport(ada, 'demo3_none_20261102'), demoReport()));
 add('priceHistory/reports', 'admin', "create priceType 'sale'", true, () => setDoc(hReport(ada, 'demo4_none_20261102'), demoReport({ priceType: 'sale' })));
@@ -285,12 +303,52 @@ add('priceHistory/reports', 'admin', 'shopRating 0', false, () => setDoc(hReport
 add('priceHistory/reports', 'admin', 'productRatingCount -1', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ productRatingCount: -1 })));
 add('priceHistory/reports', 'admin', "unknown priceType 'coupon'", false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ priceType: 'coupon' })));
 add('priceHistory/reports', 'admin', 'amountVnd 0', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ amountVnd: 0 })));
-add('priceHistory/reports', 'admin', "non-demo source 'manual' (opens in G7)", false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ source: 'manual' })));
+add('priceHistory/reports', 'admin', "source 'manual' under a sample id", false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ source: 'manual' })));
 add('priceHistory/reports', 'admin', 'id not matching modelKey', false, () => setDoc(hReport(ada, 'demo6_999_20261102'), demoReport()));
 add('priceHistory/reports', 'admin', 'add a uid field', false, () => setDoc(hReport(ada, 'demo6_none_20261102'), demoReport({ uid: 'ada' })));
 add('productGroups', 'admin', 'create a demo group', true, () => setDoc(doc(ada, 'productGroups/g4'), demoGroup()));
 add('productGroups', 'admin', 'delete a demo group', true, () => deleteDoc(doc(ada, 'productGroups/g2')));
 add('productGroups', 'admin', 'create a non-demo group', false, () => setDoc(doc(ada, 'productGroups/g5'), demoGroup({ isDemo: false })));
+// G7 / G7b: users add their own anonymous price (hashed id per day) to real products only,
+// create real products and fill fields that are still empty
+const rReport = (db, rid, productKey = realKey) => doc(db, 'priceHistory', productKey, 'reports', rid);
+for (const [role, [uid, db]] of Object.entries(actors)) {
+  add('priceHistory/reports', role, 'report own price (hashed id)', true, () => setDoc(rReport(db, historyId(uid, now())), userReport(now())));
+  add('priceHistory/reports', role, "write under bob's id", false, () => setDoc(rReport(db, historyId('bob', now())), userReport(now())));
+}
+const real = (shopId, itemId, extra = {}) => demoProduct(shopId, itemId, { isDemo: false, createdAt: serverTimestamp(), ...extra });
+const withoutShopName = ({ shopName, ...rest }) => rest;
+add('priceHistory/reports', 'user', 'update own report of today', true, () => setDoc(rReport(alice, historyId('alice', now())), userReport(now(), { amountVnd: 399000, source: 'manual' })));
+add('priceHistory/reports', 'user', 'afterVoucher keeps its type', true, () => setDoc(rReport(alice, historyId('alice', now(), '123')), userReport(now(), { priceType: 'afterVoucher', modelKey: '123' })));
+add('priceHistory/reports', 'user', 'observed 2 days ago (id of that day)', true, () => setDoc(rReport(alice, historyId('alice', daysAgo(2))), userReport(daysAgo(2))));
+add('priceHistory/reports', 'user', 'observed 4 days ago', false, () => setDoc(rReport(alice, historyId('alice', daysAgo(4))), userReport(daysAgo(4))));
+add('priceHistory/reports', 'user', 'id of another day', false, () => setDoc(rReport(alice, historyId('alice', now())), userReport(daysAgo(2))));
+add('priceHistory/reports', 'user', "source 'demo' under own id", false, () => setDoc(rReport(alice, historyId('alice', now())), userReport(now(), { source: 'demo' })));
+add('priceHistory/reports', 'user', 'add a uid field', false, () => setDoc(rReport(alice, historyId('alice', now())), userReport(now(), { uid: 'alice' })));
+add('priceHistory/reports', 'user', "delete bob's report", false, () => deleteDoc(rReport(alice, historyId('bob', daysAgo(1)))));
+add('priceHistory/reports', 'user', 'real report into a sample product (isDemo)', false, () => setDoc(rReport(alice, historyId('alice', now(), 'none', key), key), userReport(now())));
+add('priceHistory/reports', 'user', 'report for a product that does not exist', false, () => setDoc(rReport(alice, historyId('alice', now(), 'none', 'shopee:19:20'), 'shopee:19:20'), userReport(now())));
+add('priceHistory/reports', 'user', 'new product + report in one batch', true, () => {
+  const k = 'shopee:17:18';
+  const batch = writeBatch(alice);
+  batch.set(doc(alice, `priceHistory/${k}`), withoutShopName(real('17', '18')));
+  batch.set(rReport(alice, historyId('alice', now(), 'none', k), k), userReport(now()));
+  return batch.commit();
+});
+add('priceHistory/reports', 'guest', 'report own price', false, () => setDoc(rReport(guest, historyId('guest-1', now())), userReport(now())));
+add('priceHistory', 'user', 'create a real product', true, () => setDoc(doc(alice, 'priceHistory/shopee:3:4'), real('3', '4')));
+add('priceHistory', 'user', 'create a real product without a shop name', true, () => setDoc(doc(alice, 'priceHistory/shopee:11:12'), withoutShopName(real('11', '12'))));
+add('priceHistory', 'user', 'create a real product with a device createdAt', false, () => setDoc(doc(alice, 'priceHistory/shopee:13:14'), demoProduct('13', '14', { isDemo: false })));
+add('priceHistory', 'user', 'create a product marked as sample', false, () => setDoc(doc(alice, 'priceHistory/shopee:13:14'), real('13', '14', { isDemo: true })));
+add('priceHistory', 'user', 'change the title of a real product', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { title: 'Tai nghe mới' }));
+add('priceHistory', 'user', 'change a shop name already set', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { shopName: 'Shop đổi tên' }));
+add('priceHistory', 'user', 'move a real product to another group', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { groupId: 'g2' }));
+add('priceHistory', 'user', 'change isDemo of a real product', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { isDemo: true }));
+add('priceHistory', 'user', 'fill an empty shop name', true, () => updateDoc(doc(alice, 'priceHistory/shopee:15:16'), { shopName: 'Shop Pin Xanh' }));
+add('priceHistory', 'user', 'fill an empty group', true, () => updateDoc(doc(alice, 'priceHistory/shopee:15:16'), { groupId: 'g1' }));
+add('priceHistory', 'user', 'turn a sample product into a real one', false, () => updateDoc(doc(alice, `priceHistory/${key}`), { isDemo: false }));
+add('priceHistory', 'user', 'delete a real product', false, () => deleteDoc(doc(alice, `priceHistory/${realKey}`)));
+add('priceHistory', 'guest', 'create a real product', false, () => setDoc(doc(guest, 'priceHistory/shopee:13:14'), real('13', '14')));
 add('priceHistory', 'signed out', 'read a product', false, () => getDoc(doc(nobody, `priceHistory/${key}`)));
 add('priceHistory/reports', 'signed out', 'read reports', false, () => getDocs(collection(nobody, 'priceHistory', key, 'reports')));
 add('productGroups', 'signed out', 'read a group', false, () => getDoc(doc(nobody, 'productGroups/g1')));

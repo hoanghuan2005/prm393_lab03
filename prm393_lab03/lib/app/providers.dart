@@ -20,6 +20,7 @@ import '../services/feedback_service.dart';
 import '../services/instrumented_ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
+import '../services/price_history_contribution_service.dart';
 import '../services/price_history_service.dart';
 import '../services/purchase_service.dart';
 import '../services/reflection_service.dart';
@@ -111,6 +112,10 @@ class AppProviders extends StatelessWidget {
         // "Giá tham khảo": the service only; each screen creates its own ViewModel
         Provider<PriceHistoryService>(
           create: (_) => FirestorePriceHistoryService(),
+        ),
+        // The user's own prices sent anonymously to "Giá tham khảo" (G7)
+        Provider<PriceHistoryContributionService>(
+          create: (_) => FirestorePriceHistoryContributionService(),
         ),
         Provider<ExtensionSessionService>(
           create: (_) => FirestoreExtensionSessionService(),
@@ -306,11 +311,13 @@ class AppProviders extends StatelessWidget {
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
-        // "Giá người khác ghi" (spec 8.3): Google accounts share, guests only read
+        // "Giá người khác ghi" (spec 8.3) and "Giá tham khảo" (G7): Google accounts
+        // share, guests only read
         ChangeNotifierProxyProvider<AuthViewModel, SharedPriceViewModel>(
           create: (context) => SharedPriceViewModel(
             service: context.read<SharedPriceService>(),
             preferencesService: PreferencesService(),
+            historyService: context.read<PriceHistoryContributionService>(),
           ),
           update: (_, auth, vm) => vm!
             ..updateUser(

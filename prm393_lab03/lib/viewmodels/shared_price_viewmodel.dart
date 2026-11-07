@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/errors/describe_error.dart';
+import '../models/price_history_contribution.dart';
 import '../models/price_snapshot.dart';
 import '../models/shared_price.dart';
 import '../models/shopee_link.dart';
 import '../models/wishlist_item.dart';
 import '../services/preferences_service.dart';
+import '../services/price_history_contribution_service.dart';
 import '../services/shared_price_service.dart';
 import 'deferred_notify.dart';
 
@@ -40,10 +42,14 @@ class SharedPriceState {
 
 /// "Giá người khác ghi" on Chi tiết món (spec 8.3). Shares the user's own fresh price
 /// anonymously (Google accounts only, can be turned off) and compares it with what
-/// other people recorded for the same product and variant.
+/// other people recorded for the same product and variant. The same switch also sends
+/// the user's fresh prices to "Giá tham khảo" (priceHistory, G7).
 class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
   final SharedPriceService service;
   final PreferencesService preferencesService;
+
+  /// "Giá tham khảo" (G7); nothing is sent without it
+  final PriceHistoryContributionService? historyService;
   final DateTime Function() _now;
 
   String? _uid;
@@ -54,12 +60,17 @@ class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
   bool _sharingEnabled = true;
   final Map<String, SharedPriceState> _states = {};
 
+  /// priceHistory reports already sent (or on their way) for the current user
+  final Set<String> _historySent = {};
+  late final Future<void> _preferenceLoaded;
+
   SharedPriceViewModel({
     required this.service,
     required this.preferencesService,
+    this.historyService,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now {
-    _loadPreference();
+    _preferenceLoaded = _loadPreference();
   }
 
   bool get sharingEnabled => _sharingEnabled;
@@ -75,6 +86,7 @@ class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
     _uid = uid;
     _canContribute = canContribute;
     _states.clear();
+    _historySent.clear();
     notifyLater();
   }
 
@@ -167,6 +179,45 @@ class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
       );
     }
     if (!isDisposed) notifyListeners();
+  }
+
+  /// G7: sends the user's own fresh prices of [item] ([snapshots] = its Lịch sử giá)
+  /// anonymously to "Giá tham khảo": not for guests, only with a productKey and with
+  /// sharing on (see [HistoryContribution.reportsFor]). Each report is sent once.
+  Future<void> reportHistory(
+    WishlistItem item,
+    List<PriceSnapshot> snapshots,
+  ) async {
+    await _preferenceLoaded;
+    final history = historyService, uid = _uid;
+    final productKey = HistoryContribution.productKeyOf(item);
+    final title = HistoryContribution.titleOf(item);
+    if (isDisposed || history == null || uid == null) return;
+    if (!_canContribute || !_sharingEnabled) return;
+    if (productKey == null || title == null) return;
+    for (final report in HistoryContribution.reportsFor(
+      item,
+      snapshots,
+      _now(),
+    )) {
+      final sentKey =
+          '$productKey|${report.modelKey}|${report.observedAt.toIso8601String()}|'
+          '${report.amountVnd}|${report.priceType.key}';
+      if (!_historySent.add(sentKey)) continue;
+      // Not awaited by the screen: offline it waits in Firestore's queue
+      try {
+        await history.contribute(
+          uid: uid,
+          productKey: productKey,
+          title: title,
+          shopName: report.shopName,
+          report: report,
+        );
+      } catch (e) {
+        _historySent.remove(sentKey);
+        debugPrint('Price history report not sent: ${describeError(e)}');
+      }
+    }
   }
 
   /// Off: stops sharing and removes this person's report for [item] right away; reports

@@ -268,7 +268,13 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
         vnd: vnd,
         day: p.day,
         productKey: key,
-        shopName: p.shopName ?? products[key]?.shopName,
+        // A user's product may not have its shop name yet ('')
+        shopName:
+            p.shopName ??
+            switch (products[key]?.shopName) {
+              final name? when name.isNotEmpty => name,
+              _ => null,
+            },
         productRating: p.productRating,
       ),
       null => null,

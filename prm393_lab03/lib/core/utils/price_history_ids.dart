@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 
 /// Document ids of priceHistory/{productKey}/reports. The day is always the date in
 /// Vietnam (UTC+7), whatever the phone's time zone, so firestore.rules computes the
-/// same id from request.time.
+/// same id from observedAt.
 abstract final class PriceHistoryIds {
   static const vietnamOffset = Duration(hours: 7);
 

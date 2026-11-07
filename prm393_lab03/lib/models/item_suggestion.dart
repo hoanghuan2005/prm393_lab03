@@ -1,31 +1,16 @@
+import '../core/utils/vietnamese_text.dart';
 import 'budget_group.dart';
 
 /// Lowercase, Vietnamese diacritics removed, punctuation turned into spaces:
 /// "Tai nghe Sony WH-1000XM5!" → "tai nghe sony wh 1000xm5"
 String normalizeTitle(String text) {
   final buffer = StringBuffer();
-  for (final rune in text.toLowerCase().runes) {
+  for (final rune in removeVietnameseDiacritics(text.toLowerCase()).runes) {
     final char = String.fromCharCode(rune);
-    final plain = _plainLetter[char] ?? char;
-    buffer.write(RegExp(r'[a-z0-9]').hasMatch(plain) ? plain : ' ');
+    buffer.write(RegExp(r'[a-z0-9]').hasMatch(char) ? char : ' ');
   }
   return buffer.toString().trim().replaceAll(RegExp(r'\s+'), ' ');
 }
-
-const _accentGroups = {
-  'a': 'àáạảãâầấậẩẫăằắặẳẵ',
-  'e': 'èéẹẻẽêềếệểễ',
-  'i': 'ìíịỉĩ',
-  'o': 'òóọỏõôồốộổỗơờớợởỡ',
-  'u': 'ùúụủũưừứựửữ',
-  'y': 'ỳýỵỷỹ',
-  'd': 'đ',
-};
-
-final Map<String, String> _plainLetter = {
-  for (final e in _accentGroups.entries)
-    for (final c in e.value.split('')) c: e.key,
-};
 
 /// Words that only describe quantity or form, not what the item is
 final _stopWords = 'cai chiec bo doi mon do cho va voi cua loai size mau moi hang chinh san pham sp the'

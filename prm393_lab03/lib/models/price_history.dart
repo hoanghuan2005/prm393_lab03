@@ -43,6 +43,28 @@ enum HistoryReportSource {
       );
 }
 
+/// Who set [PriceHistoryProduct.productCode] (G8)
+enum ProductCodeSource {
+  /// Read by AI from the product title; only set once, never changed by users
+  ai('ai'),
+  demo('demo'),
+
+  /// Corrected by an admin after a wrong match
+  admin('admin');
+
+  final String key;
+
+  const ProductCodeSource(this.key);
+
+  /// Null for a missing or unknown value
+  static ProductCodeSource? fromKey(String? key) {
+    for (final s in values) {
+      if (s.key == key) return s;
+    }
+    return null;
+  }
+}
+
 /// priceHistory/{productKey}, productKey = `shopee:<shopId>:<itemId>`
 class PriceHistoryProduct {
   final String productKey;
@@ -54,6 +76,13 @@ class PriceHistoryProduct {
   final bool isDemo;
   final DateTime createdAt;
 
+  /// The same item in every shop, e.g. "ksound-a3-pro" (see product_code.dart)
+  final String? productCode;
+  final ProductCodeSource? productCodeSource;
+
+  /// modelKey → variant code, e.g. {"123": "den-nham"}; keys are only ever added
+  final Map<String, String> variantCodes;
+
   const PriceHistoryProduct({
     required this.productKey,
     required this.title,
@@ -63,6 +92,9 @@ class PriceHistoryProduct {
     this.groupId,
     this.isDemo = false,
     required this.createdAt,
+    this.productCode,
+    this.productCodeSource,
+    this.variantCodes = const {},
   });
 
   /// Product page on Shopee; null for sample data (made-up ids, never opened)
@@ -80,8 +112,21 @@ class PriceHistoryProduct {
       groupId: readText(data['groupId']),
       isDemo: data['isDemo'] == true,
       createdAt: readDate(data['createdAt']) ?? DateTime.now(),
+      productCode: readText(data['productCode']),
+      productCodeSource: ProductCodeSource.fromKey(
+        readString(data['productCodeSource']),
+      ),
+      variantCodes: _readCodes(data['variantCodes']),
     );
   }
+
+  static Map<String, String> _readCodes(Object? value) => value is Map
+      ? {
+          for (final e in value.entries)
+            if (e.key is String && e.value is String && e.value != '')
+              e.key as String: e.value as String,
+        }
+      : const {};
 
   Map<String, dynamic> toMap() => {
     'title': title,
@@ -91,6 +136,9 @@ class PriceHistoryProduct {
     if (groupId != null) 'groupId': groupId,
     'isDemo': isDemo,
     'createdAt': Timestamp.fromDate(createdAt),
+    'productCode': ?productCode,
+    'productCodeSource': ?productCodeSource?.key,
+    if (variantCodes.isNotEmpty) 'variantCodes': variantCodes,
   };
 }
 

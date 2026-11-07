@@ -52,6 +52,60 @@ void main() {
     expect(back.groupId, 'g1');
     expect(back.isDemo, isTrue);
     expect(back.createdAt, DateTime(2026, 11, 1));
+    expect(back.productCode, isNull);
+    expect(back.productCodeSource, isNull);
+    expect(back.variantCodes, isEmpty);
+    // No code fields written when there is no code
+    expect(p.toMap().keys, isNot(contains('variantCodes')));
+    expect(p.toMap().keys, isNot(contains('productCode')));
+  });
+
+  test('product codes round trip', () async {
+    final p = PriceHistoryProduct(
+      productKey: _key,
+      title: 'Tai nghe K-Sound A3',
+      shopId: '446089250',
+      itemId: '44081797761',
+      shopName: 'Shop',
+      createdAt: DateTime(2026, 11, 1),
+      productCode: 'ksound-a3',
+      productCodeSource: ProductCodeSource.ai,
+      variantCodes: const {'123': 'den-nham', 'none': 'xanh'},
+    );
+    final map = p.toMap();
+    expect(map['productCode'], 'ksound-a3');
+    expect(map['productCodeSource'], 'ai');
+    expect(map['variantCodes'], {'123': 'den-nham', 'none': 'xanh'});
+
+    await paths.priceHistoryProduct(_key).set(map);
+    final back = PriceHistoryProduct.fromFirestore(
+      await paths.priceHistoryProduct(_key).get(),
+    );
+    expect(back.productCode, 'ksound-a3');
+    expect(back.productCodeSource, ProductCodeSource.ai);
+    expect(back.variantCodes, {'123': 'den-nham', 'none': 'xanh'});
+  });
+
+  test('unknown code source and malformed variant codes are ignored', () async {
+    await paths.priceHistoryProduct(_key).set({
+      'title': 'Tai nghe',
+      'productCode': 'ksound-a3',
+      'productCodeSource': 'guess',
+      'variantCodes': {'123': 'den', '456': 7, '789': ''},
+    });
+    final back = PriceHistoryProduct.fromFirestore(
+      await paths.priceHistoryProduct(_key).get(),
+    );
+    expect(back.productCodeSource, isNull);
+    expect(back.variantCodes, {'123': 'den'});
+    expect(ProductCodeSource.fromKey('admin'), ProductCodeSource.admin);
+    expect(ProductCodeSource.fromKey('demo'), ProductCodeSource.demo);
+
+    await paths.priceHistoryProduct(_key).update({'variantCodes': 'den'});
+    final noMap = PriceHistoryProduct.fromFirestore(
+      await paths.priceHistoryProduct(_key).get(),
+    );
+    expect(noMap.variantCodes, isEmpty);
   });
 
   test('report reads num money and rounds ratings to 1 decimal', () async {

@@ -5,7 +5,7 @@
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import {
   doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where,
-  serverTimestamp, Timestamp, writeBatch, collectionGroup, getCountFromServer,
+  serverTimestamp, Timestamp, writeBatch, collectionGroup, getCountFromServer, deleteField,
 } from 'firebase/firestore';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -69,6 +69,11 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, `priceHistory/${realKey}/reports/${historyId('bob', daysAgo(1))}`), userReport(daysAgo(1)));
   // Real product whose shop name and group are still unknown
   await setDoc(doc(db, 'priceHistory/shopee:15:16'), { title: 'Sạc dự phòng', shopId: '15', itemId: '16', isDemo: false, createdAt: now() });
+  // G8: real products with and without a product code
+  await setDoc(doc(db, 'priceHistory/shopee:21:22'), demoProduct('21', '22', {
+    isDemo: false, productCode: 'ksound-a3', productCodeSource: 'ai', variantCodes: { 123: 'den' },
+  }));
+  for (const id of ['23', '25']) await setDoc(doc(db, `priceHistory/shopee:${id}:9`), demoProduct(id, '9', { isDemo: false }));
   await setDoc(doc(db, 'productGroups/g1'), demoGroup());
   await setDoc(doc(db, 'productGroups/g2'), demoGroup());
   await setDoc(doc(db, 'extensionPairings/p1'), {
@@ -90,6 +95,7 @@ function privateDocs(uid) {
     [`${u}/ownedItems/o1`, { name: 'Tai nghe cũ', tags: [] }],
     [`${u}/budgets/2026-11`, { limit: 1000000 }],
     [`${u}/reflections/2026-11`, { rating: 4 }],
+    [`${u}/hiddenMatches/shopee:3:4`, { hiddenAt: now() }],
   ];
 }
 function announcement(by, status, createdAt) {
@@ -345,10 +351,47 @@ add('priceHistory', 'user', 'change a shop name already set', false, () => updat
 add('priceHistory', 'user', 'move a real product to another group', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { groupId: 'g2' }));
 add('priceHistory', 'user', 'change isDemo of a real product', false, () => updateDoc(doc(alice, `priceHistory/${realKey}`), { isDemo: true }));
 add('priceHistory', 'user', 'fill an empty shop name', true, () => updateDoc(doc(alice, 'priceHistory/shopee:15:16'), { shopName: 'Shop Pin Xanh' }));
-add('priceHistory', 'user', 'fill an empty group', true, () => updateDoc(doc(alice, 'priceHistory/shopee:15:16'), { groupId: 'g1' }));
+// G8a-fix: groupId is set by admins only (or in sample data)
+add('priceHistory', 'user', 'fill an empty group', false, () => updateDoc(doc(alice, 'priceHistory/shopee:15:16'), { groupId: 'g1' }));
+add('priceHistory', 'user', 'create a real product with a group', false, () => setDoc(doc(alice, 'priceHistory/shopee:31:32'), real('31', '32', { groupId: 'g1' })));
+add('priceHistory', 'admin', 'fill an empty group of a real product', true, () => updateDoc(doc(ada, 'priceHistory/shopee:15:16'), { groupId: 'g1' }));
+add('priceHistory', 'admin', 'move a real product to another group', true, () => updateDoc(doc(ada, `priceHistory/${realKey}`), { groupId: 'g2' }));
+add('priceHistory', 'admin', 'create a real product with a group', true, () => setDoc(doc(ada, 'priceHistory/shopee:33:34'), real('33', '34', { groupId: 'g1' })));
 add('priceHistory', 'user', 'turn a sample product into a real one', false, () => updateDoc(doc(alice, `priceHistory/${key}`), { isDemo: false }));
 add('priceHistory', 'user', 'delete a real product', false, () => deleteDoc(doc(alice, `priceHistory/${realKey}`)));
 add('priceHistory', 'guest', 'create a real product', false, () => setDoc(doc(guest, 'priceHistory/shopee:13:14'), real('13', '14')));
+// G8a: product / variant codes. Users set a code once (source 'ai') and only add variant keys;
+// admins correct codes (source 'admin'). users/{uid}/hiddenMatches: owner only.
+const coded = (db) => doc(db, 'priceHistory/shopee:21:22');
+const uncoded = (db) => doc(db, 'priceHistory/shopee:23:9');
+const blank = (db) => doc(db, 'priceHistory/shopee:25:9');
+const aiCode = (productCode) => ({ productCode, productCodeSource: 'ai' });
+add('priceHistory', 'user', 'set productCode the first time (ai)', true, () => updateDoc(uncoded(alice), aiCode('ksound-a3')));
+add('priceHistory', 'user', "set productCode with source 'admin'", false, () => updateDoc(blank(alice), { productCode: 'ksound-a3', productCodeSource: 'admin' }));
+add('priceHistory', 'user', 'set productCode without a source', false, () => updateDoc(blank(alice), { productCode: 'ksound-a3' }));
+add('priceHistory', 'user', 'change an existing productCode', false, () => updateDoc(coded(alice), aiCode('ksound-a3-pro')));
+add('priceHistory', 'user', 'delete an existing productCode', false, () => updateDoc(coded(alice), { productCode: deleteField(), productCodeSource: deleteField() }));
+add('priceHistory', 'user', 'add a new variantCodes key', true, () => updateDoc(coded(alice), { 'variantCodes.456': 'xanh-xl' }));
+add('priceHistory', 'user', 'change an existing variantCodes key', false, () => updateDoc(coded(alice), { 'variantCodes.123': 'trang' }));
+add('priceHistory', 'user', 'remove an existing variantCodes key', false, () => updateDoc(coded(alice), { 'variantCodes.123': deleteField() }));
+add('priceHistory', 'user', "productCode 'K-Sound' (not lowercase)", false, () => updateDoc(blank(alice), aiCode('K-Sound')));
+add('priceHistory', 'user', "productCode 'ksound--a3' (double dash)", false, () => updateDoc(blank(alice), aiCode('ksound--a3')));
+add('priceHistory', 'user', 'productCode of 61 characters', false, () => updateDoc(blank(alice), aiCode('a'.repeat(61))));
+add('priceHistory', 'user', "variant code 'Đen'", false, () => updateDoc(blank(alice), { 'variantCodes.1': 'Đen' }));
+add('priceHistory', 'user', 'variant code of 31 characters', false, () => updateDoc(blank(alice), { 'variantCodes.1': 'a'.repeat(31) }));
+add('priceHistory', 'user', "variant key 'red' (not a modelKey)", false, () => updateDoc(blank(alice), { 'variantCodes.red': 'do' }));
+add('priceHistory', 'user', 'create a real product with an ai code', true, () => setDoc(doc(alice, 'priceHistory/shopee:27:28'), real('27', '28', aiCode('nova-x5-128gb'))));
+add('priceHistory', 'user', "create a real product with an 'admin' code", false, () => setDoc(doc(alice, 'priceHistory/shopee:29:30'), real('29', '30', { productCode: 'nova-x5', productCodeSource: 'admin' })));
+add('priceHistory', 'staff', 'change an existing productCode', false, () => updateDoc(coded(sam), aiCode('ksound-a3-pro')));
+add('priceHistory', 'admin', "change an existing productCode (source 'admin')", true, () => updateDoc(coded(ada), { productCode: 'ksound-a3-pro', productCodeSource: 'admin' }));
+add('priceHistory', 'admin', "change a productCode with source 'ai'", false, () => updateDoc(coded(ada), aiCode('ksound-a3')));
+add('priceHistory', 'admin', 'change an existing variantCodes key', true, () => updateDoc(coded(ada), { 'variantCodes.123': 'trang' }));
+add('priceHistory', 'admin', 'change the title of a real product', false, () => updateDoc(coded(ada), { title: 'Tên khác' }));
+add('hiddenMatches', 'user', "hide a match in bob's list", false, () => setDoc(doc(alice, 'users/bob/hiddenMatches/shopee:3:4'), { hiddenAt: now() }));
+add('hiddenMatches', 'user', 'un-hide own match', true, () => deleteDoc(doc(alice, 'users/alice/hiddenMatches/shopee:3:4')));
+add('hiddenMatches', 'user', 'hide with an extra field', false, () => setDoc(doc(alice, 'users/alice/hiddenMatches/shopee:5:6'), { hiddenAt: now(), title: 'x' }));
+add('hiddenMatches', 'user', 'hide under an id that is not a productKey', false, () => setDoc(doc(alice, 'users/alice/hiddenMatches/abc'), { hiddenAt: now() }));
+add('hiddenMatches', 'guest', "read alice's hidden matches", false, () => getDocs(collection(guest, 'users/alice/hiddenMatches')));
 add('priceHistory', 'signed out', 'read a product', false, () => getDoc(doc(nobody, `priceHistory/${key}`)));
 add('priceHistory/reports', 'signed out', 'read reports', false, () => getDocs(collection(nobody, 'priceHistory', key, 'reports')));
 add('productGroups', 'signed out', 'read a group', false, () => getDoc(doc(nobody, 'productGroups/g1')));

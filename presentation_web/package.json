@@ -16,6 +16,7 @@
     "three": "0.187.0"
   },
   "devDependencies": {
+    "@material-design-icons/svg": "0.14.15",
     "vite": "8.3.6",
     "vite-plugin-singlefile": "2.3.4"
   }

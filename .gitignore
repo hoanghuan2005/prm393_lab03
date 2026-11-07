@@ -68,3 +68,6 @@ e2e_test/results/
 
 # Java build output
 **/target/
+
+# Superdesign temporary drafts
+.superdesign/tmp/

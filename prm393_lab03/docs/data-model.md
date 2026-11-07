@@ -1,6 +1,6 @@
 # Mô hình dữ liệu Firestore
 
-Dữ liệu cá nhân nằm dưới `users/{uid}` và chỉ chủ tài khoản đọc/ghi; dữ liệu dùng chung (`announcements`, `saleEvents`, `sharedPrices`, `extensionPairings`) nằm ở gốc. Quyền theo vai trò xem mục **Vai trò và quyền** ngay dưới; `firestore.rules` từ chối mọi đường dẫn không khai báo. Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+Dữ liệu cá nhân nằm dưới `users/{uid}` và chỉ chủ tài khoản đọc/ghi; dữ liệu dùng chung (`announcements`, `saleEvents`, `sharedPrices`, `priceHistory`, `productGroups`, `extensionPairings`) nằm ở gốc. Quyền theo vai trò xem mục **Vai trò và quyền** ngay dưới; `firestore.rules` từ chối mọi đường dẫn không khai báo. Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
 
 ## Vai trò và quyền
 
@@ -16,6 +16,10 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | `saleSuggestions` | Người dùng (không ẩn danh), cho chính mình, `status = pending` | Người đề xuất; staff, admin | Staff, admin: `pending` → `approved` (cùng batch tạo `saleEvents`) hoặc `rejected` (kèm `reason`), một lần | Người đề xuất khi còn `pending` | Đề xuất sale mobile; web duyệt đề xuất |
 | `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard | — | — | Web tổng quan |
 | `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
+| `priceHistory/{key}` | Admin: dữ liệu mẫu (`isDemo = true`); tài khoản không ẩn danh: sản phẩm thật (`isDemo = false`) khi gửi giá đầu tiên | Mọi người đã đăng nhập | Admin: dữ liệu mẫu, và sửa mã/nhóm của sản phẩm thật; người dùng: chỉ điền trường đang trống | Admin, chỉ dữ liệu mẫu | Chi tiết món (Lịch sử giá, Cùng món ở shop khác), Giá tham khảo, Firebase Demo Area |
+| `priceHistory/{key}/reports` | Tài khoản không ẩn danh: giá của chính mình, id băm, không vào dữ liệu mẫu; admin: báo cáo `demo` | Mọi người đã đăng nhập | Như create | Admin, chỉ báo cáo `demo` | Như trên |
+| `productGroups` | Admin, chỉ `isDemo = true` | Mọi người đã đăng nhập | Admin, chỉ dữ liệu mẫu | Admin, chỉ dữ liệu mẫu | Firebase Demo Area, Giá tham khảo (nhóm mẫu) |
+| `users/{uid}/hiddenMatches` | Chủ tài khoản | Chủ tài khoản | Chủ tài khoản | Chủ tài khoản | Cùng món ở shop khác ("Không phải món này") |
 | `extensionPairings` | Extension (ẩn danh) | Ai có id (không liệt kê được) | Tài khoản không ẩn danh: duyệt/từ chối 1 lần | Extension | Liên kết extension |
 
 **Chuyển trạng thái theo vai trò**
@@ -61,7 +65,7 @@ Kiểm thử: `firebase/tests/rules.test.mjs` chạy trên Firestore Emulator, m
 | `satisfactionSkipped` | bool | | người dùng chọn "Bỏ qua"; không hỏi lại |
 | `satisfactionAt` | timestamp? | | server time khi trả lời |
 
-## `wishlistItems/{id}` – `WishlistItem` · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`
+## `wishlistItems/{id}` – `WishlistItem` · ghi bởi `WishlistService`, `PurchaseService.buyFromWishlist`, `DemoDataService`, `DemoPriceHistoryService` (món mẫu, G2c)
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
 |:---|:---|:-:|:---|
@@ -79,6 +83,7 @@ Kiểm thử: `firebase/tests/rules.test.mjs` chạy trên Firestore Emulator, m
 | `productKey`, `modelId`, `imageUrl` | string? | | — (extension Chrome: `shopee:<shopId>:<itemId>`, mã phân loại, ảnh) |
 | `variantLabel` | string? | | null hoặc ≤ 60 ký tự (tên phân loại đã chọn) |
 | `buyIntentAt` | timestamp? | | null hoặc timestamp – đã bấm "Mua" trên extension, chờ app ghi khoản mua |
+| `isDemo` | bool | | — (chỉ ghi khi `true`): món mẫu admin thêm từ Firebase Demo Area (G2c), xem quy tắc 10 |
 | *(khi `status == purchased`)* | | | rules bắt buộc có `purchaseId` (string) |
 
 App chỉ ghi các trường extension khi có giá trị, nên sửa món trong app không xoá chúng. `buyIntentAt` được xoá khi ghi khoản mua (`buyFromWishlist`) hoặc bấm "Chưa mua" (`clearBuyIntent`).
@@ -170,6 +175,58 @@ Dùng cho tín hiệu S5 của Decision Card (cùng nhóm hoặc thẻ/tên xu�
 
 Cách so sánh (`SharedPriceSummary`): chỉ cùng sản phẩm, cùng `modelKey`, cùng loại giá, ghi trong 3 ngày; bỏ bản ghi của chính mình; bỏ giá lệch > 30% so với trung vị; cần ≥ 2 người còn lại. Kết quả chỉ là gợi ý, người dùng phải xác nhận mới dùng làm giá của món.
 
+## `priceHistory/{productKey}` – `PriceHistoryProduct` · ghi bởi `DemoPriceHistoryService` (admin, dữ liệu mẫu), `PriceHistoryContributionService` (người dùng, G7) · **dữ liệu dùng chung, ẩn danh**
+
+"Biểu đồ giá tham khảo" (nguyên tắc N1–N8 trong [`decisions.md`](decisions.md) – Biểu đồ giá tham khảo). Mọi người đã đăng nhập đều đọc được, nên document **không chứa uid, tên người dùng hay link**. Id `productKey` = `shopee:<shopId>:<itemId>`.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `title` | string | ✓ | 1–120 ký tự; không đổi sau khi tạo |
+| `shopId`, `itemId` | string | ✓ | `productKey == 'shopee:' + shopId + ':' + itemId` |
+| `shopName` | string | ✓ (mẫu) | 1–60 ký tự; sản phẩm thật được tạo khi có thể chưa biết shop, người sau điền khi còn trống |
+| `groupId` | string? | | ≤ 128; chỉ admin đặt (nhóm mẫu); sản phẩm thật bỏ qua trường này |
+| `isDemo` | bool | ✓ | `true`: dữ liệu mẫu, chỉ admin ghi/xoá; `false`: sản phẩm thật, không ai xoá |
+| `createdAt` | timestamp | ✓ | sản phẩm thật: server time lúc tạo |
+| `productCode` | string? | | `[a-z0-9]+(-[a-z0-9]+)*`, ≤ 60 (vd `sonora-air-2`); luôn đi cùng `productCodeSource`. Người dùng chỉ đặt khi đang trống, nguồn `ai`; chỉ admin sửa (nguồn `admin`) |
+| `productCodeSource` | string? | | `ai` · `demo` · `admin` |
+| `variantCodes` | map<string, string> | | khoá `none` hoặc mã phân loại (chữ số) → mã phân loại (`[a-z0-9-]`, ≤ 30, vd `{"123": "den"}`); ≤ 100 khoá. Người dùng chỉ thêm khoá mới, không sửa/xoá khoá cũ |
+
+Không có trường nào khác (`keys().hasOnly`). Mã món do AI tính từ tên (tính năng AI 9, `AiProductIdentityService`, chỉ khi AI chắc chắn) hoặc đặt sẵn cho dữ liệu mẫu (nguồn `demo`). Sản phẩm thật được tạo cùng batch với báo cáo đầu tiên (`PriceHistoryContributionService.contribute`).
+
+### `priceHistory/{productKey}/reports/{reportId}` – `PriceHistoryReport`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| *(id)* | string | ✓ | người thật: sha256(`uid|productKey|modelKey|yyyyMMdd`), ngày Việt Nam (UTC+7) của `observedAt`; rules tự tính lại → mỗi người một báo cáo cho mỗi phân loại mỗi ngày, uid không được lưu. Mẫu: `demo<n>_<modelKey>_<yyyyMMdd>` |
+| `amountVnd` | int | ✓ | 1 … 999.999.999 (khoảng giá: cận dưới) |
+| `priceType` | string | ✓ | `single` · `range` · `flash` · `sale` · `afterVoucher` (lưu nhưng không bao giờ tính vào giá thấp nhất, trung vị hay so sánh – N8) |
+| `modelKey` | string | ✓ | `none` hoặc mã phân loại (chữ số) |
+| `observedAt` | timestamp | ✓ | người thật: trong 3 ngày qua, không quá 5 phút ở tương lai |
+| `source` | string | ✓ | người thật: `manual` · `extensionPage`; admin: `demo` |
+| `shopName` | string? | | ≤ 60 |
+| `productRating`, `shopRating` | number? | | 0 < x ≤ 5 |
+| `productRatingCount` | int? | | ≥ 0 |
+
+Không có trường nào khác. Báo cáo của người thật không được ghi vào sản phẩm mẫu (rules kiểm tra `getAfter(...).isDemo == false`).
+
+App gửi (G7, `SharedPriceViewModel.reportHistory` khi mở Chi tiết món): chỉ tài khoản không ẩn danh, khi bật "Góp giá của tôi", món có `productKey` và không phải món mẫu; giá đã xác nhận, nguồn `manual` / `extensionPage`, trong 3 ngày; mỗi ngày một báo cáo, ưu tiên giá niêm yết hơn giá sau voucher; mỗi giá gửi một lần.
+
+Cách đọc và tổng hợp (trên máy, không Cloud Functions): đọc tối đa 90 ngày, ≤ 1.000 báo cáo mỗi sản phẩm (`PriceHistoryService.fetchReports`); gom theo ngày Việt Nam (`aggregateDaily`), bỏ báo cáo lệch > 30% so với trung vị ngày, ngày cần ≥ 2 báo cáo giá niêm yết mới có điểm; mỗi shop giữ giá thường gần nhất tối đa 7 ngày, giá sale/flash chỉ tính đúng ngày (`fillForward`, `computeBand`).
+
+## `productGroups/{groupId}` – `ProductGroup` · ghi bởi `DemoPriceHistoryService` · **chỉ dữ liệu mẫu**
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `name` | string | ✓ | 1–120 ký tự |
+| `productKeys` | string[] | ✓ | ≤ 50 phần tử, theo thứ tự hiển thị |
+| `isDemo` | bool | ✓ | phải `true` |
+
+Không có trường nào khác; chỉ admin ghi/xoá. Từ G8, sản phẩm thật được ghép "cùng món" bằng `productCode` + mã phân loại, không dùng nhóm.
+
+## `users/{uid}/hiddenMatches/{productKey}` – ghi bởi `HiddenMatchService`
+
+"Không phải món này" trên thẻ "Cùng món ở shop khác" (G8c). Id = `productKey` của shop bị ẩn (`shopee:<số>:<số>`); chỉ có một trường `hiddenAt` (timestamp). Chỉ chủ tài khoản đọc, ghi, xoá; "Hoàn tác" xoá document.
+
 ## `users/{uid}/inbox/{id}` – tin nhắn riêng · ghi bởi web admin
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
@@ -253,6 +310,8 @@ Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt 
 
 Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems` theo `createdAt`, `budgetGroups` theo `order`) chỉ dùng index một trường; ba index trên được khai báo sẵn cho truy vấn lọc theo trạng thái / món / nhóm.
 
+"Biểu đồ giá tham khảo" không cần index ghép: `priceHistory` lọc `isDemo ==` hoặc `productCode == … && isDemo == …` (chỉ so bằng, Firestore tự ghép index một trường); `reports` lọc `observedAt >=` kèm `orderBy('observedAt')` (một trường) hoặc `source ==`; `decisions` lọc `itemId ==` khi gỡ món mẫu. Không dùng collection group cho `reports`.
+
 ## Quy tắc nghiệp vụ
 
 1. **Món mong muốn ≠ khoản mua.** `wishlistItems` là món đang cân nhắc; chỉ `purchases` được tính vào "đã chi" và ngân sách.
@@ -266,6 +325,7 @@ Truy vấn hiện có trong code (`purchases` theo `occurredAt`, `wishlistItems`
 7. **Lịch sử chỉ thêm:** `priceSnapshots` và `decisions` không sửa được (rules `update: false`).
 8. **Mất mạng (E04):** Firestore bật bộ nhớ đệm trên máy (`firebase_setup.dart`). Mọi lệnh ghi qua `awaitWrite` (`service_guard.dart`): server chưa xác nhận sau 5 giây thì coi như đã lưu trên máy, đếm trong `PendingWrites` và hiện dải "Đang chờ mạng" trên mọi màn; Firestore tự gửi khi có mạng. Đọc trước khi ghi (`buyFromWishlist`, `delete`) chuyển sang bộ nhớ đệm khi không có mạng. Đổi tài khoản thì `PendingWrites.reset()` – hàng chờ của tài khoản cũ chỉ gửi khi tài khoản đó đăng nhập lại.
 9. **Món bỏ qua không có giá:** không cộng thành `0 ₫`. Màn Chiêm nghiệm, câu mẫu AI và PDF ghi "chưa ghi giá" hoặc "tổng giá đã ghi … (N món chưa ghi giá)"; dữ liệu gửi AI bỏ trường tổng khi không món nào có giá.
+10. **Món mẫu (`isDemo`, G2c).** Chỉ admin thêm từ Firebase Demo Area ("Thêm món mẫu vào danh sách của tôi": 3 sản phẩm mẫu có mã, mỗi món có ≥ 2 shop khác cùng phân loại có giá trong 7 ngày, và 1 sản phẩm không mã). Món mẫu có nhãn "Dữ liệu mẫu"; không tính vào số món đang cân nhắc ở Trang chủ, Góc nhìn và báo cáo tháng (`WishlistViewModel.realItems`); không gửi giá lên `sharedPrices` hay `priceHistory`; "Cùng món ở shop khác" chỉ ghép với sản phẩm mẫu. "Gỡ món mẫu" (và "Xoá dữ liệu giá mẫu") chỉ xoá món `isDemo` của chính admin, kèm `priceSnapshots` và `decisions` của món đó.
 
 ## Khác biệt giữa các nền tảng
 

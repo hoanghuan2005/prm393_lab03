@@ -20,6 +20,19 @@ abstract interface class PriceHistoryContributionService {
     String? shopName,
     required PriceHistoryReport report,
   });
+
+  /// priceHistory/{productKey}; null when it does not exist
+  Future<PriceHistoryProduct?> fetchProduct(String productKey);
+
+  /// G8: codes read by AI (source 'ai'). firestore.rules only let a user set
+  /// [productCode] while the product has none, and add [variantCode] under a
+  /// [modelKey] that is not there yet.
+  Future<void> addCodes({
+    required String productKey,
+    String? productCode,
+    String? modelKey,
+    String? variantCode,
+  });
 }
 
 class FirestorePriceHistoryContributionService
@@ -72,5 +85,33 @@ class FirestorePriceHistoryContributionService
       report.toMap(),
     );
     await awaitWrite(batch.commit());
+  });
+
+  @override
+  Future<PriceHistoryProduct?> fetchProduct(String productKey) =>
+      guard(() async {
+        final doc = await _paths.priceHistoryProduct(productKey).get();
+        return doc.exists ? PriceHistoryProduct.fromFirestore(doc) : null;
+      });
+
+  @override
+  Future<void> addCodes({
+    required String productKey,
+    String? productCode,
+    String? modelKey,
+    String? variantCode,
+  }) => guard(() async {
+    final variant = modelKey != null && variantCode != null;
+    if (productCode == null && !variant) return;
+    await awaitWrite(
+      _paths.priceHistoryProduct(productKey).update({
+        if (productCode != null) ...{
+          'productCode': productCode,
+          'productCodeSource': ProductCodeSource.ai.key,
+        },
+        // One map key only: the other variants stay as they are
+        if (variant) FieldPath(['variantCodes', modelKey]): variantCode,
+      }),
+    );
   });
 }

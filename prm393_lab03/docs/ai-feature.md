@@ -46,6 +46,7 @@ Code: `lib/services/ai_suggestion_service.dart`, `lib/viewmodels/item_suggestion
 | 6 | Hỏi trước khi mua (tóm tắt + câu hỏi gợi suy ngẫm) | `pre_purchase` | `generateFields` | chip AI / Câu mẫu | Quan sát do code viết |
 | 7 | Tìm bằng ảnh | `photo_search` | `generateFromImage` | "AI · độ chắc", "Chọn lại tên nếu AI đoán chưa đúng" | Người dùng tự gõ tên |
 | 8 | Ước lượng giá trên web | `price_search` | `searchWeb` (Google Search grounding, có nguồn) | "AI ước lượng…" + liên kết nguồn | Không hiện giá |
+| 9 | Mã món (G8): hãng, model, dung lượng và phân loại từ tên sản phẩm Shopee, để nhận ra cùng món ở nhiều shop | `product_identity` | `generateFields` (`brand`, `model`, `spec`, `confident`, `vN_color`/`vN_size`/`vN_capacity`) | Không hiện trên UI; chỉ ghi `productCode` (nguồn `ai`) và `variantCodes` vào `priceHistory` | Không chắc hoặc lỗi thì không ghi gì, không ghép |
 
 Tất cả đều đi qua một client duy nhất: `FirebaseAiService` (`lib/services/ai_service.dart`), được bọc bởi `InstrumentedAiService` (`lib/services/instrumented_ai_service.dart`). Lớp bọc này nhận ra tính năng từ system instruction, áp prompt từ Remote Config, đặt thời gian chờ và ghi analytics.
 

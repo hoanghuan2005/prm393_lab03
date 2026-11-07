@@ -63,6 +63,9 @@ abstract final class AiFeatures {
   static const prePurchase = 'pre_purchase';
   static const photoSearch = 'photo_search';
   static const priceSearch = 'price_search';
+
+  /// G8: brand / model / variant read from a Shopee title (productCode)
+  static const productIdentity = 'product_identity';
   static const other = 'other';
 
   static const all = [
@@ -74,6 +77,7 @@ abstract final class AiFeatures {
     prePurchase,
     photoSearch,
     priceSearch,
+    productIdentity,
   ];
 }
 

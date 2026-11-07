@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,12 +32,27 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
   PriceInsights? _insights(BuildContext context) =>
       context.watch<DecisionSupportViewModel?>()?.priceInsightsFor(widget.item);
 
+  /// "Mã món" (G8) is asked once per opening of Chi tiết món
+  bool _identityRequested = false;
+
   void _requestLoad(SharedPriceViewModel vm, PriceInsights? insights) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       vm.load(widget.item, mine: insights?.latest);
       // "Giá tham khảo" (G7): the user's fresh prices, each sent once
-      if (insights != null) vm.reportHistory(widget.item, insights.history);
+      final reported = insights == null
+          ? null
+          : vm.reportHistory(widget.item, insights.history);
+      // After the report, which may have created the product; an item without any
+      // price has no history to wait for
+      if (_identityRequested) return;
+      if (reported == null && widget.item.hasPrice) return;
+      _identityRequested = true;
+      unawaited(
+        (reported ?? Future<void>.value()).then(
+          (_) => vm.identifyProduct(widget.item),
+        ),
+      );
     });
   }
 

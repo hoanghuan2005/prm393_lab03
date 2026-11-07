@@ -7,6 +7,7 @@ import 'ai_insight_service.dart';
 import 'ai_photo_search_service.dart';
 import 'ai_pre_purchase_service.dart';
 import 'ai_price_search_service.dart';
+import 'ai_product_identity_service.dart';
 import 'ai_service.dart';
 import 'ai_suggestion_service.dart';
 import 'analytics_events.dart';
@@ -49,6 +50,7 @@ class InstrumentedAiService
     AiPrePurchaseService.systemInstruction: AiFeatures.prePurchase,
     AiPhotoSearchService.systemInstruction: AiFeatures.photoSearch,
     AiPriceSearchService.systemInstruction: AiFeatures.priceSearch,
+    AiProductIdentityService.systemInstruction: AiFeatures.productIdentity,
   };
 
   static String featureOf(String instruction, {AiChoiceSchema? schema}) {

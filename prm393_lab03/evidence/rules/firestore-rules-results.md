@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-07T02:18:28.106Z.
-Tổng: 267 ca · Qua: 267 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-07T02:36:33.876Z.
+Tổng: 268 ca · Qua: 268 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 
 | ID | Collection | Role | Operation | Expected | Result |
@@ -181,95 +181,96 @@ Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ 
 | R-173 | priceHistory/reports | staff | delete a demo report | Denied | Pass |
 | R-174 | productGroups | staff | create a demo group | Denied | Pass |
 | R-175 | priceHistory | admin | create a demo product | Allowed | Pass |
-| R-176 | priceHistory | admin | delete a demo product | Allowed | Pass |
-| R-177 | priceHistory | admin | create with a 121-character title | Denied | Pass |
-| R-178 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
-| R-179 | priceHistory | admin | create a non-demo product with a device createdAt | Denied | Pass |
-| R-180 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
-| R-181 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
-| R-182 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
-| R-183 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
-| R-184 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
-| R-185 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
-| R-186 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
-| R-187 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
-| R-188 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
-| R-189 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
-| R-190 | priceHistory/reports | admin | source 'manual' under a sample id | Denied | Pass |
-| R-191 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
-| R-192 | priceHistory/reports | admin | add a uid field | Denied | Pass |
-| R-193 | productGroups | admin | create a demo group | Allowed | Pass |
-| R-194 | productGroups | admin | delete a demo group | Allowed | Pass |
-| R-195 | productGroups | admin | create a non-demo group | Denied | Pass |
-| R-196 | priceHistory/reports | user | report own price (hashed id) | Allowed | Pass |
-| R-197 | priceHistory/reports | user | write under bob's id | Denied | Pass |
-| R-198 | priceHistory/reports | staff | report own price (hashed id) | Allowed | Pass |
-| R-199 | priceHistory/reports | staff | write under bob's id | Denied | Pass |
-| R-200 | priceHistory/reports | admin | report own price (hashed id) | Allowed | Pass |
-| R-201 | priceHistory/reports | admin | write under bob's id | Denied | Pass |
-| R-202 | priceHistory/reports | user | update own report of today | Allowed | Pass |
-| R-203 | priceHistory/reports | user | afterVoucher keeps its type | Allowed | Pass |
-| R-204 | priceHistory/reports | user | observed 2 days ago (id of that day) | Allowed | Pass |
-| R-205 | priceHistory/reports | user | observed 4 days ago | Denied | Pass |
-| R-206 | priceHistory/reports | user | id of another day | Denied | Pass |
-| R-207 | priceHistory/reports | user | source 'demo' under own id | Denied | Pass |
-| R-208 | priceHistory/reports | user | add a uid field | Denied | Pass |
-| R-209 | priceHistory/reports | user | delete bob's report | Denied | Pass |
-| R-210 | priceHistory/reports | user | real report into a sample product (isDemo) | Denied | Pass |
-| R-211 | priceHistory/reports | user | report for a product that does not exist | Denied | Pass |
-| R-212 | priceHistory/reports | user | new product + report in one batch | Allowed | Pass |
-| R-213 | priceHistory/reports | guest | report own price | Denied | Pass |
-| R-214 | priceHistory | user | create a real product | Allowed | Pass |
-| R-215 | priceHistory | user | create a real product without a shop name | Allowed | Pass |
-| R-216 | priceHistory | user | create a real product with a device createdAt | Denied | Pass |
-| R-217 | priceHistory | user | create a product marked as sample | Denied | Pass |
-| R-218 | priceHistory | user | change the title of a real product | Denied | Pass |
-| R-219 | priceHistory | user | change a shop name already set | Denied | Pass |
-| R-220 | priceHistory | user | move a real product to another group | Denied | Pass |
-| R-221 | priceHistory | user | change isDemo of a real product | Denied | Pass |
-| R-222 | priceHistory | user | fill an empty shop name | Allowed | Pass |
-| R-223 | priceHistory | user | fill an empty group | Denied | Pass |
-| R-224 | priceHistory | user | create a real product with a group | Denied | Pass |
-| R-225 | priceHistory | admin | fill an empty group of a real product | Allowed | Pass |
-| R-226 | priceHistory | admin | move a real product to another group | Allowed | Pass |
-| R-227 | priceHistory | admin | create a real product with a group | Allowed | Pass |
-| R-228 | priceHistory | user | turn a sample product into a real one | Denied | Pass |
-| R-229 | priceHistory | user | delete a real product | Denied | Pass |
-| R-230 | priceHistory | guest | create a real product | Denied | Pass |
-| R-231 | priceHistory | user | set productCode the first time (ai) | Allowed | Pass |
-| R-232 | priceHistory | user | set productCode with source 'admin' | Denied | Pass |
-| R-233 | priceHistory | user | set productCode without a source | Denied | Pass |
-| R-234 | priceHistory | user | change an existing productCode | Denied | Pass |
-| R-235 | priceHistory | user | delete an existing productCode | Denied | Pass |
-| R-236 | priceHistory | user | add a new variantCodes key | Allowed | Pass |
-| R-237 | priceHistory | user | change an existing variantCodes key | Denied | Pass |
-| R-238 | priceHistory | user | remove an existing variantCodes key | Denied | Pass |
-| R-239 | priceHistory | user | productCode 'K-Sound' (not lowercase) | Denied | Pass |
-| R-240 | priceHistory | user | productCode 'ksound--a3' (double dash) | Denied | Pass |
-| R-241 | priceHistory | user | productCode of 61 characters | Denied | Pass |
-| R-242 | priceHistory | user | variant code 'Đen' | Denied | Pass |
-| R-243 | priceHistory | user | variant code of 31 characters | Denied | Pass |
-| R-244 | priceHistory | user | variant key 'red' (not a modelKey) | Denied | Pass |
-| R-245 | priceHistory | user | create a real product with an ai code | Allowed | Pass |
-| R-246 | priceHistory | user | create a real product with an 'admin' code | Denied | Pass |
-| R-247 | priceHistory | staff | change an existing productCode | Denied | Pass |
-| R-248 | priceHistory | admin | change an existing productCode (source 'admin') | Allowed | Pass |
-| R-249 | priceHistory | admin | change a productCode with source 'ai' | Denied | Pass |
-| R-250 | priceHistory | admin | change an existing variantCodes key | Allowed | Pass |
-| R-251 | priceHistory | admin | change the title of a real product | Denied | Pass |
-| R-252 | hiddenMatches | user | hide a match in bob's list | Denied | Pass |
-| R-253 | hiddenMatches | user | un-hide own match | Allowed | Pass |
-| R-254 | hiddenMatches | user | hide with an extra field | Denied | Pass |
-| R-255 | hiddenMatches | user | hide under an id that is not a productKey | Denied | Pass |
-| R-256 | hiddenMatches | guest | read alice's hidden matches | Denied | Pass |
-| R-257 | priceHistory | signed out | read a product | Denied | Pass |
-| R-258 | priceHistory/reports | signed out | read reports | Denied | Pass |
-| R-259 | productGroups | signed out | read a group | Denied | Pass |
-| R-260 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
-| R-261 | extensionPairings | user | list pairings | Denied | Pass |
-| R-262 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
-| R-263 | extensionPairings | staff | list pairings | Denied | Pass |
-| R-264 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
-| R-265 | extensionPairings | admin | list pairings | Denied | Pass |
-| R-266 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
-| R-267 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |
+| R-176 | priceHistory | admin | create a demo product with codes | Allowed | Pass |
+| R-177 | priceHistory | admin | delete a demo product | Allowed | Pass |
+| R-178 | priceHistory | admin | create with a 121-character title | Denied | Pass |
+| R-179 | priceHistory | admin | create with a 61-character shop name | Denied | Pass |
+| R-180 | priceHistory | admin | create a non-demo product with a device createdAt | Denied | Pass |
+| R-181 | priceHistory | admin | shopId/itemId not matching the key | Denied | Pass |
+| R-182 | priceHistory/reports | admin | create a demo report | Allowed | Pass |
+| R-183 | priceHistory/reports | admin | create priceType 'sale' | Allowed | Pass |
+| R-184 | priceHistory/reports | admin | create priceType 'afterVoucher' | Allowed | Pass |
+| R-185 | priceHistory/reports | admin | delete a demo report | Allowed | Pass |
+| R-186 | priceHistory/reports | admin | productRating 6 | Denied | Pass |
+| R-187 | priceHistory/reports | admin | shopRating 0 | Denied | Pass |
+| R-188 | priceHistory/reports | admin | productRatingCount -1 | Denied | Pass |
+| R-189 | priceHistory/reports | admin | unknown priceType 'coupon' | Denied | Pass |
+| R-190 | priceHistory/reports | admin | amountVnd 0 | Denied | Pass |
+| R-191 | priceHistory/reports | admin | source 'manual' under a sample id | Denied | Pass |
+| R-192 | priceHistory/reports | admin | id not matching modelKey | Denied | Pass |
+| R-193 | priceHistory/reports | admin | add a uid field | Denied | Pass |
+| R-194 | productGroups | admin | create a demo group | Allowed | Pass |
+| R-195 | productGroups | admin | delete a demo group | Allowed | Pass |
+| R-196 | productGroups | admin | create a non-demo group | Denied | Pass |
+| R-197 | priceHistory/reports | user | report own price (hashed id) | Allowed | Pass |
+| R-198 | priceHistory/reports | user | write under bob's id | Denied | Pass |
+| R-199 | priceHistory/reports | staff | report own price (hashed id) | Allowed | Pass |
+| R-200 | priceHistory/reports | staff | write under bob's id | Denied | Pass |
+| R-201 | priceHistory/reports | admin | report own price (hashed id) | Allowed | Pass |
+| R-202 | priceHistory/reports | admin | write under bob's id | Denied | Pass |
+| R-203 | priceHistory/reports | user | update own report of today | Allowed | Pass |
+| R-204 | priceHistory/reports | user | afterVoucher keeps its type | Allowed | Pass |
+| R-205 | priceHistory/reports | user | observed 2 days ago (id of that day) | Allowed | Pass |
+| R-206 | priceHistory/reports | user | observed 4 days ago | Denied | Pass |
+| R-207 | priceHistory/reports | user | id of another day | Denied | Pass |
+| R-208 | priceHistory/reports | user | source 'demo' under own id | Denied | Pass |
+| R-209 | priceHistory/reports | user | add a uid field | Denied | Pass |
+| R-210 | priceHistory/reports | user | delete bob's report | Denied | Pass |
+| R-211 | priceHistory/reports | user | real report into a sample product (isDemo) | Denied | Pass |
+| R-212 | priceHistory/reports | user | report for a product that does not exist | Denied | Pass |
+| R-213 | priceHistory/reports | user | new product + report in one batch | Allowed | Pass |
+| R-214 | priceHistory/reports | guest | report own price | Denied | Pass |
+| R-215 | priceHistory | user | create a real product | Allowed | Pass |
+| R-216 | priceHistory | user | create a real product without a shop name | Allowed | Pass |
+| R-217 | priceHistory | user | create a real product with a device createdAt | Denied | Pass |
+| R-218 | priceHistory | user | create a product marked as sample | Denied | Pass |
+| R-219 | priceHistory | user | change the title of a real product | Denied | Pass |
+| R-220 | priceHistory | user | change a shop name already set | Denied | Pass |
+| R-221 | priceHistory | user | move a real product to another group | Denied | Pass |
+| R-222 | priceHistory | user | change isDemo of a real product | Denied | Pass |
+| R-223 | priceHistory | user | fill an empty shop name | Allowed | Pass |
+| R-224 | priceHistory | user | fill an empty group | Denied | Pass |
+| R-225 | priceHistory | user | create a real product with a group | Denied | Pass |
+| R-226 | priceHistory | admin | fill an empty group of a real product | Allowed | Pass |
+| R-227 | priceHistory | admin | move a real product to another group | Allowed | Pass |
+| R-228 | priceHistory | admin | create a real product with a group | Allowed | Pass |
+| R-229 | priceHistory | user | turn a sample product into a real one | Denied | Pass |
+| R-230 | priceHistory | user | delete a real product | Denied | Pass |
+| R-231 | priceHistory | guest | create a real product | Denied | Pass |
+| R-232 | priceHistory | user | set productCode the first time (ai) | Allowed | Pass |
+| R-233 | priceHistory | user | set productCode with source 'admin' | Denied | Pass |
+| R-234 | priceHistory | user | set productCode without a source | Denied | Pass |
+| R-235 | priceHistory | user | change an existing productCode | Denied | Pass |
+| R-236 | priceHistory | user | delete an existing productCode | Denied | Pass |
+| R-237 | priceHistory | user | add a new variantCodes key | Allowed | Pass |
+| R-238 | priceHistory | user | change an existing variantCodes key | Denied | Pass |
+| R-239 | priceHistory | user | remove an existing variantCodes key | Denied | Pass |
+| R-240 | priceHistory | user | productCode 'K-Sound' (not lowercase) | Denied | Pass |
+| R-241 | priceHistory | user | productCode 'ksound--a3' (double dash) | Denied | Pass |
+| R-242 | priceHistory | user | productCode of 61 characters | Denied | Pass |
+| R-243 | priceHistory | user | variant code 'Đen' | Denied | Pass |
+| R-244 | priceHistory | user | variant code of 31 characters | Denied | Pass |
+| R-245 | priceHistory | user | variant key 'red' (not a modelKey) | Denied | Pass |
+| R-246 | priceHistory | user | create a real product with an ai code | Allowed | Pass |
+| R-247 | priceHistory | user | create a real product with an 'admin' code | Denied | Pass |
+| R-248 | priceHistory | staff | change an existing productCode | Denied | Pass |
+| R-249 | priceHistory | admin | change an existing productCode (source 'admin') | Allowed | Pass |
+| R-250 | priceHistory | admin | change a productCode with source 'ai' | Denied | Pass |
+| R-251 | priceHistory | admin | change an existing variantCodes key | Allowed | Pass |
+| R-252 | priceHistory | admin | change the title of a real product | Denied | Pass |
+| R-253 | hiddenMatches | user | hide a match in bob's list | Denied | Pass |
+| R-254 | hiddenMatches | user | un-hide own match | Allowed | Pass |
+| R-255 | hiddenMatches | user | hide with an extra field | Denied | Pass |
+| R-256 | hiddenMatches | user | hide under an id that is not a productKey | Denied | Pass |
+| R-257 | hiddenMatches | guest | read alice's hidden matches | Denied | Pass |
+| R-258 | priceHistory | signed out | read a product | Denied | Pass |
+| R-259 | priceHistory/reports | signed out | read reports | Denied | Pass |
+| R-260 | productGroups | signed out | read a group | Denied | Pass |
+| R-261 | extensionPairings | user | open a pairing by its id | Allowed | Pass |
+| R-262 | extensionPairings | user | list pairings | Denied | Pass |
+| R-263 | extensionPairings | staff | open a pairing by its id | Allowed | Pass |
+| R-264 | extensionPairings | staff | list pairings | Denied | Pass |
+| R-265 | extensionPairings | admin | open a pairing by its id | Allowed | Pass |
+| R-266 | extensionPairings | admin | list pairings | Denied | Pass |
+| R-267 | extensionPairings | user | approve the pairing for self | Allowed | Pass |
+| R-268 | (unmatched path) | admin | write admin_broadcasts (removed, unused) | Denied | Pass |

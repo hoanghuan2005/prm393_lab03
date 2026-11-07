@@ -17,7 +17,7 @@ import 'package:provider/provider.dart';
 final _now = DateTime.utc(2026, 11, 6, 5);
 
 final _reportPath = RegExp(
-  r'^priceHistory/(shopee:(\d+):(\d+))/reports/(demo[0-9]{1,6}_none_[0-9]{8})$',
+  r'^priceHistory/(shopee:(\d+):(\d+))/reports/(demo[0-9]{1,6}_(?:none|[0-9]{1,20})_[0-9]{8})$',
 );
 
 class _Report {
@@ -63,17 +63,21 @@ void main() {
       expect(again.map((d) => d.data), docs.map((d) => d.data));
     });
 
-    test('8 groups of 3–4 shops, 28 products, under 5,000 writes', () {
-      expect(groups, hasLength(8));
-      expect(products, hasLength(28));
-      for (final g in groups) {
-        final keys = g.data['productKeys'] as List;
-        expect(keys.length, inInclusiveRange(3, 4));
-        expect(g.data['isDemo'], isTrue);
-      }
-      expect(docs.length, lessThanOrEqualTo(5000));
-      expect(reports.length, greaterThan(3500));
-    });
+    test(
+      '8 groups of 3–4 shops (28 products) + 3 others, under 5,000 writes',
+      () {
+        expect(groups, hasLength(8));
+        expect(products, hasLength(31));
+        expect(products.where((p) => p.data['groupId'] != null), hasLength(28));
+        for (final g in groups) {
+          final keys = g.data['productKeys'] as List;
+          expect(keys.length, inInclusiveRange(3, 4));
+          expect(g.data['isDemo'], isTrue);
+        }
+        expect(docs.length, lessThanOrEqualTo(5000));
+        expect(reports.length, greaterThan(3500));
+      },
+    );
 
     test('products fit the rules and use ids 9000000000–9000999999', () {
       for (final p in products) {
@@ -88,7 +92,10 @@ void main() {
           );
         }
         expect(p.path, 'priceHistory/shopee:${d['shopId']}:${d['itemId']}');
-        expect(d['groupId'], startsWith('demo-group-'));
+        // The trap and the 2 vague products are in no group
+        if (d['groupId'] != null) {
+          expect(d['groupId'], startsWith('demo-group-'));
+        }
       }
       // Every shop names the same item a little differently
       for (final g in groups) {
@@ -153,7 +160,9 @@ void main() {
         );
       }
       expect(perDay.values.every((n) => n >= 1 && n <= 6), isTrue);
-      final emptyShare = 1 - perDay.length / (28 * 90);
+      const productDays =
+          28 * DemoPriceHistoryData.days + 3 * DemoPriceHistoryData.extraDays;
+      final emptyShare = 1 - perDay.length / productDays;
       expect(emptyShare, inInclusiveRange(0.33, 0.47));
     });
 
@@ -288,6 +297,124 @@ void main() {
           (r) => r.day == '20261020' && (r.type == 'sale' || r.type == 'flash'),
         ),
         isEmpty,
+      );
+    });
+
+    group('G8 product and variant codes (set here, no AI)', () {
+      final codePattern = RegExp(r'^[a-z0-9]+(-[a-z0-9]+)*$');
+      String keyOf(DemoDoc p) => p.path.split('/').last;
+      List<Map<String, dynamic>> membersOf(DemoDoc g) {
+        final keys = (g.data['productKeys'] as List).cast<String>();
+        return [
+          for (final p in products)
+            if (keys.contains(keyOf(p))) p.data,
+        ];
+      }
+
+      Map<String, String> variantsOf(Map<String, dynamic> product) =>
+          (product['variantCodes'] as Map?)?.cast<String, String>() ?? {};
+
+      test('a group shares one productCode (demo) under different titles', () {
+        final codes = <String>{};
+        for (final g in groups) {
+          final members = membersOf(g);
+          final groupCodes = {for (final m in members) m['productCode']};
+          expect(groupCodes, hasLength(1), reason: g.path);
+          final code = groupCodes.single as String;
+          expect(code, matches(codePattern));
+          expect(code.length, lessThanOrEqualTo(60));
+          expect(codes.add(code), isTrue, reason: 'one code per group');
+          for (final m in members) {
+            expect(m['productCodeSource'], 'demo');
+          }
+          // Each shop writes the title its own way
+          expect({
+            for (final m in members) m['title'],
+          }, hasLength(members.length));
+        }
+        expect(codes, contains('sonora-air-2'));
+        expect(codes, contains('ha-vy-spf50-50ml'));
+      });
+
+      test('1–2 variants per product, of the group\'s two, each sold by '
+          '2+ shops', () {
+        final modelKeys = <String>{};
+        for (final g in groups) {
+          final members = membersOf(g);
+          final perCode = <String, int>{};
+          for (final m in members) {
+            final variants = variantsOf(m);
+            expect(variants.length, inInclusiveRange(1, 2), reason: g.path);
+            for (final e in variants.entries) {
+              expect(e.key, matches(RegExp(r'^[0-9]{1,20}$')));
+              expect(modelKeys.add(e.key), isTrue, reason: 'unique modelKey');
+              expect(e.value, matches(codePattern));
+              expect(e.value.length, lessThanOrEqualTo(30));
+              perCode.update(e.value, (n) => n + 1, ifAbsent: () => 1);
+            }
+          }
+          expect(perCode, hasLength(2), reason: g.path);
+          expect(perCode.values.every((n) => n >= 2), isTrue, reason: g.path);
+        }
+      });
+
+      test('every report is for one of its product\'s variants', () {
+        final variantsByKey = {
+          for (final p in products) keyOf(p): variantsOf(p.data).keys.toSet(),
+        };
+        for (final r in reports) {
+          final variants = variantsByKey[r.productKey]!;
+          final modelKey = r.data['modelKey'] as String;
+          if (variants.isEmpty) {
+            expect(modelKey, DemoPriceHistoryData.modelKey);
+          } else {
+            expect(variants, contains(modelKey));
+          }
+          expect(r.id, startsWith('demo'));
+          expect(r.id, contains('_${modelKey}_'));
+        }
+      });
+
+      test(
+        'outside the groups: a "Pro" trap and 2 products without a code',
+        () {
+          final others = [
+            for (final p in products)
+              if (p.data['groupId'] == null) p.data,
+          ];
+          expect(others, hasLength(3));
+          final trap = others.singleWhere((p) => p['productCode'] != null);
+          expect(trap['productCode'], 'sonora-air-2-pro');
+          expect(trap['productCodeSource'], 'demo');
+          expect(variantsOf(trap), hasLength(2));
+          // Same brand and model name as group 1, but another item
+          final group1 = membersOf(groups.first).first['productCode'];
+          expect(group1, 'sonora-air-2');
+          expect(trap['productCode'], isNot(group1));
+
+          final vague = others.where((p) => p['productCode'] == null).toList();
+          expect(vague, hasLength(2));
+          for (final p in vague) {
+            expect(p.containsKey('productCodeSource'), isFalse);
+            expect(p.containsKey('variantCodes'), isFalse);
+          }
+          // Only the last 30 days of reports
+          final since = _now.subtract(
+            const Duration(days: DemoPriceHistoryData.extraDays + 1),
+          );
+          final extraKeys = {
+            for (final p in products)
+              if (p.data['groupId'] == null) keyOf(p),
+          };
+          final extraReports = reports.where(
+            (r) => extraKeys.contains(r.productKey),
+          );
+          expect(extraReports, isNotEmpty);
+          expect(
+            extraReports.every((r) => r.observedAt.isAfter(since)),
+            isTrue,
+          );
+        },
       );
     });
   });

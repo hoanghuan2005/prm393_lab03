@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/utils/price_history_ids.dart';
+import '../core/utils/product_code.dart';
 import '../models/price_history.dart';
 import 'firestore_paths.dart';
 import 'service_guard.dart';
@@ -128,9 +129,18 @@ typedef DemoDoc = ({String path, Map<String, dynamic> data});
 
 /// Generates the sample set. Pure and seeded: the same day gives the same data.
 /// All names (products, brands, shops) are made up.
+///
+/// G8: every product of a group shares a productCode (source 'demo', set here, no AI),
+/// under titles written differently by each shop; each product sells 1–2 variants of
+/// the group's two (one modelKey each). Outside the groups: a "trap" (same brand,
+/// model with "Pro": another productCode) and 2 products whose title is too vague for a
+/// code (productCode null). These 3 only have the last [extraDays] days of reports.
 abstract final class DemoPriceHistoryData {
   static const int randomSeed = 20261106;
   static const int days = 90;
+  static const int extraDays = 30;
+
+  /// Reports of a product without variants
   static const String modelKey = 'none';
 
   /// One report count is drawn from here on a day with reports (mean 3, max 6)
@@ -172,6 +182,144 @@ abstract final class DemoPriceHistoryData {
 
     final shopIds = <String, int>{};
     final shopRatings = <String, double>{};
+    final modelIds = <int>{};
+    String newModelKey() {
+      int id;
+      do {
+        id = 100000000 + rng.nextInt(900000000);
+      } while (!modelIds.add(id));
+      return '$id';
+    }
+
+    /// One product and its reports from [firstDay] on; returns its productKey
+    String addProduct({
+      required String title,
+      required String shopName,
+      required double basePriceVnd,
+      required double productRating,
+      bool fake = false,
+      String? groupId,
+      String? productCode,
+      List<String> variants = const [],
+      int firstDay = 0,
+    }) {
+      final shopId = shopIds.putIfAbsent(shopName, newId);
+      final shopRating = shopRatings.putIfAbsent(
+        shopName,
+        () => round1(4.0 + rng.nextDouble()),
+      );
+      final itemId = newId();
+      final productKey = 'shopee:$shopId:$itemId';
+      final modelKeys = [for (final _ in variants) newModelKey()];
+      docs.add((
+        path: 'priceHistory/$productKey',
+        data: PriceHistoryProduct(
+          productKey: productKey,
+          title: title,
+          shopId: '$shopId',
+          itemId: '$itemId',
+          shopName: shopName,
+          groupId: groupId,
+          isDemo: true,
+          createdAt: start.subtract(PriceHistoryIds.vietnamOffset),
+          productCode: productCode,
+          productCodeSource: productCode == null
+              ? null
+              : ProductCodeSource.demo,
+          variantCodes: {
+            for (var v = 0; v < variants.length; v++)
+              modelKeys[v]: buildVariantCode(variants[v])!,
+          },
+        ).toMap(),
+      ));
+
+      final base = vnd(basePriceVnd);
+      final fakeRaise = 1.2 + rng.nextDouble() * 0.1;
+      var ratingCount = 20 + rng.nextInt(800);
+
+      for (var i = firstDay; i < days; i++) {
+        ratingCount += rng.nextInt(6);
+        final date = dates[i];
+        // ±5% around the base price
+        var listPrice = base * (0.95 + rng.nextDouble() * 0.1);
+        // "Giảm giá ảo": the price goes up in the 5 days before a sale
+        final soonSale = [for (var k = 1; k <= 5; k++) sale[i + k]]
+            .contains(true);
+        if (fake && (soonSale || sale[i])) listPrice *= fakeRaise;
+        final discount = 0.10 + rng.nextDouble() * 0.20;
+        final dayPrice = sale[i] ? listPrice * (1 - discount) : listPrice;
+
+        if (rng.nextDouble() < 0.4) continue;
+        final count = _reportsPerDay[rng.nextInt(_reportsPerDay.length)];
+        final dayStart = date.subtract(PriceHistoryIds.vietnamOffset);
+        for (var n = 1; n <= count; n++) {
+          var type = sale[i]
+              ? (rng.nextDouble() < 0.3
+                    ? HistoryPriceType.flash
+                    : HistoryPriceType.sale)
+              : HistoryPriceType.single;
+          var amount = dayPrice * (0.99 + rng.nextDouble() * 0.02);
+          final roll = rng.nextDouble();
+          if (roll < 0.05) {
+            // After a voucher: 5–15% under the day's price
+            type = HistoryPriceType.afterVoucher;
+            amount = dayPrice * (0.85 + rng.nextDouble() * 0.10);
+          } else if (roll < 0.08) {
+            type = HistoryPriceType.range;
+            amount = dayPrice * (0.96 + rng.nextDouble() * 0.04);
+          } else if (roll < 0.13) {
+            // Outlier: more than 30% away from the median
+            type = HistoryPriceType.single;
+            amount =
+                dayPrice *
+                (rng.nextBool()
+                    ? 0.55 + rng.nextDouble() * 0.1
+                    : 1.4 + rng.nextDouble() * 0.15);
+          }
+
+          // Between 08:00 and 22:00, and never later than now
+          var observedAt = dayStart.add(
+            Duration(minutes: 8 * 60 + rng.nextInt(14 * 60)),
+          );
+          if (observedAt.isAfter(now)) {
+            final sinceMidnight = now.difference(dayStart).inMinutes;
+            observedAt = dayStart.add(
+              Duration(minutes: rng.nextInt(max(1, sinceMidnight))),
+            );
+          }
+
+          // Each report is for one of the variants the shop sells
+          final model = modelKeys.isEmpty
+              ? modelKey
+              : modelKeys[rng.nextInt(modelKeys.length)];
+          final rated = rng.nextDouble() >= 0.15;
+          final id = PriceHistoryIds.demoReportId(n, model, _vnNoon(date));
+          docs.add((
+            path: 'priceHistory/$productKey/reports/$id',
+            data: PriceHistoryReport(
+              id: id,
+              amountVnd: vnd(amount),
+              priceType: type,
+              modelKey: model,
+              observedAt: observedAt,
+              source: HistoryReportSource.demo,
+              shopName: shopName,
+              productRating: rated
+                  ? round1(
+                      (productRating + rng.nextDouble() * 0.2 - 0.1).clamp(
+                        1.0,
+                        5.0,
+                      ),
+                    )
+                  : null,
+              productRatingCount: rated ? ratingCount + n : null,
+              shopRating: rated ? shopRating : null,
+            ).toMap(),
+          ));
+        }
+      }
+      return productKey;
+    }
 
     for (var g = 0; g < _groups.length; g++) {
       final group = _groups[g];
@@ -193,113 +341,22 @@ abstract final class DemoPriceHistoryData {
         }
       }
 
+      final code = buildProductCode(group.brand, group.model, group.spec);
       final keys = <String>[];
       for (var p = 0; p < group.listings.length; p++) {
         final (title, shopName) = group.listings[p];
-        final shopId = shopIds.putIfAbsent(shopName, newId);
-        final shopRating = shopRatings.putIfAbsent(
-          shopName,
-          () => round1(4.0 + rng.nextDouble()),
-        );
-        final itemId = newId();
-        final productKey = 'shopee:$shopId:$itemId';
-        keys.add(productKey);
-        docs.add((
-          path: 'priceHistory/$productKey',
-          data: PriceHistoryProduct(
-            productKey: productKey,
+        keys.add(
+          addProduct(
             title: title,
-            shopId: '$shopId',
-            itemId: '$itemId',
             shopName: shopName,
+            basePriceVnd: group.basePriceVnd * factors[p],
+            productRating: ratings[p],
+            fake: _fakeDiscounts.contains((g, p)),
             groupId: groupId,
-            isDemo: true,
-            createdAt: start.subtract(PriceHistoryIds.vietnamOffset),
-          ).toMap(),
-        ));
-
-        final base = vnd(group.basePriceVnd * factors[p]);
-        final fake = _fakeDiscounts.contains((g, p));
-        final fakeRaise = 1.2 + rng.nextDouble() * 0.1;
-        var ratingCount = 20 + rng.nextInt(800);
-
-        for (var i = 0; i < days; i++) {
-          ratingCount += rng.nextInt(6);
-          final date = dates[i];
-          // ±5% around the base price
-          var listPrice = base * (0.95 + rng.nextDouble() * 0.1);
-          // "Giảm giá ảo": the price goes up in the 5 days before a sale
-          final soonSale = [for (var k = 1; k <= 5; k++) sale[i + k]]
-              .contains(true);
-          if (fake && (soonSale || sale[i])) listPrice *= fakeRaise;
-          final discount = 0.10 + rng.nextDouble() * 0.20;
-          final dayPrice = sale[i] ? listPrice * (1 - discount) : listPrice;
-
-          if (rng.nextDouble() < 0.4) continue;
-          final count = _reportsPerDay[rng.nextInt(_reportsPerDay.length)];
-          final dayStart = date.subtract(PriceHistoryIds.vietnamOffset);
-          for (var n = 1; n <= count; n++) {
-            var type = sale[i]
-                ? (rng.nextDouble() < 0.3
-                      ? HistoryPriceType.flash
-                      : HistoryPriceType.sale)
-                : HistoryPriceType.single;
-            var amount = dayPrice * (0.99 + rng.nextDouble() * 0.02);
-            final roll = rng.nextDouble();
-            if (roll < 0.05) {
-              // After a voucher: 5–15% under the day's price
-              type = HistoryPriceType.afterVoucher;
-              amount = dayPrice * (0.85 + rng.nextDouble() * 0.10);
-            } else if (roll < 0.08) {
-              type = HistoryPriceType.range;
-              amount = dayPrice * (0.96 + rng.nextDouble() * 0.04);
-            } else if (roll < 0.13) {
-              // Outlier: more than 30% away from the median
-              type = HistoryPriceType.single;
-              amount =
-                  dayPrice *
-                  (rng.nextBool()
-                      ? 0.55 + rng.nextDouble() * 0.1
-                      : 1.4 + rng.nextDouble() * 0.15);
-            }
-
-            // Between 08:00 and 22:00, and never later than now
-            var observedAt = dayStart.add(
-              Duration(minutes: 8 * 60 + rng.nextInt(14 * 60)),
-            );
-            if (observedAt.isAfter(now)) {
-              final sinceMidnight = now.difference(dayStart).inMinutes;
-              observedAt = dayStart.add(
-                Duration(minutes: rng.nextInt(max(1, sinceMidnight))),
-              );
-            }
-
-            final rated = rng.nextDouble() >= 0.15;
-            final id = PriceHistoryIds.demoReportId(n, modelKey, _vnNoon(date));
-            docs.add((
-              path: 'priceHistory/$productKey/reports/$id',
-              data: PriceHistoryReport(
-                id: id,
-                amountVnd: vnd(amount),
-                priceType: type,
-                modelKey: modelKey,
-                observedAt: observedAt,
-                source: HistoryReportSource.demo,
-                shopName: shopName,
-                productRating: rated
-                    ? round1(
-                        (ratings[p] + rng.nextDouble() * 0.2 - 0.1).clamp(
-                          1.0,
-                          5.0,
-                        ),
-                      )
-                    : null,
-                productRatingCount: rated ? ratingCount + n : null,
-                shopRating: rated ? shopRating : null,
-              ).toMap(),
-            ));
-          }
-        }
+            productCode: code,
+            variants: _variantsOf(group.variants, p),
+          ),
+        );
       }
       docs.add((
         path: 'productGroups/$groupId',
@@ -311,8 +368,31 @@ abstract final class DemoPriceHistoryData {
         ).toMap(),
       ));
     }
+
+    for (final extra in _extras) {
+      addProduct(
+        title: extra.title,
+        shopName: extra.shopName,
+        basePriceVnd: extra.basePriceVnd.toDouble(),
+        productRating: round1(3.6 + rng.nextDouble() * 1.4),
+        productCode: extra.brand == null
+            ? null
+            : buildProductCode(extra.brand, extra.model),
+        variants: extra.variants,
+        firstDay: days - extraDays,
+      );
+    }
     return docs;
   }
+
+  /// Listing [p] of a group sells both variants, only the first or only the second,
+  /// so each variant is sold by at least 2 shops
+  static List<String> _variantsOf(List<String> variants, int p) =>
+      switch (p % 4) {
+        1 => [variants.first],
+        3 => [variants.last],
+        _ => variants,
+      };
 
   /// Noon of a Vietnamese date, as an instant (safe for [PriceHistoryIds.dayKey])
   static DateTime _vnNoon(DateTime vnDate) => vnDate
@@ -322,54 +402,152 @@ abstract final class DemoPriceHistoryData {
   /// (group, listing) of the 3 listings with a "giảm giá ảo"
   static const _fakeDiscounts = {(1, 2), (3, 0), (5, 1)};
 
+  /// Outside the groups (G8): the trap and the 2 products without a code
+  static const _extras = <_DemoExtra>[
+    _DemoExtra(
+      'Tai nghe Sonora Air 2 Pro chống ồn chủ động ANC',
+      'Góc Âm Thanh 79',
+      1150000,
+      brand: 'Sonora',
+      model: 'Air 2 Pro',
+      variants: ['Đen', 'Trắng'],
+    ),
+    _DemoExtra(
+      'Tai nghe bluetooth giá rẻ bass mạnh 🔥',
+      'Tiệm Số Hai Lúa',
+      120000,
+    ),
+    _DemoExtra(
+      'Áo thun nam nữ form rộng hot trend',
+      'Shop Mặc Đẹp Mỗi Ngày',
+      99000,
+    ),
+  ];
+
   static const _groups = <_DemoGroup>[
-    _DemoGroup('Tai nghe không dây Sonora Air 2', 'Công nghệ', 650000, [
-      ('Tai nghe bluetooth Sonora Air 2 chống ồn', 'Nhà Tai Nghe Mây'),
-      ('Sonora Air2 tai nghe không dây pin 30 giờ', 'Góc Âm Thanh 79'),
-      ('[Hàng chuẩn] Tai nghe Sonora Air 2 Bluetooth 5.3', 'Phụ Kiện Cầu Gỗ'),
-      (
-        'Tai nghe Sonora Air 2 kèm hộp sạc, bảo hành 12 tháng',
-        'Tiệm Số Hai Lúa',
-      ),
-    ]),
-    _DemoGroup('Đồng hồ thông minh Kairo Fit S', 'Công nghệ', 2400000, [
-      ('Đồng hồ thông minh Kairo Fit S đo nhịp tim', 'Góc Âm Thanh 79'),
-      ('Kairo FitS smartwatch màn AMOLED 1.4 inch', 'Đồ Điện Tử Bến Mây'),
-      ('Đồng hồ Kairo Fit S - chống nước, pin 10 ngày', 'Phụ Kiện Cầu Gỗ'),
-      ('[Bản mới] Kairo Fit S đồng hồ sức khoẻ', 'Kho Công Nghệ Lá Me'),
-    ]),
-    _DemoGroup('Áo thun cotton Mộc Lam basic', 'Thời trang', 159000, [
-      ('Áo thun cotton Mộc Lam basic form rộng', 'Tủ Đồ Nhà Mơ'),
-      ('Áo phông Mộc Lam trơn 100% cotton', 'Xưởng Áo Phố Gió'),
-      ('Mộc Lam áo thun basic unisex nhiều màu', 'Shop Mặc Đẹp Mỗi Ngày'),
-    ]),
-    _DemoGroup('Giày chạy bộ Bước Nhẹ Runner 3', 'Thời trang', 890000, [
-      ('Giày chạy bộ Bước Nhẹ Runner 3 đế êm', 'Kệ Giày Sông Xanh'),
-      ('Bước Nhẹ Runner3 giày thể thao nam nữ', 'Xưởng Áo Phố Gió'),
-      ('Giày Bước Nhẹ Runner 3 thoáng khí, nhẹ 230g', 'Góc Thể Thao Đồi Thông'),
-      ('[Chính hãng Bước Nhẹ] Runner 3 giày chạy', 'Nhà Giày Hẻm Nhỏ'),
-    ]),
-    _DemoGroup('Kem chống nắng Hạ Vy SPF50+ 50ml', 'Làm đẹp', 285000, [
-      ('Kem chống nắng Hạ Vy SPF50+ PA++++ 50ml', 'Tiệm Xinh Cô Út'),
-      ('Hạ Vy chống nắng nâng tông 50ml', 'Góc Làm Đẹp Hoa Sứ'),
-      ('Kem chống nắng Hạ Vy cho da dầu SPF 50+', 'Kệ Mỹ Phẩm Trăng Non'),
-    ]),
-    _DemoGroup('Son dưỡng có màu Mềm Môi', 'Làm đẹp', 129000, [
-      ('Son dưỡng có màu Mềm Môi 3.5g', 'Góc Làm Đẹp Hoa Sứ'),
-      ('Mềm Môi son dưỡng ẩm màu hồng đất', 'Tiệm Xinh Cô Út'),
-      ('Son dưỡng Mềm Môi không chì, lâu trôi', 'Kệ Mỹ Phẩm Trăng Non'),
-      ('[Combo 1] Son dưỡng Mềm Môi tông cam', 'Nhà Son Phố Lụa'),
-    ]),
-    _DemoGroup('Hạt điều rang muối Vườn Nắng 500g', 'Ăn uống', 189000, [
-      ('Hạt điều rang muối Vườn Nắng hũ 500g', 'Bếp Quê Nhà Ngoại'),
-      ('Điều rang muối Vườn Nắng loại 1, 500g', 'Kho Hạt Đồng Nội'),
-      ('Hạt điều Vườn Nắng còn vỏ lụa 500 gram', 'Gian Hàng Ăn Vặt Ba Lá'),
-    ]),
-    _DemoGroup('Bút gel Ngòi Êm 0.5mm hộp 12 cây', 'Học tập', 65000, [
-      ('Bút gel Ngòi Êm 0.5mm hộp 12 cây mực xanh', 'Nhà Sách Giấy Thơm'),
-      ('Hộp 12 bút gel Ngòi Êm nét 0.5', 'Văn Phòng Phẩm Cây Bút Chì'),
-      ('Bút Ngòi Êm gel 0.5mm viết trơn, 12 cây', 'Góc Học Tập Bé Na'),
-    ]),
+    _DemoGroup(
+      'Tai nghe không dây Sonora Air 2',
+      'Công nghệ',
+      650000,
+      brand: 'Sonora',
+      model: 'Air 2',
+      variants: ['Đen', 'Trắng'],
+      listings: [
+        ('Tai nghe bluetooth Sonora Air 2 chống ồn', 'Nhà Tai Nghe Mây'),
+        (
+          'Sonora Air2 tai nghe không dây pin 30 giờ 🔥 Freeship',
+          'Góc Âm Thanh 79',
+        ),
+        ('[Hàng chuẩn] Tai nghe Sonora Air 2 Bluetooth 5.3', 'Phụ Kiện Cầu Gỗ'),
+        (
+          'Tai nghe Sonora Air 2 kèm hộp sạc, bảo hành 12 tháng',
+          'Tiệm Số Hai Lúa',
+        ),
+      ],
+    ),
+    _DemoGroup(
+      'Đồng hồ thông minh Kairo Fit S',
+      'Công nghệ',
+      2400000,
+      brand: 'Kairo',
+      model: 'Fit S',
+      variants: ['Đen', 'Hồng'],
+      listings: [
+        ('Đồng hồ thông minh Kairo Fit S đo nhịp tim', 'Góc Âm Thanh 79'),
+        ('Kairo FitS smartwatch màn AMOLED 1.4 inch', 'Đồ Điện Tử Bến Mây'),
+        ('Đồng hồ Kairo Fit S - chống nước, pin 10 ngày', 'Phụ Kiện Cầu Gỗ'),
+        (
+          '[Bản mới] Kairo Fit S đồng hồ sức khoẻ chính hãng BH 12T',
+          'Kho Công Nghệ Lá Me',
+        ),
+      ],
+    ),
+    _DemoGroup(
+      'Áo thun cotton Mộc Lam basic',
+      'Thời trang',
+      159000,
+      brand: 'Mộc Lam',
+      model: 'Basic',
+      variants: ['Trắng', 'Xanh rêu'],
+      listings: [
+        ('Áo thun cotton Mộc Lam basic form rộng', 'Tủ Đồ Nhà Mơ'),
+        ('Áo phông Mộc Lam trơn 100% cotton', 'Xưởng Áo Phố Gió'),
+        ('Mộc Lam áo thun basic unisex nhiều màu', 'Shop Mặc Đẹp Mỗi Ngày'),
+      ],
+    ),
+    _DemoGroup(
+      'Giày chạy bộ Bước Nhẹ Runner 3',
+      'Thời trang',
+      890000,
+      brand: 'Bước Nhẹ',
+      model: 'Runner 3',
+      variants: ['Xám', 'Đen'],
+      listings: [
+        ('Giày chạy bộ Bước Nhẹ Runner 3 đế êm', 'Kệ Giày Sông Xanh'),
+        ('Bước Nhẹ Runner3 giày thể thao nam nữ', 'Xưởng Áo Phố Gió'),
+        (
+          'Giày Bước Nhẹ Runner 3 thoáng khí, nhẹ 230g',
+          'Góc Thể Thao Đồi Thông',
+        ),
+        ('[Chính hãng Bước Nhẹ] Runner 3 giày chạy', 'Nhà Giày Hẻm Nhỏ'),
+      ],
+    ),
+    _DemoGroup(
+      'Kem chống nắng Hạ Vy SPF50+ 50ml',
+      'Làm đẹp',
+      285000,
+      brand: 'Hạ Vy',
+      model: 'SPF50+',
+      spec: '50ml',
+      variants: ['Nâng tông', 'Không màu'],
+      listings: [
+        ('Kem chống nắng Hạ Vy SPF50+ PA++++ 50ml', 'Tiệm Xinh Cô Út'),
+        ('Hạ Vy chống nắng nâng tông 50ml SALE ✨', 'Góc Làm Đẹp Hoa Sứ'),
+        ('Kem chống nắng Hạ Vy cho da dầu SPF 50+', 'Kệ Mỹ Phẩm Trăng Non'),
+      ],
+    ),
+    _DemoGroup(
+      'Son dưỡng có màu Mềm Môi',
+      'Làm đẹp',
+      129000,
+      brand: 'Mềm Môi',
+      model: 'Son dưỡng có màu',
+      variants: ['Hồng đất', 'Cam cháy'],
+      listings: [
+        ('Son dưỡng có màu Mềm Môi 3.5g', 'Góc Làm Đẹp Hoa Sứ'),
+        ('Mềm Môi son dưỡng ẩm màu hồng đất', 'Tiệm Xinh Cô Út'),
+        ('Son dưỡng Mềm Môi không chì, lâu trôi', 'Kệ Mỹ Phẩm Trăng Non'),
+        ('[Combo 1] Son dưỡng Mềm Môi tông cam', 'Nhà Son Phố Lụa'),
+      ],
+    ),
+    _DemoGroup(
+      'Hạt điều rang muối Vườn Nắng 500g',
+      'Ăn uống',
+      189000,
+      brand: 'Vườn Nắng',
+      model: 'Hạt điều rang muối',
+      spec: '500g',
+      variants: ['Còn vỏ lụa', 'Bóc vỏ'],
+      listings: [
+        ('Hạt điều rang muối Vườn Nắng hũ 500g', 'Bếp Quê Nhà Ngoại'),
+        ('Điều rang muối Vườn Nắng loại 1, 500g', 'Kho Hạt Đồng Nội'),
+        ('Hạt điều Vườn Nắng còn vỏ lụa 500 gram', 'Gian Hàng Ăn Vặt Ba Lá'),
+      ],
+    ),
+    _DemoGroup(
+      'Bút gel Ngòi Êm 0.5mm hộp 12 cây',
+      'Học tập',
+      65000,
+      brand: 'Ngòi Êm',
+      model: 'Bút gel',
+      spec: 'hộp 12',
+      variants: ['Mực xanh', 'Mực đen'],
+      listings: [
+        ('Bút gel Ngòi Êm 0.5mm hộp 12 cây mực xanh', 'Nhà Sách Giấy Thơm'),
+        ('Hộp 12 bút gel Ngòi Êm nét 0.5', 'Văn Phòng Phẩm Cây Bút Chì'),
+        ('Bút Ngòi Êm gel 0.5mm viết trơn, 12 cây', 'Góc Học Tập Bé Na'),
+      ],
+    ),
   ];
 }
 
@@ -380,8 +558,44 @@ class _DemoGroup {
   final String category;
   final int basePriceVnd;
 
+  /// productCode of every listing: buildProductCode(brand, model, spec)
+  final String brand;
+  final String model;
+  final String? spec;
+
+  /// The two variants (colors…) of the item; each listing sells one or both
+  final List<String> variants;
+
   /// (title, shop name) per shop: the same item named a little differently
   final List<(String, String)> listings;
 
-  const _DemoGroup(this.name, this.category, this.basePriceVnd, this.listings);
+  const _DemoGroup(
+    this.name,
+    this.category,
+    this.basePriceVnd, {
+    required this.brand,
+    required this.model,
+    this.spec,
+    required this.variants,
+    required this.listings,
+  });
+}
+
+/// A product outside the groups; no brand means no productCode
+class _DemoExtra {
+  final String title;
+  final String shopName;
+  final int basePriceVnd;
+  final String? brand;
+  final String? model;
+  final List<String> variants;
+
+  const _DemoExtra(
+    this.title,
+    this.shopName,
+    this.basePriceVnd, {
+    this.brand,
+    this.model,
+    this.variants = const [],
+  });
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../firebase/platform_support.dart';
 import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
 import '../services/ai_photo_search_service.dart';
 import '../services/ai_pre_purchase_service.dart';
 import '../services/ai_price_search_service.dart';
+import '../services/ai_product_identity_service.dart';
 import '../services/ai_service.dart';
 import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
@@ -318,6 +320,14 @@ class AppProviders extends StatelessWidget {
             service: context.read<SharedPriceService>(),
             preferencesService: PreferencesService(),
             historyService: context.read<PriceHistoryContributionService>(),
+            // "Mã món" (G8): same switches as the other AI features
+            identityService: AiProductIdentityService(
+              generator: context.read<AiService>(),
+            ),
+            aiAllowed: () async =>
+                PlatformSupport.supportsFirebaseAi &&
+                remoteConfigService.enableAiSuggestions &&
+                await PreferencesService().getAiInsightEnabled(),
           ),
           update: (_, auth, vm) => vm!
             ..updateUser(

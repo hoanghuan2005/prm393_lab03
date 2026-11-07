@@ -295,6 +295,8 @@ for (const [role, db] of [['user', alice], ['staff', sam]]) {
   add('productGroups', role, 'create a demo group', false, () => setDoc(doc(db, 'productGroups/g3'), demoGroup()));
 }
 add('priceHistory', 'admin', 'create a demo product', true, () => setDoc(doc(ada, 'priceHistory/shopee:5:6'), demoProduct('5', '6', { groupId: 'g1' })));
+// G8b: sample products carry their codes (source 'demo') and one modelKey per variant
+add('priceHistory', 'admin', 'create a demo product with codes', true, () => setDoc(doc(ada, 'priceHistory/shopee:35:36'), demoProduct('35', '36', { productCode: 'sonora-air-2', productCodeSource: 'demo', variantCodes: { 123456789: 'den', 987654321: 'trang' } })));
 add('priceHistory', 'admin', 'delete a demo product', true, () => deleteDoc(doc(ada, 'priceHistory/shopee:1:2')));
 add('priceHistory', 'admin', 'create with a 121-character title', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { title: 'x'.repeat(121) })));
 add('priceHistory', 'admin', 'create with a 61-character shop name', false, () => setDoc(doc(ada, 'priceHistory/shopee:7:8'), demoProduct('7', '8', { shopName: 'x'.repeat(61) })));

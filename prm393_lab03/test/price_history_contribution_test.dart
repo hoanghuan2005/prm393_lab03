@@ -377,4 +377,16 @@ class _History implements PriceHistoryContributionService {
     if (fail) throw StateError('offline');
     sent.add((uid, report));
   }
+
+  // G8 "Mã món" is tested in product_identity_test.dart
+  @override
+  Future<PriceHistoryProduct?> fetchProduct(String productKey) async => null;
+
+  @override
+  Future<void> addCodes({
+    required String productKey,
+    String? productCode,
+    String? modelKey,
+    String? variantCode,
+  }) async {}
 }

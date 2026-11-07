@@ -44,6 +44,13 @@ class PriceHistoryChart extends StatefulWidget {
   /// Height of the plot, sale names above it included (not the dates under it)
   final double chartHeight;
 
+  /// "Giá bạn ghi" (G6b): the user's own price of a day (index in
+  /// [PriceHistoryView.days]), drawn as a small hollow dot, never joined
+  final Map<int, int> ownPrices;
+
+  /// Line above the plot instead of what the band means (e.g. "Giá bạn đã ghi")
+  final String? caption;
+
   const PriceHistoryChart({
     super.key,
     required this.view,
@@ -51,6 +58,8 @@ class PriceHistoryChart extends StatefulWidget {
     this.savedPrice,
     this.initialSelectedDay,
     this.chartHeight = 150,
+    this.ownPrices = const {},
+    this.caption,
   });
 
   @override
@@ -633,13 +642,28 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            _view.isGroup
-                ? 'Vùng tô: từ giá thấp nhất tới cao nhất giữa các shop mỗi ngày'
-                : 'Vùng tô: từ giá thấp nhất tới cao nhất ghi được mỗi ngày',
+            widget.caption ??
+                (_view.isGroup
+                    ? 'Vùng tô: từ giá thấp nhất tới cao nhất giữa các shop mỗi ngày'
+                    : 'Vùng tô: từ giá thấp nhất tới cao nhất ghi được mỗi ngày'),
             key: const ValueKey('price-chart-caption'),
             textAlign: TextAlign.center,
             style: muted,
           ),
+          if (widget.ownPrices.isNotEmpty)
+            Row(
+              key: const ValueKey('price-chart-own-legend'),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.radio_button_unchecked,
+                  size: 12,
+                  color: theme.colorScheme.onSurface,
+                ),
+                const SizedBox(width: AppDimens.space4),
+                Text('Giá bạn ghi', style: muted),
+              ],
+            ),
           const SizedBox(height: AppDimens.space8),
           ExcludeSemantics(
             child: LayoutBuilder(
@@ -710,9 +734,12 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
   ) {
     final days = _view.days;
     final saved = widget.savedPrice;
+    final own = widget.ownPrices.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
     final values = [
       for (final b in band) ...[?b.lowVnd, ?b.highVnd],
       ?saved?.vnd,
+      for (final e in own) e.value,
     ];
     if (values.isEmpty || days.isEmpty) return const SizedBox.shrink();
     final axis = priceAxis(values.reduce(math.min), values.reduce(math.max));
@@ -776,6 +803,23 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
         isStrokeCapRound: true,
         dotData: const FlDotData(show: false),
       ),
+      // "Giá bạn ghi": small hollow dots, never joined
+      if (own.isNotEmpty)
+        LineChartBarData(
+          spots: [
+            for (final e in own) FlSpot(e.key.toDouble(), e.value.toDouble()),
+          ],
+          barWidth: 0,
+          color: Colors.transparent,
+          dotData: FlDotData(
+            getDotPainter: (_, _, _, _) => PriceDotPainter(
+              color: theme.colorScheme.onSurface,
+              ringColor: theme.colorScheme.surface,
+              radius: 3,
+              hollow: true,
+            ),
+          ),
+        ),
       if (marks.isNotEmpty)
         LineChartBarData(
           spots: [for (final m in marks) m.$1],

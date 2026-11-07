@@ -19,13 +19,11 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/decision_card_panel.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
-import '../widgets/price_history_entry_card.dart';
 import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/same_product_card.dart';
-import '../widgets/shared_price_section.dart';
 import '../widgets/shopee_rating_line.dart';
 import '../widgets/undo_snack_bar.dart';
 import '../widgets/wishlist_card.dart';
@@ -463,24 +461,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
             const SizedBox(height: AppDimens.space20),
 
-            // A-14: every recorded price, compared only when it makes sense (spec 6.5)
-            if (item.hasPrice) PriceHistoryPanel(item: item),
+            // G6b: the one place for the item's prices: the chart ("Giá tham khảo"
+            // with the user's own prices, or only their own), every recorded price
+            // (A-14, spec 6.5) and "Giá người khác ghi" (spec 8.3)
+            PriceHistoryPanel(
+              item: item,
+              showSharedPrices: item.status == WishlistStatus.considering,
+              onUsePrice: _isProcessing
+                  ? null
+                  : (amount) => _useSharedPrice(item, amount),
+              onAddLink: _isProcessing
+                  ? null
+                  : () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.wishlistEdit,
+                      arguments: ItemDetailArgs(item),
+                    ),
+            ),
 
-            // "Giá tham khảo" from priceHistory; nothing without data
-            if (item.productKey case final key?) ...[
-              PriceHistoryEntryCard(productKey: key, item: item),
-              // G8: the same item and variant in other shops (automatic match)
-              SameProductCard(item: item),
-            ],
-
-            // Spec 8.3: anonymous prices other people recorded for the same variant
-            if (item.status == WishlistStatus.considering)
-              SharedPriceSection(
-                item: item,
-                onUsePrice: _isProcessing
-                    ? null
-                    : (amount) => _useSharedPrice(item, amount),
-              ),
+            // G8: the same item and variant in other shops (automatic match)
+            if (item.productKey != null) SameProductCard(item: item),
 
             // Comparison between multiple shops in Wishlist
             _ShopPriceComparisonSection(

@@ -20,7 +20,16 @@ class SharedPriceSection extends StatefulWidget {
   final WishlistItem item;
   final ValueChanged<int>? onUsePrice;
 
-  const SharedPriceSection({super.key, required this.item, this.onUsePrice});
+  /// Inside the price section of Chi tiết món (G6b): no card of its own, and nothing
+  /// for an item without a Shopee link (the section asks for the link)
+  final bool embedded;
+
+  const SharedPriceSection({
+    super.key,
+    required this.item,
+    this.onUsePrice,
+    this.embedded = false,
+  });
 
   @override
   State<SharedPriceSection> createState() => _SharedPriceSectionState();
@@ -70,6 +79,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
     final mine = insights?.latest;
     final state = vm.stateFor(widget.item, mine: mine);
     if (state.status == SharedPriceStatus.unsupported) {
+      if (widget.embedded) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(bottom: AppDimens.space16),
         child: Text(
@@ -80,39 +90,47 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
     }
     _requestLoad(vm, insights);
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.groups_outlined),
+            const SizedBox(width: AppDimens.space8),
+            Expanded(
+              child: Text(
+                'Giá người khác ghi',
+                style: AppTextStyles.titleMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppDimens.space8),
+        ..._body(context, vm, state, mine),
+        if (state.variantUnknown) ...[
+          const SizedBox(height: AppDimens.space4),
+          Text(
+            'Món chưa rõ phân loại: chỉ so với giá cũng chưa rõ phân loại, giá thật có thể khác.',
+            style: AppTextStyles.labelMedium,
+          ),
+        ],
+        const Divider(height: AppDimens.space24),
+        _SharingSwitch(item: widget.item),
+      ],
+    );
+    if (widget.embedded) {
+      return Column(
+        key: const ValueKey('shared-prices'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [const Divider(height: AppDimens.space24), content],
+      );
+    }
     return Card(
       key: const ValueKey('shared-prices'),
       margin: const EdgeInsets.only(bottom: AppDimens.space16),
       child: Padding(
         padding: const EdgeInsets.all(AppDimens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.groups_outlined),
-                const SizedBox(width: AppDimens.space8),
-                Expanded(
-                  child: Text(
-                    'Giá người khác ghi',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space8),
-            ..._body(context, vm, state, mine),
-            if (state.variantUnknown) ...[
-              const SizedBox(height: AppDimens.space4),
-              Text(
-                'Món chưa rõ phân loại: chỉ so với giá cũng chưa rõ phân loại, giá thật có thể khác.',
-                style: AppTextStyles.labelMedium,
-              ),
-            ],
-            const Divider(height: AppDimens.space24),
-            _SharingSwitch(item: widget.item),
-          ],
-        ),
+        child: content,
       ),
     );
   }

@@ -151,6 +151,10 @@ class PriceHistoryViewModel extends ChangeNotifier with ErrorReporting {
   String? get groupId => _groupId;
   bool get isSameProduct => _sameKeys != null;
 
+  /// Reports loaded (the longest period, after-voucher ones included), for "Chưa đủ
+  /// người ghi giá để vẽ đường cộng đồng (n lần ghi)" (G6b)
+  int get reportCount => _reports.values.fold(0, (n, r) => n + r.length);
+
   Future<void> openProduct(String productKey) {
     _productKey = productKey;
     _groupId = null;

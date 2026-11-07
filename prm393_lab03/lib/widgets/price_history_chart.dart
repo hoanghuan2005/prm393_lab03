@@ -15,13 +15,14 @@ import 'demo_data_badge.dart';
 
 /// "Biểu đồ giá tham khảo", in a rounded card: a caption saying what the band is, a
 /// light band from the lowest to the highest price of each day (between the shops of
-/// a group, between the reports of one product) and ONE violet step line of the
-/// lowest price, each day flat across its own column. A day without a new price keeps
+/// a group, between the reports of one product) and ONE violet line of the lowest
+/// price, each day flat over the middle of its column and eased into the next day's
+/// price by a short S-curve ([smoothSteps]). A day without a new price keeps
 /// the latest ones for at most [maxHeldDays] days, the line dashed and fainter; after
 /// that the chart breaks. No price axis and no grid: one green dot on the lowest point
 /// with its price in short ("490k"), a dashed "giá lúc bạn lưu" line labelled on the
 /// right, sale days as dashed vertical lines named above the plot, and the first and
-/// last day under it. Under the card: the day touched (or picked in the list) and the
+/// last day under it plus the days the price moved ([axisDayIndices]). Under the card: the day touched (or picked in the list) and the
 /// price milestones of the period. Below [minChartDays] days with a price, only the
 /// milestones are shown.
 class PriceHistoryChart extends StatefulWidget {
@@ -121,21 +122,25 @@ class FilledPrice {
   const FilledPrice(this.vnd, this.sourceIndex, {this.held = false});
 }
 
-/// A day without a price keeps the latest earlier one for at most [maxDays] days (a
-/// held day); later days stay null so the line breaks. Nothing comes from before the
-/// first of [points]: the line never reaches across the start of the period.
+/// A day without a price keeps the latest earlier regular price for at most [maxDays]
+/// days (a held day); later days stay null so the line breaks. A sale or Flash Sale
+/// price ([DailyPricePoint.hasSale]) is drawn on its own day only: the days after it
+/// keep the latest regular price instead, so a one-day sale never turns into a week
+/// of low prices. Nothing comes from before the first of [points]: the line never
+/// reaches across the start of the period.
 List<FilledPrice?> fillForward(
   List<DailyPricePoint> points, {
   int maxDays = PriceHistoryChart.maxHeldDays,
 }) {
   final filled = <FilledPrice?>[];
-  FilledPrice? last;
+  FilledPrice? keep;
   for (var i = 0; i < points.length; i++) {
-    if (points[i].minVnd case final vnd?) {
-      last = FilledPrice(vnd, i);
-      filled.add(last);
-    } else if (last != null && i - last.sourceIndex <= maxDays) {
-      filled.add(FilledPrice(last.vnd, last.sourceIndex, held: true));
+    final p = points[i];
+    if (p.minVnd case final vnd?) {
+      filled.add(FilledPrice(vnd, i));
+      if (!p.hasSale) keep = FilledPrice(vnd, i);
+    } else if (keep != null && i - keep.sourceIndex <= maxDays) {
+      filled.add(FilledPrice(keep.vnd, keep.sourceIndex, held: true));
     } else {
       filled.add(null);
     }
@@ -174,6 +179,39 @@ List<FlSpot> stepSpots(List<FilledPrice?> filled, {bool held = false}) {
   return spots;
 }
 
+/// [spots] of a step line ([stepSpots], the band edges) with each rise or fall (two
+/// spots on the same x) drawn as an S-curve (smoothstep, flat at both ends) from
+/// [halfWidth] columns before that x to [halfWidth] after it, in [samples] segments,
+/// so the line looks smooth. Everything else is kept: the flat parts, the ends of each
+/// run and the breaks (null spots). With [halfWidth] below 0.5 every day stays flat
+/// around the middle of its column, where its dot and the day touched are.
+List<FlSpot> smoothSteps(
+  List<FlSpot> spots, {
+  double halfWidth = 0.4,
+  int samples = 8,
+}) {
+  final smooth = <FlSpot>[];
+  var k = 0;
+  while (k < spots.length) {
+    final a = spots[k];
+    final b = spots.elementAtOrNull(k + 1);
+    if (a.isNull() || b == null || b.isNull() || a.x != b.x || a.y == b.y) {
+      smooth.add(a);
+      k++;
+      continue;
+    }
+    for (var s = 0; s <= samples; s++) {
+      final t = s / samples;
+      final eased = t * t * (3 - 2 * t);
+      smooth.add(
+        FlSpot(a.x - halfWidth + 2 * halfWidth * t, a.y + (b.y - a.y) * eased),
+      );
+    }
+    k += 2;
+  }
+  return smooth;
+}
+
 /// Y axis for prices [low]–[high]: 10% padding on both sides and a round step
 /// (1, 2 or 5 × 10^k đồng, such as 50.000 or 100.000) giving at most [maxTicks] labels
 ({double minY, double maxY, double step}) priceAxis(
@@ -193,6 +231,41 @@ List<FlSpot> stepSpots(List<FilledPrice?> filled, {bool held = false}) {
     step *= const [2.0, 2.5, 2.0][k % 3];
   }
   return (minY: minY, maxY: maxY, step: step);
+}
+
+/// Days written under the chart, at most [maxLabels]: the first and last day, the
+/// sale days, then the days the lowest price moved the most (on the day that price
+/// was recorded). Labels stay at least [minGap] days apart (default: a sixth of the
+/// period, at least 2) so they never overlap on a phone.
+Set<int> axisDayIndices(
+  List<BandDay> band,
+  List<SaleEvent> saleEvents, {
+  int maxLabels = 5,
+  int? minGap,
+}) {
+  final n = band.length;
+  if (n == 0) return {};
+  final gap = minGap ?? math.max(2, (n / 6).ceil());
+  // (day, priority): higher first
+  final candidates = <(int, double)>[(n - 1, double.infinity), (0, 1e12)];
+  for (final e in saleEvents) {
+    final i = band.indexWhere((b) => b.day == vnDate(e.date));
+    if (i >= 0) candidates.add((i, 1e11));
+  }
+  for (var i = 1; i < n; i++) {
+    final b = band[i];
+    if (!b.isRecorded || (b.lowFrom ?? i) != i) continue;
+    if (band[i - 1].lowVnd case final before? when b.lowVnd != before) {
+      candidates.add((i, (b.lowVnd! - before).abs().toDouble()));
+    }
+  }
+  candidates.sort((a, b) => b.$2.compareTo(a.$2));
+  final chosen = <int>{};
+  for (final (i, _) in candidates) {
+    if (chosen.length >= maxLabels) break;
+    if (chosen.every((c) => (c - i).abs() >= gap)) chosen.add(i);
+  }
+  return chosen;
 }
 
 /// A day of the price band
@@ -533,7 +606,7 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
   }
 
   /// The chart in a rounded card: what the band means on top, the plot, then the
-  /// first and last day under it
+  /// first and last day and the days the price moved under it
   Widget _card(
     ThemeData theme,
     List<BandDay> band,
@@ -541,6 +614,8 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     TextStyle muted,
   ) {
     final days = _view.days;
+    // Dates under the plot: first, last, sales and the days the price moved
+    final labelDays = axisDayIndices(band, _view.saleEvents).toList()..sort();
     return Container(
       key: const ValueKey('price-chart-card'),
       padding: const EdgeInsets.fromLTRB(
@@ -580,11 +655,21 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
                     Padding(
                       key: const ValueKey('price-chart-dates'),
                       padding: const EdgeInsets.only(top: AppDimens.space6),
-                      child: Row(
+                      child: Stack(
                         children: [
-                          Text(formatDayMonth(days.first), style: muted),
-                          const Spacer(),
-                          Text(formatDayMonth(days.last), style: muted),
+                          for (final i in labelDays)
+                            Align(
+                              // Under its day; the first and last at the edges
+                              alignment: Alignment(
+                                i == 0
+                                    ? -1
+                                    : i == days.length - 1
+                                    ? 1
+                                    : (i + 0.5) / days.length * 2 - 1,
+                                0,
+                              ),
+                              child: Text(formatDayMonth(days[i]), style: muted),
+                            ),
                         ],
                       ),
                     ),
@@ -646,7 +731,7 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
 
     // Invisible edges of the band, filled in between
     LineChartBarData edge(int? Function(BandDay) value) => LineChartBarData(
-      spots: _bandSpots(band, value),
+      spots: smoothSteps(_bandSpots(band, value)),
       barWidth: 0,
       color: Colors.transparent,
       dotData: const FlDotData(show: false),
@@ -676,16 +761,19 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
       edge((b) => b.highVnd),
       if (stepSpots(low, held: true) case final spots when spots.isNotEmpty)
         LineChartBarData(
-          spots: spots,
+          spots: smoothSteps(spots),
           color: line.withValues(alpha: 0.45),
           barWidth: 1.5,
+          isStrokeJoinRound: true,
           dashArray: _heldDash,
           dotData: const FlDotData(show: false),
         ),
       LineChartBarData(
-        spots: stepSpots(low),
+        spots: smoothSteps(stepSpots(low)),
         color: line,
-        barWidth: 2,
+        barWidth: 2.5,
+        isStrokeJoinRound: true,
+        isStrokeCapRound: true,
         dotData: const FlDotData(show: false),
       ),
       if (marks.isNotEmpty)

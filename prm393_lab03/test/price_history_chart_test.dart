@@ -197,13 +197,19 @@ List<String> _details(WidgetTester tester) => [
     t.data!,
 ];
 
-DailyPricePoint _p(int day, int? min, {int? max, String? shop}) =>
-    DailyPricePoint(
-      day: DateTime.utc(2026, 11, 1 + day),
-      minVnd: min,
-      maxVnd: max ?? min,
-      shopName: shop,
-    );
+DailyPricePoint _p(
+  int day,
+  int? min, {
+  int? max,
+  String? shop,
+  bool sale = false,
+}) => DailyPricePoint(
+  day: DateTime.utc(2026, 11, 1 + day),
+  minVnd: min,
+  maxVnd: max ?? min,
+  shopName: shop,
+  hasSale: sale,
+);
 
 List<DailyPricePoint> _days(List<int?> prices, {String? shop}) => [
   for (final (i, v) in prices.indexed) _p(i, v, shop: shop),
@@ -234,6 +240,41 @@ void main() {
       ]);
     });
 
+    test('a sale price stays on its own day; the regular price is kept after', () {
+      final f = fillForward([
+        _p(0, 100),
+        _p(1, null),
+        _p(2, 80, sale: true),
+        _p(3, null),
+        _p(4, null),
+      ]);
+      expect(
+        [for (final x in f) x == null ? null : (x.vnd, x.sourceIndex, x.held)],
+        [
+          (100, 0, false),
+          (100, 0, true),
+          (80, 2, false),
+          (100, 0, true),
+          (100, 0, true),
+        ],
+      );
+      // Without an earlier regular price nothing is kept after a sale
+      expect(fillForward([_p(0, 80, sale: true), _p(1, null)])[1], isNull);
+    });
+
+    test('a one-day sale does not keep the band low on the next days', () {
+      final band = computeBand({
+        'a': [
+          _p(0, 100, shop: 'A'),
+          _p(1, 70, shop: 'A', sale: true),
+          _p(2, null),
+        ],
+        'b': [_p(0, 110, shop: 'B'), _p(1, null), _p(2, null)],
+      });
+      expect(band[1].lowVnd, 70, reason: 'the sale day itself');
+      expect(band[2].lowVnd, 100, reason: "A's regular price is kept");
+    });
+
     test('stepSpots: each day flat over its column, held days apart', () {
       final f = fillForward(_days([100, null, null, 90, 99]));
       List<(double, double)?> xy(List<FlSpot> spots) => [
@@ -250,6 +291,39 @@ void main() {
         (4.5, 99),
       ]);
       expect(xy(stepSpots(f, held: true)), [(0.5, 100), (2.5, 100), null]);
+    });
+
+    test('smoothSteps: a rise or fall eased into an S, the rest kept', () {
+      final s = smoothSteps([
+        const FlSpot(-0.5, 100),
+        const FlSpot(0.5, 100),
+        const FlSpot(0.5, 80),
+        const FlSpot(1.5, 80),
+        FlSpot.nullSpot,
+        const FlSpot(3.5, 90),
+        const FlSpot(4.5, 90),
+      ], samples: 4);
+      expect(s, hasLength(10));
+      expect(s.first, const FlSpot(-0.5, 100));
+      // From 0.1 to 0.9: 100 → 80, flat at both ends, halfway at the column edge
+      final change = s.sublist(1, 6);
+      expect([for (final p in change) p.x], [
+        for (final x in [0.1, 0.3, 0.5, 0.7, 0.9]) closeTo(x, 1e-9),
+      ]);
+      expect([for (final p in change) p.y], [
+        for (final y in [100, 96.875, 90, 83.125, 80]) closeTo(y, 1e-9),
+      ]);
+      expect([for (final p in s.sublist(6)) p.isNull() ? null : (p.x, p.y)], [
+        (1.5, 80),
+        null,
+        (3.5, 90),
+        (4.5, 90),
+      ]);
+      // Nothing to ease
+      expect(smoothSteps(const [FlSpot(0, 1), FlSpot(1, 1)]), const [
+        FlSpot(0, 1),
+        FlSpot(1, 1),
+      ]);
     });
   });
 
@@ -368,6 +442,40 @@ void main() {
       expect(band[0].lowShop, 'Shop A');
       expect(band[2].isCarried, isTrue, reason: '08/11: 1 report only');
       expect(band[5].highVnd, 91000, reason: 'after voucher never counts');
+    });
+  });
+
+  group('axisDayIndices', () {
+    test('first, last, sale day, then the biggest price changes, spaced', () {
+      final prices = List<int?>.filled(30, 100000);
+      for (var d = 5; d <= 15; d++) {
+        prices[d] = 80000; // −20k on day 5, +20k on day 16
+      }
+      prices[24] = 96000; // −4k, +4k on day 25: smaller, left out
+      final band = computeBand({'a': _days(prices)});
+      final sale = SaleEvent(
+        id: 's',
+        name: '12.12',
+        // 12/11 00:00 in Vietnam = day 11 of _days
+        date: DateTime.utc(2026, 11, 11, 17),
+        type: SaleType.doubleDay,
+        confirmed: true,
+      );
+      final days = axisDayIndices(band, [sale]);
+      expect(days, unorderedEquals(<int>[0, 5, 11, 16, 29]));
+      final sorted = days.toList()..sort();
+      for (var k = 1; k < sorted.length; k++) {
+        expect(sorted[k] - sorted[k - 1], greaterThanOrEqualTo(5));
+      }
+    });
+
+    test('a change too close to a label is skipped', () {
+      final prices = List<int?>.filled(30, 100000);
+      prices[2] = 70000; // big, but 2 days from day 0
+      prices[3] = 100000;
+      final days = axisDayIndices(computeBand({'a': _days(prices)}), const []);
+      expect(days, unorderedEquals(<int>[0, 29]));
+      expect(axisDayIndices(const [], const []), isEmpty);
     });
   });
 
@@ -583,14 +691,15 @@ void main() {
     expect(data.titlesData.leftTitles.sideTitles.showTitles, isFalse);
     expect(data.titlesData.bottomTitles.sideTitles.showTitles, isFalse);
     expect(data.gridData.show, isFalse);
-    // Only the first and last day, under the plot's edges
+    // First and last day at the plot's edges, plus 10/11 when the price moved
+    // (11/11 is too close to the last day and already named above the plot)
     final dates = find.byKey(const ValueKey('price-chart-dates'));
     final texts = tester
         .widgetList<Text>(
           find.descendant(of: dates, matching: find.byType(Text)),
         )
         .map((t) => t.data);
-    expect(texts, ['06/11', '12/11']);
+    expect(texts, ['06/11', '10/11', '12/11']);
     final plot = tester.getRect(find.byType(LineChart));
     expect(tester.getRect(find.text('06/11')).left, plot.left);
     expect(tester.getRect(find.text('12/11')).right, plot.right);

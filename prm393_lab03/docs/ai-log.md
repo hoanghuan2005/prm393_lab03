@@ -236,5 +236,82 @@ Mẫu ghi và quy ước: xem mục 5 trong [`CONTRIBUTING.md`](../CONTRIBUTING.
 - **Quyết định:** Chấp nhận.
 - **Lý do / phần đã sửa tay:** Mẫu trong `docs/ai-feature.md` là câu trả lời thật của `gemini-3.5-flash-lite`: prompt do code app tạo (test tạm, đã xoá), gửi tới cùng endpoint Firebase AI Logic có App Check, rồi đưa câu trả lời ngược vào ViewModel thật. Lỗi mẫu là 404 thật của model đã ngừng, đi qua đúng đường xử lý lỗi của app. Chưa có ảnh chụp trên điện thoại; cần thêm param `ai_prompts` trên Remote Config Console.
 
-### 2026-11-06 – Dao Tam Hoang – Bỏ gợi ý nút đăng nhập khi trùng email
+### 2026-11-06 – Ngo Gia Kiet – Bỏ gợi ý nút đăng nhập khi trùng email
 - Claude Code: xoá `AuthViewModel.suggestedProviderId` và `accountExistsUseGithub`, đổi `accountExistsUseGoogle` thành `accountExistsOtherMethod` với câu trung tính (không đoán cách đăng nhập cũ, vì app còn có email/mật khẩu); bỏ 2 widget test cũ, thêm test cho Google và GitHub ra cùng câu, giữ mã lỗi. Chấp nhận.
+
+### 2026-11-06 – Ngo Gia Kiet – T1 (sửa analyze/test có sẵn) và phần còn lại của tài khoản liên kết
+- **Công cụ:** Claude Code.
+- **Prompt:** Sửa các test và cảnh báo `flutter analyze` đang hỏng; chỗ nào do code sai thì liệt kê, không tự sửa. Sau đó: giữ lại ghi chú "Phải giữ ít nhất một cách đăng nhập" (dùng lại chuỗi có sẵn) và bỏ `showDebugUid`.
+- **Kết quả:** Sửa cảnh báo lint ở 10 màn/widget; test dùng `SignedInAuthViewModel` trong `test/support/purchase_harness.dart`, sửa `account_header_card_test`, `linked_accounts_section_test`. Khôi phục ghi chú ở mục Tài khoản liên kết, bỏ `showDebugUid` khỏi thẻ tài khoản.
+- **Quyết định:** Sửa.
+- **Lý do / phần đã sửa tay:** AI tự commit 3 commit khi chưa được yêu cầu; đã `git reset --mixed HEAD~3`, từ đó chỉ đề xuất commit. AI lỡ `dart format` cả thư mục `test`, làm đổi 8 file không liên quan; đã trả về bản HEAD.
+
+### 2026-11-06 – Ngo Gia Kiet – G1 (model, đường dẫn và rules cho Biểu đồ giá tham khảo)
+- **Công cụ:** Claude Code.
+- **Prompt:** Thêm `priceHistory/{productKey}`, `priceHistory/{productKey}/reports/{reportId}`, `productGroups/{groupId}` theo đặc tả dữ liệu (afterVoucher lưu nhưng không tính vào giá thấp nhất/trung vị); rules và test rules; không sửa `isAdmin()`/`isOwner()`/`sharedReportId()`/`sharedPrices`.
+- **Kết quả:** `lib/models/price_history.dart` (`HistoryPriceType` có `countsAsListPrice`, `HistoryReportSource`, `PriceHistoryProduct`, `PriceHistoryReport`, `ProductGroup`), đường dẫn mới trong `FirestorePaths`. `firestore.rules`: mọi người đã đăng nhập được đọc; chỉ admin ghi dữ liệu mẫu (`isDemo`, `source 'demo'`, id `demo<n>_<modelKey>_<yyyyMMdd>`), kiểm tra kiểu, độ dài và rating. Thêm `test/price_history_model_test.dart` (7 test); test rules 148 → 190 ca, đều qua.
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** Người dùng thật chưa được ghi ở bước này (mở ở G7). Rules do nhóm tự deploy.
+
+### 2026-11-06 – Ngo Gia Kiet – G2 (dữ liệu giá mẫu, nút tạo/xoá cho admin)
+- **Công cụ:** Claude Code.
+- **Prompt:** `DemoPriceHistoryService` tạo và xoá dữ liệu mẫu; nút trong khu dev chỉ admin thấy.
+- **Kết quả:** `PriceHistoryIds` (ngày theo giờ Việt Nam UTC+7, id người thật `sha256(uid|productKey|modelKey|yyyyMMdd)`, id mẫu). `DemoPriceHistoryData.generate` cố định theo seed (8 nhóm, 28 sản phẩm, khoảng 4.500 document), ghi theo batch; `clearDemo` chỉ xoá dữ liệu mẫu. `UserService.watchRole`, `PriceHistoryDemoViewModel`, `PriceHistoryDemoSection` trong Cá nhân → Firebase Demo Area (chỉ hiện với admin). Thêm `test/demo_price_history_test.dart` (19 test), `test/price_history_ids_test.dart` (4 test).
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** –
+
+### 2026-11-06 – Ngo Gia Kiet – G3 (tách dữ liệu mẫu khỏi dữ liệu thật)
+- **Công cụ:** Claude Code.
+- **Prompt:** Không tính dữ liệu mẫu vào "Giá người khác ghi"; nhãn "Dữ liệu mẫu"; không mở link Shopee của sản phẩm mẫu.
+- **Kết quả:** `SharedPriceService` bỏ báo cáo `source 'demo'`; widget `DemoDataBadge`; `PriceHistoryProduct.shopeeUrl` trả null với dữ liệu mẫu. Thêm `test/demo_data_separation_test.dart` (4 test).
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** –
+
+### 2026-11-06 – Ngo Gia Kiet – E1 (loại giá "sale" từ extension, báo lỗi đồng bộ)
+- **Công cụ:** Claude Code.
+- **Prompt:** Rules `priceSnapshots` nhận `priceType 'sale'`; app hiểu `PriceType.sale`; extension hiện banner khi đồng bộ bị từ chối; test rules.
+- **Kết quả:** App: `PriceType.sale` (tag "Giá đang giảm" trong Lịch sử giá), không so sánh và không góp giá sale vào "Giá người khác ghi". `firestore.rules` thêm `'sale'`; test rules 190 → 192 ca. Thêm `test/price_type_sale_test.dart`. Extension (repo riêng, bản 0.3.4): `RejectedError`, phân biệt hết phiên với bị rules từ chối, `SyncBanner` ở popup và side panel.
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** Cần deploy lại rules trước khi phát hành extension 0.3.4, nếu không giá sale bị từ chối.
+
+### 2026-11-07 – Ngo Gia Kiet – E2 (chuẩn hoá đánh giá đọc từ trang Shopee)
+- **Công cụ:** Claude Code.
+- **Prompt:** Chuẩn hoá số sao, số lượt đánh giá, sao của shop do extension đọc; viết unit test.
+- **Kết quả:** Extension: `lib/rating.ts` (sao trong (0, 5], làm tròn 1 chữ số, số lượt là số nguyên ≥ 0), chuẩn hoá trong popup sau khi đọc trang. App: `PriceInsights.comparable` chỉ dùng giá sale khi món không có giá nào khác (giống extension); cập nhật `test/price_type_sale_test.dart`, `docs/data-model.md`.
+- **Quyết định:** Sửa.
+- **Lý do / phần đã sửa tay:** Hàm `readPage()` được tiêm vào trang nên phải tự chứa, không import được; vì vậy bỏ phần sửa trong reader và chuẩn hoá ở popup. Sửa lỗi 0,04 sao bị làm tròn thành 0: giờ kiểm tra giá trị sau khi làm tròn.
+
+### 2026-11-07 – Ngo Gia Kiet – E3 (đồng bộ tên shop và đánh giá lên Firestore)
+- **Công cụ:** Claude Code.
+- **Prompt:** Đồng bộ tên shop và rating từ extension lên `wishlistItems`/`priceSnapshots`; rules và test rules; hiện trên app.
+- **Kết quả:** `firestore.rules`: `optionalText`, `optionalRating`, `optionalCount`, `validRatings()` cho `wishlistItems` và `priceSnapshots`; test rules 192 → 201 ca. App: trường rating trên `WishlistItem`/`PriceSnapshot`, `readRating`/`readCount`, `rating_format.dart`, `ShopeeRatingLine` (biểu tượng cửa hàng thay chữ "Shop", không hiện dòng chỉ có tên shop) ở Chi tiết món. Thêm `test/shopee_ratings_test.dart` (7 test). Extension 0.3.5: gửi tên shop và rating, ghi thay đổi trong README.
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** `readInt` ném lỗi khi gặp chuỗi nên `readCount` kiểm tra kiểu trước. Rules do nhóm tự deploy sau khi push.
+
+### 2026-11-07 – Ngo Gia Kiet – G4, G4b (gom giá theo ngày, so sánh nhóm, service và ViewModel)
+- **Công cụ:** Claude Code.
+- **Prompt:** Dữ liệu thưa → mỗi ngày một điểm, ngày trống để trống; điểm cộng đồng cần ≥ 2 người/ngày, bỏ báo cáo lệch > 30% so với trung vị; afterVoucher tách riêng; so sánh shop trong nhóm có ngày và tên shop; ViewModel không đăng ký toàn cục.
+- **Kết quả:** `lib/models/daily_price.dart` (`aggregateDaily`, `DailyPricePoint`, `compareGroup`), `PriceHistoryService` (theo dõi sản phẩm, báo cáo từ một ngày, nhóm, lịch sale đã công bố), `PriceHistoryViewModel` (khoảng 7/30/90 ngày, thấp nhất, gần nhất, gần nhất theo shop, số ngày có dữ liệu, "Chưa đủ dữ liệu"). Thêm `test/daily_price_test.dart` (20 test).
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** Package `collection` không có trong dependency nên thay `firstWhereOrNull` bằng vòng lặp.
+
+### 2026-11-07 – Ngo Gia Kiet – G5 (widget PriceHistoryChart)
+- **Công cụ:** Claude Code.
+- **Prompt:** Biểu đồ điểm và đường bậc thang bằng `fl_chart` (được phép `flutter pub add fl_chart`), câu chữ trung tính.
+- **Kết quả:** Thêm `fl_chart` 1.3.0. `PriceHistoryChart`: điểm và đường bậc thang, ngày trống để trống, vạch ngày sale, chú thích từng shop (nét đứt khác nhau), bảng chi tiết khi chạm, câu tóm tắt, chọn 7N/30N/90N, tuỳ chọn chấm rỗng "sau voucher, tham khảo" (mặc định tắt, không bao giờ nối thành đường). `PriceChartGallerySection` trong Widget Gallery dùng dữ liệu trong bộ nhớ. Thêm `test/price_history_chart_test.dart` (12 test).
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** –
+
+### 2026-11-07 – Ngo Gia Kiet – G6 (màn Giá tham khảo và lối vào)
+- **Công cụ:** Claude Code.
+- **Prompt:** Route `priceHistory` (productKey hoặc groupId), ViewModel tạo riêng cho từng màn; công tắc "Chỉ món này / Cả nhóm"; thẻ "Giá tham khảo" ở Chi tiết món; danh sách nhóm mẫu cho admin; event `view_price_history`; câu chữ trung tính.
+- **Kết quả:** `PriceHistoryScreen` (biểu đồ, "Giá gần nhất theo shop" theo đúng thứ tự trong nhóm, không xếp hạng), `PriceHistoryArgs`; `PriceHistoryEntryCard` chỉ hiện khi có dữ liệu (thấp nhất 30 ngày, số ngày có dữ liệu); Firebase Demo Area liệt kê nhóm mẫu; `logViewPriceHistory` (`mode`, `range_days`, `is_demo`), thêm vào `docs/analytics-plan.md`. Thêm `test/price_history_screen_test.dart` (8 test). Toàn bộ 487 test qua, `flutter analyze` sạch.
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** Test ở 320 dp, chữ 150% phát hiện các chỗ tràn của biểu đồ G5 và thẻ mới; đã cho xuống dòng. AI lại format cả thư mục `test`; đã trả 8 file về bản HEAD.
+
+### 2026-11-07 – Ngo Gia Kiet – G7, G7b (gửi giá của mình vào Giá tham khảo, siết rules)
+- **Công cụ:** Claude Code.
+- **Prompt:** Khi có giá mới (từ extension hoặc nhập tay), gửi báo cáo ẩn danh vào `priceHistory`: không cho khách, món phải có productKey, giá đã xác nhận, trong 3 ngày, afterVoucher giữ loại giá, dùng chung công tắc với "Giá người khác ghi". G7b: báo cáo chỉ vào sản phẩm không phải mẫu (`getAfter`), sản phẩm chỉ được điền trường đang trống, không xoá.
+- **Kết quả:** `HistoryContribution` (chọn giá, mỗi ngày một báo cáo: ưu tiên giá thường hơn giá sau voucher), `PriceHistoryContributionService` (tạo sản phẩm nếu chưa có, điền tên shop còn trống, không ghi vào dữ liệu mẫu, không lưu uid/tên/link), `SharedPriceViewModel.reportHistory` (mỗi giá gửi một lần, đợi đọc xong công tắc). `firestore.rules`: id báo cáo băm theo ngày Việt Nam tính từ `observedAt`, `source` manual/extensionPage, `observedAt` trong 3 ngày, sản phẩm phải có `isDemo == false`; người dùng chỉ điền `shopName`/`groupId` đang trống. Test rules 201 → 231 ca. Thêm `test/price_history_contribution_test.dart` (15 test, có widget test cho thẻ ở Chi tiết món). Toàn bộ 502 test qua.
+- **Quyết định:** Chấp nhận.
+- **Lý do / phần đã sửa tay:** Công tắc "Góp giá của tôi" đã có (mặc định bật) nên dùng chung. Còn mở: `groupId` hiện ai cũng điền được khi đang trống, kể cả trỏ vào nhóm mẫu hay nhóm của người khác; sẽ quyết định cùng G8. Chưa deploy rules.

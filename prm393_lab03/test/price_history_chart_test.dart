@@ -317,7 +317,34 @@ void main() {
       expect((carried.sourceIndex, carried.shopCount), (0, 2));
       expect(carried.day, DateTime.utc(2026, 11, 2));
       expect(band[2].isCarried, isFalse, reason: 'B has a new price');
-      expect((band[2].lowVnd, band[2].shopCount), (90, 1));
+      // A did not report: its price of day 0 still counts
+      expect((band[2].lowVnd, band[2].lowFrom, band[2].shopCount), (90, 2, 2));
+      expect(
+        (band[2].highVnd, band[2].highShop, band[2].highFrom),
+        (100, 'A', 0),
+      );
+    });
+
+    test(
+      'a shop that did not report keeps its price: the low does not jump',
+      () {
+        // A is the lowest and reports every other day; B reports every day
+        final band = computeBand({
+          'a': _days([90, null, 90, null, 90], shop: 'A'),
+          'b': _days([120, 120, 120, 120, 120], shop: 'B'),
+        });
+        expect([for (final d in band) d.lowVnd], [90, 90, 90, 90, 90]);
+        expect([for (final d in band) d.lowFrom], [0, 0, 2, 2, 4]);
+        expect(band.every((d) => d.shopCount == 2 && !d.isCarried), isTrue);
+      },
+    );
+
+    test('equal prices: the more recent one', () {
+      final d = computeBand({
+        'a': _days([90, null], shop: 'A'),
+        'b': _days([null, 90], shop: 'B'),
+      })[1];
+      expect((d.lowShop, d.lowFrom), ('B', 1));
     });
 
     test(
@@ -459,19 +486,20 @@ void main() {
     expect(vm.range, PriceHistoryRange.month);
   });
 
-  testWidgets('a light band and ONE line of the lowest price, in the accent', (
+  testWidgets('a light band and ONE violet line of the lowest price', (
     tester,
   ) async {
     await _pump(tester, await _view(_single()));
 
     final data = _data(tester);
-    final accent = AppTheme.lightTheme.colorScheme.tertiary;
+    final accent = priceLineColor(AppTheme.lightTheme);
     final bars = data.lineBarsData;
     // Band edges (invisible), held part, recorded part, dots
     expect(bars, hasLength(5));
     final between = data.betweenBarsData.single;
     expect((between.fromIndex, between.toIndex), (0, 1));
     expect(between.color!.a, lessThan(0.3));
+    expect(between.color!.withValues(alpha: 1), accent);
     expect(bars[0].spots.first, const FlSpot(-0.5, 100000));
     expect(bars[1].spots.first, const FlSpot(-0.5, 101000));
     for (final edge in bars.take(2)) {
@@ -508,31 +536,64 @@ void main() {
     // 06/11: A 100k … C 120k
     expect(data.lineBarsData[0].spots.first, const FlSpot(-0.5, 100000));
     expect(data.lineBarsData[1].spots.first, const FlSpot(-0.5, 120000));
-    expect(find.text('Khoảng giá các shop'), findsOneWidget);
-    expect(find.text('Khoảng giá ghi được'), findsNothing);
+    // 12/11: A did not report; its 97k of 11/11 is still the lowest (not C's 101k)
+    expect(recorded.single.spots.last, const FlSpot(6.5, 97000));
+    // Only 08/11 has no new price at all: the one dashed part
+    final held = [
+      for (final b in _lines(data))
+        if (b.dashArray != null) b,
+    ];
+    expect(held.single.spots.where((s) => !s.isNull()), const [
+      FlSpot(1.5, 102000),
+      FlSpot(2.5, 102000),
+    ]);
+    expect(
+      find.text(
+        'Vùng tô: từ giá thấp nhất tới cao nhất giữa các shop mỗi ngày',
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('legend: at most 3 items, wording per mode', (tester) async {
-    final legend = find.byKey(const ValueKey('price-legend'));
-    Iterable<String> items() => tester
-        .widgetList<Text>(
-          find.descendant(of: legend, matching: find.byType(Text)),
-        )
-        .map((t) => t.data!);
-
+  testWidgets('a card: caption on top, no price axis or grid, 2 dates', (
+    tester,
+  ) async {
     await _pump(tester, await _view(_single()));
-    expect(items(), ['Giá thấp nhất', 'Khoảng giá ghi được']);
 
-    await _pump(
-      tester,
-      await _view(_single()),
-      saved: SavedPrice(vnd: 105000, savedAt: _at(20)),
+    final card = find.byKey(const ValueKey('price-chart-card'));
+    final caption = tester.widget<Text>(
+      find.byKey(const ValueKey('price-chart-caption')),
     );
-    expect(items(), [
-      'Giá thấp nhất',
-      'Khoảng giá ghi được',
-      'Giá lúc bạn lưu',
-    ]);
+    expect(
+      caption.data,
+      'Vùng tô: từ giá thấp nhất tới cao nhất ghi được mỗi ngày',
+    );
+    expect(caption.textAlign, TextAlign.center);
+    expect(
+      tester.getRect(find.byWidget(caption)).bottom,
+      lessThan(tester.getRect(find.byType(LineChart)).top),
+    );
+    expect(
+      find.descendant(of: card, matching: find.byType(LineChart)),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('price-legend')), findsNothing);
+
+    final data = _data(tester);
+    expect(data.titlesData.leftTitles.sideTitles.showTitles, isFalse);
+    expect(data.titlesData.bottomTitles.sideTitles.showTitles, isFalse);
+    expect(data.gridData.show, isFalse);
+    // Only the first and last day, under the plot's edges
+    final dates = find.byKey(const ValueKey('price-chart-dates'));
+    final texts = tester
+        .widgetList<Text>(
+          find.descendant(of: dates, matching: find.byType(Text)),
+        )
+        .map((t) => t.data);
+    expect(texts, ['06/11', '12/11']);
+    final plot = tester.getRect(find.byType(LineChart));
+    expect(tester.getRect(find.text('06/11')).left, plot.left);
+    expect(tester.getRect(find.text('12/11')).right, plot.right);
   });
 
   testWidgets('"Giá lúc bạn lưu": dashed horizontal line, label on the right', (
@@ -550,43 +611,50 @@ void main() {
     expect(saved.dashArray, isNotNull);
     expect(saved.label.show, isTrue);
     expect(saved.label.alignment, Alignment.topRight);
-    expect(saved.label.labelResolver(saved), 'Lúc bạn lưu');
+    expect(saved.label.labelResolver(saved), 'giá lúc bạn lưu');
     // The axis makes room for it
     expect(data.maxY, greaterThan(105000));
   });
 
-  testWidgets('dots only on the lowest point (with its price) and the latest', (
+  testWidgets('one green dot on the lowest point, its price in short', (
     tester,
   ) async {
     await _pump(tester, await _view(_single()), selected: 3);
 
-    final marks = _marks(_data(tester));
-    expect(
-      [for (final m in marks) m.$1],
-      const [FlSpot(5, 90000), FlSpot(6, 99000)],
-    );
-    expect(marks[0].$2.label, '90.000 ₫');
-    expect(marks[1].$2.label, isNull);
+    final (spot, dot) = _marks(_data(tester)).single;
+    expect(spot, const FlSpot(5, 90000));
+    expect(dot.label, '90k');
+    expect(dot.color, lowestDotColor(AppTheme.lightTheme));
+    expect(dot.labelOnLeft, isFalse);
   });
 
-  testWidgets('Y axis: 10% padding and round labels', (tester) async {
+  testWidgets('Y range: 10% padding around the data shown', (tester) async {
     await _pump(tester, await _view(_single()));
 
     final data = _data(tester);
-    // 90k–101k → 88,9k–102,1k, every 5.000
+    // 90k–101k → 88,9k–102,1k
     expect(data.minY, closeTo(88900, 0.01));
     expect(data.maxY, closeTo(102100, 0.01));
-    expect(data.titlesData.leftTitles.sideTitles.interval, 5000);
   });
 
-  testWidgets('sale day: faint vertical line labelled "11.11"', (tester) async {
+  testWidgets('sale day: dashed vertical line, "11.11" above the plot', (
+    tester,
+  ) async {
     await _pump(tester, await _view(_single()));
 
-    final lines = _data(tester).extraLinesData.verticalLines;
-    expect(lines, hasLength(1));
-    expect(lines.single.x, 5);
-    expect(lines.single.label.labelResolver(lines.single), '11.11');
-    expect(lines.single.color!.a, lessThan(0.5));
+    final data = _data(tester);
+    final line = data.extraLinesData.verticalLines.single;
+    expect(line.x, 5);
+    expect(line.dashArray, isNotNull);
+    expect(line.color!.a, lessThanOrEqualTo(0.5));
+    expect(line.label.show, isFalse);
+    expect(data.titlesData.topTitles.sideTitles.showTitles, isTrue);
+
+    final plot = tester.getRect(find.byType(LineChart));
+    final label = tester.getRect(find.text('11.11'));
+    expect(label.bottom, lessThanOrEqualTo(plot.top + 18));
+    // Centered on the column of 11/11
+    expect(label.center.dx, closeTo(plot.left + plot.width * 5.5 / 7, 1));
   });
 
   testWidgets('day details: lowest, highest, reports, sale, after voucher', (
@@ -632,18 +700,21 @@ void main() {
       '3 shop có giá',
     ]);
 
+    // Only B reported: A and C count with their recent prices, dated
     await _pump(tester, view, selected: 3);
     expect(_details(tester), [
       '09/11/2026',
-      'Thấp nhất: 105.000 ₫ · Shop B',
-      '1 shop có giá',
+      'Thấp nhất: 102.000 ₫ · Shop A · ghi ngày 07/11',
+      'Cao nhất: 120.000 ₫ · Shop C · ghi ngày 06/11',
+      '3 shop có giá',
     ]);
 
     await _pump(tester, view, selected: 2);
     expect(_details(tester), [
       '08/11/2026',
       'Thấp nhất: 102.000 ₫ · Shop A',
-      'Cao nhất: 108.000 ₫ · Shop B',
+      'Cao nhất: 120.000 ₫ · Shop C · ghi ngày 06/11',
+      '3 shop có giá',
       'Chưa có giá mới · giá ghi ngày 07/11',
     ]);
   });
@@ -653,8 +724,8 @@ void main() {
   ) async {
     await _pump(tester, await _view(_single()));
     expect(find.byKey(const ValueKey('price-day-details')), findsNothing);
-    final box = tester.getRect(find.byType(LineChart));
-    double columnX(int i) => box.left + 44 + (box.width - 44) * (i + 0.5) / 7;
+    final box = tester.getRect(find.byKey(const ValueKey('price-chart-touch')));
+    double columnX(int i) => box.left + box.width * (i + 0.5) / 7;
 
     await tester.tapAt(Offset(box.right - 2, box.top + 2));
     await tester.pump();
@@ -662,8 +733,11 @@ void main() {
     final band = _data(tester).rangeAnnotations.verticalRangeAnnotations;
     expect((band.single.x1, band.single.x2), (5.5, 6.5));
 
-    // Among the dates under the plot
-    await tester.tapAt(Offset(columnX(5) + 3, box.bottom - 4));
+    // Between the 2 dates under the plot
+    final dates = tester.getRect(
+      find.byKey(const ValueKey('price-chart-dates')),
+    );
+    await tester.tapAt(Offset(columnX(5) + 3, dates.center.dy));
     await tester.pump();
     expect(_details(tester).first, '11/11/2026');
 
@@ -769,13 +843,10 @@ void main() {
     expect(find.text('Dữ liệu mẫu'), findsNothing);
   });
 
-  for (final (name, theme) in [
-    ('light', AppTheme.lightTheme),
-    ('dark', AppTheme.darkTheme),
-  ]) {
-    testWidgets('gallery, $name: group, one product, too few days', (
-      tester,
-    ) async {
+  for (final dark in [false, true]) {
+    testWidgets('gallery, ${dark ? 'dark' : 'light'}: group, one product, '
+        'too few days', (tester) async {
+      final theme = dark ? AppTheme.darkTheme : AppTheme.lightTheme;
       tester.view.physicalSize = const Size(412, 3200);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -799,7 +870,7 @@ void main() {
       expect(find.byType(LineChart), findsNWidgets(2));
       expect(find.byKey(const ValueKey('price-too-few')), findsOneWidget);
       final group = tester.widgetList<LineChart>(find.byType(LineChart)).first;
-      expect(_lines(group.data).last.color, theme.colorScheme.tertiary);
+      expect(_lines(group.data).last.color, priceLineColor(theme));
       expect(tester.takeException(), isNull);
     });
   }

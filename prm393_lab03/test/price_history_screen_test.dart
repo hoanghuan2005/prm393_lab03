@@ -316,7 +316,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Giá lúc bạn lưu'), findsOneWidget);
+      final chart = tester.widget<PriceHistoryChart>(
+        find.byType(PriceHistoryChart),
+      );
+      expect(chart.savedPrice?.vnd, 640000);
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('price-milestone-saved')),

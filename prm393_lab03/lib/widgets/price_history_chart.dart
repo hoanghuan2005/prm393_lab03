@@ -7,20 +7,23 @@ import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/daily_price.dart';
 import '../models/sale_event.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/price_history_viewmodel.dart';
 import 'demo_data_badge.dart';
 
-/// "Biểu đồ giá tham khảo" (SteamDB style): a light band from the lowest to the highest
-/// price of each day (between the shops of a group, between the reports of one
-/// product) and ONE step line of the lowest price, each day flat across its own column.
-/// A day without a new price keeps the latest ones for at most [maxHeldDays] days, the
-/// line dashed and fainter; after that the chart breaks. A dashed horizontal line
-/// marks "Giá lúc bạn lưu" when given. Dots only on the lowest point (with its price)
-/// and the latest one; sale days are faint vertical lines. Under the chart: the day
-/// touched (or picked in the list) and the price milestones of the period. Below
-/// [minChartDays] days with a price, only the milestones are shown.
+/// "Biểu đồ giá tham khảo", in a rounded card: a caption saying what the band is, a
+/// light band from the lowest to the highest price of each day (between the shops of
+/// a group, between the reports of one product) and ONE violet step line of the
+/// lowest price, each day flat across its own column. A day without a new price keeps
+/// the latest ones for at most [maxHeldDays] days, the line dashed and fainter; after
+/// that the chart breaks. No price axis and no grid: one green dot on the lowest point
+/// with its price in short ("490k"), a dashed "giá lúc bạn lưu" line labelled on the
+/// right, sale days as dashed vertical lines named above the plot, and the first and
+/// last day under it. Under the card: the day touched (or picked in the list) and the
+/// price milestones of the period. Below [minChartDays] days with a price, only the
+/// milestones are shown.
 class PriceHistoryChart extends StatefulWidget {
   /// A day without a new price keeps the latest one this many days at most
   static const int maxHeldDays = 7;
@@ -36,6 +39,8 @@ class PriceHistoryChart extends StatefulWidget {
 
   /// Day shown in the details panel at first (index in [PriceHistoryView.days])
   final int? initialSelectedDay;
+
+  /// Height of the plot, sale names above it included (not the dates under it)
   final double chartHeight;
 
   const PriceHistoryChart({
@@ -44,7 +49,7 @@ class PriceHistoryChart extends StatefulWidget {
     this.onRangeChanged,
     this.savedPrice,
     this.initialSelectedDay,
-    this.chartHeight = 220,
+    this.chartHeight = 150,
   });
 
   @override
@@ -72,9 +77,18 @@ const List<int> _heldDash = [3, 4];
 /// Dash of the "Giá lúc bạn lưu" line
 const List<int> _savedDash = [6, 4];
 
-/// Width of the price labels on the left; the plot starts there
-const double _leftAxisWidth = 44;
-const double _bottomAxisHeight = 24;
+/// Room above the plot for the names of the sale days
+const double _saleLabelHeight = 18;
+
+/// The lowest-price line and its band: violet, readable on both themes
+Color priceLineColor(ThemeData theme) => theme.brightness == Brightness.dark
+    ? AppColors.purpleLight
+    : AppColors.purple;
+
+/// The dot on the lowest point of the period
+Color lowestDotColor(ThemeData theme) => theme.brightness == Brightness.dark
+    ? AppColors.successLight
+    : AppColors.onSuccessContainer;
 
 /// "11.11" for a double day, else the name when short, else the day
 String saleShortLabel(SaleEvent e) {
@@ -192,13 +206,19 @@ class BandDay {
   final int? highVnd;
   final String? highShop;
 
-  /// Shops with a list price on the day the prices were recorded
+  /// Index of the day [lowVnd] / [highVnd] were recorded (this day, or earlier when
+  /// the shop's price is kept); null means this day
+  final int? lowFrom;
+  final int? highFrom;
+
+  /// Shops in the band: a new price this day or one kept from the last 7 days
   final int shopCount;
 
-  /// No new price this day: the band of day [sourceIndex] is kept
+  /// No shop has a new price this day: every price is kept from before
   final bool isCarried;
 
-  /// Index of the day the prices were recorded; null without a band
+  /// Index of the most recent day a price of the band was recorded; null without a
+  /// band
   final int? sourceIndex;
 
   const BandDay({
@@ -207,32 +227,26 @@ class BandDay {
     this.lowShop,
     this.highVnd,
     this.highShop,
+    this.lowFrom,
+    this.highFrom,
     this.shopCount = 0,
     this.isCarried = false,
     this.sourceIndex,
   });
 
-  /// A band recorded this day (not carried)
+  /// At least one new price this day
   bool get isRecorded => lowVnd != null && !isCarried;
-
-  BandDay _carriedTo(DateTime other, int source) => BandDay(
-    day: other,
-    lowVnd: lowVnd,
-    lowShop: lowShop,
-    highVnd: highVnd,
-    highShop: highShop,
-    shopCount: shopCount,
-    isCarried: true,
-    sourceIndex: source,
-  );
 }
 
 /// The band of each day from [pointsByShop] ([aggregateDaily] of each shop over the
-/// same days). Several shops: from the lowest to the highest shop price (each shop's
-/// minVnd, ties to the earlier shop). One shop (a single product): from the lowest to
-/// the highest kept report. A day without any price keeps the latest band for at most
-/// [maxCarryDays] days ([fillForward]), then has none. [shopNames]: names for points
-/// without one. List prices only: afterVoucher never enters.
+/// same days). Each shop keeps its latest price for at most [maxCarryDays] days
+/// ([fillForward], never before the start), so a shop that did not report today still
+/// counts with its recent price and the band does not jump. Several shops: from the
+/// lowest to the highest shop price (each shop's minVnd; on a tie the more recent
+/// price, then the earlier shop). One shop (a single product): from the lowest to the
+/// highest kept report. A day is [BandDay.isCarried] when no shop has a new price.
+/// [shopNames]: names for points without one. List prices only: afterVoucher never
+/// enters.
 List<BandDay> computeBand(
   Map<String, List<DailyPricePoint>> pointsByShop, {
   Map<String, String> shopNames = const {},
@@ -242,55 +256,60 @@ List<BandDay> computeBand(
   final single = pointsByShop.length == 1;
   DateTime dayOf(int i) =>
       pointsByShop.values.firstWhere((p) => i < p.length)[i].day;
+  final filled = {
+    for (final MapEntry(:key, :value) in pointsByShop.entries)
+      key: fillForward(value, maxDays: maxCarryDays),
+  };
 
-  BandDay recorded(int i) {
+  BandDay at(int i) {
+    // (price, recorded on, shop name, point of that day) of each shop in the band
     final picks = [
-      for (final MapEntry(:key, :value) in pointsByShop.entries)
-        if (value.elementAtOrNull(i) case final p? when p.minVnd != null)
-          (p.minVnd!, p.shopName ?? shopNames[key], p),
+      for (final MapEntry(:key, :value) in filled.entries)
+        if (value.elementAtOrNull(i) case final f?)
+          (
+            f.vnd,
+            f.sourceIndex,
+            pointsByShop[key]![f.sourceIndex].shopName ?? shopNames[key],
+            pointsByShop[key]![f.sourceIndex],
+          ),
     ];
     if (picks.isEmpty) return BandDay(day: dayOf(i));
+    final newest = picks.map((p) => p.$2).reduce(math.max);
     if (single) {
-      final (low, shop, p) = picks.single;
+      final (low, from, shop, p) = picks.single;
       return BandDay(
-        day: p.day,
+        day: dayOf(i),
         lowVnd: low,
         lowShop: shop,
         highVnd: p.maxVnd ?? low,
         highShop: shop,
+        lowFrom: from,
+        highFrom: from,
         shopCount: 1,
-        sourceIndex: i,
+        isCarried: from != i,
+        sourceIndex: newest,
       );
     }
     var low = picks.first, high = picks.first;
     for (final p in picks.skip(1)) {
-      if (p.$1 < low.$1) low = p;
-      if (p.$1 > high.$1) high = p;
+      if (p.$1 < low.$1 || (p.$1 == low.$1 && p.$2 > low.$2)) low = p;
+      if (p.$1 > high.$1 || (p.$1 == high.$1 && p.$2 > high.$2)) high = p;
     }
     return BandDay(
-      day: low.$3.day,
+      day: dayOf(i),
       lowVnd: low.$1,
-      lowShop: low.$2,
+      lowShop: low.$3,
       highVnd: high.$1,
-      highShop: high.$2,
+      highShop: high.$3,
+      lowFrom: low.$2,
+      highFrom: high.$2,
       shopCount: picks.length,
-      sourceIndex: i,
+      isCarried: newest != i,
+      sourceIndex: newest,
     );
   }
 
-  final days = [for (var i = 0; i < length; i++) recorded(i)];
-  // Same rule as the line of G5b: at most [maxCarryDays], never before the start
-  final filled = fillForward([
-    for (final d in days) DailyPricePoint(day: d.day, minVnd: d.lowVnd),
-  ], maxDays: maxCarryDays);
-  return [
-    for (var i = 0; i < length; i++)
-      switch (filled[i]) {
-        FilledPrice(held: true, :final sourceIndex) =>
-          days[sourceIndex]._carriedTo(days[i].day, sourceIndex),
-        _ => days[i],
-      },
-  ];
+  return [for (var i = 0; i < length; i++) at(i)];
 }
 
 /// [computeBand] of a view: shop names from the products, else from the reports
@@ -348,9 +367,10 @@ class PriceMilestone {
   String get detail => [dayLabel, ?shop, ?saleName].join(' · ');
 }
 
-/// At most 4 rows, in this order: "Thấp nhất", "Cao nhất" (days with a recorded price
-/// only, ties to the most recent day), "Lúc bạn lưu" (when [savedPrice] is given) and
-/// "Hiện tại thấp nhất" (the most recent day with a recorded price). Facts only.
+/// At most 4 rows, in this order: "Thấp nhất", "Cao nhất" (days with a new price only,
+/// each price dated the day it was recorded, ties to the most recent one), "Lúc bạn
+/// lưu" (when [savedPrice] is given) and "Hiện tại thấp nhất" (the lowest price of the
+/// most recent day with a new price, dated the day it was recorded). Facts only.
 List<PriceMilestone> buildPriceMilestones(
   List<BandDay> band,
   SavedPrice? savedPrice,
@@ -380,33 +400,32 @@ List<PriceMilestone> buildPriceMilestones(
     saleName: _saleOn(day, saleEvents),
   );
 
-  int? lowest, highest, latest;
+  // (price, index of the day it was recorded, shop)
+  (int, int, String?)? lowest, highest, latest;
   for (var i = 0; i < band.length; i++) {
     final b = band[i];
     if (!b.isRecorded) continue;
-    if (lowest == null || b.lowVnd! <= band[lowest].lowVnd!) lowest = i;
-    if (highest == null || b.highVnd! >= band[highest].highVnd!) highest = i;
-    latest = i;
+    final low = (b.lowVnd!, b.lowFrom ?? i, b.lowShop);
+    final high = (b.highVnd!, b.highFrom ?? i, b.highShop);
+    if (lowest == null ||
+        low.$1 < lowest.$1 ||
+        (low.$1 == lowest.$1 && low.$2 >= lowest.$2)) {
+      lowest = low;
+    }
+    if (highest == null ||
+        high.$1 > highest.$1 ||
+        (high.$1 == highest.$1 && high.$2 >= highest.$2)) {
+      highest = high;
+    }
+    latest = low;
   }
   final savedDay = savedPrice == null ? null : vnDate(savedPrice.savedAt);
   final savedIndex = band.indexWhere((b) => b.day == savedDay);
   return [
-    if (lowest case final i?)
-      row(
-        PriceMilestoneKind.lowest,
-        band[i].lowVnd!,
-        band[i].day,
-        i,
-        band[i].lowShop,
-      ),
-    if (highest case final i?)
-      row(
-        PriceMilestoneKind.highest,
-        band[i].highVnd!,
-        band[i].day,
-        i,
-        band[i].highShop,
-      ),
+    if (lowest case (final vnd, final i, final shop))
+      row(PriceMilestoneKind.lowest, vnd, band[i].day, i, shop),
+    if (highest case (final vnd, final i, final shop))
+      row(PriceMilestoneKind.highest, vnd, band[i].day, i, shop),
     if ((savedPrice, savedDay) case (final saved?, final day?))
       row(
         PriceMilestoneKind.saved,
@@ -414,14 +433,8 @@ List<PriceMilestone> buildPriceMilestones(
         day,
         savedIndex < 0 ? null : savedIndex,
       ),
-    if (latest case final i?)
-      row(
-        PriceMilestoneKind.latest,
-        band[i].lowVnd!,
-        band[i].day,
-        i,
-        band[i].lowShop,
-      ),
+    if (latest case (final vnd, final i, final shop))
+      row(PriceMilestoneKind.latest, vnd, band[i].day, i, shop),
   ];
 }
 
@@ -466,7 +479,6 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     );
     final recordedDays = band.where((b) => b.isRecorded).length;
     final drawn = recordedDays >= PriceHistoryChart.minChartDays;
-    final accent = theme.colorScheme.tertiary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -500,45 +512,9 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
           ],
         ),
         const SizedBox(height: AppDimens.space12),
-        if (drawn) ...[
-          Wrap(
-            key: const ValueKey('price-legend'),
-            spacing: AppDimens.space16,
-            runSpacing: AppDimens.space4,
-            children: [
-              _LegendItem(
-                swatch: _Swatch.line,
-                color: accent,
-                text: 'Giá thấp nhất',
-              ),
-              _LegendItem(
-                swatch: _Swatch.band,
-                color: accent,
-                text: _view.isGroup
-                    ? 'Khoảng giá các shop'
-                    : 'Khoảng giá ghi được',
-              ),
-              if (widget.savedPrice != null)
-                _LegendItem(
-                  swatch: _Swatch.dashed,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  text: 'Giá lúc bạn lưu',
-                ),
-            ],
-          ),
-          const SizedBox(height: AppDimens.space12),
-          ExcludeSemantics(
-            child: SizedBox(
-              height: widget.chartHeight,
-              child: LayoutBuilder(
-                builder: (context, box) => _touchArea(
-                  box,
-                  _chart(theme, band, milestones, accent, muted),
-                ),
-              ),
-            ),
-          ),
-        ] else
+        if (drawn)
+          _card(theme, band, milestones, muted)
+        else
           Text(
             'Chưa đủ dữ liệu để vẽ biểu đồ ($recordedDays ngày có giá)',
             key: const ValueKey('price-too-few'),
@@ -556,14 +532,79 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     );
   }
 
-  /// The whole height of a day's column selects that day; dragging sideways moves
-  /// along the days
+  /// The chart in a rounded card: what the band means on top, the plot, then the
+  /// first and last day under it
+  Widget _card(
+    ThemeData theme,
+    List<BandDay> band,
+    List<PriceMilestone> milestones,
+    TextStyle muted,
+  ) {
+    final days = _view.days;
+    return Container(
+      key: const ValueKey('price-chart-card'),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.space12,
+        AppDimens.space12,
+        AppDimens.space12,
+        AppDimens.space8,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppDimens.borderLarge,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _view.isGroup
+                ? 'Vùng tô: từ giá thấp nhất tới cao nhất giữa các shop mỗi ngày'
+                : 'Vùng tô: từ giá thấp nhất tới cao nhất ghi được mỗi ngày',
+            key: const ValueKey('price-chart-caption'),
+            textAlign: TextAlign.center,
+            style: muted,
+          ),
+          const SizedBox(height: AppDimens.space8),
+          ExcludeSemantics(
+            child: LayoutBuilder(
+              builder: (context, box) => _touchArea(
+                box,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: widget.chartHeight,
+                      child: _chart(theme, band, milestones, muted),
+                    ),
+                    Padding(
+                      key: const ValueKey('price-chart-dates'),
+                      padding: const EdgeInsets.only(top: AppDimens.space6),
+                      child: Row(
+                        children: [
+                          Text(formatDayMonth(days.first), style: muted),
+                          const Spacer(),
+                          Text(formatDayMonth(days.last), style: muted),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The whole height of a day's column, dates included, selects that day; dragging
+  /// sideways moves along the days
   Widget _touchArea(BoxConstraints box, Widget chart) {
     final n = _view.days.length;
     void select(Offset p) {
-      final plot = box.maxWidth - _leftAxisWidth;
-      if (n == 0 || plot <= 0) return;
-      _select(((p.dx - _leftAxisWidth) / plot * n).floor().clamp(0, n - 1));
+      if (n == 0 || box.maxWidth <= 0) return;
+      _select((p.dx / box.maxWidth * n).floor().clamp(0, n - 1));
     }
 
     return GestureDetector(
@@ -580,7 +621,6 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     ThemeData theme,
     List<BandDay> band,
     List<PriceMilestone> milestones,
-    Color accent,
     TextStyle muted,
   ) {
     final days = _view.days;
@@ -591,7 +631,7 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
     ];
     if (values.isEmpty || days.isEmpty) return const SizedBox.shrink();
     final axis = priceAxis(values.reduce(math.min), values.reduce(math.max));
-    final step = math.max(1, (days.length / 5).ceil());
+    final line = priceLineColor(theme);
     final low = [
       for (final b in band)
         if (b.lowVnd case final vnd?)
@@ -599,6 +639,10 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
         else
           null,
     ];
+    final sales = {
+      for (final e in _view.saleEvents)
+        if (days.indexOf(vnDate(e.date)) case final i when i >= 0) i: e,
+    };
 
     // Invisible edges of the band, filled in between
     LineChartBarData edge(int? Function(BandDay) value) => LineChartBarData(
@@ -607,29 +651,23 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
       color: Colors.transparent,
       dotData: const FlDotData(show: false),
     );
+    // One dot: the lowest point, with its price in short
     final marks = <(FlSpot, PriceDotPainter)>[
       for (final m in milestones)
-        if (m.dayIndex case final i?
-            when m.kind == PriceMilestoneKind.latest ||
-                m.kind == PriceMilestoneKind.lowest)
+        if (m.dayIndex case final i? when m.kind == PriceMilestoneKind.lowest)
           (
             FlSpot(i.toDouble(), m.vnd.toDouble()),
             PriceDotPainter(
-              color: accent,
+              color: lowestDotColor(theme),
               ringColor: theme.colorScheme.surface,
-              label: m.kind == PriceMilestoneKind.lowest
-                  ? formatVnd(m.vnd)
-                  : null,
+              radius: 4,
+              label: _axisVnd(m.vnd.toDouble()),
               labelStyle: AppTextStyles.labelMedium.copyWith(
-                fontSize: 10,
+                fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),
-              // Kept inside the plot near its edges
-              labelAlign: i < days.length * 0.2
-                  ? -1
-                  : i > days.length * 0.8
-                  ? 1
-                  : 0,
+              // Kept inside the plot near the right edge
+              labelOnLeft: i > days.length * 0.8,
             ),
           ),
     ];
@@ -639,14 +677,14 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
       if (stepSpots(low, held: true) case final spots when spots.isNotEmpty)
         LineChartBarData(
           spots: spots,
-          color: accent.withValues(alpha: 0.45),
+          color: line.withValues(alpha: 0.45),
           barWidth: 1.5,
           dashArray: _heldDash,
           dotData: const FlDotData(show: false),
         ),
       LineChartBarData(
         spots: stepSpots(low),
-        color: accent,
+        color: line,
         barWidth: 2,
         dotData: const FlDotData(show: false),
       ),
@@ -658,30 +696,6 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
           dotData: FlDotData(
             getDotPainter: (_, _, _, index) => marks[index].$2,
           ),
-        ),
-    ];
-
-    final verticalLines = <VerticalLine>[
-      for (final e in _view.saleEvents)
-        if (days.indexOf(vnDate(e.date)) case final i when i >= 0)
-          VerticalLine(
-            x: i.toDouble(),
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
-            strokeWidth: 1,
-            dashArray: [3, 3],
-            label: VerticalLineLabel(
-              show: true,
-              alignment: Alignment.topRight,
-              padding: const EdgeInsets.only(left: 2, top: 0),
-              style: muted.copyWith(fontSize: 10),
-              labelResolver: (_) => saleShortLabel(e),
-            ),
-          ),
-      if (_selected case final i?)
-        VerticalLine(
-          x: i.toDouble(),
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
-          strokeWidth: 1,
         ),
     ];
 
@@ -697,11 +711,28 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
           BetweenBarsData(
             fromIndex: 0,
             toIndex: 1,
-            color: accent.withValues(alpha: 0.16),
+            color: line.withValues(alpha: 0.2),
           ),
         ],
         extraLinesData: ExtraLinesData(
-          verticalLines: verticalLines,
+          verticalLines: [
+            // Sale days; their names are written above the plot
+            for (final i in sales.keys)
+              VerticalLine(
+                x: i.toDouble(),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
+                strokeWidth: 1,
+                dashArray: [3, 3],
+              ),
+            if (_selected case final i?)
+              VerticalLine(
+                x: i.toDouble(),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                strokeWidth: 1,
+              ),
+          ],
           horizontalLines: [
             if (saved != null)
               HorizontalLine(
@@ -713,8 +744,8 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
                   show: true,
                   alignment: Alignment.topRight,
                   padding: const EdgeInsets.only(right: 2, bottom: 2),
-                  style: muted.copyWith(fontSize: 10),
-                  labelResolver: (_) => 'Lúc bạn lưu',
+                  style: muted,
+                  labelResolver: (_) => 'giá lúc bạn lưu',
                 ),
               ),
           ],
@@ -729,50 +760,36 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
               ),
           ],
         ),
-        gridData: FlGridData(
-          drawVerticalLine: false,
-          horizontalInterval: axis.step,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-            strokeWidth: 1,
-          ),
-        ),
+        // No price axis and no grid: prices are on the dot, the lines and below
+        gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(),
+          leftTitles: const AxisTitles(),
           rightTitles: const AxisTitles(),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: _leftAxisWidth,
-              interval: axis.step,
-              minIncluded: false,
-              maxIncluded: false,
-              getTitlesWidget: (v, meta) => Text(_axisVnd(v), style: muted),
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: _bottomAxisHeight,
-              interval: 1,
-              minIncluded: false,
-              maxIncluded: false,
-              getTitlesWidget: (v, meta) {
-                final i = v.round();
-                final show =
-                    v == i &&
-                    (i == days.length - 1 || i % step == 0) &&
-                    !(i != days.length - 1 && days.length - 1 - i < step / 2);
-                return show && i >= 0 && i < days.length
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(formatDayMonth(days[i]), style: muted),
-                      )
-                    : const SizedBox.shrink();
-              },
-            ),
-          ),
+          bottomTitles: const AxisTitles(),
+          topTitles: sales.isEmpty
+              ? const AxisTitles()
+              : AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: _saleLabelHeight,
+                    interval: 1,
+                    minIncluded: false,
+                    maxIncluded: false,
+                    getTitlesWidget: (v, meta) => switch (sales[v.round()]) {
+                      final e? when v == v.roundToDouble() => SideTitleWidget(
+                        meta: meta,
+                        space: 2,
+                        fitInside: SideTitleFitInsideData.fromTitleMeta(
+                          meta,
+                          distanceFromEdge: 0,
+                        ),
+                        child: Text(saleShortLabel(e), style: muted),
+                      ),
+                      _ => const SizedBox.shrink(),
+                    },
+                  ),
+                ),
         ),
         // Touches are handled by [_touchArea], over whole columns
         lineTouchData: const LineTouchData(enabled: false),
@@ -808,7 +825,8 @@ List<FlSpot> _bandSpots(List<BandDay> band, int? Function(BandDay) value) {
 }
 
 /// A chart dot: filled, or [hollow], on a ring of the surface color so it stands out
-/// from the line; [label] is written small under it
+/// from the line; [label] is written beside it, on a faint surface-colored patch so
+/// the line under it does not cross the text
 class PriceDotPainter extends FlDotPainter {
   final Color color;
   final Color ringColor;
@@ -817,8 +835,8 @@ class PriceDotPainter extends FlDotPainter {
   final String? label;
   final TextStyle? labelStyle;
 
-  /// -1: the label starts at the dot, 0: centered, 1: ends at the dot
-  final int labelAlign;
+  /// The label on the left of the dot (near the right edge of the plot)
+  final bool labelOnLeft;
 
   const PriceDotPainter({
     required this.color,
@@ -827,7 +845,7 @@ class PriceDotPainter extends FlDotPainter {
     this.hollow = false,
     this.label,
     this.labelStyle,
-    this.labelAlign = 0,
+    this.labelOnLeft = false,
   });
 
   static const double _ring = 1.5;
@@ -852,12 +870,13 @@ class PriceDotPainter extends FlDotPainter {
         text: TextSpan(text: text, style: labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      final left = switch (labelAlign) {
-        < 0 => offsetInCanvas.dx - radius,
-        > 0 => offsetInCanvas.dx + radius - painter.width,
-        _ => offsetInCanvas.dx - painter.width / 2,
-      };
-      final topLeft = Offset(left, offsetInCanvas.dy + radius + _ring + 2);
+      const gap = 4.0;
+      final topLeft = Offset(
+        labelOnLeft
+            ? offsetInCanvas.dx - radius - _ring - gap - painter.width
+            : offsetInCanvas.dx + radius + _ring + gap,
+        offsetInCanvas.dy - painter.height / 2,
+      );
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           (topLeft & painter.size).inflate(2),
@@ -888,74 +907,8 @@ class PriceDotPainter extends FlDotPainter {
     hollow,
     label,
     labelStyle,
-    labelAlign,
+    labelOnLeft,
   ];
-}
-
-enum _Swatch { line, band, dashed }
-
-class _LegendItem extends StatelessWidget {
-  final _Swatch swatch;
-  final Color color;
-  final String text;
-
-  const _LegendItem({
-    required this.swatch,
-    required this.color,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CustomPaint(
-          size: const Size(22, 10),
-          painter: _SwatchPainter(swatch, color),
-        ),
-        const SizedBox(width: AppDimens.space4),
-        // Wraps instead of overflowing on narrow screens
-        Flexible(child: Text(text, style: AppTextStyles.labelMedium)),
-      ],
-    );
-  }
-}
-
-class _SwatchPainter extends CustomPainter {
-  final _Swatch swatch;
-  final Color color;
-
-  const _SwatchPainter(this.swatch, this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final y = size.height / 2;
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = swatch == _Swatch.line ? 2 : 1;
-    switch (swatch) {
-      case _Swatch.band:
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(2)),
-          Paint()..color = color.withValues(alpha: 0.16),
-        );
-      case _Swatch.line:
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-      case _Swatch.dashed:
-        for (var x = 0.0; x < size.width; x += 10) {
-          canvas.drawLine(
-            Offset(x, y),
-            Offset(math.min(x + 6, size.width), y),
-            paint,
-          );
-        }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SwatchPainter old) =>
-      old.swatch != swatch || old.color != color;
 }
 
 /// One line of the day details: [muted] for the after-voucher reference,
@@ -969,9 +922,10 @@ class DayDetailLine {
 }
 
 /// Details of day [i]: date; lowest price and shop; highest price and shop when it
-/// differs; how many shops had a price (reports for a single product); for a carried
-/// day the day the prices were recorded; the sale of that day; the after-voucher price
-/// as a faint reference line
+/// differs; how many shops are in the band (reports for a single product); for a
+/// carried day the most recent day a price was recorded; the sale of that day; the
+/// after-voucher price as a faint reference line. A price kept from another day than
+/// the one the details speak of says when it was recorded.
 List<DayDetailLine> describeDay(
   PriceHistoryView view,
   List<BandDay> band,
@@ -986,28 +940,40 @@ List<DayDetailLine> describeDay(
   final vouchers = [for (final p in points) ?p.afterVoucherMinVnd];
   String at(String? shop) => shop == null ? '' : ' · $shop';
 
+  // The day the details speak of: this one, or the last day with a new price
+  final ref = b.isCarried ? b.sourceIndex! : i;
+  String from(int? recorded) => recorded == null || recorded == ref
+      ? ''
+      : ' · ghi ngày ${formatDayMonth(band[recorded].day)}';
+
   final lines = <DayDetailLine>[DayDetailLine(formatDate(b.day))];
   if (b.lowVnd case final low?) {
-    lines.add(DayDetailLine('Thấp nhất: ${formatVnd(low)}${at(b.lowShop)}'));
+    lines.add(
+      DayDetailLine(
+        'Thấp nhất: ${formatVnd(low)}${at(b.lowShop)}${from(b.lowFrom)}',
+      ),
+    );
     if (b.highVnd case final high? when high != low) {
-      lines.add(DayDetailLine('Cao nhất: ${formatVnd(high)}${at(b.highShop)}'));
+      lines.add(
+        DayDetailLine(
+          'Cao nhất: ${formatVnd(high)}${at(b.highShop)}${from(b.highFrom)}',
+        ),
+      );
+    }
+    if (view.isGroup) {
+      lines.add(DayDetailLine('${b.shopCount} shop có giá'));
+    } else if (!b.isCarried) {
+      lines.add(DayDetailLine('$reports báo cáo'));
     }
     if (b.isCarried) {
       lines.add(
         DayDetailLine(
-          'Chưa có giá mới · giá ghi ngày '
-          '${formatDayMonth(band[b.sourceIndex!].day)}',
+          'Chưa có giá mới · giá ghi ngày ${formatDayMonth(band[ref].day)}',
         ),
       );
       if (reports > 0) {
         lines.add(DayDetailLine('Chưa đủ dữ liệu ($reports báo cáo)'));
       }
-    } else {
-      lines.add(
-        DayDetailLine(
-          view.isGroup ? '${b.shopCount} shop có giá' : '$reports báo cáo',
-        ),
-      );
     }
   } else if (reports > 0) {
     lines.add(DayDetailLine('Chưa đủ dữ liệu ($reports báo cáo)'));

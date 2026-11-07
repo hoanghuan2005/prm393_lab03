@@ -141,7 +141,9 @@ class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
 
     final uid = _uid;
     final now = _now();
+    // G2c: a sample item's price is never shared
     if (uid != null &&
+        !item.isDemo &&
         _canContribute &&
         _sharingEnabled &&
         mine != null &&
@@ -206,7 +208,8 @@ class SharedPriceViewModel extends ChangeNotifier with DeferredNotify {
     final title = HistoryContribution.titleOf(item);
     if (isDisposed || history == null || uid == null) return;
     if (!_canContribute || !_sharingEnabled) return;
-    if (productKey == null || title == null) return;
+    // G2c: sample items never report to "Giá tham khảo"
+    if (item.isDemo || productKey == null || title == null) return;
     for (final report in HistoryContribution.reportsFor(
       item,
       snapshots,

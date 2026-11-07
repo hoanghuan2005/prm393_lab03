@@ -17,6 +17,7 @@ import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/decision_card_panel.dart';
+import '../widgets/demo_data_badge.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/price_history_panel.dart';
@@ -419,6 +420,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      if (item.isDemo) const DemoDataBadge(),
                       if (item.shopName != null && item.shopName!.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(

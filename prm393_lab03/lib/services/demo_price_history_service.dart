@@ -5,8 +5,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/utils/price_history_ids.dart';
 import '../core/utils/product_code.dart';
 import '../models/price_history.dart';
+import '../models/same_product.dart';
+import '../models/shopee_link.dart';
 import 'firestore_paths.dart';
 import 'service_guard.dart';
+import 'wishlist_service.dart';
 
 /// (done, total) documents of the current step
 typedef DemoProgress = void Function(int done, int total);
@@ -23,6 +26,14 @@ abstract interface class DemoPriceHistoryService {
 
   /// Sample groups (productGroups isDemo), in seed order
   Future<List<ProductGroup>> demoGroups();
+
+  /// G2c: puts sample products in [uid]'s own wishlist ([DemoWishlistPicker]), as
+  /// items marked isDemo; a product already there is skipped. Returns items added.
+  Future<int> addDemoItemsToMyWishlist(String uid);
+
+  /// G2c: deletes only [uid]'s isDemo wishlist items, with their price snapshots and
+  /// decisions. Returns items deleted.
+  Future<int> removeDemoItemsFromMyWishlist(String uid);
 }
 
 class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
@@ -36,6 +47,9 @@ class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
     DateTime Function()? now,
   ]) : _paths = FirestorePaths(firestore ?? FirebaseFirestore.instance),
        _now = now ?? DateTime.now;
+
+  /// The app's wishlist writes (same model, same rules) for G2c
+  late final WishlistService _wishlist = FirestoreWishlistService(_paths.db);
 
   @override
   Future<int> seed({DemoProgress? onProgress}) => guard(() async {
@@ -88,6 +102,90 @@ class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
       ..sort((a, b) => order(a).compareTo(order(b)));
   });
 
+  @override
+  Future<int> addDemoItemsToMyWishlist(String uid) => guard(() async {
+    final now = _now();
+    final groups = await demoGroups();
+    final snapshot = await _paths
+        .priceHistory()
+        .where('isDemo', isEqualTo: true)
+        .get();
+    final products = {
+      for (final doc in snapshot.docs)
+        doc.id: PriceHistoryProduct.fromFirestore(doc),
+    };
+    // A day more than the window, like "Cùng món ở shop khác"
+    final from = Timestamp.fromDate(
+      now.subtract(const Duration(days: SameProduct.windowDays + 1)),
+    );
+    final reports = <String, List<PriceHistoryReport>>{};
+    for (final key in products.keys) {
+      final docs = await _paths
+          .priceHistoryReports(key)
+          .where('observedAt', isGreaterThanOrEqualTo: from)
+          .get();
+      reports[key] = docs.docs.map(PriceHistoryReport.fromFirestore).toList();
+    }
+    final picks = DemoWishlistPicker.pick(
+      groups: groups,
+      products: products,
+      reports: reports,
+      now: now,
+    );
+    final existing = {
+      for (final item in await _wishlist.watchItems(uid).first)
+        if (item.isDemo) item.productKey,
+    };
+    var added = 0;
+    for (final pick in picks) {
+      final p = pick.product;
+      if (existing.contains(p.productKey)) continue;
+      final item = await _wishlist.add(
+        uid,
+        title: p.title,
+        priceVnd: pick.priceVnd,
+        url: ShopeeLink.fromProductKey(p.productKey)?.canonicalUrl,
+        shopName: p.shopName.isEmpty ? null : p.shopName,
+        coolingOffDays: 0,
+      );
+      await _wishlist.update(
+        uid,
+        item.copyWith(
+          productKey: p.productKey,
+          modelId: pick.modelId,
+          variantLabel: pick.variantLabel,
+          isDemo: true,
+        ),
+      );
+      added++;
+    }
+    return added;
+  });
+
+  @override
+  Future<int> removeDemoItemsFromMyWishlist(String uid) => guard(() async {
+    final items = [
+      for (final item in await _wishlist.watchItems(uid).first)
+        if (item.isDemo) item,
+    ];
+    for (final item in items) {
+      final decisions = await _paths
+          .decisions(uid)
+          .where('itemId', isEqualTo: item.id)
+          .get();
+      if (decisions.docs.isNotEmpty) {
+        final batch = _paths.db.batch();
+        for (final d in decisions.docs) {
+          batch.delete(d.reference);
+        }
+        await batch.commit();
+      }
+      // Its price snapshots go with it
+      await _wishlist.delete(uid, item.id);
+    }
+    return items.length;
+  });
+
   /// Published sale days of the web calendar; none when they cannot be read
   Future<Set<String>> _publishedSaleDays() async {
     try {
@@ -126,6 +224,105 @@ class FirestoreDemoPriceHistoryService implements DemoPriceHistoryService {
 
 /// One document to write: full path and data
 typedef DemoDoc = ({String path, Map<String, dynamic> data});
+
+/// A sample product to put in an admin's wishlist (G2c), with the variant to save
+class DemoWishlistPick {
+  final PriceHistoryProduct product;
+
+  /// Shopee model id of the variant; null for a product without variants
+  final String? modelId;
+
+  /// Name of the variant ("Đen"); null without variants
+  final String? variantLabel;
+
+  /// Latest list price of the variant (last 7 days): the price "lúc lưu"
+  final int priceVnd;
+
+  const DemoWishlistPick({
+    required this.product,
+    this.modelId,
+    this.variantLabel,
+    required this.priceVnd,
+  });
+}
+
+/// Which sample products go to the wishlist (G2c). Pure: the reports are the last 7
+/// days of each product.
+abstract final class DemoWishlistPicker {
+  /// Products with a productCode, each from another group
+  static const int coded = 3;
+
+  /// Other shops selling the same variant with a list price in the last 7 days
+  /// ("Cùng món ở shop khác"): at least this many, so 3 shops with the item's own
+  static const int minOtherShops = 2;
+
+  /// [coded] products from the first groups (in [groups] order) where one listing
+  /// and variant has a recent price and the most other shops with that variant
+  /// (at least [minOtherShops]); then the first product without a productCode that
+  /// has a recent price.
+  static List<DemoWishlistPick> pick({
+    required List<ProductGroup> groups,
+    required Map<String, PriceHistoryProduct> products,
+    required Map<String, List<PriceHistoryReport>> reports,
+    required DateTime now,
+  }) {
+    /// Latest list price of [p] for [variantCode] in the last 7 days
+    int? priceOf(PriceHistoryProduct p, String? variantCode) =>
+        pickLowestOffers(
+          {p.productKey: p},
+          reports,
+          variantCode,
+          now,
+        ).firstOrNull?.priceVnd;
+
+    final picks = <DemoWishlistPick>[];
+    for (final group in groups) {
+      if (picks.length >= coded) break;
+      DemoWishlistPick? best;
+      var bestOthers = minOtherShops - 1;
+      for (final key in group.productKeys) {
+        final p = products[key];
+        final code = p?.productCode;
+        if (p == null || !p.isDemo || code == null) continue;
+        final others = {
+          for (final o in products.values)
+            if (o.isDemo &&
+                o.productCode == code &&
+                SameProduct.shopIdOf(o.productKey) !=
+                    SameProduct.shopIdOf(key))
+              o.productKey: o,
+        };
+        for (final MapEntry(key: modelKey, value: variant)
+            in p.variantCodes.entries) {
+          final price = priceOf(p, variant);
+          if (price == null) continue;
+          final count = pickLowestOffers(others, reports, variant, now).length;
+          if (count <= bestOthers) continue;
+          bestOthers = count;
+          best = DemoWishlistPick(
+            product: p,
+            modelId: modelKey,
+            variantLabel: DemoPriceHistoryData.variantLabelOf(variant),
+            priceVnd: price,
+          );
+        }
+      }
+      if (best != null) picks.add(best);
+    }
+
+    final uncoded = [
+      for (final p in products.values)
+        if (p.isDemo && p.productCode == null && p.variantCodes.isEmpty) p,
+    ]..sort((a, b) => a.productKey.compareTo(b.productKey));
+    for (final p in uncoded) {
+      final price = priceOf(p, null);
+      if (price == null) continue;
+      picks.add(DemoWishlistPick(product: p, priceVnd: price));
+      break;
+    }
+    return picks;
+  }
+}
 
 /// Generates the sample set. Pure and seeded: the same day gives the same data.
 /// All names (products, brands, shops) are made up. A shop's list price holds for
@@ -409,6 +606,17 @@ abstract final class DemoPriceHistoryData {
         3 => [variants.last],
         _ => variants,
       };
+
+  /// Name of a sample variant from its code ("den" → "Đen"); null when unknown
+  static String? variantLabelOf(String code) {
+    for (final name in [
+      for (final g in _groups) ...g.variants,
+      for (final e in _extras) ...e.variants,
+    ]) {
+      if (buildVariantCode(name) == code) return name;
+    }
+    return null;
+  }
 
   /// Noon of a Vietnamese date, as an instant (safe for [PriceHistoryIds.dayKey])
   static DateTime _vnNoon(DateTime vnDate) => vnDate

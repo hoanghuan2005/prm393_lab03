@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/utils/price_history_ids.dart';
 import 'package:prm393_lab03/models/price_history.dart';
+import 'package:prm393_lab03/models/same_product.dart';
+import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/services/demo_price_history_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
+import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/price_history_demo_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_history_demo_section.dart';
@@ -575,6 +578,162 @@ void main() {
       );
     });
 
+    group('G2c sample items in my wishlist', () {
+      Future<List<WishlistItem>> items() async => [
+        for (final d
+            in (await db.collection('users/ada/wishlistItems').get()).docs)
+          WishlistItem.fromFirestore(d),
+      ];
+
+      test('3 coded items from 3 groups, 1 without a code; added once', () async {
+        await service.seed();
+        expect(await service.addDemoItemsToMyWishlist('ada'), 4);
+
+        final added = await items();
+        expect(added, hasLength(4));
+        final groups = <String?>{};
+        var uncoded = 0;
+        for (final item in added) {
+          expect(item.isDemo, isTrue);
+          expect(item.latestPriceVnd, greaterThan(0));
+          expect(item.url, startsWith('https://shopee.vn/product/'));
+          final product = PriceHistoryProduct.fromFirestore(
+            await db.doc('priceHistory/${item.productKey}').get(),
+          );
+          expect(product.isDemo, isTrue);
+          expect(item.title, product.title);
+          if (product.productCode == null) {
+            uncoded++;
+            expect(item.modelId, isNull);
+          } else {
+            groups.add(product.groupId);
+            expect(product.variantCodes[item.modelId], isNotNull);
+            expect(item.variantLabel, isNotNull);
+          }
+          final snapshots = await db
+              .collection('users/ada/wishlistItems/${item.id}/priceSnapshots')
+              .get();
+          expect(snapshots.size, 1);
+        }
+        expect(uncoded, 1);
+        expect(groups, hasLength(3));
+
+        // Again: nothing new
+        expect(await service.addDemoItemsToMyWishlist('ada'), 0);
+        expect(await items(), hasLength(4));
+      });
+
+      test('the picks: 2+ other shops of the same variant in the last 7 days', () {
+        final docs = DemoPriceHistoryData.generate(now: _now);
+        final products = <String, PriceHistoryProduct>{};
+        final reports = <String, List<PriceHistoryReport>>{};
+        final groups = <ProductGroup>[];
+        for (final d in docs) {
+          final parts = d.path.split('/');
+          if (parts.first == 'productGroups') {
+            groups.add(
+              ProductGroup(
+                id: parts[1],
+                name: d.data['name'] as String,
+                productKeys: List<String>.from(d.data['productKeys'] as List),
+                isDemo: true,
+              ),
+            );
+          } else if (parts.length == 2) {
+            products[parts[1]] = PriceHistoryProduct(
+              productKey: parts[1],
+              title: d.data['title'] as String,
+              shopId: d.data['shopId'] as String,
+              itemId: d.data['itemId'] as String,
+              shopName: d.data['shopName'] as String,
+              groupId: d.data['groupId'] as String?,
+              isDemo: true,
+              createdAt: _now,
+              productCode: d.data['productCode'] as String?,
+              variantCodes: Map<String, String>.from(
+                (d.data['variantCodes'] as Map?) ?? const {},
+              ),
+            );
+          } else {
+            final r = _Report(parts[1], parts[3], d.data);
+            (reports[r.productKey] ??= []).add(
+              PriceHistoryReport(
+                id: r.id,
+                amountVnd: r.amount,
+                priceType: HistoryPriceType.values.firstWhere(
+                  (t) => t.key == r.type,
+                ),
+                modelKey: d.data['modelKey'] as String,
+                observedAt: r.observedAt,
+                source: HistoryReportSource.demo,
+              ),
+            );
+          }
+        }
+
+        final picks = DemoWishlistPicker.pick(
+          groups: groups,
+          products: products,
+          reports: reports,
+          now: _now,
+        );
+        expect(picks, hasLength(4));
+        for (final p in picks.take(3)) {
+          final code = p.product.variantCodes[p.modelId]!;
+          final others = {
+            for (final o in products.values)
+              if (o.productCode == p.product.productCode &&
+                  o.shopId != p.product.shopId)
+                o.productKey: o,
+          };
+          expect(
+            pickLowestOffers(others, reports, code, _now).length,
+            greaterThanOrEqualTo(DemoWishlistPicker.minOtherShops),
+          );
+        }
+        expect(picks.last.product.productCode, isNull);
+        expect(picks.last.modelId, isNull);
+      });
+
+      test('removing deletes only my sample items, their prices and decisions',
+          () async {
+        final real = await FirestoreWishlistService(
+          db,
+        ).add('ada', title: 'Món thật', priceVnd: 100000, coolingOffDays: 0);
+        await service.seed();
+        await service.addDemoItemsToMyWishlist('ada');
+        final demo = (await items()).firstWhere((i) => i.isDemo);
+        await db.collection('users/ada/decisions').add({
+          'itemId': demo.id,
+          'choice': 'wait',
+        });
+        await db.collection('users/ada/decisions').add({
+          'itemId': real.id,
+          'choice': 'wait',
+        });
+
+        expect(await service.removeDemoItemsFromMyWishlist('ada'), 4);
+
+        expect((await items()).map((i) => i.id), [real.id]);
+        expect(
+          (await db
+                  .collection('users/ada/wishlistItems/${demo.id}/priceSnapshots')
+                  .get())
+              .size,
+          0,
+        );
+        expect(
+          (await db
+                  .collection('users/ada/wishlistItems/${real.id}/priceSnapshots')
+                  .get())
+              .size,
+          1,
+        );
+        final decisions = await db.collection('users/ada/decisions').get();
+        expect(decisions.docs.map((d) => d['itemId']), [real.id]);
+      });
+    });
+
     test('reads published sale events', () async {
       await db.collection('saleEvents').add({
         'name': 'Sale giữa tháng',
@@ -712,4 +871,10 @@ class _FakeDemoService implements DemoPriceHistoryService {
 
   @override
   Future<List<ProductGroup>> demoGroups() async => groups;
+
+  @override
+  Future<int> addDemoItemsToMyWishlist(String uid) async => 0;
+
+  @override
+  Future<int> removeDemoItemsFromMyWishlist(String uid) async => 0;
 }

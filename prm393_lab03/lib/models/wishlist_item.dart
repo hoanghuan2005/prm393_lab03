@@ -65,6 +65,10 @@ class WishlistItem {
   /// The user pressed "Mua" in the extension; only the app records the purchase
   final DateTime? buyIntentAt;
 
+  /// G2c: a sample item an admin added from the Firebase Demo Area to try the price
+  /// features. Shown with "Dữ liệu mẫu", left out of the stats, never shared (G7).
+  final bool isDemo;
+
   const WishlistItem({
     required this.id,
     required this.title,
@@ -93,6 +97,7 @@ class WishlistItem {
     this.productRatingCount,
     this.shopRating,
     this.buyIntentAt,
+    this.isDemo = false,
   });
 
   bool get hasPrice => latestPriceVnd != null;
@@ -177,6 +182,7 @@ class WishlistItem {
       productRatingCount: readCount(data['productRatingCount']),
       shopRating: readRating(data['shopRating']),
       buyIntentAt: readDate(data['buyIntentAt']),
+      isDemo: data['isDemo'] == true,
     );
   }
 
@@ -210,6 +216,7 @@ class WishlistItem {
       if (productRatingCount != null) 'productRatingCount': productRatingCount,
       if (shopRating != null) 'shopRating': shopRating,
       if (buyIntentAt != null) 'buyIntentAt': toTimestamp(buyIntentAt),
+      if (isDemo) 'isDemo': true,
     };
   }
 
@@ -242,6 +249,7 @@ class WishlistItem {
     double? shopRating,
     DateTime? buyIntentAt,
     bool clearBuyIntent = false,
+    bool? isDemo,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -271,6 +279,7 @@ class WishlistItem {
       productRatingCount: productRatingCount ?? this.productRatingCount,
       shopRating: shopRating ?? this.shopRating,
       buyIntentAt: clearBuyIntent ? null : buyIntentAt ?? this.buyIntentAt,
+      isDemo: isDemo ?? this.isDemo,
     );
   }
 
@@ -304,7 +313,8 @@ class WishlistItem {
           other.productRating == productRating &&
           other.productRatingCount == productRatingCount &&
           other.shopRating == shopRating &&
-          other.buyIntentAt == buyIntentAt;
+          other.buyIntentAt == buyIntentAt &&
+          other.isDemo == isDemo;
 
   @override
   int get hashCode => Object.hashAll([
@@ -335,5 +345,6 @@ class WishlistItem {
     productRatingCount,
     shopRating,
     buyIntentAt,
+    isDemo,
   ]);
 }

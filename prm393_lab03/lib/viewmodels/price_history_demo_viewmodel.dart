@@ -84,11 +84,28 @@ class PriceHistoryDemoViewModel extends ChangeNotifier with ErrorReporting {
   Future<int?> seed() =>
       _run((onProgress) => demoService.seed(onProgress: onProgress), 'seed');
 
-  /// Number of documents deleted; null on error ([errorMessage])
-  Future<int?> clear() => _run(
-    (onProgress) => demoService.clearDemo(onProgress: onProgress),
-    'clear',
-  );
+  /// Number of documents deleted; null on error ([errorMessage]). The sample items
+  /// of the signed-in admin's own wishlist go first (G2c).
+  Future<int?> clear() => _run((onProgress) async {
+    if (_uid case final uid?) {
+      await demoService.removeDemoItemsFromMyWishlist(uid);
+    }
+    return demoService.clearDemo(onProgress: onProgress);
+  }, 'clear');
+
+  /// G2c: sample items added to the admin's own wishlist; null on error
+  Future<int?> addDemoItems() => _run((_) async {
+    final uid = _uid;
+    if (uid == null) return 0;
+    return demoService.addDemoItemsToMyWishlist(uid);
+  }, 'add items');
+
+  /// G2c: sample items removed from the admin's own wishlist; null on error
+  Future<int?> removeDemoItems() => _run((_) async {
+    final uid = _uid;
+    if (uid == null) return 0;
+    return demoService.removeDemoItemsFromMyWishlist(uid);
+  }, 'remove items');
 
   Future<int?> _run(
     Future<int> Function(DemoProgress onProgress) action,

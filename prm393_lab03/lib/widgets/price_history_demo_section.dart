@@ -58,6 +58,27 @@ class PriceHistoryDemoSection extends StatelessWidget {
             variant: AppButtonVariant.danger,
             onPressed: vm.isBusy ? null : () => _clear(context, vm),
           ),
+          const SizedBox(height: AppDimens.space16),
+          Text(
+            'Món mẫu trong danh sách của bạn: 3 món có "Cùng món ở shop khác" và '
+            '1 món không có mã món, có nhãn "Dữ liệu mẫu", không tính vào thống '
+            'kê và không gửi giá đi. Cần tạo dữ liệu giá mẫu trước.',
+            style: muted,
+          ),
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+            title: 'Thêm món mẫu vào danh sách của tôi',
+            icon: Icons.playlist_add_rounded,
+            variant: AppButtonVariant.secondary,
+            onPressed: vm.isBusy ? null : () => _addItems(context, vm),
+          ),
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+            title: 'Gỡ món mẫu khỏi danh sách',
+            icon: Icons.playlist_remove_rounded,
+            variant: AppButtonVariant.secondary,
+            onPressed: vm.isBusy ? null : () => _removeItems(context, vm),
+          ),
           if (vm.groups.isNotEmpty) ...[
             const SizedBox(height: AppDimens.space16),
             Text('Mở biểu đồ nhóm mẫu', style: AppTextStyles.labelLarge),
@@ -113,8 +134,8 @@ class PriceHistoryDemoSection extends StatelessWidget {
       context,
       title: 'Xoá dữ liệu giá mẫu?',
       message:
-          'Chỉ xoá document có nhãn mẫu trong priceHistory và productGroups. '
-          'Không hoàn tác được.',
+          'Chỉ xoá document có nhãn mẫu trong priceHistory và productGroups, '
+          'cùng các món mẫu trong danh sách của bạn. Không hoàn tác được.',
       confirmLabel: 'Xoá',
       isDanger: true,
     );
@@ -127,6 +148,61 @@ class PriceHistoryDemoSection extends StatelessWidget {
           count == null
               ? vm.errorMessage ?? 'Chưa xoá được dữ liệu giá mẫu.'
               : 'Đã xoá $count document giá mẫu.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addItems(
+    BuildContext context,
+    PriceHistoryDemoViewModel vm,
+  ) async {
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Thêm món mẫu vào danh sách?',
+      message:
+          'Thêm tối đa 4 món mẫu vào danh sách mong muốn của bạn để thử Giá '
+          'tham khảo và Cùng món ở shop khác. Món đã có thì bỏ qua.',
+      confirmLabel: 'Thêm',
+    );
+    if (!ok || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final count = await vm.addDemoItems();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          count == null
+              ? vm.errorMessage ?? 'Chưa thêm được món mẫu.'
+              : count == 0
+              ? 'Không có món mẫu mới để thêm. Đã tạo dữ liệu giá mẫu chưa?'
+              : 'Đã thêm $count món mẫu vào danh sách.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeItems(
+    BuildContext context,
+    PriceHistoryDemoViewModel vm,
+  ) async {
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'Gỡ món mẫu khỏi danh sách?',
+      message:
+          'Chỉ xoá các món có nhãn "Dữ liệu mẫu" trong danh sách của bạn, kèm '
+          'lịch sử giá của chúng. Món thật không bị đụng tới.',
+      confirmLabel: 'Gỡ',
+      isDanger: true,
+    );
+    if (!ok || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final count = await vm.removeDemoItems();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          count == null
+              ? vm.errorMessage ?? 'Chưa gỡ được món mẫu.'
+              : 'Đã gỡ $count món mẫu khỏi danh sách.',
         ),
       ),
     );

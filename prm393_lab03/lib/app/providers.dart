@@ -278,7 +278,8 @@ class AppProviders extends StatelessWidget {
             ..updateSources(
               userName: auth.displayName,
               purchases: purchaseVm.allPurchases,
-              wishlistItems: wishlistVm.allItems,
+              // G2c: sample items never enter the monthly report
+              wishlistItems: wishlistVm.realItems,
             ),
         ),
         // Góc nhìn / Chiêm nghiệm: recomputes stats whenever purchases, wishlist or month change
@@ -298,7 +299,8 @@ class AppProviders extends StatelessWidget {
           update: (_, purchaseVm, wishlistVm, insightsVm) =>
               insightsVm!..updateSources(
                 purchases: purchaseVm.allPurchases,
-                wishlistItems: wishlistVm.allItems,
+                // G2c: sample items never enter the stats
+                wishlistItems: wishlistVm.realItems,
                 month: purchaseVm.selectedMonth,
               ),
         ),

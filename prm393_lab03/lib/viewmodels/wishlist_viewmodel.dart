@@ -106,6 +106,10 @@ class WishlistViewModel extends ChangeNotifier
   String get searchQuery => _searchQuery;
   List<WishlistItem> get allItems => List.unmodifiable(_allItems);
 
+  /// Every item but the samples of the Firebase Demo Area (G2c): what stats count
+  List<WishlistItem> get realItems =>
+      List.unmodifiable(_allItems.where((i) => !i.isDemo));
+
   /// "Cần xem lại": the review date chosen with "Chờ" has arrived (also the fallback
   /// when notifications are off or unsupported)
   List<WishlistItem> get reviewDueItems =>
@@ -146,17 +150,20 @@ class WishlistViewModel extends ChangeNotifier
   /// Total money saved by dropping impulse purchases
   int get totalSavedAmount {
     return _allItems
-        .where((item) => item.status == WishlistStatus.skipped)
+        .where(
+          (item) => !item.isDemo && item.status == WishlistStatus.skipped,
+        )
         .fold(0, (sum, item) => sum + (item.latestPriceVnd ?? 0));
   }
 
   /// Items still being considered (shown on Trang chủ)
-  int get consideringCount =>
-      _allItems.where((i) => i.status == WishlistStatus.considering).length;
+  int get consideringCount => _allItems
+      .where((i) => !i.isDemo && i.status == WishlistStatus.considering)
+      .length;
 
   /// Total items currently in psychological cooldown
   int get cooldownCount {
-    return _allItems.where((item) => item.isInCooldown).length;
+    return _allItems.where((item) => !item.isDemo && item.isInCooldown).length;
   }
 
   /// Called by the provider whenever the signed-in user changes

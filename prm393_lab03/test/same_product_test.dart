@@ -282,6 +282,25 @@ void main() {
       expect(service.lastIsDemo, isTrue);
     });
 
+    test('G2c: a sample item of the wishlist only lists sample shops', () async {
+      service.products[_own] = _product(
+        _own,
+        variants: {'11': 'den'},
+        isDemo: true,
+      );
+      service.products[_d] = _product(
+        _d,
+        shop: 'Shop D',
+        variants: {'51': 'den'},
+        isDemo: true,
+      );
+      final item = _item().copyWith(isDemo: true);
+      await vm.load(item);
+      final offers = vm.stateFor(item)!.offers;
+      expect(offers.map((o) => o.productKey), [_d]);
+      expect(offers.single.isDemo, isTrue);
+    });
+
     test('"Không phải món này": hidden at once, saved, undone', () async {
       await vm.load(_item());
       expect(await vm.hide(_b), isTrue);

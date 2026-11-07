@@ -255,6 +255,11 @@ void main() {
       expect(history.sent.last.$2.amountVnd, 415000);
     });
 
+    test('G2c: a sample item of the wishlist sends nothing', () async {
+      await vm.reportHistory(_item.copyWith(isDemo: true), [_s(420000)]);
+      expect(history.sent, isEmpty);
+    });
+
     test('guests send nothing', () async {
       vm.updateUser('uid-guest', canContribute: false);
       await vm.reportHistory(_item, [_s(420000)]);

@@ -35,6 +35,7 @@ import '../services/share_intent_service.dart';
 import '../services/shared_price_service.dart';
 import '../services/shopping_profile_service.dart';
 import '../services/user_service.dart';
+import '../services/voucher_service.dart';
 import '../services/wishlist_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -154,6 +155,7 @@ class AppProviders extends StatelessWidget {
           create: (_) => FileSaverDataExportService(),
         ),
         Provider<FeedbackService>(create: (_) => FirestoreFeedbackService()),
+        ChangeNotifierProvider<VoucherService>(create: (_) => VoucherService()),
         ChangeNotifierProvider(
           create: (context) => PrePurchaseViewModel(
             aiService: AiPrePurchaseService(

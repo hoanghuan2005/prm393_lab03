@@ -378,6 +378,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+
+    match /vouchers/{id} {
+      allow read: if request.auth != null;
+      allow write: if isStaff() || isAdmin();
+    }
     // Đề xuất đợt sale (cross-role flow): a user proposes a sale on the app (pending);
     // staff approve it (the same batch publishes the saleEvent and writes the user's
     // inbox) or reject it with a reason. Only pending → approved | rejected, once.
@@ -405,6 +411,34 @@ service cloud.firestore {
     }
     match /{path=**}/purchases/{purchaseId} {
       allow list: if isAdmin();
+    }
+
+    // Voucher Shopee do Admin/Nhân viên cào bằng Chrome extension (bản Lab): extension đăng nhập ẩn danh,
+    // được liên kết QR với một tài khoản có role staff/admin → ghi shopeeVouchers với capturedBy = uid tài khoản đó.
+    function staffDevice(ownerUid) {
+      return ownerUid is string && linkedDevice(ownerUid) && roleOf(ownerUid) in ['staff', 'admin'];
+    }
+    function optInt(f, max) { return !(f in d()) || (d()[f] is int && d()[f] >= 0 && d()[f] <= max); }
+    function optText(f, max) { return !(f in d()) || text(d()[f], max); }
+    function validShopeeVoucher() {
+      return d().keys().hasOnly(['raw', 'kind', 'scope', 'unavailable', 'sourceUrl', 'capturedBy', 'source', 'lastSeenAt',
+                                 'amountVnd', 'percent', 'capVnd', 'minSpendVnd', 'usedPct', 'minQty', 'expiresText',
+                                 'shopId', 'shopName', 'productKey', 'productTitle'])
+        && text(d().raw, 300)
+        && d().kind in ['amount', 'percent', 'shipping', 'coin', 'bundle', 'unknown']
+        && d().scope in ['shop', 'platform', 'payment', 'unknown']
+        && d().unavailable is bool && d().source == 'extension'
+        && text(d().sourceUrl, 500) && d().sourceUrl.matches('https://([a-z0-9-]+[.])?shopee[.]vn/.*')
+        && d().capturedBy is string && d().lastSeenAt == request.time
+        && optInt('amountVnd', 999999999) && optInt('percent', 100) && optInt('capVnd', 999999999)
+        && optInt('minSpendVnd', 999999999) && optInt('usedPct', 100) && optInt('minQty', 999)
+        && optText('expiresText', 40) && optText('shopId', 40) && optText('shopName', 100)
+        && optText('productKey', 128) && optText('productTitle', 120);
+    }
+    match /shopeeVouchers/{id} {
+      allow read, delete: if isStaff();
+      allow create, update: if validShopeeVoucher()
+        && ((isStaff() && d().capturedBy == request.auth.uid) || staffDevice(d().capturedBy));
     }
 
   }

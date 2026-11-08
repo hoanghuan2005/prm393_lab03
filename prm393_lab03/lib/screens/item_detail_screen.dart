@@ -27,6 +27,8 @@ import '../widgets/review_date_sheet.dart';
 import '../widgets/same_product_card.dart';
 import '../widgets/shopee_rating_line.dart';
 import '../widgets/undo_snack_bar.dart';
+import '../widgets/voucher_suggestion_card.dart';
+import '../widgets/why_i_buy_logo.dart';
 import '../widgets/wishlist_card.dart';
 
 /// Screen 03: Item Detail & Decision Card from Figma "Why I Buy"
@@ -318,9 +320,45 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final needsPurchase =
         item.status == WishlistStatus.purchased && item.purchaseId == null;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Chi tiết & Quyết định'),
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Chi tiết & Quyết định',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Sửa thông tin món',
@@ -386,6 +424,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       shopName: item.shopName,
                       shopRating: item.shopRating,
                     ),
+                  ],
+                  if (item.shopName != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Shop: ${item.shopName}',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                  if (item.vouchers case final vouchers? when vouchers.isNotEmpty) ...[
+                    const SizedBox(height: AppDimens.space8),
+                    Text(
+                      'Voucher đã lưu'
+                      '${item.vouchersAt != null ? ' (${formatDate(item.vouchersAt!)})' : ''}:',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    for (final v in vouchers)
+                      Text('• $v', style: AppTextStyles.caption),
                   ],
                   const SizedBox(height: AppDimens.space12),
                   Text(
@@ -483,6 +538,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // G8: the same item and variant in other shops (automatic match)
             if (item.productKey != null) SameProductCard(item: item),
+
+            // Voucher & promotion suggestions from Admin / Shopee / Lazada
+            VoucherSuggestionCard(item: item),
 
             // Comparison between multiple shops in Wishlist
             _ShopPriceComparisonSection(

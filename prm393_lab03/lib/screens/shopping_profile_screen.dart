@@ -17,6 +17,7 @@ import '../widgets/section_card.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/error_view.dart';
 import '../widgets/states/loading_view.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 24 "Hồ sơ mua sắm" (spec 7.2, A-12): 24.1 empty · 24.2 owned items ·
 /// 24.3 add / edit. Everything is optional and never read from Shopee.
@@ -51,8 +52,42 @@ class ShoppingProfileScreen extends StatelessWidget {
     String? groupName(String? id) =>
         groups.where((g) => g.id == id).firstOrNull?.name;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ mua sắm')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Hồ sơ mua sắm',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppDimens.space16),
         children: [

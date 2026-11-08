@@ -10,6 +10,7 @@ import '../theme/app_text_styles.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Steps of "Trước khi mua"; [sale] only after "Khuyến mãi"
 enum _Step { item, motive, sale, usage }
@@ -129,13 +130,40 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         if (!didPop) _back();
       },
       child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurface
+              : Theme.of(context).colorScheme.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          automaticallyImplyLeading: false,
+          leadingWidth: 42,
           leading: IconButton(
-            icon: const Icon(Icons.chevron_left_rounded),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
             tooltip: 'Quay lại',
             onPressed: _back,
           ),
-          title: Text(appBarTitle),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  appBarTitle,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         body: SafeArea(
           child: Column(

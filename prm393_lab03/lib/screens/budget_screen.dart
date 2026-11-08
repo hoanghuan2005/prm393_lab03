@@ -10,6 +10,7 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/budget_setting_sheet.dart';
 import '../widgets/month_picker_sheet.dart';
 import '../widgets/states/state_view.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 31, 31a, 31b: Ngân sách theo nhóm from Figma "Why I Buy ver2"
 class BudgetScreen extends StatelessWidget {
@@ -73,25 +74,40 @@ class BudgetScreen extends StatelessWidget {
     // Groups with a limit, plus groups without one that already have spending this month
     final visibleGroups = budgetVm.visibleGroups;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
         leading: IconButton(
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: AppColors.onPrimary,
-          ),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Ngân sách theo nhóm',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onPrimary,
-          ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Ngân sách theo nhóm',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

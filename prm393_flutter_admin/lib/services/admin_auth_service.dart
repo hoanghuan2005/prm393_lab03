@@ -16,6 +16,12 @@ enum SignInFailure {
   popupBlocked,
   network,
   unauthorizedDomain,
+
+  /// Email / password: wrong email or password, or no such account
+  wrongCredentials,
+
+  /// Email / password: too many failed attempts, Firebase blocks for a while
+  tooManyAttempts,
   unknown,
 }
 
@@ -34,6 +40,9 @@ abstract class AdminAuthService {
 
   /// Google Sign-In in a popup. Throws [SignInException].
   Future<void> signInWithGoogle();
+
+  /// Email / password account (e.g. the team's shared admin). Throws [SignInException].
+  Future<void> signInWithEmail(String email, String password);
 
   Future<void> signOut();
 
@@ -70,6 +79,27 @@ class FirebaseAdminAuthService implements AdminAuthService {
         'popup-blocked' => SignInFailure.popupBlocked,
         'network-request-failed' => SignInFailure.network,
         'unauthorized-domain' => SignInFailure.unauthorizedDomain,
+        _ => SignInFailure.unknown,
+      }, e.code);
+    }
+  }
+
+  @override
+  Future<void> signInWithEmail(String email, String password) async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw SignInException(switch (e.code) {
+        'invalid-credential' ||
+        'invalid-email' ||
+        'wrong-password' ||
+        'user-not-found' ||
+        'user-disabled' => SignInFailure.wrongCredentials,
+        'too-many-requests' => SignInFailure.tooManyAttempts,
+        'network-request-failed' => SignInFailure.network,
         _ => SignInFailure.unknown,
       }, e.code);
     }

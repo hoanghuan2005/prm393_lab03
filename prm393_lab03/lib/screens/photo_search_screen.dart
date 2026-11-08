@@ -19,6 +19,7 @@ import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/states/empty_view.dart';
 import '../widgets/states/error_view.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// "Chụp để tìm": the user photographs something they like but cannot name; AI names
 /// it, then the app offers shop searches and — first — adding it to the wishlist so it
@@ -168,11 +169,41 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
     final vm = context.watch<PhotoSearchViewModel>();
     final state = vm.state;
     final hasPhoto = state is! UiInitial<ItemRecognition>;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Chụp để tìm'),
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Chụp để tìm',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
         actions: [
           if (hasPhoto && state is! UiLoading<ItemRecognition>)
             TextButton(

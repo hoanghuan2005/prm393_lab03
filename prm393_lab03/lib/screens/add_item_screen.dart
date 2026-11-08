@@ -17,6 +17,7 @@ import '../widgets/app_dropdown_field.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 04: Add Item Screen from Figma "Why I Buy".
 /// With [existing] it edits that item; the price is then changed with "Cập nhật giá" instead.
@@ -249,9 +250,42 @@ class _AddItemScreenState extends State<AddItemScreen> {
   Widget build(BuildContext context) {
     final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
     final groups = context.watch<BudgetViewModel>().groups;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleText = _isEdit ? 'Sửa thông tin món' : 'Thêm món cân nhắc';
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(_isEdit ? 'Sửa thông tin món' : 'Thêm món cân nhắc'),
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              titleText,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimens.space16),

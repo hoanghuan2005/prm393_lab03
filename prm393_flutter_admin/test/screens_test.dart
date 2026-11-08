@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_flutter_admin/app/admin_theme.dart';
+import 'package:prm393_flutter_admin/models/shopee_voucher.dart';
 import 'package:prm393_flutter_admin/models/user_summary.dart';
 import 'package:prm393_flutter_admin/screens/admin_shell.dart';
 import 'package:prm393_flutter_admin/screens/sign_in_screen.dart';
@@ -8,6 +9,7 @@ import 'package:prm393_flutter_admin/services/admin_ai_service.dart';
 import 'package:prm393_flutter_admin/services/admin_auth_service.dart';
 import 'package:prm393_flutter_admin/services/dashboard_service.dart';
 import 'package:prm393_flutter_admin/services/push_service.dart';
+import 'package:prm393_flutter_admin/services/shopee_voucher_service.dart';
 import 'package:prm393_flutter_admin/services/user_directory_service.dart';
 import 'package:prm393_flutter_admin/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_flutter_admin/viewmodels/shell_viewmodel.dart';
@@ -23,6 +25,7 @@ void main() {
   late FakeSuggestionService suggestions;
   late FakeAnnouncementService announcements;
   late FakeUserDirectory directory;
+  late FakeShopeeVoucherService vouchers;
   late FakeAuthService auth;
   late ShellViewModel shell;
 
@@ -32,6 +35,7 @@ void main() {
     announcements = FakeAnnouncementService();
     directory = FakeUserDirectory()
       ..activity['u1'] = const UserActivity(wishlistItems: 3, purchases: 1);
+    vouchers = FakeShopeeVoucherService();
     auth = FakeAuthService();
     shell = ShellViewModel();
   });
@@ -50,6 +54,7 @@ void main() {
         value: AdminAiService(generator: (m, p) async => throw Exception('x')),
       ),
       Provider<PushService>.value(value: FakePushService(isConfigured: true)),
+      Provider<ShopeeVoucherService>.value(value: vouchers),
       ChangeNotifierProvider(
         create: (_) => AuthViewModel(auth, FakeRoleService({})),
       ),
@@ -118,6 +123,33 @@ void main() {
         createdAt: DateTime(2026, 11, 5, 9),
       ),
     ]);
+    vouchers.controller.add([
+      ShopeeVoucher(
+        id: 'v1',
+        raw:
+            'Giảm 10% Giảm tối đa ₫50k Đơn Tối Thiểu ₫99k HSD: 30.11.2026 '
+            'Đã dùng 80% với một đoạn mô tả rất dài để thử tràn',
+        kind: 'percent',
+        scope: VoucherScope.shop,
+        percent: 10,
+        capVnd: 50000,
+        minSpendVnd: 99000,
+        usedPct: 80,
+        expiresText: '30.11.2026',
+        shopName: 'Cửa hàng chính hãng với một cái tên rất dài để thử tràn',
+        productTitle: 'Tai nghe không dây chống ồn chủ động bản quốc tế',
+        sourceUrl: 'https://shopee.vn/product/1/2',
+        capturedBy: 'cvuPP4HXuKcJdVNepkxbjWUdqTY2',
+        lastSeenAt: DateTime(2026, 11, 7, 10),
+      ),
+      const ShopeeVoucher(
+        id: 'v2',
+        raw: 'Miễn phí vận chuyển Đã hết lượt',
+        kind: 'shipping',
+        scope: VoucherScope.platform,
+        unavailable: true,
+      ),
+    ]);
     await tester.pumpAndSettle();
   }
 
@@ -126,6 +158,7 @@ void main() {
     AdminSection.saleEvents: 'Thêm sự kiện',
     AdminSection.reviews: 'Siêu sale 12.12',
     AdminSection.announcements: 'Lịch sale tháng 12 đã cập nhật',
+    AdminSection.vouchers: 'Giảm 10% tối đa 50.000 ₫',
     AdminSection.assistant: 'Tạo Gợi Ý Thông Minh',
   };
 

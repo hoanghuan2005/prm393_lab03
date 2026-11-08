@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/satisfaction_dialog.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 05: Chi tiết khoản mua from Figma "Why I Buy ver2"
 class PurchaseDetailScreen extends StatelessWidget {
@@ -89,25 +90,40 @@ class PurchaseDetailScreen extends StatelessWidget {
       orElse: () => purchase,
     );
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
         leading: IconButton(
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: AppColors.onPrimary,
-          ),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Chi tiết khoản mua',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onPrimary,
-          ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Chi tiết khoản mua',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

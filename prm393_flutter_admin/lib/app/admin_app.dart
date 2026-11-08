@@ -9,6 +9,7 @@ import '../services/admin_ai_service.dart';
 import '../services/admin_auth_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/push_service.dart';
+import '../services/shopee_voucher_service.dart';
 import '../services/user_directory_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/shell_viewmodel.dart';
@@ -35,6 +36,9 @@ class AdminApp extends StatelessWidget {
         ),
         Provider<AnnouncementService>(
           create: (_) => FirestoreAnnouncementService(),
+        ),
+        Provider<ShopeeVoucherService>(
+          create: (_) => FirestoreShopeeVoucherService(),
         ),
         Provider<AdminAiService>(create: (_) => AdminAiService()),
         Provider<PushService>(

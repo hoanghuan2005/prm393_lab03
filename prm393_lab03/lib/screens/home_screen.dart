@@ -543,14 +543,20 @@ class HomeScreen extends StatelessWidget {
             ActionChip(
               key: const ValueKey('open-pre-purchase'),
               label: const Text('Trước khi mua'),
-              avatar: const Icon(Icons.lightbulb_outline, size: 18),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              labelStyle: TextStyle(
-                color: theme.colorScheme.onPrimaryContainer,
+              avatar: const Icon(Icons.lightbulb_rounded, size: 18),
+              backgroundColor: AppColors.primary,
+              elevation: 1,
+              pressElevation: 2,
+              shadowColor: Colors.black26,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              labelStyle: const TextStyle(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
-              side: BorderSide.none,
-              iconTheme: IconThemeData(
-                color: theme.colorScheme.onPrimaryContainer,
+              side: const BorderSide(color: Color(0xFFEAB308), width: 1),
+              iconTheme: const IconThemeData(
+                color: AppColors.onPrimary,
               ),
               shape: const StadiumBorder(),
               onPressed: () =>
@@ -560,14 +566,20 @@ class HomeScreen extends StatelessWidget {
             ActionChip(
               key: const ValueKey('open-photo-search'),
               label: const Text('Chụp để tìm'),
-              avatar: const Icon(Icons.photo_camera_outlined, size: 18),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              labelStyle: TextStyle(
-                color: theme.colorScheme.onPrimaryContainer,
+              avatar: const Icon(Icons.photo_camera_rounded, size: 18),
+              backgroundColor: AppColors.primary,
+              elevation: 1,
+              pressElevation: 2,
+              shadowColor: Colors.black26,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              labelStyle: const TextStyle(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
-              side: BorderSide.none,
-              iconTheme: IconThemeData(
-                color: theme.colorScheme.onPrimaryContainer,
+              side: const BorderSide(color: Color(0xFFEAB308), width: 1),
+              iconTheme: const IconThemeData(
+                color: AppColors.onPrimary,
               ),
               shape: const StadiumBorder(),
               onPressed: () =>

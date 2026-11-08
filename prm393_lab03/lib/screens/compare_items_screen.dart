@@ -5,9 +5,11 @@ import '../app/routes.dart';
 import '../core/formatters/money_format.dart';
 import '../models/price_insights.dart';
 import '../models/wishlist_item.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// A-15 "So sánh các món cùng nhóm": price, motive, days saved and priority side by
 /// side. Facts only; the app does not rank or pick an item.
@@ -25,8 +27,42 @@ class CompareItemsScreen extends StatelessWidget {
     final group = vm.groupName(item.budgetGroupId);
     final now = vm.now;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('So sánh món cùng nhóm')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'So sánh món cùng nhóm',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppDimens.space16),
         children: [

@@ -64,6 +64,9 @@ class PriceSnapshot {
   final bool confirmed;
   final String? variantLabel;
 
+  /// Sale name / voucher code the extension saved with the price ("11.11")
+  final String? saleLabel;
+
   /// Shop and ratings on the page when the extension read this price
   final String? shopName;
   final double? productRating;
@@ -81,6 +84,7 @@ class PriceSnapshot {
     this.originalVnd,
     this.confirmed = true,
     this.variantLabel,
+    this.saleLabel,
     this.shopName,
     this.productRating,
     this.productRatingCount,
@@ -89,6 +93,13 @@ class PriceSnapshot {
 
   bool get isRange =>
       priceType == PriceType.range && minVnd != null && maxVnd != null;
+
+  /// Discount from the crossed-out price, 0 when there is none
+  int get discountPercent {
+    final orig = originalVnd;
+    if (orig == null || orig <= amountVnd) return 0;
+    return ((orig - amountVnd) * 100 / orig).round();
+  }
 
   factory PriceSnapshot.fromFirestore(DocumentSnapshot doc) {
     final data = docData(doc);
@@ -103,6 +114,7 @@ class PriceSnapshot {
       originalVnd: readVnd(data['originalVnd']),
       confirmed: readString(data['confirmation']) != 'unconfirmed',
       variantLabel: readText(data['variantLabel']),
+      saleLabel: readText(data['saleLabel']),
       shopName: readText(data['shopName']),
       productRating: readRating(data['productRating']),
       productRatingCount: readCount(data['productRatingCount']),
@@ -120,6 +132,7 @@ class PriceSnapshot {
     if (originalVnd != null) 'originalVnd': originalVnd,
     'confirmation': confirmed ? 'userConfirmed' : 'unconfirmed',
     if (variantLabel != null) 'variantLabel': variantLabel,
+    if (saleLabel != null) 'saleLabel': saleLabel,
     if (shopName != null) 'shopName': shopName,
     if (productRating != null) 'productRating': productRating,
     if (productRatingCount != null) 'productRatingCount': productRatingCount,
@@ -137,6 +150,7 @@ class PriceSnapshot {
     int? originalVnd,
     bool? confirmed,
     String? variantLabel,
+    String? saleLabel,
     String? shopName,
     double? productRating,
     int? productRatingCount,
@@ -153,6 +167,7 @@ class PriceSnapshot {
       originalVnd: originalVnd ?? this.originalVnd,
       confirmed: confirmed ?? this.confirmed,
       variantLabel: variantLabel ?? this.variantLabel,
+      saleLabel: saleLabel ?? this.saleLabel,
       shopName: shopName ?? this.shopName,
       productRating: productRating ?? this.productRating,
       productRatingCount: productRatingCount ?? this.productRatingCount,
@@ -174,6 +189,7 @@ class PriceSnapshot {
           other.originalVnd == originalVnd &&
           other.confirmed == confirmed &&
           other.variantLabel == variantLabel &&
+          other.saleLabel == saleLabel &&
           other.shopName == shopName &&
           other.productRating == productRating &&
           other.productRatingCount == productRatingCount &&
@@ -191,6 +207,7 @@ class PriceSnapshot {
     originalVnd,
     confirmed,
     variantLabel,
+    saleLabel,
     shopName,
     productRating,
     productRatingCount,

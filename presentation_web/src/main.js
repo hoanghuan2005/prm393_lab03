@@ -14,6 +14,7 @@ import { Callouts } from './ui/callouts.js'
 import { ChapterText } from './ui/chapters.js'
 import { Rail } from './ui/rail.js'
 import { visuals } from './diagrams/visuals.js'
+import './diagrams/extra.js'
 import { animateVisual } from './diagrams/animate.js'
 
 const $ = (id) => document.getElementById(id)

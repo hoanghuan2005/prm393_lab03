@@ -5,6 +5,8 @@
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
 
+import { team } from '../data/chapters.js'
+
 gsap.registerPlugin(SplitText)
 
 const pad = (n) => String(n).padStart(2, '0')
@@ -20,6 +22,7 @@ function heroHtml(ch) {
       <p class="eyebrow" data-r><b>●</b><i></i>${ch.eyebrow}</p>
       <h1 class="hero__title" data-r>Why I Buy<span>?</span></h1>
       <p class="hero__lead" data-r>Khoan đã: mình mua vì cần, hay vì cảm xúc? Một app giúp người trẻ hiểu <strong style="color:#fff;font-weight:600">động cơ đằng sau mỗi lần mua sắm</strong>.</p>
+      <p class="hero__team" data-r><b>PRM393 · Nhóm</b> ${team.map((m) => m.name).join(' · ')}</p>
       <div class="hero__meta" data-r>
         <span class="chip chip--android">App Android · Flutter</span>
         <span class="chip chip--web">Tiện ích Chrome</span>
@@ -35,10 +38,12 @@ function wfHtml(wf) {
       <dt>Actor</dt><dd>${wf.actor}</dd>
       <dt>Trigger</dt><dd>${wf.trigger}</dd>
       <dt>Điều kiện</dt><dd>${wf.pre}</dd>
-      <dt>Kết quả</dt><dd>${wf.result}</dd>
+      <dt>Quyết định</dt><dd>${wf.decision}</dd>
       <dt>Ngoại lệ</dt><dd>${wf.exception}</dd>
+      <dt>Postcondition</dt><dd>${wf.result}</dd>
+      <dt>Truy vết</dt><dd>${wf.trace}</dd>
     </dl>
-    <ol class="wf-steps" data-r>${wf.steps.map((st) => `<li data-s="${st.s}">${st.t}</li>`).join('')}</ol>`
+    <ol class="wf-steps" data-r>${wf.steps.map((st) => `<li data-s="${st.s}" class="${st.exc ? 'is-exc' : ''}">${st.t}</li>`).join('')}</ol>`
 }
 
 function chapterHtml(ch, i, total) {

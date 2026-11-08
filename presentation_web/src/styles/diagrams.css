@@ -426,3 +426,40 @@ body.has-visual .atmosphere__bloom {
     font-size: 11px;
   }
 }
+
+.dt--dense .dt-row > span {
+  padding: 8px 12px;
+  font-size: clamp(11px, 0.82vw, 13px);
+  line-height: 1.4;
+}
+.dt--dense + .dt--dense {
+  margin-top: 12px;
+}
+.dt-row b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.wf-steps li.is-exc {
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.35);
+}
+.wf-steps li.is-exc::after {
+  content: 'ngoại lệ';
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.hero__team {
+  margin: -18px 0 26px;
+  max-width: 34rem;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.hero__team b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}

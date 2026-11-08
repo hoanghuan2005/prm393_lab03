@@ -90,9 +90,15 @@ function materialIcons() {
       return `export default ${JSON.stringify(map)}`
     },
     handleHotUpdate({ file, server }) {
-      if (file.startsWith(SRC_DIR)) {
+      // a source edit may name new icons: rebuild the subset and reload the page
+      const norm = (p) => p.replace(/\\/g, '/').toLowerCase()
+      if (norm(file).startsWith(norm(SRC_DIR)) && /\.(js|html)$/.test(file)) {
         const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
-        if (mod) server.moduleGraph.invalidateModule(mod)
+        if (mod) {
+          server.moduleGraph.invalidateModule(mod)
+          server.ws.send({ type: 'full-reload' })
+          return []
+        }
       }
     },
   }

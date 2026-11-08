@@ -25,19 +25,19 @@ const ROWS = [
   ['07/11/2026', 'Bút và sổ tay', '68.000 ₫', 'Nhu cầu'],
 ]
 
-// final translateY of the page = content height after the goal is typed - body height (measured)
-const SCROLL_END = 556
-
 const STYLE = `
+.scr-ref,.scr-ref *,.scr-ref *::before,.scr-ref *::after{box-sizing:border-box}
 .scr-ref .scr-ref__head{padding:20px;border-radius:16px;background:var(--primary-container);border:1px solid var(--primary)}
 .scr-ref .scr-ref__box{padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--divider)}
 .scr-ref .scr-ref__mchip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:var(--mb);color:var(--m);border:1px solid color-mix(in srgb,var(--m) 30%,transparent);font-size:12px;font-weight:600;line-height:1.35}
 .scr-ref .scr-ref__mchip .mi{font-size:16px}
 .scr-ref .scr-ref__rate{flex:none;width:38px;height:38px;margin:5px 0;display:grid;place-items:center;border-radius:50%;background:var(--surface-variant);box-shadow:inset 0 0 0 1px var(--divider);font-size:14px;font-weight:600;transition:background .15s ease,box-shadow .15s ease}
 .scr-ref .scr-ref__rate.is-on{background:var(--primary);box-shadow:none}
-.scr-ref .scr-ref__input{padding:16px;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--divider);font-size:16px;line-height:1.45;transition:box-shadow .15s ease}
+.scr-ref .scr-ref__input{height:calc(4.35em + 32px);padding:16px;overflow:hidden;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--divider);font-size:16px;line-height:1.45;transition:box-shadow .15s ease}
 .scr-ref .scr-ref__input.is-focused{box-shadow:inset 0 0 0 1.5px var(--text)}
-.scr-ref .scr-ref__goal{display:block;min-height:23px}
+.scr-ref .scr-ref__goal{display:block}
+.scr-ref .wib-btn--primary.is-loading{background:rgba(255,222,2,.5)}
+.scr-ref .wib-btn--secondary.is-disabled{background:var(--surface);color:rgba(15,23,42,.5)}
 .scr-ref .scr-ref__goal:empty::before{content:attr(data-hint);color:var(--hint);font-size:14px}
 .scr-ref .scr-ref__scrim{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.32);opacity:0}
 .scr-ref .scr-ref__share{position:absolute;left:0;right:0;bottom:0;z-index:31;padding:10px 20px 34px;border-radius:28px 28px 0 0;background:#f7f8fb;font-family:Roboto,system-ui,sans-serif;color:#1b1c1f;transform:translateY(110%)}
@@ -85,7 +85,7 @@ export default {
       <div class="wib-screen scr-ref">
         <style>${STYLE}</style>
         ${appBar({ title: 'Chiêm nghiệm tháng' })}
-        <div class="wib-body">
+        <div class="wib-body" data-k="body">
           <div class="wib-scroll" data-k="scroll" style="padding-bottom:28px">
             <div class="scr-ref__head" data-k="head">
               <div class="wib-row">
@@ -128,7 +128,7 @@ export default {
               <div class="t-title-l">Báo cáo PDF</div>
               <div class="t-body-m" style="margin-top:8px">Báo cáo tháng 11/2026 được tạo ngay trên máy. Bạn chọn ứng dụng để lưu hoặc gửi.</div>
               <div style="margin-top:16px">${button('Xuất và chia sẻ PDF', { icon: icon('ios_share', 20), attrs: 'data-k="export"' })}</div>
-              <div style="margin-top:8px">${button('Xem trước', { icon: icon('visibility_outlined', 20), variant: 'secondary' })}</div>
+              <div style="margin-top:8px">${button('Xem trước', { icon: icon('visibility_outlined', 20), variant: 'secondary', attrs: 'data-k="preview"' })}</div>
             </div>
           </div>
         </div>
@@ -153,42 +153,48 @@ export default {
   demo(tl, root, k) {
     // 1. month summary: total, reflection paragraph with source chip, 8 motives
     k.reveal(tl, '[data-k="head"], [data-k="note"], [data-k="motives"]', { stagger: 0.08, pos: 0 })
-    k.count(tl, '[data-k="total"]', 1589000, { pos: 0.15, duration: 1.1 })
-    tl.fromTo(k.qa('[data-k="mchip"]'), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, stagger: 0.05, ease: 'back.out(2)' }, 0.45)
+    k.count(tl, '[data-k="total"]', 1589000, { pos: 0.15, duration: 1 })
+    tl.fromTo(k.qa('[data-k="mchip"]'), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, stagger: 0.04, ease: 'back.out(2)' }, 0.4)
 
-    // 2. scroll to the form + PDF section
-    tl.to(k.q('[data-k="scroll"]'), { y: -SCROLL_END, duration: 0.9, ease: 'power3.inOut' }, 1.3)
+    // 2. scroll to the end: rating + goal form and the PDF section all fit in one view.
+    //    translate(-100%) + body height = bottom of the page, resolved live by the browser
+    //    (independent of when the web fonts finish loading)
+    tl.to(k.q('[data-k="scroll"]'), { yPercent: -100, y: () => k.q('[data-k="body"]').clientHeight, duration: 0.8, ease: 'power3.inOut' }, 1.15)
 
     // 3. rating 4 -> 'Lưu chiêm nghiệm' becomes enabled
     k.tap(tl, '[data-k="rate4"]', {
-      pos: 2.15,
+      pos: 1.9,
       then: (el) => {
         el.classList.add('is-on')
         k.q('[data-k="save"]').classList.remove('is-disabled')
       },
     })
-    k.callout(tl, '[data-k="rate4"]', 'Tự chấm mức hài lòng 1–5', { pos: 2.85 })
+    k.callout(tl, '[data-k="rate4"]', 'Tự chấm mức hài lòng 1–5', { pos: 2.45 })
 
     // 4. goal for next month, counter follows the text
     const input = k.q('[data-k="input"]')
-    k.tap(tl, input, { pos: '+=0.15', anchor: [0.3, 0.5], then: () => input.classList.add('is-focused') })
-    typeGoal(tl, k.q('[data-k="goal"]'), k.q('[data-k="counter"]'), GOAL)
+    k.tap(tl, input, { pos: '+=0.05', anchor: [0.3, 0.35], then: () => input.classList.add('is-focused') })
+    typeGoal(tl, k.q('[data-k="goal"]'), k.q('[data-k="counter"]'), GOAL, 48)
 
-    // 5. export: spinner while the PDF renders on the device, then the system share sheet
+    // 5. export: spinner while the PDF renders on the device ('Xem trước' disabled
+    //    meanwhile, AppButton isLoading), then the system share sheet (Printing.sharePdf)
     const exp = k.q('[data-k="export"]')
+    const preview = k.q('[data-k="preview"]')
     k.tap(tl, exp, {
-      pos: '+=0.25',
+      pos: '+=0.2',
       then: () => {
         input.classList.remove('is-focused')
         exp.classList.add('is-loading')
+        preview.classList.add('is-disabled')
       },
     })
     k.lift(tl, '+=0.05')
-    k.cls(tl, exp, 'is-loading', false, '+=0.35')
+    k.cls(tl, exp, 'is-loading', false, '+=0.3')
+    k.cls(tl, preview, 'is-disabled', false, '<')
     tl.to(k.q('[data-k="scrim"]'), { opacity: 1, duration: 0.3, ease: 'power2.out' }, '<')
     tl.fromTo(k.q('[data-k="share"]'), { y: 0, yPercent: 110 }, { yPercent: 0, duration: 0.5, ease: 'power3.out', immediateRender: false }, '<')
-    k.callout(tl, '[data-k="thumb"]', 'PDF dựng ngay trên máy', { pos: '+=0.05' })
-    k.wait(tl, 1.1)
+    k.callout(tl, '[data-k="thumb"]', 'PDF tạo trên máy, không upload', { pos: '+=0.05' })
+    k.wait(tl, 0.9)
   },
 }
 

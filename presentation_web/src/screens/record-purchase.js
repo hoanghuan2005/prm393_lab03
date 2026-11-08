@@ -20,11 +20,18 @@ const STYLE = `
 .scr-rp .rp-tf .wib-input:not(.is-focused) .wib-input__value:empty::before{content:none}
 .scr-rp .rp-counter{padding:4px 16px 0;text-align:right;font-size:12px;line-height:16px;color:var(--text-2)}
 .scr-rp .rp-amount .wib-input:not(.is-focused):not(.has-value) .wib-input__suffix{opacity:0}
+.scr-rp .rp-amount .wib-input__suffix{font-size:14px;color:var(--hint)}
+.scr-rp .rp-amount .wib-input__value.is-typing:empty{display:flex;align-items:center}
+.scr-rp .rp-amount .wib-input__value.is-typing:empty::after{order:-1;margin:0 1px 0 0}
 .scr-rp .rp-clear{display:none;margin-right:-2px;color:var(--text-2)}
 .scr-rp .wib-input.has-value .rp-clear{display:grid}
+.scr-rp .rp-dd{min-height:52px}
+.scr-rp .rp-dd .wib-input__value{font-size:14px;line-height:1.45;color:var(--text-2)}
 .scr-rp .rp-chips{display:flex;align-items:center;gap:8px;height:48px}
-.scr-rp .rp-chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--divider);font-size:14px;font-weight:600;color:var(--text);white-space:nowrap}
+.scr-rp .rp-chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:8px;background:transparent;box-shadow:inset 0 0 0 1px var(--divider);font-size:14px;font-weight:600;line-height:1.4;color:var(--text);white-space:nowrap}
 .scr-rp .rp-chip--avatar{padding-left:8px}
+.scr-rp .rp-anchor{position:absolute;left:0;top:0;width:1px;height:1px;visibility:hidden;pointer-events:none}
+.scr-rp .wib-snackbar{left:0;right:0;bottom:0;min-height:0;padding:14px 24px 32px;border-radius:0;line-height:1.45;transform:translateY(100%);box-shadow:0 -2px 8px rgba(0,0,0,.18)}
 .scr-rp .rp-chip--avatar .mi{color:var(--primary)}
 .scr-rp .rp-sug{height:0;opacity:0;overflow:hidden}
 .scr-rp .rp-date{display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--outline);font-size:14px;font-weight:600}
@@ -51,6 +58,17 @@ function appBar(title, { trailing = '', strong = false } = {}) {
     <div class="wib-appbar__title" style="padding-left:20px${strong ? ';font-weight:700' : ''}"><span>${title}</span></div>
     ${trailing}
   </div>`
+}
+
+/** layout box of `el` inside `root` (offsets only, so slide/reveal transforms are ignored) */
+function boxIn(el, root) {
+  let left = 0
+  let top = 0
+  for (let n = el; n && n !== root; n = n.offsetParent) {
+    left += n.offsetLeft
+    top += n.offsetTop
+  }
+  return { left, top, width: el.offsetWidth, height: el.offsetHeight }
 }
 
 function motiveTile(key) {
@@ -109,7 +127,7 @@ export default {
                   </div>
                 </div>
                 <div class="t-label-m" data-k="f" style="margin-top:8px">Số tiền sau giảm giá, không bao gồm phí vận chuyển.</div>
-                <div class="rp-chips" data-k="f" style="margin-top:12px">
+                <div class="rp-chips" data-k="f" data-chips style="margin-top:12px">
                   <span class="rp-chip">+20.000 ₫</span>
                   <span class="rp-chip" data-k="add50">+50.000 ₫</span>
                   <span class="rp-chip">+100.000 ₫</span>
@@ -122,7 +140,7 @@ export default {
                   <div class="rp-counter"><span data-k="title-c">0</span>/60</div>
                 </div>
                 <div class="rp-tf" data-k="f" style="margin-top:16px">
-                  <div class="wib-input">
+                  <div class="wib-input rp-dd">
                     <span class="rp-label is-float">Nhóm ngân sách</span>
                     <span class="wib-input__value" data-k="group-v">Khác</span>
                     <span style="display:grid;margin-right:-4px">${icon('keyboard_arrow_down_rounded', 24)}</span>
@@ -138,7 +156,7 @@ export default {
               </div>
 
               <div data-k="s2" style="display:none">
-                <div class="rp-msg">Tai nghe Bluetooth<br />389.000 ₫</div>
+                <div class="rp-msg">Tai nghe Bluetooth<br /><span data-k="m-amount">389.000 ₫</span></div>
                 <div class="t-title-m" style="margin-top:24px">Điều gì thúc đẩy bạn mua món này?</div>
                 <div class="t-body-m" style="margin-top:8px">Chọn một động cơ chính.</div>
                 <div class="rp-grid" data-k="grid" style="margin-top:16px">${ORDER.map(motiveTile)}</div>
@@ -166,11 +184,11 @@ export default {
                   <span data-motive="sale" style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--mb);color:var(--m)">${icon('local_offer_outlined', 18)}</span>
                 </div>
                 <div style="margin-top:8px;font-size:20px;font-weight:800;line-height:1.3">Tai nghe Bluetooth</div>
-                <div style="margin-top:6px;font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.25;color:var(--neutral)">389.000 ₫</div>
+                <div style="margin-top:6px;font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.25;color:var(--neutral)"><span data-k="d-amount">389.000 ₫</span></div>
                 <div class="rp-hr"></div>
                 <div class="wib-row" style="justify-content:space-between">
                   <span style="font-size:13px;font-weight:500;color:var(--text-2)">Động cơ</span>
-                  <span class="wib-row" data-motive="sale" style="gap:5px;padding:4px 10px;border-radius:999px;background:var(--mb);color:var(--m);font-size:12.5px;font-weight:700">${icon('local_offer_outlined', 14)}Khuyến mãi</span>
+                  <span class="wib-row" data-motive="sale" data-k="d-motive" style="gap:5px;padding:4px 10px;border-radius:999px;background:var(--mb);color:var(--m);font-size:12.5px;font-weight:700">${icon('local_offer_outlined', 14)}Khuyến mãi</span>
                 </div>
               </div>
               <div class="rp-card" style="margin-top:16px">
@@ -209,7 +227,9 @@ export default {
             <div class="rp-dbar"><span class="rp-dbtn">${icon('edit_outlined', 18)}Sửa khoản mua</span></div>
           </div>
         </div>
-        ${snackbar('Đã lưu khoản mua.').replace('class="wib-snackbar"', 'class="wib-snackbar" style="left:15px;right:15px;bottom:28px"')}
+        ${snackbar('Đã lưu khoản mua.')}
+        <span class="rp-anchor" data-k="a-amount"></span>
+        <span class="rp-anchor" data-k="a-motive"></span>
       </div>`
   },
 
@@ -222,24 +242,39 @@ export default {
     const sug = q('sug')
     const save = q('save')
 
+    // Callout lines follow their target until the next chapter, and a display:none
+    // target measures 0x0 (the line would jump to the window corner). So the two
+    // callouts point at invisible anchors that glide with what they describe:
+    // the amount (chips -> step-2 box -> detail) and the motive (grid -> detail pill).
+    const aAmount = q('a-amount')
+    const aMotive = q('a-motive')
+    const place = (anchor, el, pos, duration = 0) => {
+      const v = (key) => () => boxIn(el, root)[key]
+      tl.to(anchor, { left: v('left'), top: v('top'), width: v('width'), height: v('height'), duration, ease: 'power2.inOut' }, pos)
+    }
+    place(aAmount, root.querySelector('[data-chips]'), 0.05)
+
     k.reveal(tl, '[data-k="step"], [data-k="f"]', { stagger: 0.035, duration: 0.4, y: 10 })
 
-    // 1. amount: type digits (AmountField groups them), then a quick-add chip
+    // 1. amount: type digits (AmountField groups them), then the '+50.000 ₫' ActionChip
+    //    adds to the current value: 339.000 + 50.000 = 389.000
     k.tap(tl, amount, {
-      pos: 0.3,
+      pos: 0.25,
       then: () => {
         amount.classList.add('is-focused')
         amountV.classList.add('is-typing')
       },
     })
-    typeDigits(tl, amount, amountV, '339000', { pos: '-=0.12', cps: 12 })
-    k.callout(tl, '.rp-chips', 'Nhập nhanh trong vài giây', { pos: '+=0.05' })
+    typeDigits(tl, amount, amountV, '339000', { pos: '-=0.15', cps: 15 })
+    k.callout(tl, aAmount, 'Nhập nhanh trong vài giây', { pos: '+=0.08' })
     k.tap(tl, '[data-k="add50"]', { pos: '<', then: () => (amountV.textContent = '389.000') })
 
-    // 2. title: label floats (focused label = colorScheme.primary), counter counts
-    tl.addLabel('tTitle', '+=0')
+    // 2. title: label floats (focused label = colorScheme.primary), counter counts.
+    //    Tapped right of the text so the finger does not hide what is typed.
+    tl.addLabel('tTitle', '+=0.02')
     k.tap(tl, title, {
       pos: 'tTitle',
+      anchor: [0.82, 0.5],
       then: () => {
         amount.classList.remove('is-focused')
         amountV.classList.remove('is-typing')
@@ -247,39 +282,44 @@ export default {
         titleV.classList.add('is-typing')
       },
     })
-    tl.to(q('title-l'), { top: 0, fontSize: 12, color: '#ffde02', duration: 0.18, ease: 'power2.out' }, 'tTitle+=0.5')
-    typeText(tl, titleV, q('title-c'), 'Tai nghe Bluetooth', { pos: 'tTitle+=0.62', cps: 30 })
+    tl.to(q('title-l'), { top: 0, fontSize: 12, color: '#ffde02', duration: 0.18, ease: 'power2.out' }, 'tTitle+=0.55')
+    typeText(tl, titleV, q('title-c'), 'Tai nghe Bluetooth', { pos: 'tTitle+=0.66', cps: 30 })
 
-    // 3. after the 600 ms debounce the keyword rule suggests 'Công nghệ'; applied only on tap
-    tl.to(sug, { height: 56, opacity: 1, duration: 0.22, ease: 'power2.out' }, '+=0.55')
-    tl.addLabel('tSug', '-=0.2')
-    k.tap(tl, '[data-k="sug-chip"]', { pos: 'tSug', then: () => (q('group-v').textContent = 'Công nghệ') })
-    tl.to(sug, { height: 0, opacity: 0, duration: 0.2, ease: 'power2.inOut' }, 'tSug+=0.52')
+    // 3. 600 ms after typing stops the keyword rule ('tai nghe' -> tech) offers
+    //    'Gợi ý nhóm: Công nghệ'; the dropdown changes only when the chip is tapped
+    tl.to(sug, { height: 56, opacity: 1, duration: 0.2, ease: 'power2.out' }, '+=0.6')
+    tl.addLabel('tSug', '+=0.12')
+    k.tap(tl, '[data-k="sug-chip"]', { pos: 'tSug', anchor: [0.09, 0.5], then: () => (q('group-v').textContent = 'Công nghệ') })
+    tl.to(sug, { height: 0, opacity: 0, duration: 0.15, ease: 'power2.inOut' }, 'tSug+=0.62')
 
     // 4. 'Tiếp tục' -> step 2 (same Scaffold, setState)
-    tl.addLabel('tNext', '+=0.02')
+    tl.addLabel('tNext', 'tSug+=0.95')
     k.tap(tl, q('next'), { pos: 'tNext' })
-    const swap = 'tNext+=0.56'
+    const swap = 'tNext+=0.62'
     tl.set([q('s1'), q('step1'), q('next')], { display: 'none' }, swap)
     tl.set([q('s2'), q('step2'), save], { display: '' }, swap)
     tl.set(q('help'), { visibility: 'visible' }, swap)
     tl.fromTo([q('s2'), q('step2')], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power1.out' }, swap)
-    k.callout(tl, '[data-k="grid"]', '8 động cơ mua', { pos: 'tNext+=0.75' })
+    place(aAmount, q('m-amount'), 'tNext+=0.64', 0.35)
+    place(aMotive, q('grid'), 'tNext+=0.64')
+    k.callout(tl, aMotive, '8 động cơ mua', { pos: 'tNext+=0.75' })
 
     // 5. pick 'Khuyến mãi' instead of the default 'Cảm xúc'
     k.tap(tl, '[data-mt="sale"]', {
-      pos: 'tNext+=0.85',
+      pos: 'tNext+=0.9',
       then: () => {
         root.querySelector('[data-mt="emotion"]').classList.remove('is-sel')
         root.querySelector('[data-mt="sale"]').classList.add('is-sel')
       },
     })
 
-    // 6. save: spinner, SnackBar, route replaced by 'Chi tiết khoản mua'
-    tl.addLabel('tSave', '+=0')
+    // 6. save: spinner, SnackBar 'Đã lưu khoản mua.', route replaced by 'Chi tiết khoản mua'
+    tl.addLabel('tSave', '+=0.05')
     k.tap(tl, save, { pos: 'tSave', then: () => save.classList.add('is-loading') })
-    k.lift(tl, 'tSave+=0.8')
-    k.page(tl, q('form'), q('detail'), { pos: 'tSave+=0.95' })
-    k.snack(tl, '.wib-snackbar', { pos: 'tSave+=0.95' })
+    k.lift(tl, 'tSave+=0.85')
+    k.snack(tl, '.wib-snackbar', { pos: 'tSave+=1.15' })
+    k.page(tl, q('form'), q('detail'), { pos: 'tSave+=1.2' })
+    place(aAmount, q('d-amount'), 'tSave+=1.22', 0.4)
+    place(aMotive, q('d-motive'), 'tSave+=1.22', 0.4)
   },
 }

@@ -6,6 +6,24 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "presentation_web", "run", "dev"],
       "port": 5178
+    },
+    {
+      "name": "admin-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd prm393_flutter_admin && C:\\src\\flutter\\bin\\flutter.bat run -d web-server --web-port 5180 --web-hostname localhost"],
+      "port": 5180
+    },
+    {
+      "name": "firebase-emulators",
+      "runtimeExecutable": "C:\\Users\\Admin\\AppData\\Roaming\\npm\\firebase.cmd",
+      "runtimeArgs": ["emulators:start", "--only", "auth,firestore"],
+      "port": 4000
+    },
+    {
+      "name": "push-server",
+      "runtimeExecutable": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.2.1\\plugins\\maven\\lib\\maven3\\bin\\mvn.cmd",
+      "runtimeArgs": ["-f", "spring-boot-push/pom.xml", "spring-boot:run"],
+      "port": 8080
     }
   ]
 }

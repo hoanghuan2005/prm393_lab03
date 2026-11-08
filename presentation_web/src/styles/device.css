@@ -141,3 +141,9 @@
   background: #000;
   pointer-events: none;
 }
+
+.device-screen *,
+.device-screen *::before,
+.device-screen *::after {
+  box-sizing: border-box;
+}

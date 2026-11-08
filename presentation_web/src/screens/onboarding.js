@@ -17,11 +17,11 @@ export default {
           <span style="font-size:13px;font-weight:600;color:var(--text-2);padding:6px 14px">Bỏ qua</span>
         </div>
         <div class="wib-body">
-          <div class="wib-col" style="align-items:center;padding:8px 24px 0">
+          <div class="wib-col" data-k="scroll" style="align-items:center;padding:8px 24px 0">
             <div data-k="art" style="position:relative;width:100%;height:220px;border-radius:24px;background:linear-gradient(135deg,#FFF3B0,#F1F6F2);box-shadow:0 7px 18px rgba(0,0,0,.08),inset 0 0 0 1px rgba(226,232,240,.55);display:grid;place-items:center">
               <div data-k="circle" style="position:relative;width:136px;height:136px;border-radius:50%;background:#fff;box-shadow:0 5px 10px rgba(0,0,0,.1);display:grid;place-items:center">
                 <div style="width:96px;height:96px;border-radius:50%;background:#E8F1ED;display:grid;place-items:center">${icon('spa_rounded', 52)}</div>
-                <div data-k="badge" style="position:absolute;right:-8px;bottom:-2px;width:44px;height:44px;border-radius:50%;background:#263B1E;box-shadow:0 0 0 3px #E6F1EC;display:grid;place-items:center;color:#fff">${icon('self_improvement_rounded', 20)}</div>
+                <div data-k="badge" style="position:absolute;right:-8px;bottom:-2px;box-sizing:border-box;width:44px;height:44px;border-radius:50%;background:#263B1E;border:3px solid #E6F1EC;display:grid;place-items:center;color:#fff">${icon('self_improvement_rounded', 20)}</div>
               </div>
             </div>
             <span class="wib-overline" data-k="tag" style="margin-top:18px">DÀNH RIÊNG CHO BẠN</span>
@@ -38,7 +38,7 @@ export default {
           </div>
         </div>
         <div style="padding:8px 24px 26px">
-          <span class="wib-btn wib-btn--lg" data-k="start" style="min-height:52px"><span class="wib-btn__label wib-row" style="gap:8px">Bắt đầu trải nghiệm ${icon('arrow_forward_rounded', 20)}</span><span class="wib-btn__spinner"></span></span>
+          <span class="wib-btn wib-btn--lg" data-k="start" style="box-sizing:border-box;min-height:52px"><span class="wib-btn__label wib-row" style="gap:8px">Bắt đầu trải nghiệm ${icon('arrow_forward_rounded', 20)}</span><span class="wib-btn__spinner"></span></span>
           <div class="wib-row" style="justify-content:center;gap:6px;margin-top:14px;font-size:12px;color:var(--text-2);opacity:.7">${icon('shield_outlined', 14)}Dữ liệu an toàn • Không phán xét chi tiêu</div>
         </div>
       </div>`
@@ -50,8 +50,15 @@ export default {
     tl.fromTo(k.q('[data-k="badge"]'), { scale: 0 }, { scale: 1, duration: 0.45, ease: 'back.out(2)' }, '-=0.2')
     k.reveal(tl, '[data-k="tag"], [data-k="title"], [data-k="desc"]', { pos: '-=0.3' })
     k.reveal(tl, '[data-k="benefit"]', { pos: '-=0.2', stagger: 0.12 })
-    k.callout(tl, '[data-k="benefit"]:nth-child(3)', 'Giọng điệu: không phán xét', { pos: '+=0.2' })
-    k.tap(tl, '[data-k="start"]', { pos: '+=0.9' })
+    // the slide is a SingleChildScrollView: the 3rd card sits below the fold at 360x780.
+    // Scroll to its end (85px measured with final fonts; floor guards an early init before font swap).
+    const body = k.q('.wib-body')
+    const col = k.q('[data-k="scroll"]')
+    tl.to(col, { y: () => -Math.max(85, col.offsetHeight - body.clientHeight), duration: 0.9, ease: 'power3.inOut' }, '+=0.5')
+    k.callout(tl, '[data-k="benefit"]:nth-child(3)', 'Giọng điệu: không phán xét', { pos: '+=0.1' })
+    k.tap(tl, '[data-k="start"]', { pos: '+=1.1' })
+    k.callout(tl, '[data-k="start"]', 'Đã đăng nhập → Trang chủ · chưa → Đăng nhập', { pos: '-=0.25', side: 'right' })
+    k.wait(tl, 0.8)
   },
 
   demos: {

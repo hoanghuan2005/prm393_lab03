@@ -30,7 +30,7 @@ export default {
               <div class="wib-row" style="justify-content:space-between">
                 <span class="wib-row" style="gap:6px;color:var(--text-2)">${icon('calendar_today_outlined', 14)}
                   <span style="font-size:11px;font-weight:700;letter-spacing:.6px">TỔNG QUAN THÁNG</span></span>
-                <span class="wib-pill">Tháng 11/2026 ${icon('arrow_drop_down_rounded', 16)}</span>
+                <span class="wib-pill">Tháng 11/2026<span class="t-2" style="display:inline-flex">${icon('arrow_drop_down_rounded', 16)}</span></span>
               </div>
               <div data-k="total" style="margin-top:12px;font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--neutral);line-height:1.2">${money(1589000)}</div>
               <div style="margin-top:4px;font-size:13px;color:var(--text-2)">11 khoản trong tháng · Tuần này: 9 khoản (1.160.000 ₫)</div>
@@ -38,16 +38,15 @@ export default {
               <div class="wib-row" style="justify-content:space-between;margin-top:14px;font-size:12px">
                 <span class="t-2">Động cơ chính</span><b style="font-weight:700">27% do Nhu cầu</b>
               </div>
-              <div class="wib-segbar" data-k="segbar" style="margin-top:8px;transform-origin:left center">
+              <div class="wib-segbar" data-k="segbar" style="margin-top:8px;transform-origin:left center;background:transparent">
                 ${SEGMENTS.map(([k, f]) => `<span data-motive="${k}" style="flex:${f} 1 0"></span>`)}
               </div>
               <div class="wib-divider" style="margin:10px 0"></div>
-              <div class="wib-row" data-k="budget" style="gap:6px;font-size:12px">
-                <span style="color:var(--neutral)">${icon('account_balance_wallet_outlined', 15)}</span>
-                <span class="t-2">Ngân sách tháng: <b style="color:var(--text);font-weight:700">808.000 ₫ / 3.100.000 ₫</b></span>
-                <span class="wib-spacer"></span>
-                <span data-k="pct" style="padding:1.5px 6px;border-radius:4px;background:var(--success-c);color:var(--on-success-c);font-size:11px;font-weight:800">26%</span>
-                <span class="t-2">${icon('chevron_right_rounded', 16)}</span>
+              <div class="wib-row" data-k="budget" style="padding:2px 0;font-size:12px">
+                <span style="display:inline-flex;color:var(--neutral)">${icon('account_balance_wallet_outlined', 15)}</span>
+                <span class="t-2" style="flex:1;min-width:0;margin-left:6px">Ngân sách tháng: <b style="color:var(--text);font-weight:700">808.000 ₫ / 3.100.000 ₫</b></span>
+                <span data-k="pct" style="flex:none;padding:1.5px 6px;border-radius:4px;background:var(--success-c);color:var(--on-success-c);font-size:11px;font-weight:800">26%</span>
+                <span class="t-2" style="display:inline-flex;margin-left:4px">${icon('chevron_right_rounded', 16)}</span>
               </div>
             </div>
 
@@ -71,27 +70,27 @@ export default {
             </div>
 
             <div data-k="recent" style="margin-top:24px">
-              <div class="wib-row" style="gap:8px">
-                <div style="flex:1;font-size:16px;font-weight:700">Khoản mua gần đây</div>
+              <div class="wib-row">
+                <div style="flex:1;margin-right:8px;font-size:16px;font-weight:700">Khoản mua gần đây</div>
                 <span style="padding:2px 8px;border-radius:999px;background:var(--surface-variant);font-size:12px;font-weight:700;color:var(--text-2)">3</span>
                 <span class="wib-row" style="font-size:13px;font-weight:600;color:var(--neutral)">Xem tất cả ${icon('chevron_right_rounded', 18)}</span>
               </div>
               <div class="wib-card" style="margin-top:12px;padding:0">
                 ${RECENT.map(
                   (r, i) => html`${i ? '<div class="wib-divider"></div>' : ''}
-                  <div class="wib-row" data-k="row" style="gap:12px;padding:14px 16px">
+                  <div class="wib-row" data-k="row" style="padding:14px 16px">
                     ${motiveSquare(r.motive)}
-                    <div style="flex:1;min-width:0">
+                    <div style="flex:1;min-width:0;margin-left:12px">
                       <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
-                      <div class="wib-row" style="gap:8px;margin-top:4px">${motiveTag(r.motive)}<span style="font-size:12px;color:var(--text-2);opacity:.7">${r.when}</span></div>
+                      <div class="wib-row" style="gap:8px;margin-top:4px;white-space:nowrap">${motiveTag(r.motive).replace('class="wib-motive-tag"', 'class="wib-motive-tag" style="flex:none"')}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-2);opacity:.7">${r.when}</span></div>
                     </div>
-                    <div style="font-size:15px;font-weight:700;color:var(--neutral)">${money(r.amount)}</div>
+                    <div style="flex:none;font-size:15px;font-weight:700;color:var(--neutral)">${money(r.amount)}</div>
                   </div>`,
                 )}
               </div>
             </div>
           </div>
-          <div class="wib-fab" data-k="fab" style="bottom:12px">${icon('add_circle_outline_rounded', 20)}Ghi khoản mua</div>
+          <div class="wib-fab" data-k="fab" style="bottom:16px">${icon('add_circle_outline_rounded', 20)}Ghi khoản mua</div>
         </div>
         ${bottomNav('home')}
       </div>`
@@ -101,11 +100,14 @@ export default {
     k.reveal(tl, '[data-k="hello"], [data-k="overview"], [data-k="wish"], [data-k="before"], [data-k="recent"]', { stagger: 0.08 })
     k.count(tl, '[data-k="total"]', 1589000, { pos: 0.15, duration: 1.3 })
     tl.fromTo(k.q('[data-k="segbar"]'), { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'power3.out' }, 0.45)
-    k.callout(tl, '[data-k="segbar"]', '8 động cơ mua, mỗi động cơ một màu', { pos: 1.1 })
-    k.callout(tl, '[data-k="pct"]', 'Ngân sách: 26%, chưa chạm mốc', { pos: 1.6 })
-    k.scroll(tl, '[data-k="scroll"]', 300, { pos: '+=1.6', duration: 1.1 })
-    k.tap(tl, '[data-k="chip-before"]', { pos: '+=0.2' })
-    k.scroll(tl, '[data-k="scroll"]', 0, { pos: '+=0.6', duration: 1 })
+    // scroll down to the two shortcuts and the 3 recent rows, then back to the overview.
+    // Callouts stay pinned to their element, so they come after the scroll.
+    k.scroll(tl, '[data-k="scroll"]', 320, { pos: 1.9, duration: 1.1 })
+    k.scroll(tl, '[data-k="scroll"]', 0, { pos: 4.4, duration: 1 })
+    k.callout(tl, '[data-k="total"]', 'Stream realtime từ Firestore', { pos: 5.5 })
+    k.callout(tl, '[data-k="segbar"]', '8 động cơ mua, 8 màu', { pos: 6 })
+    k.callout(tl, '[data-k="pct"]', '26%: còn trong ngân sách', { pos: 6.5 })
+    tl.to({}, { duration: 1.5 }, 6.5)
   },
 
   demos: {

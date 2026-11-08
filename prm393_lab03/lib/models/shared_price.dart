@@ -107,10 +107,12 @@ class SharedPriceSummary {
 
   /// A price this person may share: typed in the app or read from the page by the
   /// extension, confirmed, still "mới". Demo prices and prices taken from other people
-  /// are never shared (spec 6.5).
+  /// are never shared (spec 6.5). sharedPrices only takes single / range / flash
+  /// (firestore.rules), so "Giá đang giảm" stays personal too.
   static bool isShareable(PriceSnapshot s, DateTime now) =>
       s.confirmed &&
       s.priceType != PriceType.afterVoucher &&
+      s.priceType != PriceType.sale &&
       (s.source == PriceSource.manual ||
           s.source == PriceSource.extensionPage) &&
       s.amountVnd > 0 &&

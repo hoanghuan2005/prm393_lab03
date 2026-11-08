@@ -14,19 +14,14 @@ const signInCancelled = AppException(
   'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.',
 );
 
-/// Code kept in AppException.code so the sign-in screen can point to the other button
+/// Firebase code kept in AppException.code
 const accountExistsCode = 'account-exists-with-different-credential';
 
-/// GitHub sign-in, but the email already has an account that signs in with Google
-const accountExistsUseGoogle = AppException(
+/// The email already has an account with another sign-in method. The app cannot know
+/// which one (Firebase hides it), so the message names none.
+const accountExistsOtherMethod = AppException(
   accountExistsCode,
-  'Email này đã có tài khoản đăng nhập bằng Google. Hãy đăng nhập bằng Google, rồi vào Cá nhân → Tài khoản liên kết để thêm GitHub.',
-);
-
-/// Google sign-in, but the email already has an account that signs in with GitHub
-const accountExistsUseGithub = AppException(
-  accountExistsCode,
-  'Email này đã có tài khoản đăng nhập bằng GitHub. Hãy đăng nhập bằng GitHub, rồi vào Cá nhân → Tài khoản liên kết để thêm Google.',
+  'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách bạn đã dùng trước đó (Google, GitHub hoặc email), rồi vào Cá nhân → Tài khoản liên kết để thêm cách mới.',
 );
 
 /// Converts errors from Firebase Auth, Firestore and Firebase AI Logic into [AppException]
@@ -65,7 +60,7 @@ AppException _mapAuth(FirebaseAuthException e) {
         'Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép cửa sổ bật lên rồi bấm "Thử lại".',
       );
     case accountExistsCode:
-      return accountExistsUseGoogle;
+      return accountExistsOtherMethod;
     case 'credential-already-in-use':
       return const AppException(
         'credential-already-in-use',

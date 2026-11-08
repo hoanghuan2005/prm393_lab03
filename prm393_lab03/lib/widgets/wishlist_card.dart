@@ -6,6 +6,7 @@ import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import 'demo_data_badge.dart';
 import 'motive_chip.dart';
 import 'product_image.dart';
 
@@ -75,6 +76,15 @@ class WishlistCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
+                if (item.shopName != null) ...[
+                  const SizedBox(height: AppDimens.space4),
+                  Text(
+                    'Shop: ${item.shopName}',
+                    style: AppTextStyles.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: AppDimens.space12),
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
@@ -82,6 +92,7 @@ class WishlistCard extends StatelessWidget {
                   runSpacing: AppDimens.space8,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
+                    if (item.isDemo) const DemoDataBadge(),
                     if (item.isFromExtension) fromExtensionChip(),
                     _buildStatusBadge(),
                   ],

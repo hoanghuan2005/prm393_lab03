@@ -310,7 +310,10 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           ],
         ),
         const SizedBox(height: AppDimens.space16),
-        Text('Không có câu trả lời đúng hay sai.', style: AppTextStyles.caption),
+        Text(
+          'Không có câu trả lời đúng hay sai.',
+          style: AppTextStyles.caption,
+        ),
       ],
     );
   }
@@ -421,7 +424,10 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           ),
           const SizedBox(height: AppDimens.space16),
         ],
-        Text('Không có câu trả lời đúng hay sai.', style: AppTextStyles.caption),
+        Text(
+          'Không có câu trả lời đúng hay sai.',
+          style: AppTextStyles.caption,
+        ),
       ],
     );
   }

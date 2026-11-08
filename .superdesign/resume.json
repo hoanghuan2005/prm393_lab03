@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "presentation-web": {
+      "targetKind": "new-target",
+      "projectId": "4018a398-7403-4451-aa3e-4badaff6e317",
+      "activeDraftId": "2a09175e-77ae-4e09-a11c-1dc661b96a07",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": ["presentation_web-src-assets-why-i-buy-logo.svg"],
+      "brandAssets": {
+        "logo": {
+          "assetKey": "presentation_web-src-assets-why-i-buy-logo.svg",
+          "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/4018a398-7403-4451-aa3e-4badaff6e317/brand-assets/presentation_web-src-assets-why-i-buy-logo.svg/why-i-buy-logo.svg",
+          "sourcePath": "presentation_web/src/assets/why-i-buy-logo.svg"
+        }
+      },
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/website/spline.design/design.md",
+        ".superdesign/init/theme.md:1:145",
+        ".superdesign/context/spec-login.md",
+        ".superdesign/context/spec-home.md"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "716ade5850f323ff9579aceb9dac35fa44e49d077b9e89dc54204866b75993af",
+        ".superdesign/website/spline.design/design.md": "f652b2c1bacf3d1b58f52041434e7fbd3603526c47ffb3d5abfce244a0455ca2",
+        ".superdesign/init/theme.md": "95e6d21c71f77e6c05e07126aec8fe343a2a569f731bb27a15682f8eae56abe4",
+        ".superdesign/context/spec-login.md": "3120576249c1feb15cc6127512fdf1062a675f70cf3741ab29879ce03818c969",
+        ".superdesign/context/spec-home.md": "dd6a19a07550c1453eb6551b30bbb22db3bc3acdb1a7506306fb93d9f1614bbe"
+      },
+      "components": [],
+      "drafts": {
+        "2a09175e-77ae-4e09-a11c-1dc661b96a07": {
+          "title": "Why I Buy? - Product Presentation (Hero + Đăng nhập + Trang chủ)",
+          "visualDirection": "Void Canvas (spline.design) × app yellow #FFDE02; phone left, text right, flow rail bottom",
+          "model": "gemini-3.1-pro",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-11-07T17:10:00+07:00"
+    }
+  }
+}

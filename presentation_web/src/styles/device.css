@@ -1,0 +1,143 @@
+/* The phone's display: a 360 x 780 DOM surface placed on the 3D model by CSS3DRenderer. */
+.device-screen {
+  position: relative;
+  width: 360px;
+  height: 780px;
+  border-radius: 44px;
+  overflow: hidden;
+  background: #000;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+  contain: layout paint;
+  user-select: none;
+}
+.device-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.device-viewport > .wib-screen {
+  will-change: transform, opacity;
+}
+
+/* Android status bar (overlays the app, like edge-to-edge) */
+.device-status {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px 0 26px;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+.device-status.is-light {
+  color: #fff;
+}
+.device-status__icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.device-status__icons svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+.device-punch {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  z-index: 41;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2a2f3a 0 18%, #07080b 40%);
+  box-shadow: 0 0 0 1.5px #0b0b0d;
+}
+.device-gesture {
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  z-index: 40;
+  width: 108px;
+  height: 4px;
+  margin-left: -54px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  pointer-events: none;
+}
+.device-gesture.is-light {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* the presenter's "finger" */
+.device-finger {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 6px 16px rgba(15, 23, 42, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.device-ripple {
+  position: absolute;
+  z-index: 59;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.16) 0%, rgba(15, 23, 42, 0.06) 55%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.2);
+  pointer-events: none;
+}
+
+/* glass reflection that slides with the phone's yaw */
+.device-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) calc(var(--glare, 40%) - 18%),
+    rgba(255, 255, 255, 0.11) var(--glare, 40%),
+    rgba(255, 255, 255, 0) calc(var(--glare, 40%) + 14%),
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+}
+.device-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 69;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 0 24px rgba(0, 0, 0, 0.08);
+}
+
+/* boot curtain for the intro */
+.device-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  background: #000;
+  pointer-events: none;
+}

@@ -42,6 +42,10 @@ class FirestorePaths {
   CollectionReference<JsonMap> ownedItems(String uid) =>
       user(uid).collection('ownedItems');
 
+  /// G8: "Cùng món ở shop khác" matches the user hid (id = that productKey)
+  CollectionReference<JsonMap> hiddenMatches(String uid) =>
+      user(uid).collection('hiddenMatches');
+
   /// "Gửi góp ý" messages (create only)
   CollectionReference<JsonMap> feedback(String uid) =>
       user(uid).collection('feedback');
@@ -59,6 +63,22 @@ class FirestorePaths {
   /// "Giá người khác ghi": anonymous reports shared by every user (top level, no uid)
   CollectionReference<JsonMap> sharedPriceReports(String productKey) =>
       db.collection('sharedPrices').doc(productKey).collection('reports');
+
+  /// "Biểu đồ giá tham khảo": shared per product (top level, no uid)
+  CollectionReference<JsonMap> priceHistory() => db.collection('priceHistory');
+  DocumentReference<JsonMap> priceHistoryProduct(String productKey) =>
+      priceHistory().doc(productKey);
+  CollectionReference<JsonMap> priceHistoryReports(String productKey) =>
+      priceHistoryProduct(productKey).collection('reports');
+
+  /// The same item in several shops, grouped by hand
+  CollectionReference<JsonMap> productGroups() =>
+      db.collection('productGroups');
+  DocumentReference<JsonMap> productGroup(String groupId) =>
+      productGroups().doc(groupId);
+
+  /// Lịch sale managed on the web; the app reads published ones only
+  CollectionReference<JsonMap> saleEvents() => db.collection('saleEvents');
 
   /// Document id = month key "yyyy-MM"
   CollectionReference<JsonMap> reflections(String uid) =>

@@ -7,6 +7,7 @@ import '../app/routes.dart';
 import '../core/constants/app_constants.dart';
 import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
+import '../services/auth_service.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -20,6 +21,7 @@ import '../viewmodels/theme_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/linked_devices_section.dart';
+import '../widgets/price_history_demo_section.dart';
 import '../widgets/section_card.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -327,6 +329,9 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppDimens.space16),
+
+            // Sample data of "Biểu đồ giá tham khảo" (admins only)
+            const PriceHistoryDemoSection(),
 
             if (kDebugMode) ...[
               AppButton(
@@ -928,10 +933,7 @@ class FirebaseDemoTools extends StatelessWidget {
 
 /// Account card at the top of Cá nhân. Never shows the full email or uid.
 class AccountHeaderCard extends StatelessWidget {
-  /// Defaults to [kDebugMode]; tests pass false to check a release build
-  final bool showDebugUid;
-
-  const AccountHeaderCard({super.key, this.showDebugUid = kDebugMode});
+  const AccountHeaderCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -1051,6 +1053,8 @@ class _LinkedAccountTile extends StatelessWidget {
       (vm) => vm.isBusy,
     );
     final isLinked = row.state == LinkState.linked;
+    // Why "Huỷ liên kết" is disabled: the only sign-in method left
+    final showLastNote = isLinked && !vm.isGuest && !locked && !row.canUnlink;
     final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
@@ -1077,6 +1081,11 @@ class _LinkedAccountTile extends StatelessWidget {
                       : 'Đã liên kết · ${row.label}',
                   style: subtitleStyle,
                 ),
+                if (showLastNote)
+                  Text(
+                    AuthService.lastProvider.messageVi,
+                    style: subtitleStyle,
+                  ),
               ],
             )
           : null,

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/formatters/money_format.dart';
+import '../models/price_insights.dart';
 import '../models/price_snapshot.dart';
 import '../models/shared_price.dart';
 import '../models/wishlist_item.dart';
@@ -17,7 +20,16 @@ class SharedPriceSection extends StatefulWidget {
   final WishlistItem item;
   final ValueChanged<int>? onUsePrice;
 
-  const SharedPriceSection({super.key, required this.item, this.onUsePrice});
+  /// Inside the price section of Chi tiết món (G6b): no card of its own, and nothing
+  /// for an item without a Shopee link (the section asks for the link)
+  final bool embedded;
+
+  const SharedPriceSection({
+    super.key,
+    required this.item,
+    this.onUsePrice,
+    this.embedded = false,
+  });
 
   @override
   State<SharedPriceSection> createState() => _SharedPriceSectionState();
@@ -26,14 +38,30 @@ class SharedPriceSection extends StatefulWidget {
 class _SharedPriceSectionState extends State<SharedPriceSection> {
   /// The user's latest comparable price once their history has loaded (Lịch sử giá).
   /// Until then the comparison loads without it, so a failed history never blocks it.
-  PriceSnapshot? _mine(BuildContext context) => context
-      .watch<DecisionSupportViewModel?>()
-      ?.priceInsightsFor(widget.item)
-      ?.latest;
+  PriceInsights? _insights(BuildContext context) =>
+      context.watch<DecisionSupportViewModel?>()?.priceInsightsFor(widget.item);
 
-  void _requestLoad(SharedPriceViewModel vm, PriceSnapshot? mine) {
+  /// "Mã món" (G8) is asked once per opening of Chi tiết món
+  bool _identityRequested = false;
+
+  void _requestLoad(SharedPriceViewModel vm, PriceInsights? insights) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) vm.load(widget.item, mine: mine);
+      if (!mounted) return;
+      vm.load(widget.item, mine: insights?.latest);
+      // "Giá tham khảo" (G7): the user's fresh prices, each sent once
+      final reported = insights == null
+          ? null
+          : vm.reportHistory(widget.item, insights.history);
+      // After the report, which may have created the product; an item without any
+      // price has no history to wait for
+      if (_identityRequested) return;
+      if (reported == null && widget.item.hasPrice) return;
+      _identityRequested = true;
+      unawaited(
+        (reported ?? Future<void>.value()).then(
+          (_) => vm.identifyProduct(widget.item),
+        ),
+      );
     });
   }
 
@@ -47,9 +75,11 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
   Widget build(BuildContext context) {
     final vm = context.watch<SharedPriceViewModel?>();
     if (vm == null) return const SizedBox.shrink();
-    final mine = _mine(context);
+    final insights = _insights(context);
+    final mine = insights?.latest;
     final state = vm.stateFor(widget.item, mine: mine);
     if (state.status == SharedPriceStatus.unsupported) {
+      if (widget.embedded) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(bottom: AppDimens.space16),
         child: Text(
@@ -58,41 +88,49 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
         ),
       );
     }
-    _requestLoad(vm, mine);
+    _requestLoad(vm, insights);
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.groups_outlined),
+            const SizedBox(width: AppDimens.space8),
+            Expanded(
+              child: Text(
+                'Giá người khác ghi',
+                style: AppTextStyles.titleMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppDimens.space8),
+        ..._body(context, vm, state, mine),
+        if (state.variantUnknown) ...[
+          const SizedBox(height: AppDimens.space4),
+          Text(
+            'Món chưa rõ phân loại: chỉ so với giá cũng chưa rõ phân loại, giá thật có thể khác.',
+            style: AppTextStyles.labelMedium,
+          ),
+        ],
+        const Divider(height: AppDimens.space24),
+        _SharingSwitch(item: widget.item),
+      ],
+    );
+    if (widget.embedded) {
+      return Column(
+        key: const ValueKey('shared-prices'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [const Divider(height: AppDimens.space24), content],
+      );
+    }
     return Card(
       key: const ValueKey('shared-prices'),
       margin: const EdgeInsets.only(bottom: AppDimens.space16),
       child: Padding(
         padding: const EdgeInsets.all(AppDimens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.groups_outlined),
-                const SizedBox(width: AppDimens.space8),
-                Expanded(
-                  child: Text(
-                    'Giá người khác ghi',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space8),
-            ..._body(context, vm, state, mine),
-            if (state.variantUnknown) ...[
-              const SizedBox(height: AppDimens.space4),
-              Text(
-                'Món chưa rõ phân loại: chỉ so với giá cũng chưa rõ phân loại, giá thật có thể khác.',
-                style: AppTextStyles.labelMedium,
-              ),
-            ],
-            const Divider(height: AppDimens.space24),
-            _SharingSwitch(item: widget.item),
-          ],
-        ),
+        child: content,
       ),
     );
   }
@@ -196,7 +234,9 @@ class _SharingSwitch extends StatelessWidget {
       title: const Text('Góp giá của tôi (ẩn danh)'),
       subtitle: Text(
         'Chỉ gửi giá, loại giá và ngày ghi của món có link Shopee; không gửi tên, '
-        'link hay tài khoản. Giá đã góp hết hiệu lực sau ${SharedPriceSummary.windowDays} ngày.',
+        'link hay tài khoản. Giá đã góp hết hiệu lực sau ${SharedPriceSummary.windowDays} ngày. '
+        'Giá cũng được lưu ẩn danh vào biểu đồ "Giá tham khảo" (kèm tên món, tên shop '
+        'và đánh giá nếu có).',
         style: AppTextStyles.labelMedium,
       ),
     );

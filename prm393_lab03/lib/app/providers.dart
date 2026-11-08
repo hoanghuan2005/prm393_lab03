@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../firebase/platform_support.dart';
 import '../services/ai_decision_service.dart';
 import '../services/ai_insight_service.dart';
 import '../services/ai_photo_search_service.dart';
 import '../services/ai_pre_purchase_service.dart';
 import '../services/ai_price_search_service.dart';
+import '../services/ai_product_identity_service.dart';
 import '../services/ai_service.dart';
 import '../services/ai_suggestion_service.dart';
 import '../services/analytics_service.dart';
@@ -14,11 +16,15 @@ import '../services/budget_service.dart';
 import '../services/crashlytics_service.dart';
 import '../services/data_export_service.dart';
 import '../services/demo_data_service.dart';
+import '../services/demo_price_history_service.dart';
 import '../services/extension_session_service.dart';
 import '../services/feedback_service.dart';
+import '../services/hidden_match_service.dart';
 import '../services/instrumented_ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/preferences_service.dart';
+import '../services/price_history_contribution_service.dart';
+import '../services/price_history_service.dart';
 import '../services/purchase_service.dart';
 import '../services/reflection_service.dart';
 import '../services/remote_config_service.dart';
@@ -40,9 +46,11 @@ import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/linked_accounts_viewmodel.dart';
 import '../viewmodels/photo_search_viewmodel.dart';
 import '../viewmodels/pre_purchase_viewmodel.dart';
+import '../viewmodels/price_history_demo_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
+import '../viewmodels/same_product_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/shared_price_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
@@ -103,6 +111,21 @@ class AppProviders extends StatelessWidget {
           create: (_) => FirestoreReflectionService(),
         ),
         Provider<DemoDataService>(create: (_) => FirestoreDemoDataService()),
+        Provider<DemoPriceHistoryService>(
+          create: (_) => FirestoreDemoPriceHistoryService(),
+        ),
+        // "Giá tham khảo": the service only; each screen creates its own ViewModel
+        Provider<PriceHistoryService>(
+          create: (_) => FirestorePriceHistoryService(),
+        ),
+        // "Không phải món này" of "Cùng món ở shop khác" (G8)
+        Provider<HiddenMatchService>(
+          create: (_) => FirestoreHiddenMatchService(),
+        ),
+        // The user's own prices sent anonymously to "Giá tham khảo" (G7)
+        Provider<PriceHistoryContributionService>(
+          create: (_) => FirestorePriceHistoryContributionService(),
+        ),
         Provider<ExtensionSessionService>(
           create: (_) => FirestoreExtensionSessionService(),
         ),
@@ -257,7 +280,8 @@ class AppProviders extends StatelessWidget {
             ..updateSources(
               userName: auth.displayName,
               purchases: purchaseVm.allPurchases,
-              wishlistItems: wishlistVm.allItems,
+              // G2c: sample items never enter the monthly report
+              wishlistItems: wishlistVm.realItems,
             ),
         ),
         // Góc nhìn / Chiêm nghiệm: recomputes stats whenever purchases, wishlist or month change
@@ -277,7 +301,8 @@ class AppProviders extends StatelessWidget {
           update: (_, purchaseVm, wishlistVm, insightsVm) =>
               insightsVm!..updateSources(
                 purchases: purchaseVm.allPurchases,
-                wishlistItems: wishlistVm.allItems,
+                // G2c: sample items never enter the stats
+                wishlistItems: wishlistVm.realItems,
                 month: purchaseVm.selectedMonth,
               ),
         ),
@@ -289,17 +314,45 @@ class AppProviders extends StatelessWidget {
           ),
           update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
-        // "Giá người khác ghi" (spec 8.3): Google accounts share, guests only read
+        // "Dữ liệu giá mẫu" (Firebase Demo Area): admins only, role read from users/{uid}
+        ChangeNotifierProxyProvider<AuthViewModel, PriceHistoryDemoViewModel>(
+          create: (context) => PriceHistoryDemoViewModel(
+            demoService: context.read<DemoPriceHistoryService>(),
+            userService: context.read<UserService>(),
+            crashlyticsService: crashlyticsService,
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
+        ),
+        // "Giá người khác ghi" (spec 8.3) and "Giá tham khảo" (G7): Google accounts
+        // share, guests only read
         ChangeNotifierProxyProvider<AuthViewModel, SharedPriceViewModel>(
           create: (context) => SharedPriceViewModel(
             service: context.read<SharedPriceService>(),
             preferencesService: PreferencesService(),
+            historyService: context.read<PriceHistoryContributionService>(),
+            // "Mã món" (G8): same switches as the other AI features
+            identityService: AiProductIdentityService(
+              generator: context.read<AiService>(),
+            ),
+            aiAllowed: () async =>
+                PlatformSupport.supportsFirebaseAi &&
+                remoteConfigService.enableAiSuggestions &&
+                await PreferencesService().getAiInsightEnabled(),
           ),
           update: (_, auth, vm) => vm!
             ..updateUser(
               auth.userId,
               canContribute: !(auth.user?.isAnonymous ?? true),
             ),
+        ),
+        // "Cùng món ở shop khác" on Chi tiết món (G8): hidden matches are per user
+        ChangeNotifierProxyProvider<AuthViewModel, SameProductViewModel>(
+          create: (context) => SameProductViewModel(
+            service: context.read<PriceHistoryService>(),
+            hiddenService: context.read<HiddenMatchService>(),
+            analytics: context.read<AppAnalyticsService>(),
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
         // Decision Card labels + AI reason, Lịch sale and sale plans (this month's budget)
         ChangeNotifierProxyProvider5<

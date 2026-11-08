@@ -60,10 +60,7 @@ class _NotificationButton extends StatelessWidget {
   final Color color;
   final SettingsViewModel settingsVm;
 
-  const _NotificationButton({
-    required this.color,
-    required this.settingsVm,
-  });
+  const _NotificationButton({required this.color, required this.settingsVm});
 
   @override
   Widget build(BuildContext context) {
@@ -130,27 +127,29 @@ class _NotificationButton extends StatelessWidget {
                   child: Center(child: Text('Chưa có thông báo mới.')),
                 )
               else
-                ...settingsVm.notifications.take(5).map(
-                  (notification) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: AppColors.primaryContainer,
-                      child: Icon(
-                        Icons.notifications_active_outlined,
-                        color: AppColors.onPrimary,
+                ...settingsVm.notifications
+                    .take(5)
+                    .map(
+                      (notification) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const CircleAvatar(
+                          backgroundColor: AppColors.primaryContainer,
+                          child: Icon(
+                            Icons.notifications_active_outlined,
+                            color: AppColors.onPrimary,
+                          ),
+                        ),
+                        title: Text(
+                          notification.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(notification.body),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          openFromNotification(notification.data);
+                        },
                       ),
                     ),
-                    title: Text(
-                      notification.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(notification.body),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      openFromNotification(notification.data);
-                    },
-                  ),
-                ),
               if (settingsVm.asksNotificationPermissionInApp &&
                   !settingsVm.notificationsEnabled)
                 Align(
@@ -189,11 +188,7 @@ class _WishlistButton extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          icon: Icon(
-            Icons.bookmark_outline_rounded,
-            color: color,
-            size: 24,
-          ),
+          icon: Icon(Icons.bookmark_outline_rounded, color: color, size: 24),
           tooltip: 'Danh sách mong muốn',
           onPressed: onPressed,
         ),

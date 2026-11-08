@@ -103,7 +103,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   Future<void> _checkVerification() async {
     setState(() => _isChecking = true);
-    final verified = await context.read<AuthViewModel>().reloadEmailVerification();
+    final verified = await context
+        .read<AuthViewModel>()
+        .reloadEmailVerification();
     if (!mounted) return;
     setState(() => _isChecking = false);
     ScaffoldMessenger.of(context).showSnackBar(

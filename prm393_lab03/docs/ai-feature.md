@@ -46,6 +46,7 @@ Code: `lib/services/ai_suggestion_service.dart`, `lib/viewmodels/item_suggestion
 | 6 | Hỏi trước khi mua (tóm tắt + câu hỏi gợi suy ngẫm) | `pre_purchase` | `generateFields` | chip AI / Câu mẫu | Quan sát do code viết |
 | 7 | Tìm bằng ảnh | `photo_search` | `generateFromImage` | "AI · độ chắc", "Chọn lại tên nếu AI đoán chưa đúng" | Người dùng tự gõ tên |
 | 8 | Ước lượng giá trên web | `price_search` | `searchWeb` (Google Search grounding, có nguồn) | "AI ước lượng…" + liên kết nguồn | Không hiện giá |
+| 9 | Mã món (G8): hãng, model, dung lượng và phân loại từ tên sản phẩm Shopee, để nhận ra cùng món ở nhiều shop | `product_identity` | `generateFields` (`brand`, `model`, `spec`, `confident`, `vN_color`/`vN_size`/`vN_capacity`) | Không hiện trên UI; chỉ ghi `productCode` (nguồn `ai`) và `variantCodes` vào `priceHistory` | Không chắc hoặc lỗi thì không ghi gì, không ghép |
 
 Tất cả đều đi qua một client duy nhất: `FirebaseAiService` (`lib/services/ai_service.dart`), được bọc bởi `InstrumentedAiService` (`lib/services/instrumented_ai_service.dart`). Lớp bọc này nhận ra tính năng từ system instruction, áp prompt từ Remote Config, đặt thời gian chờ và ghi analytics.
 
@@ -201,14 +202,14 @@ Cùng cách đó, `Sữa dưỡng thể Vaseline` → `{"groupId": "beauty"}` �
 
 ## 8. Web admin: AI gợi ý câu hỏi tiếp theo
 
-Màn "AI Assistant" của `prm393_flutter_admin`: admin gõ một chủ đề (ví dụ "Mua đồ công nghệ mùa sale 11.11"). Gemini viết một câu hỏi tự vấn, một câu "vì sao hỏi câu này" cho admin, và bản nháp thông báo đẩy (tiêu đề, nội dung, nhóm người nhận `dormant`/`all`, màn hình mở).
+Mục "Trợ lý AI" của `prm393_flutter_admin` (staff và admin): gõ một chủ đề (ví dụ "Mua đồ công nghệ mùa sale 11.11") hoặc bấm một chủ đề gợi ý; thẻ "Cơ hội tăng trưởng" ở Tổng quan cũng mở thẳng mục này với chủ đề "người cài app nhưng chưa thêm món nào". Gemini viết một câu hỏi tự vấn, một câu "vì sao hỏi câu này" cho người quản trị, và bản nháp thông báo (tiêu đề, nội dung, nhóm người nhận `dormant`/`all`).
 
 **Cách hoạt động:**
 
-- **Code:** `lib/services/admin_ai_service.dart`, `lib/screens/ai_assistant_screen.dart`, App Check trong `lib/main.dart`.
+- **Code:** `lib/services/admin_ai_service.dart`, `lib/viewmodels/ai_assistant_viewmodel.dart`, `lib/screens/ai_assistant_screen.dart`, App Check trong `lib/main.dart`.
 - **Model:** cùng khoá Remote Config `ai_insight_model` với app mobile.
 - **App Check:** reCAPTCHA Enterprise (cùng site key với bản web của app). Khi chạy máy cá nhân: `flutter run -d chrome --dart-define=APP_CHECK_DEBUG_TOKEN=<token đã đăng ký>`.
-- **Dữ liệu gửi đi:** chỉ 5 số tổng hợp của dashboard (tổng người dùng, người mới, hoạt động hôm nay, cài app chưa dùng, tổng món đang cân nhắc) và chủ đề admin gõ. Không gửi tên, email hay uid của ai; có test kiểm tra điều này.
+- **Dữ liệu gửi đi:** chỉ 5 số tổng hợp của dashboard, lấy từ số liệu thật trên Firestore (tổng người dùng, người mới hôm nay, hoạt động hôm nay, cài app chưa dùng, tổng món trong danh sách cân nhắc; với tài khoản staff, các số chỉ admin xem được gửi là 0) và chủ đề đã gõ. Không gửi tên, email hay uid của ai; có test kiểm tra điều này.
 
 **Kiểm tra đầu ra:**
 
@@ -220,12 +221,12 @@ Màn "AI Assistant" của `prm393_flutter_admin`: admin gõ một chủ đề (v
 **Nhãn và quyền sửa:**
 
 - Kết quả ghi rõ "AI · <model>", hoặc "CÂU MẪU (AI KHÔNG DÙNG ĐƯỢC)" kèm lý do (hết lượt, mạng, App Check, quá 30 s).
-- Bấm "Áp dụng vào Push Notification" chỉ điền bản nháp vào tab Push. Admin sửa tiêu đề và nội dung ở đó rồi mới gửi.
-- Danh sách câu hỏi bên dưới được ghi rõ là "soạn sẵn (không phải AI)". Đã bỏ nhãn cũ "Gemini 1.5 Flash · Tương tác +42%": model đó đã ngừng hoạt động, và con số +42% không có nguồn.
+- Bấm "Dùng cho thông báo" chỉ điền bản nháp vào form ở mục Thông báo, kèm dòng "Bản nháp từ AI gợi ý (…). Hãy đọc và sửa lại trước khi đăng." Người quản trị sửa tiêu đề và nội dung ở đó rồi mới đăng; không có gì được gửi tự động.
+- Đã bỏ nhãn cũ "Gemini 1.5 Flash · Tương tác +42%": model đó đã ngừng hoạt động, và con số +42% không có nguồn.
 
 **Mẫu thật (05/11/2026):**
 
-- **Input:** chủ đề "Mua đồ công nghệ mùa sale 11.11", số liệu dashboard ở chế độ Demo.
+- **Input:** chủ đề "Mua đồ công nghệ mùa sale 11.11", số liệu dashboard ở chế độ Demo (bản web cũ; bản hiện tại chỉ dùng số liệu thật).
 - **Gemini trả:**
   - question: "Điều gì ở món đồ công nghệ này thu hút sự chú ý của bạn trong thời điểm này?"
   - insight: "Dựa trên số liệu tổng số món đang cân nhắc là 842, …"
@@ -244,5 +245,5 @@ Màn "AI Assistant" của `prm393_flutter_admin`: admin gõ một chủ đề (v
 | `test/ai_instrumentation_test.dart` | Nhận ra đúng tính năng từ instruction; `ai_request` có model; prompt từ Remote Config chỉ thay đúng tính năng; JSON sai bị bỏ qua; `ai_error` và phân loại lỗi; `ai_result_accepted` |
 | `test/item_suggestion_test.dart` | Có từ khoá thì không gọi AI; nhóm bịa, `none`, `Khác` hoặc lỗi → không gợi ý; tắt AI (người dùng hoặc Remote Config) thì chỉ dùng từ khoá; AI chọn trong các món cùng nhóm |
 | `test/decision_sale_test.dart` | Câu AI có số lạ hoặc lời khuyên bị loại; mỗi phương án kiểm tra riêng |
-| `prm393_flutter_admin/test/admin_ai_service_test.dart` | Prompt admin không chứa tên/email/uid; câu trả lời hợp lệ thành gợi ý AI; lời khuyên, số bịa, quá dài, JSON hỏng hoặc lỗi → câu mẫu có lý do; màn hình ghi nhãn AI/Câu mẫu |
+| `prm393_flutter_admin/test/admin_ai_service_test.dart` | Prompt admin không chứa tên/email/uid; câu trả lời hợp lệ thành gợi ý AI; lời khuyên, số bịa, quá dài, JSON hỏng hoặc lỗi → câu mẫu có lý do; màn hình ghi nhãn AI/Câu mẫu; "Dùng cho thông báo" chỉ điền form Thông báo |
 | `test/insights_screen_test.dart` | Thẻ do AI viết có nhãn AI; không có AI (Windows) hoặc tắt AI thì hiện câu mẫu |

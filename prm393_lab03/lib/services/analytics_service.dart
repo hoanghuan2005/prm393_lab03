@@ -146,6 +146,30 @@ class AppAnalyticsService {
     AnalyticsParams.errorType: errorType,
   });
 
+  /// [mode]: `product` or `group`; no product key or title is sent
+  Future<void> logViewPriceHistory({
+    required String mode,
+    required int rangeDays,
+    required bool isDemo,
+  }) => _log(AnalyticsEvents.viewPriceHistory, {
+    AnalyticsParams.mode: mode,
+    AnalyticsParams.rangeDays: rangeDays,
+    AnalyticsParams.isDemo: isDemo ? 1 : 0,
+  });
+
+  /// "Cùng món ở shop khác" shown with [resultCount] shops (1–3)
+  Future<void> logViewSameProduct({
+    required int resultCount,
+    required bool isDemo,
+  }) => _log(AnalyticsEvents.viewSameProduct, {
+    AnalyticsParams.resultCount: resultCount,
+    AnalyticsParams.isDemo: isDemo ? 1 : 0,
+  });
+
+  /// "Không phải món này" on a row of "Cùng món ở shop khác"
+  Future<void> logHideSameProductMatch() =>
+      _log(AnalyticsEvents.hideSameProductMatch);
+
   Future<void> logClickSaleReminder(String saleType) => _log(
     AnalyticsEvents.clickSaleReminder,
     {AnalyticsParams.saleType: saleType},

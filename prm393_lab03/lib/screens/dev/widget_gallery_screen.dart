@@ -15,6 +15,7 @@ import '../../widgets/price_chip.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/states/ui_state_builder.dart';
 import '../../widgets/undo_snack_bar.dart';
+import 'price_chart_gallery.dart';
 
 /// Debug-only catalogue of the shared widgets in lib/widgets, so the team can see each
 /// one with sample values. Opened from the Firebase Demo Area; not registered in release.
@@ -195,6 +196,8 @@ class _WidgetGalleryScreenState extends State<WidgetGalleryScreen> {
               ),
             ],
           ),
+          const SizedBox(height: AppDimens.space16),
+          const PriceChartGallerySection(),
         ],
       ),
     );

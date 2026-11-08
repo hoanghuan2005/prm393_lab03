@@ -354,13 +354,13 @@ class _LoginScreenState extends State<LoginScreen> {
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: AppColors.surface,
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(color: AppColors.outline),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: BorderSide(color: AppColors.divider),
         ),
       ),
     );
@@ -425,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildTrustNote(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primaryContainer,
         borderRadius: AppDimens.borderMedium,
       ),

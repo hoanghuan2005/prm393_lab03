@@ -5,12 +5,50 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
-import '../models/admin_models.dart';
+/// Aggregate dashboard numbers sent to Gemini: nothing that identifies a user
+class AdminAiMetrics {
+  final int totalUsers;
+  final int newUsersToday;
+  final int activeUsersToday;
+  final int dormantUsers;
+  final int totalWishlistItems;
+
+  const AdminAiMetrics({
+    required this.totalUsers,
+    required this.newUsersToday,
+    required this.activeUsersToday,
+    required this.dormantUsers,
+    required this.totalWishlistItems,
+  });
+}
+
+/// One self-reflection question and a message draft for the users
+class AdminAiSuggestion {
+  final String id;
+  final String category;
+  final String categoryLabel;
+  final String question;
+  final String psychologyInsight;
+  final String suggestedTitle;
+  final String suggestedBody;
+  final String targetScreen;
+
+  const AdminAiSuggestion({
+    required this.id,
+    required this.category,
+    required this.categoryLabel,
+    required this.question,
+    required this.psychologyInsight,
+    required this.suggestedTitle,
+    required this.suggestedBody,
+    required this.targetScreen,
+  });
+}
 
 /// Result shown on the AI assistant screen: what Gemini wrote, or the template
 /// when AI failed or wrote something not allowed
 class AdminAiResult {
-  final AiSuggestion suggestion;
+  final AdminAiSuggestion suggestion;
   final bool fromAi;
   final String model;
 
@@ -26,9 +64,10 @@ class AdminAiResult {
 }
 
 /// "AI gợi ý câu hỏi tiếp theo" for the admin: Gemini (Firebase AI Logic, protected
-/// by App Check) writes one self-reflection question and a push draft. Only aggregate
-/// dashboard numbers and the admin's topic are sent, never a user's name, email or uid.
-/// Nothing is sent to users from here: the draft goes to the Push tab to be edited.
+/// by App Check) writes one self-reflection question and a message draft. Only
+/// aggregate dashboard numbers and the admin's topic are sent, never a user's
+/// name, email or uid. Nothing is sent to users from here: the draft goes to the
+/// announcement form to be edited.
 class AdminAiService {
   /// Same Remote Config key and default as the mobile app
   static const String modelKey = 'ai_insight_model';
@@ -62,7 +101,7 @@ class AdminAiService {
   ];
 
   static const String systemInstruction = '''
-Bạn giúp quản trị viên app Why I Buy soạn MỘT câu hỏi tự vấn và MỘT thông báo đẩy gửi người dùng.
+Bạn giúp quản trị viên app Why I Buy soạn MỘT câu hỏi tự vấn và MỘT thông báo gửi người dùng.
 Why I Buy giúp người dùng tự hiểu vì sao mình muốn mua; app không phán xét và không ngăn cản.
 Quy tắc bắt buộc:
 1. Không khuyên mua hay không mua, không phán xét, không hứa giảm giá. Không dùng các từ: tiết kiệm, nên mua, không nên, chắc chắn, lãng phí, phung phí, hoang phí, bốc đồng, bạn phải, đừng mua.
@@ -101,7 +140,7 @@ Quy tắc bắt buộc:
   }
 
   /// Aggregate numbers only: nothing that identifies a user
-  static String buildPrompt(String topic, DashboardMetrics m) =>
+  static String buildPrompt(String topic, AdminAiMetrics m) =>
       'Số liệu tổng hợp hôm nay (JSON):\n'
       '${jsonEncode({'tongNguoiDung': m.totalUsers, 'nguoiMoiHomNay': m.newUsersToday, 'hoatDongHomNay': m.activeUsersToday, 'caiAppChuaDung': m.dormantUsers, 'tongMonDangCanNhac': m.totalWishlistItems})}\n\n'
       'Chủ đề quản trị viên muốn nhắc tới: "${topic.trim()}"\n'
@@ -109,7 +148,7 @@ Quy tắc bắt buộc:
       '(màn hình mở khi chạm thông báo: wishlist_add = Thêm món, wishlist = Danh sách cân nhắc, '
       'patterns = Mô hình chi tiêu, insights = Góc nhìn).';
 
-  Future<AdminAiResult> suggest(String topic, DashboardMetrics metrics) async {
+  Future<AdminAiResult> suggest(String topic, AdminAiMetrics metrics) async {
     final model = await loadModel();
     try {
       final raw = await (generator ?? _gemini)(
@@ -166,7 +205,7 @@ Quy tắc bắt buộc:
   }
 
   /// Numbers the insight may quote: the ones sent, plus any in the admin's topic
-  static Set<int> allowedNumbers(String topic, DashboardMetrics m) => {
+  static Set<int> allowedNumbers(String topic, AdminAiMetrics m) => {
     m.totalUsers,
     m.newUsersToday,
     m.activeUsersToday,
@@ -191,7 +230,7 @@ Quy tắc bắt buộc:
 
   /// The model's JSON as a suggestion, or null when any part breaks the rules
   @visibleForTesting
-  static AiSuggestion? parse(
+  static AdminAiSuggestion? parse(
     String raw,
     String topic, {
     Set<int> allowedNumbers = const {},
@@ -223,7 +262,7 @@ Quy tắc bắt buộc:
         !numbersIn(insight).every(allowedNumbers.contains)) {
       return null;
     }
-    return AiSuggestion(
+    return AdminAiSuggestion(
       id: 'ai_custom',
       category: categories.contains(category) ? category as String : 'all',
       categoryLabel: 'AI gợi ý cho: "${topic.trim()}"',
@@ -238,7 +277,7 @@ Quy tắc bắt buộc:
   }
 
   /// Written by the team, shown when AI is not available
-  static AiSuggestion template(String topic) => AiSuggestion(
+  static AdminAiSuggestion template(String topic) => AdminAiSuggestion(
     id: 'template_custom',
     category: 'all',
     categoryLabel: 'Câu mẫu cho: "${topic.trim()}"',

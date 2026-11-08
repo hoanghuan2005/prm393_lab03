@@ -30,9 +30,15 @@ class PriceInsights {
     : history = [...snapshots]
         ..sort((a, b) => b.observedAt.compareTo(a.observedAt));
 
-  /// Snapshots used for comparisons, newest first
-  List<PriceSnapshot> get comparable =>
-      history.where((s) => s.priceType != PriceType.afterVoucher).toList();
+  /// Snapshots used for comparisons, newest first. Like the extension: "Giá đang
+  /// giảm" (sale) only counts when the item has no other price
+  List<PriceSnapshot> get comparable {
+    final listed = history
+        .where((s) => s.priceType != PriceType.afterVoucher)
+        .toList();
+    final regular = listed.where((s) => s.priceType != PriceType.sale).toList();
+    return regular.isEmpty ? listed : regular;
+  }
 
   PriceSnapshot? get latest {
     final list = comparable;
@@ -79,6 +85,22 @@ class PriceInsights {
     return list.reduce((a, b) => b.amountVnd < a.amountVnd ? b : a);
   }
 
+  /// Lowest "Giá đang giảm" recorded (like SteamDB's historical low)
+  PriceSnapshot? get lowestSale {
+    final sales = history.where((s) => s.priceType == PriceType.sale).toList();
+    if (sales.isEmpty) return null;
+    return sales.reduce((a, b) => b.amountVnd < a.amountVnd ? b : a);
+  }
+
+  /// "-30% · 11.11" for a sale price, like the extension
+  static String discountText(PriceSnapshot s) {
+    final parts = [
+      if (s.discountPercent > 0) '-${s.discountPercent}%',
+      if (s.saleLabel != null) s.saleLabel!,
+    ];
+    return parts.isEmpty ? 'Đang giảm' : parts.join(' · ');
+  }
+
   /// Short label next to a price: "Mới", "Ghi ngày 26/10/2026", "Cũ · 12/10/2026"
   static String freshnessLabel(PriceSnapshot s, DateTime now) =>
       labelAt(s.observedAt, now);
@@ -88,6 +110,7 @@ class PriceInsights {
     final change = changeSinceSavedPercent;
     final low = lowest;
     final last = latest;
+    final sale = lowestSale;
     return [
       if (change != null && change < 0) 'Thấp hơn lúc lưu ${-change}%.',
       if (change != null && change >= notableRisePercent)
@@ -100,6 +123,9 @@ class PriceInsights {
         'Giá mới nhất không còn mới nên chưa so với lúc lưu.',
       if (low != null)
         'Thấp nhất đã ghi: ${formatVnd(low.amountVnd)} (${formatDate(low.observedAt)}).',
+      if (sale != null)
+        'Giảm thấp nhất: ${formatVnd(sale.amountVnd)} '
+            '(${discountText(sale)}, ${formatDate(sale.observedAt)}).',
     ];
   }
 }

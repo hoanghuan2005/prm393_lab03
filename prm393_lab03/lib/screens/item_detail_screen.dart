@@ -17,13 +17,15 @@ import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/decision_card_panel.dart';
+import '../widgets/demo_data_badge.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/price_history_panel.dart';
 import '../widgets/price_update_sheet.dart';
 import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
-import '../widgets/shared_price_section.dart';
+import '../widgets/same_product_card.dart';
+import '../widgets/shopee_rating_line.dart';
 import '../widgets/undo_snack_bar.dart';
 import '../widgets/voucher_suggestion_card.dart';
 import '../widgets/why_i_buy_logo.dart';
@@ -311,7 +313,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final matchingShopItems = wishlistVm.allItems.where((other) {
       if (other.id == item.id) return false;
       final otherTokens = titleTokens(other.title);
-      return compareTitles(currentTokens, otherTokens) == TitleSimilarity.likely;
+      return compareTitles(currentTokens, otherTokens) ==
+          TitleSimilarity.likely;
     }).toList();
     final canDecide = item.status == WishlistStatus.considering;
     final needsPurchase =
@@ -410,6 +413,35 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       style: AppTextStyles.bodyMedium,
                     ),
                   ],
+                  // Ratings the extension read on Shopee; nothing when unknown
+                  if (item.productRating != null ||
+                      item.shopRating != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    ShopeeRatingLine(
+                      key: const ValueKey('item-ratings'),
+                      productRating: item.productRating,
+                      productRatingCount: item.productRatingCount,
+                      shopName: item.shopName,
+                      shopRating: item.shopRating,
+                    ),
+                  ],
+                  if (item.shopName != null) ...[
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Shop: ${item.shopName}',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                  if (item.vouchers case final vouchers? when vouchers.isNotEmpty) ...[
+                    const SizedBox(height: AppDimens.space8),
+                    Text(
+                      'Voucher đã lưu'
+                      '${item.vouchersAt != null ? ' (${formatDate(item.vouchersAt!)})' : ''}:',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    for (final v in vouchers)
+                      Text('• $v', style: AppTextStyles.caption),
+                  ],
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(item.latestPriceVnd),
@@ -443,9 +475,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      if (item.isDemo) const DemoDataBadge(),
                       if (item.shopName != null && item.shopName!.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
@@ -454,9 +490,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.storefront_outlined, size: 13, color: AppColors.textSecondary),
+                              const Icon(
+                                Icons.storefront_outlined,
+                                size: 13,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(width: 4),
-                              Text(item.shopName!, style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                item.shopName!,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -473,17 +518,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
             const SizedBox(height: AppDimens.space20),
 
-            // A-14: every recorded price, compared only when it makes sense (spec 6.5)
-            if (item.hasPrice) PriceHistoryPanel(item: item),
+            // G6b: the one place for the item's prices: the chart ("Giá tham khảo"
+            // with the user's own prices, or only their own), every recorded price
+            // (A-14, spec 6.5) and "Giá người khác ghi" (spec 8.3)
+            PriceHistoryPanel(
+              item: item,
+              showSharedPrices: item.status == WishlistStatus.considering,
+              onUsePrice: _isProcessing
+                  ? null
+                  : (amount) => _useSharedPrice(item, amount),
+              onAddLink: _isProcessing
+                  ? null
+                  : () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.wishlistEdit,
+                      arguments: ItemDetailArgs(item),
+                    ),
+            ),
 
-            // Spec 8.3: anonymous prices other people recorded for the same variant
-            if (item.status == WishlistStatus.considering)
-              SharedPriceSection(
-                item: item,
-                onUsePrice: _isProcessing
-                    ? null
-                    : (amount) => _useSharedPrice(item, amount),
-              ),
+            // G8: the same item and variant in other shops (automatic match)
+            if (item.productKey != null) SameProductCard(item: item),
 
             // Voucher & promotion suggestions from Admin / Shopee / Lazada
             VoucherSuggestionCard(item: item),
@@ -658,7 +712,6 @@ class _ReviewInfo extends StatelessWidget {
   }
 }
 
-
 /// Section displaying price comparison across different shops for the same product
 class _ShopPriceComparisonSection extends StatelessWidget {
   final WishlistItem currentItem;
@@ -696,12 +749,18 @@ class _ShopPriceComparisonSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.compare_arrows_rounded, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.compare_arrows_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: AppDimens.space8),
               Expanded(
                 child: Text(
                   'So sánh giá các cửa hàng (${allOffers.length} shop)',
-                  style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -709,14 +768,22 @@ class _ShopPriceComparisonSection extends StatelessWidget {
           const SizedBox(height: AppDimens.space12),
           ...allOffers.map((offer) {
             final isCurrent = offer.id == currentItem.id;
-            final isLowest = lowestItem != null && offer.id == lowestItem.id && validPrices.length > 1;
+            final isLowest =
+                lowestItem != null &&
+                offer.id == lowestItem.id &&
+                validPrices.length > 1;
             final shopTitle = offer.shopName?.isNotEmpty == true
                 ? offer.shopName!
-                : (offer.url?.contains('shopee') == true ? 'Shopee' : 'Cửa hàng khác');
+                : (offer.url?.contains('shopee') == true
+                      ? 'Shopee'
+                      : 'Cửa hàng khác');
 
             return Container(
               margin: const EdgeInsets.only(bottom: AppDimens.space8),
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space12,
+                vertical: AppDimens.space8,
+              ),
               decoration: BoxDecoration(
                 color: isCurrent
                     ? AppColors.primary.withValues(alpha: 0.08)
@@ -725,7 +792,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                 border: Border.all(
                   color: isLowest
                       ? const Color(0xFF10B981)
-                      : (isCurrent ? AppColors.primary.withValues(alpha: 0.4) : AppColors.divider),
+                      : (isCurrent
+                            ? AppColors.primary.withValues(alpha: 0.4)
+                            : AppColors.divider),
                   width: isLowest ? 1.5 : 1,
                 ),
               ),
@@ -734,7 +803,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   Icon(
                     Icons.storefront_outlined,
                     size: 18,
-                    color: isLowest ? const Color(0xFF10B981) : AppColors.textSecondary,
+                    color: isLowest
+                        ? const Color(0xFF10B981)
+                        : AppColors.textSecondary,
                   ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
@@ -747,7 +818,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                               child: Text(
                                 shopTitle,
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: isCurrent || isLowest ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isCurrent || isLowest
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -756,28 +829,45 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                             if (isCurrent) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'Đang xem',
-                                  style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                             if (isLowest) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  color: const Color(0xFF10B981)
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'Rẻ nhất ⭐',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -786,7 +876,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                         if (offer.url != null && offer.url!.isNotEmpty)
                           Text(
                             offer.url!,
-                            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -797,7 +889,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   Text(
                     formatVnd(offer.latestPriceVnd),
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: isLowest ? const Color(0xFF10B981) : AppColors.textPrimary,
+                      color: isLowest
+                          ? const Color(0xFF10B981)
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -815,7 +909,11 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.savings_outlined, color: Color(0xFF10B981), size: 18),
+                  const Icon(
+                    Icons.savings_outlined,
+                    color: Color(0xFF10B981),
+                    size: 18,
+                  ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(

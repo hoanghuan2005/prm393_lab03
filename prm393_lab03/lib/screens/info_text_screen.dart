@@ -57,10 +57,7 @@ class InfoTextScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppDimens.space16),
           children: [
-            Text(
-              'Cập nhật: ${document.updated}',
-              style: AppTextStyles.caption,
-            ),
+            Text('Cập nhật: ${document.updated}', style: AppTextStyles.caption),
             const SizedBox(height: AppDimens.space8),
             Text(
               document.intro,

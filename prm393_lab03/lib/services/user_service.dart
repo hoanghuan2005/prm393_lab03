@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/firestore_fields.dart';
 import '../models/user_profile.dart';
 import 'firestore_paths.dart';
 import 'service_guard.dart';
@@ -18,6 +19,9 @@ abstract interface class UserService {
   Stream<UserSettings> watchSettings(String uid);
 
   Future<void> updateSettings(String uid, UserSettings settings);
+
+  /// users/{uid}.role: 'user' (also when missing), 'staff' or 'admin'
+  Stream<String> watchRole(String uid);
 }
 
 class FirestoreUserService implements UserService {
@@ -62,6 +66,14 @@ class FirestoreUserService implements UserService {
         .user(uid)
         .snapshots()
         .map((doc) => UserProfile.fromFirestore(doc).settings),
+  );
+
+  @override
+  Stream<String> watchRole(String uid) => guardStream(
+    _paths
+        .user(uid)
+        .snapshots()
+        .map((doc) => readString(doc.data()?['role']) ?? 'user'),
   );
 
   @override

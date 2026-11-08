@@ -71,11 +71,7 @@ class _NoopCrashlytics extends Fake implements CrashlyticsService {
   Future<void> setUserId(String userId) async {}
 }
 
-Future<void> _pump(
-  WidgetTester tester,
-  User user, {
-  bool showDebugUid = false,
-}) async {
+Future<void> _pump(WidgetTester tester, User user) async {
   final auth = _StreamFirebaseAuth();
   final authService = AuthService(auth: auth);
   final vm = AuthViewModel(
@@ -100,7 +96,7 @@ Future<void> _pump(
       ],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
-        home: Scaffold(body: AccountHeaderCard(showDebugUid: showDebugUid)),
+        home: const Scaffold(body: AccountHeaderCard()),
       ),
     ),
   );
@@ -178,19 +174,10 @@ void main() {
     expect(find.text('s…@gmail.com'), findsNWidgets(2));
   });
 
-  testWidgets('release builds show no UID line', (tester) async {
+  testWidgets('shows no UID line', (tester) async {
     await _pump(tester, _User(isAnonymous: true));
 
     expect(find.textContaining('UID'), findsNothing);
-    expect(find.textContaining(_uid), findsNothing);
-  });
-
-  testWidgets('debug builds show only the first 6 characters of the UID', (
-    tester,
-  ) async {
-    await _pump(tester, _User(isAnonymous: true), showDebugUid: true);
-
-    expect(find.text('UID: abcdef…'), findsOneWidget);
     expect(find.textContaining(_uid), findsNothing);
   });
 }

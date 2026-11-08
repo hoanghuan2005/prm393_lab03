@@ -13,11 +13,6 @@ service cloud.firestore {
     // Owner, or a linked extension (data the extension syncs: wishlist, prices, decisions, budgets…)
     function canAccess(uid) { return isOwner(uid) || linkedDevice(uid); }
     function isAnonymous() { return request.auth.token.firebase.sign_in_provider == 'anonymous'; }
-    function isAdmin() {
-      return request.auth != null
-        && (request.auth.uid == 'cvuPP4HXuKcJdVNepkxbjWUdqTY2'
-          || request.auth.token.email == 'admin@gmail.com');
-    }
     // Roles (Final 6): users/{uid}.role is 'user' (also when the field or the document is
     // missing), 'staff' or 'admin'. The first admin is set in the Firebase console; after that
     // only an admin changes roles, and nobody changes their own.
@@ -32,6 +27,13 @@ service cloud.firestore {
     function validMotive(m) { return m in ['need','want','sale','emotion','social','convenience','ads','other']; }
     function validMoney(v) { return v is int && v > 0 && v <= 999999999; }
     function optionalNote() { return !('note' in d()) || d().note == null || (d().note is string && d().note.size() <= 200); }
+    // Shopee ratings read by the extension (P0-chart): stars in (0, 5], review count int ≥ 0
+    function optionalText(f, max) { return !(f in d()) || text(d()[f], max); }
+    function optionalRating(f) { return !(f in d()) || (d()[f] is number && d()[f] > 0 && d()[f] <= 5); }
+    function optionalCount(f) { return !(f in d()) || (d()[f] is int && d()[f] >= 0); }
+    function validRatings() {
+      return optionalRating('productRating') && optionalRating('shopRating') && optionalCount('productRatingCount');
+    }
     function optionalStars(f) { return !(f in d()) || d()[f] == null || (d()[f] is int && d()[f] >= 1 && d()[f] <= 5); }
 
     match /users/{uid} {
@@ -66,13 +68,16 @@ service cloud.firestore {
           && (!('variantLabel' in d()) || d().variantLabel == null || (d().variantLabel is string && d().variantLabel.size() <= 60))
           && (!('shopName' in d()) || d().shopName == null || (d().shopName is string && d().shopName.size() <= 100))
           && (!('buyIntentAt' in d()) || d().buyIntentAt == null || d().buyIntentAt is timestamp)
+          && validRatings()
           && (d().status != 'purchased' || ('purchaseId' in d() && d().purchaseId is string));
 
         match /priceSnapshots/{sid} {
           allow read, delete: if canAccess(uid);
           allow create: if canAccess(uid) && validMoney(d().amountVnd) && d().observedAt is timestamp
             && (!('source' in d()) || d().source in ['manual','demo','extensionPage','community'])
-            && (!('priceType' in d()) || d().priceType in ['single','range','flash','afterVoucher']);
+            && (!('priceType' in d()) || d().priceType in ['single','range','flash','sale','afterVoucher'])
+            // Shop and ratings on the page when the extension read the price
+            && optionalText('shopName', 60) && validRatings();
           allow update: if false;
         }
       }
@@ -129,13 +134,21 @@ service cloud.firestore {
         allow create: if isStaff()
           && d().keys().hasOnly(['title', 'body', 'kind', 'refId', 'createdAt', 'createdBy', 'readAt'])
           && text(d().title, 80) && text(d().body, 500)
-          && d().kind in ['message', 'feedback_reply']
+          && d().kind in ['message', 'feedback_reply', 'suggestion_reply']
           && (!('refId' in d()) || text(d().refId, 128))
           && d().createdAt == request.time && d().createdBy == request.auth.uid
           && (!('readAt' in d()) || d().readAt == null);
         allow update: if isOwner(uid)
           && d().diff(resource.data).affectedKeys().hasOnly(['readAt'])
           && d().readAt is timestamp;
+      }
+
+      // G8: "cùng món ở shop khác" the user chose to hide (id = that product's key)
+      match /hiddenMatches/{productKey} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+          && d().keys().hasOnly(['hiddenAt']) && d().hiddenAt is timestamp;
       }
 
       match /reflections/{month} {
@@ -167,6 +180,147 @@ service cloud.firestore {
         && d().observedAt > request.time - duration.value(3, 'd');
       allow delete: if request.auth != null && !isAnonymous()
         && rid == sharedReportId(productKey, resource.data.modelKey);
+    }
+
+    // "Biểu đồ giá tham khảo": prices per product over time, read by every signed-in user.
+    // Admins write sample data (isDemo / source 'demo'); signed-in non-guest users add their
+    // own anonymous price per day (G7). afterVoucher is stored but never counted as a list
+    // price (app side).
+    function isContributor() { return request.auth != null && !isAnonymous(); }
+    // yyyyMMdd of t in Vietnam (UTC+7), like PriceHistoryIds.dayKey in the app
+    function vnDayKey(t) {
+      let vn = t + duration.value(7, 'h');
+      return string(vn.year())
+        + (vn.month() < 10 ? '0' : '') + string(vn.month())
+        + (vn.day() < 10 ? '0' : '') + string(vn.day());
+    }
+    // sha256("uid|productKey|modelKey|yyyyMMdd"): one report per person, variant and day;
+    // the uid itself is never stored
+    function historyReportId(productKey, modelKey, observedAt) {
+      return hashing.sha256(request.auth.uid + '|' + productKey + '|' + modelKey + '|'
+        + vnDayKey(observedAt)).toHexString().lower();
+    }
+    // G8: productCode ("ksound-a3-pro") and its source go together; variantCodes maps a
+    // modelKey to a variant code ("den-nham"). Lists cannot be looped over in rules, so
+    // keys and values are joined and checked as one string (codes never hold a comma).
+    function validCode(v, max) {
+      return v is string && v.size() <= max && v.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
+    }
+    function validVariantCodes(m) {
+      return m is map && m.size() <= 100
+        && (m.size() == 0 || (
+          m.keys().join(',').matches('^(none|[0-9]{1,20})(,(none|[0-9]{1,20}))*$')
+          && m.values().join(',').matches('^[a-z0-9]+(-[a-z0-9]+)*(,[a-z0-9]+(-[a-z0-9]+)*)*$')
+          && m.values().join(',').matches('^[a-z0-9-]{1,30}(,[a-z0-9-]{1,30})*$')));
+    }
+    function validCodes() {
+      let code = d().get('productCode', null);
+      let source = d().get('productCodeSource', null);
+      return (code == null) == (source == null)
+        && (code == null || validCode(code, 60))
+        && (source == null || source in ['ai', 'demo', 'admin'])
+        && (!('variantCodes' in d()) || validVariantCodes(d().variantCodes));
+    }
+    function validHistoryProduct(productKey) {
+      return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+        && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt',
+                               'productCode','productCodeSource','variantCodes'])
+        && text(d().title, 120) && text(d().shopName, 60)
+        && d().shopId is string && d().itemId is string
+        && productKey == 'shopee:' + d().shopId + ':' + d().itemId
+        && optionalText('groupId', 128)
+        && d().isDemo is bool && d().createdAt is timestamp
+        && validCodes();
+    }
+    // A user's product: like G1, isDemo false, shopName may be missing until someone knows it
+    function validRealProduct(productKey) {
+      return productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+        && d().keys().hasOnly(['title','shopId','itemId','shopName','groupId','isDemo','createdAt',
+                               'productCode','productCodeSource','variantCodes'])
+        && text(d().title, 120) && optionalText('shopName', 60)
+        && d().shopId is string && d().itemId is string
+        && productKey == 'shopee:' + d().shopId + ':' + d().itemId
+        && optionalText('groupId', 128)
+        && d().isDemo == false && d().createdAt is timestamp
+        && validCodes();
+    }
+    // Users only fill what is still empty: shopName, productCode (with source 'ai');
+    // variantCodes only gain new keys, existing keys keep their code. groupId: admins only.
+    function onlyFillsEmpty() {
+      let changed = d().diff(resource.data).affectedKeys();
+      let variants = d().get('variantCodes', {}).diff(resource.data.get('variantCodes', {}));
+      return changed.hasOnly(['shopName', 'productCode', 'productCodeSource', 'variantCodes'])
+        && (!changed.hasAny(['shopName']) || resource.data.get('shopName', null) == null)
+        && (!changed.hasAny(['productCode', 'productCodeSource'])
+          || (resource.data.get('productCode', null) == null && d().get('productCodeSource', null) == 'ai'))
+        && variants.removedKeys().size() == 0 && variants.changedKeys().size() == 0;
+    }
+    // Admins correct a wrong match on a real product: codes and group only; a new code
+    // is 'admin'
+    function adminFixesMatch() {
+      let changed = d().diff(resource.data).affectedKeys();
+      return changed.hasOnly(['productCode', 'productCodeSource', 'variantCodes', 'groupId'])
+        && (!changed.hasAny(['productCode', 'productCodeSource'])
+          || d().get('productCode', null) == null || d().productCodeSource == 'admin');
+    }
+    function validHistoryReport() {
+      return d().keys().hasOnly(['amountVnd','priceType','modelKey','observedAt','source','shopName',
+                                 'productRating','productRatingCount','shopRating'])
+        && validMoney(d().amountVnd)
+        && d().priceType in ['single','range','flash','sale','afterVoucher']
+        && d().modelKey is string && d().modelKey.matches('^(none|[0-9]{1,20})$')
+        && d().observedAt is timestamp
+        && d().source in ['manual','extensionPage','demo']
+        && optionalText('shopName', 60)
+        && optionalRating('productRating') && optionalRating('shopRating')
+        && (!('productRatingCount' in d()) || (d().productRatingCount is int && d().productRatingCount >= 0));
+    }
+    match /priceHistory/{productKey} {
+      allow read: if request.auth != null;
+      // Cheap checks first: rules stop after 1000 expressions per request
+      allow create: if d().isDemo == true && isAdmin() && validHistoryProduct(productKey);
+      allow update: if resource.data.isDemo == true && d().isDemo == true
+        && isAdmin() && validHistoryProduct(productKey);
+      allow delete: if isAdmin() && resource.data.isDemo == true;
+      // G7: a real product, created by the first user who reports a price for it (shop
+      // name may still be unknown). Later users only fill a field that is still empty
+      // (shopName, productCode); title, ids, isDemo and createdAt never change.
+      // G8: only admins set groupId and correct codes. No delete.
+      allow create: if d().isDemo == false && isContributor()
+        && d().createdAt == request.time
+        && d().get('productCodeSource', null) in [null, 'ai']
+        && validRealProduct(productKey)
+        && (!('groupId' in d()) || isAdmin());
+      allow update: if resource.data.isDemo == false && isContributor()
+        && validRealProduct(productKey)
+        && (onlyFillsEmpty() || (isAdmin() && adminFixesMatch()));
+
+      // Sample report id: demo<n>_<modelKey>_<yyyyMMdd>
+      match /reports/{rid} {
+        allow read: if request.auth != null;
+        // G7: the user's own price, under their hashed id only, observed within 3 days
+        allow create, update: if isContributor()
+          && productKey.matches('^shopee:[0-9]{1,20}:[0-9]{1,20}$')
+          && validHistoryReport() && d().source in ['manual', 'extensionPage']
+          && rid == historyReportId(productKey, d().modelKey, d().observedAt)
+          // Never into sample data; getAfter also sees a product created in the same batch
+          && getAfter(/databases/$(database)/documents/priceHistory/$(productKey)).data.isDemo == false
+          && d().observedAt <= request.time + duration.value(5, 'm')
+          && d().observedAt > request.time - duration.value(3, 'd');
+        allow create: if isAdmin() && validHistoryReport() && d().source == 'demo'
+          && rid.matches('^demo[0-9]{1,6}_' + d().modelKey + '_[0-9]{8}$');
+        allow update: if isAdmin() && resource.data.source == 'demo'
+          && validHistoryReport() && d().source == 'demo' && d().modelKey == resource.data.modelKey;
+        allow delete: if isAdmin() && resource.data.source == 'demo';
+      }
+    }
+    match /productGroups/{groupId} {
+      allow read: if request.auth != null;
+      allow create, update: if isAdmin() && d().isDemo == true
+        && (resource == null || resource.data.isDemo == true)
+        && d().keys().hasOnly(['name','productKeys','isDemo'])
+        && text(d().name, 120) && d().productKeys is list && d().productKeys.size() <= 50;
+      allow delete: if isAdmin() && resource.data.isDemo == true;
     }
 
     // QR linking: the extension (anonymous) creates a pending request and shows its id as a QR.
@@ -205,8 +359,11 @@ service cloud.firestore {
 
     // Lịch sale managed on the web (the team follows the shops' official announcements).
     function validSaleEvent() {
-      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'updatedAt', 'updatedBy'])
+      return d().keys().hasOnly(['name', 'date', 'type', 'confirmed', 'status', 'updatedAt', 'updatedBy',
+                                 'suggestionId'])
         && text(d().name, 40) && d().date is timestamp
+        // Set once, by the batch that approves a user's suggestion
+        && (!('suggestionId' in d()) || text(d().suggestionId, 128))
         && d().type in ['double_day', 'mid_month', 'payday', 'other']
         && d().confirmed is bool
         && d().updatedAt == request.time && d().updatedBy == request.auth.uid;
@@ -227,5 +384,62 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isStaff() || isAdmin();
     }
+    // Đề xuất đợt sale (cross-role flow): a user proposes a sale on the app (pending);
+    // staff approve it (the same batch publishes the saleEvent and writes the user's
+    // inbox) or reject it with a reason. Only pending → approved | rejected, once.
+    match /saleSuggestions/{id} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isStaff());
+      allow create: if request.auth != null && !isAnonymous()
+        && d().uid == request.auth.uid && d().status == 'pending'
+        && d().keys().hasOnly(['uid', 'name', 'date', 'note', 'status', 'createdAt'])
+        && text(d().name, 40) && d().date is timestamp && optionalNote()
+        && d().createdAt == request.time;
+      allow update: if isStaff() && resource.data.status == 'pending'
+        && d().diff(resource.data).affectedKeys().hasOnly(['status', 'reason', 'reviewedAt', 'reviewedBy', 'saleEventId'])
+        && d().reviewedBy == request.auth.uid && d().reviewedAt == request.time
+        && ((d().status == 'approved' && d().saleEventId is string
+              && existsAfter(/databases/$(database)/documents/saleEvents/$(d().saleEventId)))
+          || (d().status == 'rejected' && text(d().reason, 200)));
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Web dashboard: count / sum over every user's wishlist and purchases (collection
+    // group queries). Admins only; staff see the dashboard without these figures.
+    match /{path=**}/wishlistItems/{itemId} {
+      allow list: if isAdmin();
+    }
+    match /{path=**}/purchases/{purchaseId} {
+      allow list: if isAdmin();
+    }
+
+    // Voucher Shopee do Admin/Nhân viên cào bằng Chrome extension (bản Lab): extension đăng nhập ẩn danh,
+    // được liên kết QR với một tài khoản có role staff/admin → ghi shopeeVouchers với capturedBy = uid tài khoản đó.
+    function staffDevice(ownerUid) {
+      return ownerUid is string && linkedDevice(ownerUid) && roleOf(ownerUid) in ['staff', 'admin'];
+    }
+    function optInt(f, max) { return !(f in d()) || (d()[f] is int && d()[f] >= 0 && d()[f] <= max); }
+    function optText(f, max) { return !(f in d()) || text(d()[f], max); }
+    function validShopeeVoucher() {
+      return d().keys().hasOnly(['raw', 'kind', 'scope', 'unavailable', 'sourceUrl', 'capturedBy', 'source', 'lastSeenAt',
+                                 'amountVnd', 'percent', 'capVnd', 'minSpendVnd', 'usedPct', 'minQty', 'expiresText',
+                                 'shopId', 'shopName', 'productKey', 'productTitle'])
+        && text(d().raw, 300)
+        && d().kind in ['amount', 'percent', 'shipping', 'coin', 'bundle', 'unknown']
+        && d().scope in ['shop', 'platform', 'payment', 'unknown']
+        && d().unavailable is bool && d().source == 'extension'
+        && text(d().sourceUrl, 500) && d().sourceUrl.matches('https://([a-z0-9-]+[.])?shopee[.]vn/.*')
+        && d().capturedBy is string && d().lastSeenAt == request.time
+        && optInt('amountVnd', 999999999) && optInt('percent', 100) && optInt('capVnd', 999999999)
+        && optInt('minSpendVnd', 999999999) && optInt('usedPct', 100) && optInt('minQty', 999)
+        && optText('expiresText', 40) && optText('shopId', 40) && optText('shopName', 100)
+        && optText('productKey', 128) && optText('productTitle', 120);
+    }
+    match /shopeeVouchers/{id} {
+      allow read, delete: if isStaff();
+      allow create, update: if validShopeeVoucher()
+        && ((isStaff() && d().capturedBy == request.auth.uid) || staffDevice(d().capturedBy));
+    }
+
   }
 }

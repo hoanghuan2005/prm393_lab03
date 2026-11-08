@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import 'product_metadata_service.dart';
 import 'shopee_url_parser.dart';
 
@@ -56,7 +57,9 @@ class SharedItemData {
   }
 
   /// Asynchronously follows redirects and extracts Open Graph metadata (image, title, price)
-  Future<SharedItemData> resolveMetadata({Duration timeout = const Duration(seconds: 5)}) async {
+  Future<SharedItemData> resolveMetadata({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
     if (url.isEmpty) return this;
     final meta = await ProductMetadataService.fetch(
       url,
@@ -67,7 +70,9 @@ class SharedItemData {
 
     return copyWith(
       url: meta.url,
-      title: (meta.title != null && meta.title!.isNotEmpty) ? meta.title : title,
+      title: (meta.title != null && meta.title!.isNotEmpty)
+          ? meta.title
+          : title,
       priceVnd: meta.priceVnd ?? priceVnd,
       originalPriceVnd: meta.originalPriceVnd ?? originalPriceVnd,
       imageUrl: meta.imageUrl ?? imageUrl,

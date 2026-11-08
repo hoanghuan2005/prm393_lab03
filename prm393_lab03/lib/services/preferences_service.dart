@@ -9,6 +9,10 @@ class PreferencesService {
   static const String _keyDailyReminderOffered = 'daily_reminder_offered';
   static const String _keySharePrices = 'share_prices_enabled';
   static const String _keySaleReminderLevel = 'sale_reminder_level';
+  static const String _keyProductIdentityTried = 'product_identity_tried';
+
+  /// Links remembered by [addProductIdentityTried]; older ones are forgotten
+  static const int maxProductIdentityTried = 500;
 
   /// 21:00, the time shown on screen 05a
   static const int defaultDailyReminderMinutes = 21 * 60;
@@ -54,6 +58,28 @@ class PreferencesService {
 
   Future<void> setSharePricesEnabled(bool enabled) =>
       _write((p) => p.setBool(_keySharePrices, enabled));
+
+  /// G8 "Mã món": productKeys (and productKey|modelKey for a variant) already sent to
+  /// AI on this device, so each link is asked once
+  Future<Set<String>> getProductIdentityTried() => _read(
+    (p) =>
+        (p.getStringList(_keyProductIdentityTried) ?? const <String>[]).toSet(),
+    <String>{},
+  );
+
+  Future<void> addProductIdentityTried(String key) => _write((p) {
+    final list = [
+      for (final k
+          in p.getStringList(_keyProductIdentityTried) ?? const <String>[])
+        if (k != key) k,
+      key,
+    ];
+    final start = list.length - maxProductIdentityTried;
+    return p.setStringList(
+      _keyProductIdentityTried,
+      start > 0 ? list.sublist(start) : list,
+    );
+  });
 
   Future<String> getSaleReminderLevel() => _read(
     (p) => p.getString(_keySaleReminderLevel) ?? 'big_only',

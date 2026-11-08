@@ -19,7 +19,7 @@ class WhyIBuyLogo extends StatelessWidget {
       width: size,
       height: size,
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.primary,
           shape: BoxShape.circle,
         ),

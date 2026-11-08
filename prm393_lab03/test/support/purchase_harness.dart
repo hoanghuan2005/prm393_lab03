@@ -14,6 +14,7 @@ import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/purchase_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
+import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/budget_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/wishlist_viewmodel.dart';
@@ -114,10 +115,23 @@ class ControlledPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<void> setSatisfaction(String uid, String purchaseId, int? stars) async {
+  Future<void> setSatisfaction(
+    String uid,
+    String purchaseId,
+    int? stars,
+  ) async {
     await _beforeWrite();
     return delegate.setSatisfaction(uid, purchaseId, stars);
   }
+}
+
+/// RecordPurchaseScreen remembers the signed-in uid when it opens (it only reads userId)
+class SignedInAuthViewModel extends ChangeNotifier implements AuthViewModel {
+  @override
+  String? get userId => PurchaseHarness.uid;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class PurchaseHarness {
@@ -135,6 +149,7 @@ class PurchaseHarness {
   );
   late final budgetService = FirestoreBudgetService(db);
   late final budget = BudgetViewModel(budgetService: budgetService);
+  final auth = SignedInAuthViewModel();
 
   Future<void> initialize({WishlistItem? item, PurchaseItem? purchase}) async {
     await budgetService.ensureDefaultGroups(uid);
@@ -151,6 +166,7 @@ class PurchaseHarness {
 
   Widget app(Widget home, {double textScale = 1}) => MultiProvider(
     providers: [
+      ChangeNotifierProvider<AuthViewModel>.value(value: auth),
       ChangeNotifierProvider.value(value: purchases),
       ChangeNotifierProvider.value(value: wishlist),
       ChangeNotifierProxyProvider<PurchaseViewModel, BudgetViewModel>(
@@ -174,6 +190,7 @@ class PurchaseHarness {
   void dispose() {
     purchases.dispose();
     wishlist.dispose();
+    auth.dispose();
     // The ChangeNotifierProxyProvider owns budget when app() has been mounted.
   }
 }

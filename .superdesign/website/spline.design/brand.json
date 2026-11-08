@@ -1,0 +1,567 @@
+{
+  "meta": {
+    "url": "https://spline.design/",
+    "title": "Spline - 3D Design tool in the browser with real-time collaboration",
+    "description": "Spline is a free 3D design tool in the browser. Your team and its agents model, animate and ship interactive 3D together, in real time.",
+    "language": "en",
+    "viewport": "width=device-width",
+    "themeColor": null,
+    "ogImage": "https://spline.design/_next/static/immutable/media/spline_image_banner.2at491x3fx670.png",
+    "ogTitle": "Spline - 3D Design tool in the browser with real-time collaboration",
+    "ogDescription": "Spline is a free 3D design tool in the browser. Your team and its agents model, animate and ship interactive 3D together, in real time."
+  },
+  "theme": {
+    "mode": "dark",
+    "bodyBackground": "#000000",
+    "isDark": true,
+    "confidence": 0.9
+  },
+  "brand": {
+    "name": "Spline",
+    "favicon": {
+      "href": "https://spline.design/images/icon_favicon16x16.png",
+      "type": null
+    }
+  },
+  "colors": {
+    "dominant": [
+      {
+        "hex": "#ffffff",
+        "ratio": 0.448
+      },
+      {
+        "hex": "#eeeeee",
+        "ratio": 0.261
+      },
+      {
+        "hex": "#000000",
+        "ratio": 0.126
+      },
+      {
+        "hex": "#8a8a8a",
+        "ratio": 0.105
+      },
+      {
+        "hex": "#bdbdbd",
+        "ratio": 0.018
+      },
+      {
+        "hex": "#2b99ff",
+        "ratio": 0.016
+      },
+      {
+        "hex": "#2e2e2e",
+        "ratio": 0.007
+      },
+      {
+        "hex": "#111111",
+        "ratio": 0.006
+      },
+      {
+        "hex": "#8eb2f2",
+        "ratio": 0.003
+      },
+      {
+        "hex": "#101010",
+        "ratio": 0.003
+      },
+      {
+        "hex": "#1e1e1e",
+        "ratio": 0.001
+      },
+      {
+        "hex": "#181818",
+        "ratio": 0.001
+      },
+      {
+        "hex": "#f2c879",
+        "ratio": 0.001
+      },
+      {
+        "hex": "#313131",
+        "ratio": 0
+      },
+      {
+        "hex": "#3b3b3b",
+        "ratio": 0
+      },
+      {
+        "hex": "#e39fd8",
+        "ratio": 0
+      },
+      {
+        "hex": "#1d1d1d",
+        "ratio": 0
+      },
+      {
+        "hex": "#6fb47e",
+        "ratio": 0
+      },
+      {
+        "hex": "#141414",
+        "ratio": 0
+      },
+      {
+        "hex": "#3a3a3a",
+        "ratio": 0
+      },
+      {
+        "hex": "#e9e9e9",
+        "ratio": 0
+      },
+      {
+        "hex": "#e6e6e6",
+        "ratio": 0
+      },
+      {
+        "hex": "#cdcdcd",
+        "ratio": 0
+      },
+      {
+        "hex": "#b9b9b9",
+        "ratio": 0
+      },
+      {
+        "hex": "#969696",
+        "ratio": 0
+      },
+      {
+        "hex": "#707070",
+        "ratio": 0
+      },
+      {
+        "hex": "#1f1f1f",
+        "ratio": 0
+      },
+      {
+        "hex": "#151515",
+        "ratio": 0
+      },
+      {
+        "hex": "#242424",
+        "ratio": 0
+      },
+      {
+        "hex": "#d9d9d9",
+        "ratio": 0
+      }
+    ],
+    "palette": [
+      {
+        "hex": "#000000",
+        "role": "background",
+        "source": "computed"
+      },
+      {
+        "hex": "#ffffff",
+        "role": "foreground",
+        "source": "computed"
+      },
+      {
+        "hex": "#2b99ff",
+        "role": "primary",
+        "source": "heuristic"
+      },
+      {
+        "hex": "#f2c879",
+        "role": "secondary",
+        "source": "heuristic"
+      },
+      {
+        "hex": "#8eb2f2",
+        "role": "accent",
+        "source": "heuristic"
+      },
+      {
+        "hex": "#8a8a8a",
+        "role": "neutral",
+        "source": "heuristic"
+      }
+    ],
+    "cssVariables": {
+      "--color-team-darker": "#7448d4",
+      "--color-white": "#fff",
+      "--color-panel-bg": "#ffffff",
+      "--color-white-001": "#ffffff",
+      "--color-btn-bg": "#ffffff",
+      "--color-free-darker": "#ffffff",
+      "--color-blue-lighter": "#5797ff",
+      "--color-blue-dark": "#217ce5",
+      "--color-purple-bright": "#a770ff",
+      "--generate-accent-ring": "#1cc294",
+      "--color-super-darker": "#008761",
+      "--color-green-bright": "#47b35f",
+      "--color-super": "#00a376",
+      "--color-bg": "#000",
+      "--generate-accent-solid": "#00a376",
+      "--color-red": "#fd585b",
+      "--color-super-lighter": "#38e2b3",
+      "--color-text-main": "#fff",
+      "--color-team": "#915eff",
+      "--color-white-010": "#ffffff",
+      "--color-team-lighter": "#d680ff",
+      "--color-green": "#49bc54",
+      "--color-white-090": "#ffffff",
+      "--color-blue-ios": "#5966f3",
+      "--color-white-003": "#ffffff",
+      "--color-blue": "#0062ff",
+      "--generate-accent-soft": "#00a376",
+      "--generate-accent-soft-hover": "#00a376",
+      "--generate-accent-solid-hover": "#008761",
+      "--color-purple": "#8f66ff",
+      "--generate-accent": "#1cc294",
+      "--color-panel-bg-hover": "#ffffff",
+      "--color-bg-pink": "#ffe6e6",
+      "--color-menu-dropdown": "#1e1e23",
+      "--color-text-navigation": "#ffffff",
+      "--color-yellow": "#ffb01f",
+      "--color-bg-greenish": "#c1f6e8",
+      "--color-white-005": "#ffffff",
+      "--color-btn-bg-highlight": "#ffffff",
+      "--color-free": "#ffffff",
+      "--color-pink": "#ff5cab",
+      "--color-white-070": "#ffffff",
+      "--color-white-008": "#ffffff",
+      "--ink": "#000",
+      "--panel": "#101010",
+      "--line": "#1e1e1e",
+      "--line-2": "#2e2e2e",
+      "--mute": "#8a8a8a",
+      "--fg": "#eee",
+      "--steel": "#8eb2f2",
+      "--steel-ink": "#111",
+      "--sage": "#6fb47e",
+      "--mauve": "#e39fd8",
+      "--sand": "#f2c879",
+      "--steel-100": "#f0f5ff",
+      "--steel-200": "#dde9fc",
+      "--steel-300": "#c1d5f9",
+      "--steel-400": "#8eb2f2",
+      "--steel-500": "#84a5e0",
+      "--steel-600": "#6c87b5",
+      "--steel-700": "#55698c",
+      "--steel-800": "#3f4d66",
+      "--steel-900": "#26334a",
+      "--sand-100": "#fdf4e5",
+      "--sand-200": "#f9e5c2",
+      "--sand-300": "#f2c879",
+      "--sand-400": "#deb870",
+      "--sand-500": "#c09f63",
+      "--sand-600": "#9c8252",
+      "--sand-700": "#796642",
+      "--sand-800": "#5a4b2d",
+      "--sand-900": "#3f3013",
+      "--mauve-100": "#fcf1fa",
+      "--mauve-200": "#f7e0f3",
+      "--mauve-300": "#efc5e8",
+      "--mauve-400": "#e39fd8",
+      "--mauve-500": "#c98ec0",
+      "--mauve-600": "#a3749c",
+      "--mauve-700": "#7f5b79",
+      "--mauve-800": "#5d4359",
+      "--mauve-900": "#42293e",
+      "--sage-100": "#eef8f0",
+      "--sage-200": "#ddeddf",
+      "--sage-300": "#bfdec4",
+      "--sage-400": "#9dcba5",
+      "--sage-500": "#6fb47e",
+      "--sage-600": "#5e956a",
+      "--sage-700": "#4b7453",
+      "--sage-800": "#39553e",
+      "--sage-900": "#203a26",
+      "--gold": "#ffd688",
+      "--gold-2": "#ff9447",
+      "--cta-on": "#a189ff",
+      "--e-bg": "#1d1d1d",
+      "--e-vp": "#111",
+      "--e-hi": "#ffffff",
+      "--e-mid": "#ffffff",
+      "--e-fill": "#ffffff",
+      "--e-fill-2": "#ffffff",
+      "--e-sep": "#ffffff",
+      "--e-lo": "#ffffff"
+    },
+    "gradients": []
+  },
+  "logo": {
+    "status": "confirmed",
+    "reason": null,
+    "best": {
+      "selector": "img",
+      "href": "https://spline.design/_next/static/immutable/media/spline-logo-128.30a2cr50ow49g.webp",
+      "type": "webp",
+      "width": 128,
+      "height": 128,
+      "svgContent": null,
+      "colors": [],
+      "isLight": false,
+      "isDark": false,
+      "needsDarkBackground": false,
+      "needsLightBackground": false,
+      "ownership": "first-party",
+      "headerScoped": true,
+      "variant": "color",
+      "brandNameOnLogo": "Spline",
+      "uploadedUrl": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/005fc378-2130-4e5a-9ca5-6f973095973c.webp"
+    },
+    "candidates": [
+      {
+        "selector": "img.gmmB4W_logo",
+        "href": "https://spline.design/images/customers/oscilar-logo.svg",
+        "type": "svg",
+        "width": 130,
+        "height": 24,
+        "svgContent": null,
+        "colors": [],
+        "isLight": false,
+        "isDark": false,
+        "needsDarkBackground": false,
+        "needsLightBackground": false,
+        "ownership": "first-party"
+      },
+      {
+        "selector": "img.gmmB4W_logo",
+        "href": "https://spline.design/images/customers/resend-logo.svg",
+        "type": "svg",
+        "width": 300,
+        "height": 63,
+        "svgContent": null,
+        "colors": [],
+        "isLight": false,
+        "isDark": false,
+        "needsDarkBackground": false,
+        "needsLightBackground": false,
+        "ownership": "first-party"
+      },
+      {
+        "selector": "img",
+        "href": "https://spline.design/_next/static/immutable/media/spline-logo-128.30a2cr50ow49g.webp",
+        "type": "webp",
+        "width": 128,
+        "height": 128,
+        "svgContent": null,
+        "colors": [],
+        "isLight": false,
+        "isDark": false,
+        "needsDarkBackground": false,
+        "needsLightBackground": false,
+        "ownership": "first-party",
+        "headerScoped": true
+      },
+      {
+        "selector": "img",
+        "href": "https://spline.design/_next/static/immutable/media/spline-logo-128.30a2cr50ow49g.webp",
+        "type": "webp",
+        "width": 128,
+        "height": 128,
+        "svgContent": null,
+        "colors": [],
+        "isLight": false,
+        "isDark": false,
+        "needsDarkBackground": false,
+        "needsLightBackground": false,
+        "ownership": "first-party"
+      },
+      {
+        "selector": "img",
+        "href": "https://spline.design/_next/static/immutable/media/spline-logo-128.30a2cr50ow49g.webp",
+        "type": "webp",
+        "width": 128,
+        "height": 128,
+        "svgContent": null,
+        "colors": [],
+        "isLight": false,
+        "isDark": false,
+        "needsDarkBackground": false,
+        "needsLightBackground": false,
+        "ownership": "first-party"
+      },
+      {
+        "selector": "svg",
+        "href": null,
+        "type": "svg",
+        "width": 14,
+        "height": 14,
+        "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"none\" viewBox=\"0 0 17 16\" aria-hidden=\"true\"><path stroke=\"#fff\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m11.941 6.5-3 3-3-3\"></path></svg>",
+        "colors": [
+          "#FFFFFF"
+        ],
+        "isLight": true,
+        "isDark": false,
+        "headerScoped": true,
+        "ownership": "first-party"
+      }
+    ]
+  },
+  "fonts": {
+    "computed": [
+      {
+        "family": "\"Spline Sans\", system-ui, -apple-system, BlinkMacSystemFont, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+        "weights": [
+          "400"
+        ],
+        "source": "system"
+      },
+      {
+        "family": "Geist, \"Geist Fallback\", \"Helvetica Neue\", Arial, sans-serif",
+        "weights": [
+          "400",
+          "500",
+          "450"
+        ],
+        "source": "web"
+      },
+      {
+        "family": "\"Spline Sans\", system-ui, -apple-system, sans-serif",
+        "weights": [
+          "400",
+          "600",
+          "500"
+        ],
+        "source": "system"
+      },
+      {
+        "family": "\"Geist Mono\", \"Geist Mono Fallback\", ui-monospace, \"SF Mono\", Menlo, monospace",
+        "weights": [
+          "400"
+        ],
+        "source": "web"
+      }
+    ],
+    "baseSizePx": 16
+  },
+  "confidence": {
+    "colorExtraction": 0.9,
+    "logoDetection": 0.95,
+    "fontDetection": 0.8
+  },
+  "screenshot": {
+    "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/screenshot.png",
+    "width": 1920,
+    "height": 1080,
+    "sizeBytes": 60987,
+    "uploadedAt": "2026-11-07T09:35:21.497Z"
+  },
+  "assets": {
+    "005fc378-2130-4e5a-9ca5-6f973095973c": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/005fc378-2130-4e5a-9ca5-6f973095973c.webp",
+      "name": "spline-logo-128.30a2cr50ow49g.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "2.90 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 2966,
+        "uploadedAt": "2026-11-07T09:35:21.821Z"
+      }
+    },
+    "e5a05b12-2fdf-4622-8619-84b458ec7a62": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/e5a05b12-2fdf-4622-8619-84b458ec7a62.webp",
+      "name": "mars-rover.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "22.24 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 22774,
+        "uploadedAt": "2026-11-07T09:35:21.690Z"
+      }
+    },
+    "0028586f-c840-4b9b-abd4-0aa41a69de60": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/0028586f-c840-4b9b-abd4-0aa41a69de60.webp",
+      "name": "water-simulation-640.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "8.03 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 8224,
+        "uploadedAt": "2026-11-07T09:35:21.696Z"
+      }
+    },
+    "6923681c-d551-41c3-84e6-bddcb2eecdd6": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/6923681c-d551-41c3-84e6-bddcb2eecdd6.webp",
+      "name": "interactive-website-640.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "31.15 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 31902,
+        "uploadedAt": "2026-11-07T09:35:21.719Z"
+      }
+    },
+    "f8d66492-9d4f-40f0-a349-15fa05cbdef4": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/f8d66492-9d4f-40f0-a349-15fa05cbdef4.webp",
+      "name": "brand-marketing-640.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "6.14 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 6288,
+        "uploadedAt": "2026-11-07T09:35:21.680Z"
+      }
+    },
+    "c5bc81f7-a2cc-46af-aa88-93feeab0f007": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/c5bc81f7-a2cc-46af-aa88-93feeab0f007.webp",
+      "name": "construction-site-640.webp",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "17.32 KB",
+        "mimeType": "image/webp",
+        "sizeBytes": 17736,
+        "uploadedAt": "2026-11-07T09:35:22.203Z"
+      }
+    },
+    "886db747-e843-48c7-9b20-3c5a258d3397": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/886db747-e843-48c7-9b20-3c5a258d3397.svg",
+      "name": "meta.svg",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "3.83 KB",
+        "mimeType": "image/svg+xml",
+        "sizeBytes": 3926,
+        "uploadedAt": "2026-11-07T09:35:21.994Z"
+      }
+    },
+    "6ae663dd-bb8f-4fac-8fba-b5570ab905bd": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/6ae663dd-bb8f-4fac-8fba-b5570ab905bd.svg",
+      "name": "webflow.svg",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "5.20 KB",
+        "mimeType": "image/svg+xml",
+        "sizeBytes": 5324,
+        "uploadedAt": "2026-11-07T09:35:22.006Z"
+      }
+    },
+    "1c89cdfd-12d4-4568-800f-58d1abc6a550": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/1c89cdfd-12d4-4568-800f-58d1abc6a550.svg",
+      "name": "forbes.svg",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "4.91 KB",
+        "mimeType": "image/svg+xml",
+        "sizeBytes": 5031,
+        "uploadedAt": "2026-11-07T09:35:22.140Z"
+      }
+    },
+    "64894d75-0524-4656-a6bc-8c1aa8bbc0c7": {
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/brand/5268e72f-cd63-439f-ae55-73a3758f0f34/assets/64894d75-0524-4656-a6bc-8c1aa8bbc0c7.svg",
+      "name": "burton.svg",
+      "type": "image",
+      "description": "",
+      "metadata": {
+        "size": "7.07 KB",
+        "mimeType": "image/svg+xml",
+        "sizeBytes": 7239,
+        "uploadedAt": "2026-11-07T09:35:22.013Z"
+      }
+    }
+  }
+}

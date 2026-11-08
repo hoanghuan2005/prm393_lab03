@@ -20,6 +20,13 @@ abstract final class AnalyticsEvents {
 
   /// A call to Gemini failed; the flow went on without AI
   static const aiError = 'ai_error';
+
+  /// "Giá tham khảo" chart shown (opened or period changed)
+  static const viewPriceHistory = 'view_price_history';
+
+  /// G8 "Cùng món ở shop khác": shown on Chi tiết món / a match hidden by the user
+  static const viewSameProduct = 'view_same_product';
+  static const hideSameProductMatch = 'hide_same_product_match';
 }
 
 /// Parameter names. No PII: never email, display name, item title, search text or exact
@@ -42,6 +49,11 @@ abstract final class AnalyticsParams {
   static const aiFeature = 'ai_feature';
   static const aiModel = 'ai_model';
   static const errorType = 'error_type';
+
+  /// view_price_history: `product` · `group`; days of the period; 0/1
+  static const mode = 'mode';
+  static const rangeDays = 'range_days';
+  static const isDemo = 'is_demo';
 }
 
 /// Values of [AnalyticsParams.aiFeature]: one per AI feature, also the keys of the
@@ -55,6 +67,9 @@ abstract final class AiFeatures {
   static const prePurchase = 'pre_purchase';
   static const photoSearch = 'photo_search';
   static const priceSearch = 'price_search';
+
+  /// G8: brand / model / variant read from a Shopee title (productCode)
+  static const productIdentity = 'product_identity';
   static const other = 'other';
 
   static const all = [
@@ -66,6 +81,7 @@ abstract final class AiFeatures {
     prePurchase,
     photoSearch,
     priceSearch,
+    productIdentity,
   ];
 }
 

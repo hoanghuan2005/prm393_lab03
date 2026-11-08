@@ -83,8 +83,7 @@ class _PrePurchaseResultScreenState extends State<PrePurchaseResultScreen> {
     super.dispose();
   }
 
-  void _thinkMore() =>
-      Navigator.popUntil(context, (route) => route.isFirst);
+  void _thinkMore() => Navigator.popUntil(context, (route) => route.isFirst);
 
   void _buyAnyway() {
     final a = widget.answers;
@@ -279,7 +278,10 @@ class _Result extends StatelessWidget {
               Text(answers.title, style: AppTextStyles.titleLarge),
               const SizedBox(height: AppDimens.space4),
               Text(
-                [?answers.priceText, 'Dựa trên câu trả lời của bạn'].join(' · '),
+                [
+                  ?answers.priceText,
+                  'Dựa trên câu trả lời của bạn',
+                ].join(' · '),
                 style: AppTextStyles.bodyMedium,
               ),
               const SizedBox(height: AppDimens.space16),

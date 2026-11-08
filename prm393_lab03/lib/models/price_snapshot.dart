@@ -28,6 +28,10 @@ enum PriceType {
   range('range'),
   flash('flash'),
 
+  /// "Giá đang giảm" read by the extension; only the main price when the item has
+  /// no other price (see [PriceInsights.comparable])
+  sale('sale'),
+
   /// Personal reference only: never the item's main price, never compared with list prices
   afterVoucher('afterVoucher');
 
@@ -60,6 +64,15 @@ class PriceSnapshot {
   final bool confirmed;
   final String? variantLabel;
 
+  /// Sale name / voucher code the extension saved with the price ("11.11")
+  final String? saleLabel;
+
+  /// Shop and ratings on the page when the extension read this price
+  final String? shopName;
+  final double? productRating;
+  final int? productRatingCount;
+  final double? shopRating;
+
   const PriceSnapshot({
     required this.id,
     required this.amountVnd,
@@ -71,10 +84,22 @@ class PriceSnapshot {
     this.originalVnd,
     this.confirmed = true,
     this.variantLabel,
+    this.saleLabel,
+    this.shopName,
+    this.productRating,
+    this.productRatingCount,
+    this.shopRating,
   });
 
   bool get isRange =>
       priceType == PriceType.range && minVnd != null && maxVnd != null;
+
+  /// Discount from the crossed-out price, 0 when there is none
+  int get discountPercent {
+    final orig = originalVnd;
+    if (orig == null || orig <= amountVnd) return 0;
+    return ((orig - amountVnd) * 100 / orig).round();
+  }
 
   factory PriceSnapshot.fromFirestore(DocumentSnapshot doc) {
     final data = docData(doc);
@@ -89,6 +114,11 @@ class PriceSnapshot {
       originalVnd: readVnd(data['originalVnd']),
       confirmed: readString(data['confirmation']) != 'unconfirmed',
       variantLabel: readText(data['variantLabel']),
+      saleLabel: readText(data['saleLabel']),
+      shopName: readText(data['shopName']),
+      productRating: readRating(data['productRating']),
+      productRatingCount: readCount(data['productRatingCount']),
+      shopRating: readRating(data['shopRating']),
     );
   }
 
@@ -102,6 +132,11 @@ class PriceSnapshot {
     if (originalVnd != null) 'originalVnd': originalVnd,
     'confirmation': confirmed ? 'userConfirmed' : 'unconfirmed',
     if (variantLabel != null) 'variantLabel': variantLabel,
+    if (saleLabel != null) 'saleLabel': saleLabel,
+    if (shopName != null) 'shopName': shopName,
+    if (productRating != null) 'productRating': productRating,
+    if (productRatingCount != null) 'productRatingCount': productRatingCount,
+    if (shopRating != null) 'shopRating': shopRating,
   };
 
   PriceSnapshot copyWith({
@@ -115,6 +150,11 @@ class PriceSnapshot {
     int? originalVnd,
     bool? confirmed,
     String? variantLabel,
+    String? saleLabel,
+    String? shopName,
+    double? productRating,
+    int? productRatingCount,
+    double? shopRating,
   }) {
     return PriceSnapshot(
       id: id ?? this.id,
@@ -127,6 +167,11 @@ class PriceSnapshot {
       originalVnd: originalVnd ?? this.originalVnd,
       confirmed: confirmed ?? this.confirmed,
       variantLabel: variantLabel ?? this.variantLabel,
+      saleLabel: saleLabel ?? this.saleLabel,
+      shopName: shopName ?? this.shopName,
+      productRating: productRating ?? this.productRating,
+      productRatingCount: productRatingCount ?? this.productRatingCount,
+      shopRating: shopRating ?? this.shopRating,
     );
   }
 
@@ -143,7 +188,12 @@ class PriceSnapshot {
           other.maxVnd == maxVnd &&
           other.originalVnd == originalVnd &&
           other.confirmed == confirmed &&
-          other.variantLabel == variantLabel;
+          other.variantLabel == variantLabel &&
+          other.saleLabel == saleLabel &&
+          other.shopName == shopName &&
+          other.productRating == productRating &&
+          other.productRatingCount == productRatingCount &&
+          other.shopRating == shopRating;
 
   @override
   int get hashCode => Object.hash(
@@ -157,5 +207,10 @@ class PriceSnapshot {
     originalVnd,
     confirmed,
     variantLabel,
+    saleLabel,
+    shopName,
+    productRating,
+    productRatingCount,
+    shopRating,
   );
 }

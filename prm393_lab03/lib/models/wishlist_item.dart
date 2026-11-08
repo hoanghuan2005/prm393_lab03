@@ -56,8 +56,22 @@ class WishlistItem {
   final String? imageUrl;
   final String? shopName;
 
+  /// Read from the Shopee page by the extension: product stars (0–5], number of
+  /// reviews and the shop's stars
+  final double? productRating;
+  final int? productRatingCount;
+  final double? shopRating;
+
   /// The user pressed "Mua" in the extension; only the app records the purchase
   final DateTime? buyIntentAt;
+
+  /// Voucher texts the extension read on the Shopee page, and when (read-only in the app)
+  final List<String>? vouchers;
+  final DateTime? vouchersAt;
+
+  /// G2c: a sample item an admin added from the Firebase Demo Area to try the price
+  /// features. Shown with "Dữ liệu mẫu", left out of the stats, never shared (G7).
+  final bool isDemo;
 
   const WishlistItem({
     required this.id,
@@ -83,7 +97,13 @@ class WishlistItem {
     this.modelId,
     this.imageUrl,
     this.shopName,
+    this.productRating,
+    this.productRatingCount,
+    this.shopRating,
     this.buyIntentAt,
+    this.vouchers,
+    this.vouchersAt,
+    this.isDemo = false,
   });
 
   bool get hasPrice => latestPriceVnd != null;
@@ -164,8 +184,20 @@ class WishlistItem {
       modelId: readText(data['modelId']),
       imageUrl: readText(data['imageUrl']),
       shopName: readText(data['shopName']),
+      productRating: readRating(data['productRating']),
+      productRatingCount: readCount(data['productRatingCount']),
+      shopRating: readRating(data['shopRating']),
       buyIntentAt: readDate(data['buyIntentAt']),
+      vouchers: _readVouchers(data['vouchers']),
+      vouchersAt: readDate(data['vouchersAt']),
+      isDemo: data['isDemo'] == true,
     );
+  }
+
+  static List<String>? _readVouchers(Object? value) {
+    if (value is! List) return null;
+    final list = value.whereType<String>().toList();
+    return list.isEmpty ? null : list;
   }
 
   Map<String, dynamic> toMap() {
@@ -194,7 +226,11 @@ class WishlistItem {
       if (modelId != null) 'modelId': modelId,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (shopName != null) 'shopName': shopName,
+      if (productRating != null) 'productRating': productRating,
+      if (productRatingCount != null) 'productRatingCount': productRatingCount,
+      if (shopRating != null) 'shopRating': shopRating,
       if (buyIntentAt != null) 'buyIntentAt': toTimestamp(buyIntentAt),
+      if (isDemo) 'isDemo': true,
     };
   }
 
@@ -222,8 +258,12 @@ class WishlistItem {
     String? modelId,
     String? imageUrl,
     String? shopName,
+    double? productRating,
+    int? productRatingCount,
+    double? shopRating,
     DateTime? buyIntentAt,
     bool clearBuyIntent = false,
+    bool? isDemo,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -249,7 +289,13 @@ class WishlistItem {
       modelId: modelId ?? this.modelId,
       imageUrl: imageUrl ?? this.imageUrl,
       shopName: shopName ?? this.shopName,
+      productRating: productRating ?? this.productRating,
+      productRatingCount: productRatingCount ?? this.productRatingCount,
+      shopRating: shopRating ?? this.shopRating,
       buyIntentAt: clearBuyIntent ? null : buyIntentAt ?? this.buyIntentAt,
+      vouchers: vouchers,
+      vouchersAt: vouchersAt,
+      isDemo: isDemo ?? this.isDemo,
     );
   }
 
@@ -280,7 +326,12 @@ class WishlistItem {
           other.modelId == modelId &&
           other.imageUrl == imageUrl &&
           other.shopName == shopName &&
-          other.buyIntentAt == buyIntentAt;
+          other.productRating == productRating &&
+          other.productRatingCount == productRatingCount &&
+          other.shopRating == shopRating &&
+          other.buyIntentAt == buyIntentAt &&
+          other.vouchersAt == vouchersAt &&
+          other.isDemo == isDemo;
 
   @override
   int get hashCode => Object.hashAll([
@@ -306,6 +357,12 @@ class WishlistItem {
     variantLabel,
     modelId,
     imageUrl,
+    shopName,
+    productRating,
+    productRatingCount,
+    shopRating,
     buyIntentAt,
+    vouchersAt,
+    isDemo,
   ]);
 }

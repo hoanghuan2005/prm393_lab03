@@ -6,6 +6,7 @@ import '../models/buying_motive.dart';
 import '../models/pre_purchase_check.dart';
 import '../models/purchase_item.dart';
 import '../models/sale_event.dart';
+import '../models/same_product.dart';
 import '../models/wishlist_item.dart';
 import '../screens/add_item_screen.dart';
 import '../screens/budget_screen.dart';
@@ -24,6 +25,7 @@ import '../screens/patterns_screen.dart';
 import '../screens/photo_search_screen.dart';
 import '../screens/pre_purchase_result_screen.dart';
 import '../screens/pre_purchase_screen.dart';
+import '../screens/price_history_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
@@ -31,6 +33,7 @@ import '../screens/reminder_permission_screen.dart';
 import '../screens/sale_screens.dart';
 import '../screens/shopping_profile_screen.dart';
 import '../screens/wishlist_screen.dart';
+import '../widgets/price_history_chart.dart' show SavedPrice;
 
 /// Arguments for [AppRoutes.shell]
 class ShellArgs {
@@ -44,6 +47,25 @@ class ItemDetailArgs {
   final WishlistItem item;
 
   const ItemDetailArgs(this.item);
+}
+
+/// Arguments for [AppRoutes.priceHistory]: a product (can switch to its group) or a group
+class PriceHistoryArgs {
+  final String? productKey;
+  final String? groupId;
+
+  /// Real product (G8): the same item in other shops, for "Cả nhóm"
+  final SameProductLinks? sameProduct;
+
+  /// "Giá lúc bạn lưu" line of the chart (G5c)
+  final SavedPrice? savedPrice;
+
+  const PriceHistoryArgs({
+    this.productKey,
+    this.groupId,
+    this.sameProduct,
+    this.savedPrice,
+  });
 }
 
 /// Arguments for [AppRoutes.wishlistAdd] and [AppRoutes.wishlistEdit]
@@ -124,6 +146,9 @@ class AppRoutes {
 
   /// A-15: items of the same budget group side by side (args: [ItemDetailArgs])
   static const wishlistCompare = '/wishlist/compare';
+
+  /// "Giá tham khảo" (PriceHistoryArgs)
+  static const priceHistory = '/price-history';
   static const recordPurchase = '/purchase/record';
   static const purchaseDetail = '/purchase/detail';
   static const history = '/history';
@@ -177,7 +202,9 @@ class AppRoutes {
         initialPrice: args is AddItemArgs ? args.initialPrice : null,
         initialImageUrl: args is AddItemArgs ? args.initialImageUrl : null,
         shopName: args is AddItemArgs ? args.shopName : null,
-        productDescription: args is AddItemArgs ? args.productDescription : null,
+        productDescription: args is AddItemArgs
+            ? args.productDescription
+            : null,
       ),
       wishlistEdit when args is ItemDetailArgs => AddItemScreen(
         existing: args.item,
@@ -216,6 +243,15 @@ class AppRoutes {
       wishlistCompare when args is ItemDetailArgs => CompareItemsScreen(
         item: args.item,
       ),
+      priceHistory
+          when args is PriceHistoryArgs &&
+              (args.productKey != null || args.groupId != null) =>
+        PriceHistoryScreen.withViewModel(
+          productKey: args.productKey,
+          groupId: args.groupId,
+          sameProduct: args.sameProduct,
+          savedPrice: args.savedPrice,
+        ),
       sales => const SaleCalendarScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),

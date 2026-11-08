@@ -320,7 +320,7 @@ button {
   min-height: 100svh;
   display: flex;
   align-items: center;
-  padding: calc(var(--nav-h) + 32px) 6vw 120px var(--text-col);
+  padding: calc(var(--nav-h) + 24px) 6vw 132px var(--text-col);
   overflow: hidden;
 }
 .chapter__inner {
@@ -366,7 +366,7 @@ button {
 }
 .chapter__title {
   margin: 0 0 22px;
-  font-size: clamp(38px, 3.9vw, 66px);
+  font-size: clamp(36px, min(3.6vw, 6.4vh), 62px);
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.05em;

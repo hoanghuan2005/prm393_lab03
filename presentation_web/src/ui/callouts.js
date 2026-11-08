@@ -58,6 +58,11 @@ export class Callouts {
       const r = it.target.getBoundingClientRect()
       const tx = r.left + r.width / 2
       const ty = r.top + r.height / 2
+      // target scrolled away, hidden or on another page: fade the callout out
+      const onScreen = r.width > 0 && r.height > 0 && ty > phone.top + 20 && ty < phone.bottom - 20 && tx > phone.left && tx < phone.right
+      const want = onScreen ? 1 : 0
+      it.vis = it.vis ?? 0
+      it.vis += (want - it.vis) * 0.2
       const lw = it.label.offsetWidth
       const lh = it.label.offsetHeight
       const gap = 36
@@ -66,7 +71,7 @@ export class Callouts {
       const ly = Math.max(80, Math.min(window.innerHeight - 120, ty - lh / 2 + it.index * 6))
       const ax = left ? lx + lw : lx
       const ay = ly + lh / 2
-      const v = it.o.v
+      const v = it.o.v * it.vis
       it.label.style.transform = `translate(${lx + (left ? -12 : 12) * (1 - v)}px, ${ly}px)`
       it.label.style.opacity = v
       const midX = left ? Math.min(tx - 18, ax + 26) : Math.max(tx + 18, ax - 26)

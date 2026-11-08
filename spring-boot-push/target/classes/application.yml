@@ -2,6 +2,6 @@ server:
   port: ${PORT:8080}
 
 app:
-  admin-email: ${ADMIN_EMAIL:admin@gmail.com}
+  # Admins are users whose Firestore users/{uid}.role is "admin" (no fixed e-mail)
   firebase-project-id: ${FIREBASE_PROJECT_ID:prm393-34056}
   cors-origin: ${CORS_ORIGIN:http://localhost:5000}

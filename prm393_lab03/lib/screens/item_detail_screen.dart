@@ -443,40 +443,85 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       Text('• $v', style: AppTextStyles.caption),
                   ],
                   const SizedBox(height: AppDimens.space12),
-                  Text(
-                    formatVnd(item.latestPriceVnd),
-                    style: item.hasPrice
-                        ? AppTextStyles.displayMedium.copyWith(
-                            color: AppColors.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          )
-                        : AppTextStyles.titleLarge.copyWith(
-                            color: AppColors.textSecondary,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            formatVnd(item.latestPriceVnd),
+                            style: item.hasPrice
+                                ? AppTextStyles.displayMedium.copyWith(
+                                    color: AppColors.onPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  )
+                                : AppTextStyles.titleLarge.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                           ),
-                  ),
-                  const SizedBox(height: AppDimens.space4),
-                  Text(_priceNote(item), style: AppTextStyles.labelMedium),
-                  if (item.status != WishlistStatus.purchased)
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, AppDimens.minTouchTarget),
-                        foregroundColor: AppColors.accentNeutral,
+                          const SizedBox(height: 2),
+                          Text(
+                            _priceNote(item),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      onPressed: _isProcessing
-                          ? null
-                          : () => _updatePrice(item),
-                      icon: const Icon(Icons.price_change_outlined, size: 18),
-                      label: Text(item.hasPrice ? 'Cập nhật giá' : 'Nhập giá'),
-                    ),
-                  const SizedBox(height: AppDimens.space8),
-                  Wrap(
-                    spacing: AppDimens.space12,
-                    runSpacing: AppDimens.space8,
+                      if (item.status != WishlistStatus.purchased)
+                        Material(
+                          color: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: const BorderSide(color: AppColors.outline),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: _isProcessing
+                                ? null
+                                : () => _updatePrice(item),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: AppColors.accentNeutral,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    item.hasPrice ? 'Cập nhật giá' : 'Nhập giá',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.accentNeutral,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimens.space12),
+                  const Divider(height: 1, color: AppColors.divider),
+                  const SizedBox(height: AppDimens.space12),
+                  Row(
                     children: [
                       MotiveChip(motive: item.displayMotive),
-                      if (item.isDemo) const DemoDataBadge(),
-                      if (item.shopName != null && item.shopName!.isNotEmpty)
+                      if (item.isDemo) ...[
+                        const SizedBox(width: AppDimens.space8),
+                        const DemoDataBadge(),
+                      ],
+                      if (item.shopName != null && item.shopName!.isNotEmpty) ...[
+                        const SizedBox(width: AppDimens.space8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -505,11 +550,28 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             ],
                           ),
                         ),
-                      if (item.isFromExtension)
+                      ],
+                      if (item.isFromExtension) ...[
+                        const SizedBox(width: AppDimens.space8),
                         WishlistCard.fromExtensionChip(),
-                      Text(
-                        'Lưu ngày: ${formatDate(item.createdAt)}',
-                        style: AppTextStyles.labelMedium,
+                      ],
+                      const Spacer(),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 13,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Lưu ngày: ${formatDate(item.createdAt)}',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -628,32 +690,58 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               _ReviewInfo(item: item),
               const SizedBox(height: AppDimens.space16),
             ],
-            // Mua · Chờ · Bỏ qua: same variant and size, none is highlighted (spec 7.4)
-            if (canDecide || needsPurchase) ...[
+            // Mua · Chờ · Bỏ qua: 3 buttons side-by-side in 1 row with distinct intuitive colors
+            if (canDecide) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _DecisionButton(
+                      title: 'Mua',
+                      icon: Icons.shopping_bag_outlined,
+                      backgroundColor: const Color(0xFF10B981), // Emerald green
+                      foregroundColor: Colors.white,
+                      isLoading: _isProcessing,
+                      onPressed: () => _recordPurchase(item),
+                    ),
+                  ),
+                  const SizedBox(width: AppDimens.space8),
+                  Expanded(
+                    child: _DecisionButton(
+                      title: 'Chờ',
+                      icon: Icons.schedule,
+                      backgroundColor: AppColors.primary, // Brand yellow
+                      foregroundColor: AppColors.onPrimary,
+                      isLoading: _isProcessing,
+                      onPressed: () => _wait(item),
+                    ),
+                  ),
+                  const SizedBox(width: AppDimens.space8),
+                  Expanded(
+                    child: _DecisionButton(
+                      title: 'Bỏ qua',
+                      icon: Icons.do_not_disturb_on_outlined,
+                      backgroundColor: isDark
+                          ? const Color(0xFF262D37)
+                          : const Color(0xFFF1F5F9), // Slate neutral
+                      foregroundColor: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF64748B),
+                      borderColor: isDark
+                          ? const Color(0xFF3E4856)
+                          : const Color(0xFFCBD5E1),
+                      isLoading: _isProcessing,
+                      onPressed: () => _skip(item),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (needsPurchase) ...[
               AppButton(
-                title: needsPurchase ? 'Bổ sung khoản mua' : 'Mua',
-                variant: AppButtonVariant.secondary,
+                title: 'Bổ sung khoản mua',
+                variant: AppButtonVariant.primary,
                 icon: Icons.shopping_bag_outlined,
                 isLoading: _isProcessing,
                 onPressed: () => _recordPurchase(item),
-              ),
-            ],
-            if (canDecide) ...[
-              const SizedBox(height: AppDimens.space12),
-              AppButton(
-                title: 'Chờ',
-                variant: AppButtonVariant.secondary,
-                icon: Icons.schedule,
-                isLoading: _isProcessing,
-                onPressed: () => _wait(item),
-              ),
-              const SizedBox(height: AppDimens.space12),
-              AppButton(
-                title: 'Bỏ qua',
-                variant: AppButtonVariant.secondary,
-                icon: Icons.do_not_disturb_on_outlined,
-                isLoading: _isProcessing,
-                onPressed: () => _skip(item),
               ),
             ] else if (item.status == WishlistStatus.skipped) ...[
               Text(
@@ -707,6 +795,74 @@ class _ReviewInfo extends StatelessWidget {
           const SizedBox(width: AppDimens.space12),
           Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact decision button for the 3-column action row ("Mua" · "Chờ" · "Bỏ qua")
+class _DecisionButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color? borderColor;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  const _DecisionButton({
+    required this.title,
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.borderColor,
+    this.isLoading = false,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: Material(
+        color: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: borderColor != null
+              ? BorderSide(color: borderColor!, width: 1.2)
+              : BorderSide.none,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          child: Center(
+            child: isLoading
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(foregroundColor),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 17, color: foregroundColor),
+                      const SizedBox(width: 5),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: foregroundColor,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
       ),
     );
   }

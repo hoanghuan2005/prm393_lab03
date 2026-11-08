@@ -7,6 +7,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 enum AuthMode { login, signup, forgotPassword }
 
@@ -304,21 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildBrandHeader(ThemeData theme) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFD166), AppColors.primary],
-            ),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: const Icon(
-            Icons.psychology_alt_rounded,
-            color: AppColors.onPrimary,
-            size: 24,
-          ),
-        ),
+        const WhyIBuyLogo(size: 38),
         const SizedBox(width: 10),
         Text(
           'Why I Buy?',

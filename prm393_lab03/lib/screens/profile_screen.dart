@@ -8,6 +8,7 @@ import '../core/constants/app_constants.dart';
 import '../core/formatters/email_format.dart';
 import '../models/ui_state.dart';
 import '../services/auth_service.dart';
+import '../services/floating_bubble_service.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -153,7 +154,10 @@ class ProfileScreen extends StatelessWidget {
             // Figma 10 (bản sửa): reminders, data, support
             const _GroupLabel('Cài đặt nhắc nhở'),
             _SettingsGroup(
-              children: [_DailyReminderTile(settingsVm: settingsVm)],
+              children: [
+                _DailyReminderTile(settingsVm: settingsVm),
+                const _FloatingBubbleTile(),
+              ],
             ),
             const SizedBox(height: AppDimens.space16),
 
@@ -227,10 +231,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space24),
 
-            // Button to preview 01 Onboarding screen
+            // Button to preview Onboarding screen
             OutlinedButton.icon(
               icon: const Icon(Icons.school_outlined, size: 20),
-              label: const Text('Xem màn hình giới thiệu (01 Onboarding)'),
+              label: const Text('Xem màn hình giới thiệu'),
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.onboarding);
               },
@@ -830,6 +834,275 @@ class _DailyReminderTile extends StatelessWidget {
         value: supported && settingsVm.dailyReminderEnabled,
         onChanged: supported ? (on) => _toggle(context, on) : null,
       ),
+    );
+  }
+}
+
+/// Floating shopping assistant bubble tile (Option A: Shopping Guardian Bubble)
+class _FloatingBubbleTile extends StatefulWidget {
+  const _FloatingBubbleTile();
+
+  @override
+  State<_FloatingBubbleTile> createState() => _FloatingBubbleTileState();
+}
+
+class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBindingObserver {
+  bool _isRunning = false;
+  bool _isLoading = false;
+  bool _isA11yEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkStatus();
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    final running = await FloatingBubbleService.isBubbleRunning();
+    final a11y = await FloatingBubbleService.isAccessibilityServiceEnabled();
+    if (mounted) {
+      setState(() {
+        _isRunning = running;
+        _isA11yEnabled = a11y;
+      });
+    }
+  }
+
+  Future<void> _toggle(bool on) async {
+    setState(() => _isLoading = true);
+    final messenger = ScaffoldMessenger.of(context);
+    if (!on) {
+      await FloatingBubbleService.stopFloatingBubble();
+      if (mounted) {
+        setState(() {
+          _isRunning = false;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    final hasPerm = await FloatingBubbleService.checkOverlayPermission();
+    if (!hasPerm) {
+      if (mounted) {
+        final grant = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.layers_outlined, color: AppColors.primary),
+                SizedBox(width: 8),
+                Text('Cấp quyền hiển thị', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: const Text(
+              'Để hiển thị bong bóng hỗ trợ săn sale và cảnh báo không mua vội khi bạn xem món đồ, ứng dụng cần quyền "Xuất hiện trên cùng" (Display over other apps).\n\nBấm Tiếp tục để mở cài đặt cấp quyền.',
+              style: TextStyle(fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Bỏ qua'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Tiếp tục'),
+              ),
+            ],
+          ),
+        );
+
+        if (grant == true) {
+          await FloatingBubbleService.requestOverlayPermission();
+        }
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+    }
+
+    final ok = await FloatingBubbleService.startFloatingBubble();
+    if (mounted) {
+      setState(() {
+        _isRunning = ok;
+        _isLoading = false;
+      });
+      if (ok) {
+        messenger.clearSnackBars();
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text('✨ Đã bật bong bóng trợ lý mua sắm!'),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Thử thông báo',
+              textColor: AppColors.primary,
+              onPressed: () {
+                FloatingBubbleService.showTestAlert();
+              },
+            ),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            messenger.hideCurrentSnackBar();
+          }
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.space16,
+            vertical: AppDimens.space4,
+          ),
+          leading: const WhyIBuyLogo(size: 36),
+          title: Text(
+            'Bong bóng trợ lý săn sale',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          subtitle: Text(
+            'Tự động thức tỉnh khi xem lâu & giữ giá khi sao chép link.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          trailing: _isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Switch(
+                  value: isAndroid && _isRunning,
+                  onChanged: isAndroid ? _toggle : null,
+                ),
+        ),
+        if (_isRunning)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppDimens.space16, 0, AppDimens.space16, AppDimens.space12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6)),
+                        ),
+                        icon: const Icon(Icons.notifications_active_outlined, size: 15),
+                        label: const Text('Thử thông báo', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          FloatingBubbleService.showTestAlert();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6)),
+                        ),
+                        icon: const Icon(Icons.air_rounded, size: 15),
+                        label: const Text('Thử Pulse xem lâu', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          FloatingBubbleService.showTestLingeringAlert();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (!_isA11yEnabled)
+                  InkWell(
+                    onTap: () async {
+                      await FloatingBubbleService.openAccessibilitySettings();
+                    },
+                    borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Bật tự động nhận diện khi xem lâu (Hỗ trợ tiếp cận)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 12),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, size: 15, color: Colors.green),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Tự động thức tỉnh khi xem lâu đang hoạt động',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Reschedules review reminders after a reboot (flutter_local_notifications) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Shopping Guardian Floating Overlay & Background service (Option A) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
         android:label="Why I Buy"
@@ -47,6 +52,30 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+
+        <!-- Shopping Guardian Floating Bubble Service -->
+        <service
+            android:name=".FloatingBubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating shopping assistant overlay for tracking e-commerce links" />
+        </service>
+
+        <!-- Shopping Lingering & Hesitation Accessibility Service -->
+        <service
+            android:name=".ShoppingAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

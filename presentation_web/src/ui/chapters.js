@@ -4,7 +4,6 @@
  */
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
-import { ecosystem, evidence, team } from '../data/chapters.js'
 
 gsap.registerPlugin(SplitText)
 
@@ -30,69 +29,31 @@ function heroHtml(ch) {
     </div>`
 }
 
-function ecosystemHtml() {
-  const c = ecosystem.core
+function wfHtml(wf) {
   return `
-    <div class="eco" data-r>
-      ${ecosystem.nodes
-        .map(
-          (n) => `<div class="eco__node" data-ri><div class="eco__kicker">${n.kicker}</div><div class="eco__name">${n.name}</div><div class="eco__desc">${n.desc}</div></div>`,
-        )
-        .join('')}
-      <div class="eco__node eco__node--core" data-ri>
-        <div class="eco__kicker">${c.kicker}</div>
-        <div class="eco__name">${c.name}</div>
-        <div class="eco__desc">${c.desc}</div>
-        <div class="eco__services">${c.services.map((s) => `<span>${s}</span>`).join('')}</div>
-      </div>
-    </div>`
+    <dl class="wf" data-r>
+      <dt>Actor</dt><dd>${wf.actor}</dd>
+      <dt>Trigger</dt><dd>${wf.trigger}</dd>
+      <dt>Điều kiện</dt><dd>${wf.pre}</dd>
+      <dt>Kết quả</dt><dd>${wf.result}</dd>
+      <dt>Ngoại lệ</dt><dd>${wf.exception}</dd>
+    </dl>
+    <ol class="wf-steps" data-r>${wf.steps.map((st) => `<li data-s="${st.s}">${st.t}</li>`).join('')}</ol>`
 }
 
-function evidenceHtml() {
-  return `
-    <div class="stat-grid" data-r>
-      ${evidence
-        .map(
-          (s) => `<div class="stat" data-ri>
-            <div class="stat__value ${s.brand ? 'is-brand' : ''}"><span data-count="${s.value}">${s.value}</span><small>${s.unit}</small></div>
-            <div class="stat__label">${s.label}</div>
-            <div class="stat__src">${s.src}</div>
-          </div>`,
-        )
-        .join('')}
-    </div>
-    <p class="note" data-r>Lệnh chạy lại: <code class="mono">npm test</code> trong prm393_lab03/firebase/tests (cần Firebase Emulator) và <code class="mono">flutter test</code> trong từng app.</p>`
-}
-
-function thanksHtml() {
-  return `
-    <div class="team" data-r>
-      ${team.map((m) => `<div class="team__member" data-ri><div class="team__name">${m.name}</div><div class="team__role">${m.role}</div></div>`).join('')}
-    </div>
-    <div class="chips" data-r>
-      <span class="chip chip--web">Web admin · prm393-34056.web.app</span>
-      <span class="chip">Hỏi & đáp</span>
-    </div>`
-}
-
-function chapterHtml(ch, i, total, journey) {
+function chapterHtml(ch, i, total) {
   if (ch.kind === 'hero') return heroHtml(ch)
-  const step = journey.indexOf(ch)
-  const num = step >= 0 ? pad(step + 1) : pad(i)
-  const eyebrow =
-    step >= 0
-      ? `<b>${pad(step + 1)}</b><i></i>Bước ${step + 1} / ${journey.length} · ${ch.rail}`
-      : `<b>${pad(i)}</b><i></i>${ch.eyebrow}`
-  const extra =
-    ch.kind === 'ecosystem' ? ecosystemHtml() : ch.kind === 'evidence' ? evidenceHtml() : ch.kind === 'thanks' ? thanksHtml() : ''
+  const eyebrow = `<b>${pad(i + 1)}</b><i></i>${ch.part.startsWith('WF') ? 'Demo' : ch.part} · ${ch.eyebrow}`
   return `
-    <div class="chapter__num" aria-hidden="true">${num}</div>
+    <div class="chapter__num" aria-hidden="true">${pad(i + 1)}</div>
     <div class="chapter__inner">
       <p class="eyebrow" data-r>${eyebrow}</p>
       <h2 class="chapter__title" id="t-${ch.id}" data-split>${ch.title}</h2>
+      ${ch.qa ? `<p class="qa" data-r><b>Câu hỏi hội đồng</b>${ch.qa}</p>` : ''}
       ${ch.lead ? `<p class="chapter__lead" data-r>${ch.lead}</p>` : ''}
-      ${extra}
+      ${ch.wf ? wfHtml(ch.wf) : ''}
       ${ch.points ? `<ul class="points">${ch.points.map((p) => `<li data-r>${p}</li>`).join('')}</ul>` : ''}
+      ${ch.evidence ? `<p class="evidence" data-r>${ch.evidence}</p>` : ''}
       ${ch.chips ? `<div data-r>${chipsHtml(ch.chips)}</div>` : ''}
       ${ch.path ? `<code class="datapath" data-r>${ch.path}</code>` : ''}
       ${ch.note ? `<p class="note" data-r>${ch.note}</p>` : ''}
@@ -103,14 +64,13 @@ export class ChapterText {
   constructor(container, chapters) {
     this.container = container
     this.chapters = chapters
-    this.journey = chapters.filter((c) => c.rail)
     this.sections = chapters.map((ch, i) => {
       const s = document.createElement('section')
-      s.className = `chapter chapter--${ch.kind || 'step'}`
+      s.className = `chapter chapter--${ch.kind || 'step'}${ch.visual ? ' chapter--visual' : ''}`
       s.id = ch.id
       s.dataset.index = i
       if (ch.title) s.setAttribute('aria-labelledby', `t-${ch.id}`)
-      s.innerHTML = chapterHtml(ch, i, chapters.length, this.journey)
+      s.innerHTML = chapterHtml(ch, i, chapters.length)
       container.appendChild(s)
       return s
     })

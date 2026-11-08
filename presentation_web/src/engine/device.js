@@ -45,7 +45,8 @@ export class Device {
    * Show screen `id` and play its demo. dir: 1 forward (push), -1 back (pop).
    * demoKey picks an alternative demo when a screen module exports demos{}.
    */
-  show(id, { dir = 1, demoKey = null, instant = false } = {}) {
+  show(id, { dir = 1, demoKey = null, instant = false, onDone = null } = {}) {
+    clearTimeout(this.seqTimer)
     const mod = this.screens[id]
     if (!mod) {
       console.warn('[device] unknown screen', id)
@@ -80,10 +81,10 @@ export class Device {
     if (!prev || instant || this.reduced) {
       if (prev) prev.remove()
       gsap.set(next, { opacity: 1, x: 0 })
-      this.play(mod, next, demoKey, 0.15)
+      this.play(mod, next, demoKey, 0.15, onDone)
       return
     }
-    this.play(mod, next, demoKey, 0.45)
+    this.play(mod, next, demoKey, 0.45, onDone)
     if (sameScreen) {
       // replay on the same screen: quick fade-through
       gsap.set(next, { opacity: 0 })
@@ -95,9 +96,12 @@ export class Device {
     gsap.to(prev, { opacity: 0, x: -40 * dir, duration: 0.32, ease: 'power2.in' })
   }
 
-  play(mod, root, demoKey, delay = 0.15) {
+  play(mod, root, demoKey, delay = 0.15, onDone = null) {
     const demo = (demoKey && mod.demos?.[demoKey]) || mod.demo
-    if (!demo) return
+    if (!demo) {
+      if (onDone) this.seqTimer = setTimeout(onDone, 2500)
+      return
+    }
     const tl = gsap.timeline({ delay })
     const k = createKit({ screen: this.el, finger: this.finger, ripple: this.ripple, callouts: this.callouts }, root)
     try {
@@ -106,8 +110,28 @@ export class Device {
       console.error(`[device] demo of ${mod.id} failed`, err)
     }
     k.lift(tl, '+=0.4')
+    if (onDone) tl.eventCallback('onComplete', onDone)
     if (this.reduced) tl.progress(1)
     this.tl = tl
+  }
+
+  /** play several screens one after another (a workflow); onStep(k) when screen k starts */
+  showSequence(list, { dir = 1, onStep } = {}) {
+    const token = this.token + 1
+    const run = (k, d) => {
+      const item = list[k]
+      onStep?.(k)
+      this.show(item.screen, {
+        dir: d,
+        demoKey: item.demo || null,
+        onDone: () => {
+          if (this.token !== token + k) return
+          if (k + 1 < list.length) this.seqTimer = setTimeout(() => run(k + 1, 1), 1100)
+          else onStep?.(list.length)
+        },
+      })
+    }
+    run(0, dir)
   }
 
   /** replay the current demo (presenter pressed R) */

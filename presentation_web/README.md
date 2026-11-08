@@ -5,7 +5,7 @@ Trang web một trang dùng để thuyết trình app **Why I Buy?** (PRM393):
 - **Bên phải:** phần giải thích của từng bước.
 - **Điều khiển:** mỗi lần lăn chuột (hoặc bấm ↓, PageDown, Space, nút "next" của bút trình chiếu) chuyển đúng một bước của luồng, và điện thoại tự chạy demo của bước đó.
 
-Luồng: Vấn đề → Người dùng & mục tiêu → Mở app → Đăng nhập → Trang chủ → Lưu món → Từ máy tính → Cân nhắc → Chờ sale → Trước khi mua → Ghi khoản mua → Ngân sách → Mô hình → Góc nhìn → Chiêm nghiệm → Cá nhân → Hệ sinh thái → Bằng chứng → Cảm ơn.
+Cấu trúc theo *Software Project Presentation Guideline V11* (24 slide): **Problem** 01–06 (Overview, Context, Problem, Solution, Actors, Features) · **Design** 07–16 (Business flow, State machine, Architecture, Tech stack, UI/UX, Sequence, Class, Database ×2, Traceability) · **Demo** 17–20 (Demo plan + WF-01/02/03 chạy trên điện thoại) · **Proof** 21–24 (Testing, Achievements, Limitations, Conclusion). Sơ đồ nằm trong `src/diagrams/visuals.js` (dạng dữ liệu: khối + mũi tên).
 
 ## Chạy
 

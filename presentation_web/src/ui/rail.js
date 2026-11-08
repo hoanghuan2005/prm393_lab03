@@ -1,7 +1,7 @@
 /**
- * Bottom flow rail: "Mở app → Đăng nhập → Trang chủ → …". The active step is
- * yellow, finished steps get a yellow dot, and the track slides so the
- * active node stays centred. Clicking a node jumps to that step.
+ * Bottom rail: the parts of the guideline in order
+ * "Problem → Design → Demo → WF-01 → WF-02 → WF-03 → Proof".
+ * The current part is yellow, finished parts get a yellow dot; click jumps to its first slide.
  */
 import gsap from 'gsap'
 
@@ -11,12 +11,13 @@ export class Rail {
   constructor({ rail, track, chapters, onPick }) {
     this.rail = rail
     this.track = track
-    this.items = chapters.map((c, i) => ({ c, i })).filter((x) => x.c.rail)
-    this.track.innerHTML = this.items
-      .map(
-        ({ c, i }, n) =>
-          `${n ? ARROW : ''}<button class="rail__node" type="button" data-goto="${i}" aria-label="Bước ${n + 1}: ${c.rail}"><span class="rail__dot"></span>${c.rail}</button>`,
-      )
+    this.chapters = chapters
+    this.parts = []
+    chapters.forEach((c, i) => {
+      if (!this.parts.find((p) => p.label === c.part)) this.parts.push({ label: c.part, first: i })
+    })
+    this.track.innerHTML = this.parts
+      .map((p, n) => `${n ? ARROW : ''}<button class="rail__node" type="button" data-goto="${p.first}" aria-label="${p.label}"><span class="rail__dot"></span>${p.label}</button>`)
       .join('')
     this.nodes = [...this.track.querySelectorAll('.rail__node')]
     this.arrows = [...this.track.querySelectorAll('.rail__arrow')]
@@ -28,26 +29,18 @@ export class Rail {
     window.addEventListener('resize', () => this.center(this.last, true))
   }
 
-  /** chapter index -> highlight */
   set(chapterIndex) {
-    const firstStep = this.items[0].i
-    this.rail.classList.toggle('is-hidden', chapterIndex < firstStep - 1)
-    // active = the journey step at this chapter; done = steps before it
-    let activeN = -1
-    this.items.forEach(({ i }, n) => {
-      if (i === chapterIndex) activeN = n
-    })
-    const passed = this.items.filter(({ i }) => i < chapterIndex).length
+    this.rail.classList.toggle('is-hidden', chapterIndex === 0)
+    const active = this.parts.findIndex((p) => p.label === this.chapters[chapterIndex].part)
     this.nodes.forEach((node, n) => {
-      node.classList.toggle('is-active', n === activeN)
-      node.classList.toggle('is-done', activeN === -1 ? n < passed : n < activeN)
-      if (n === activeN) node.setAttribute('aria-current', 'step')
+      node.classList.toggle('is-active', n === active)
+      node.classList.toggle('is-done', n < active)
+      if (n === active) node.setAttribute('aria-current', 'step')
       else node.removeAttribute('aria-current')
     })
-    this.arrows.forEach((a, n) => a.classList.toggle('is-done', n < (activeN === -1 ? passed - 1 : activeN)))
-    const focus = activeN >= 0 ? activeN : Math.min(Math.max(passed - 1, 0), this.nodes.length - 1)
-    this.last = focus
-    this.center(focus)
+    this.arrows.forEach((a, n) => a.classList.toggle('is-done', n < active))
+    this.last = active
+    this.center(active)
   }
 
   center(n, instant = false) {
@@ -56,8 +49,7 @@ export class Rail {
     const railW = this.rail.clientWidth
     const trackW = this.track.scrollWidth
     const target = railW / 2 - (node.offsetLeft + node.offsetWidth / 2)
-    const min = railW - trackW
-    const x = trackW <= railW ? (railW - trackW) / 2 : Math.max(min, Math.min(0, target))
+    const x = trackW <= railW ? (railW - trackW) / 2 : Math.max(railW - trackW, Math.min(0, target))
     gsap.to(this.track, { x, duration: instant ? 0 : 0.8, ease: 'power3.inOut', overwrite: true })
   }
 }

@@ -636,7 +636,8 @@ button {
   left: 50%;
   bottom: 18px;
   z-index: 20;
-  width: min(1180px, calc(100vw - 32px));
+  width: max-content;
+  max-width: calc(100vw - 32px);
   height: 52px;
   transform: translate(-50%, 0);
   border-radius: 999px;
@@ -655,7 +656,7 @@ button {
   pointer-events: none;
 }
 .rail__track {
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   height: 100%;

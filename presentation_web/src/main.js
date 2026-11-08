@@ -2,6 +2,7 @@ import './styles/fonts.css'
 import './styles/site.css'
 import './styles/device.css'
 import './styles/app.css'
+import './styles/diagrams.css'
 
 import gsap from 'gsap'
 import { chapters } from './data/chapters.js'
@@ -12,6 +13,8 @@ import { Steps } from './engine/steps.js'
 import { Callouts } from './ui/callouts.js'
 import { ChapterText } from './ui/chapters.js'
 import { Rail } from './ui/rail.js'
+import { visuals } from './diagrams/visuals.js'
+import { animateVisual } from './diagrams/animate.js'
 
 const $ = (id) => document.getElementById(id)
 const pad = (n) => String(n).padStart(2, '0')
@@ -50,19 +53,45 @@ async function boot() {
   const navCount = $('navbar-count')
   const keyhint = $('keyhint')
 
-  const journey = chapters.filter((c) => c.rail)
-  let shown = { screen: null, demo: null }
+  const visualEl = $('visual')
+  let visualId = null
+  const showVisual = (key) => {
+    if (key === visualId) return
+    visualId = key
+    const prev = visualEl.querySelector('.visual__slot')
+    if (prev) gsap.to(prev, { opacity: 0, y: -12, duration: 0.3, onComplete: () => prev.remove() })
+    document.body.classList.toggle('has-visual', !!key)
+    if (!key) return
+    const slot = document.createElement('div')
+    slot.className = 'visual__slot'
+    slot.innerHTML = visuals[key]()
+    visualEl.appendChild(slot)
+    animateVisual(slot)
+  }
+
+  const markStep = (i, k) => {
+    const items = text.sections[i].querySelectorAll('.wf-steps li')
+    items.forEach((li) => {
+      const s = +li.dataset.s
+      li.classList.toggle('is-on', s === k)
+      li.classList.toggle('is-done', s < k)
+    })
+  }
+
+  let shown = null
   const activate = (i, dir) => {
     const ch = chapters[i]
-    const step = journey.indexOf(ch)
-    navChapter.textContent = ch.nav || (step >= 0 ? `Bước ${step + 1} / ${journey.length} · ${ch.eyebrow}` : ch.eyebrow)
+    navChapter.textContent = ch.nav || `${ch.part.startsWith('WF') ? 'Demo · ' + ch.part : ch.part} · ${ch.eyebrow}`
     navCount.innerHTML = `<b>${pad(i + 1)}</b> / ${pad(chapters.length)}`
     rail.set(i)
     text.reveal(i)
-    stage.setPose({ ...DEFAULT_POSE, ...ch.pose })
-    if (shown.screen !== ch.screen || shown.demo !== (ch.demo || null) || dir !== 0) {
-      device.show(ch.screen, { dir: dir >= 0 ? 1 : -1, demoKey: ch.demo || null })
-      shown = { screen: ch.screen, demo: ch.demo || null }
+    showVisual(ch.visual || null)
+    if (!ch.visual) {
+      stage.setPose({ ...DEFAULT_POSE, ...ch.pose })
+      const d = dir >= 0 ? 1 : -1
+      if (ch.screens) device.showSequence(ch.screens, { dir: d, onStep: (k) => markStep(i, k) })
+      else device.show(ch.screen, { dir: d, demoKey: ch.demo || null })
+      shown = ch.id
     }
     keyhint.classList.toggle('is-hidden', i > 0)
     if (history.replaceState) history.replaceState(null, '', i ? `#${ch.id}` : location.pathname + location.search)
@@ -99,7 +128,6 @@ async function boot() {
     window.scrollTo(0, 0)
     steps.current = 0
     device.show(chapters[0].screen, { instant: true, demoKey: chapters[0].demo || null })
-    shown = { screen: chapters[0].screen, demo: chapters[0].demo || null }
     rail.set(0)
     navCount.innerHTML = `<b>01</b> / ${pad(chapters.length)}`
     stage.intro()

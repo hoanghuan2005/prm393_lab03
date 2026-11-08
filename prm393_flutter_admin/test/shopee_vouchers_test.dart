@@ -116,5 +116,22 @@ void main() {
       expect(await vm.delete(shopVoucher), contains('quyền'));
       expect(vm.isBusy('v1'), isFalse);
     });
+
+    test('delete all removes only the vouchers matching the filters', () async {
+      service.controller.add([shopVoucher, platformVoucher]);
+      await pump();
+
+      vm.setScope(VoucherScope.shop);
+      expect(await vm.deleteVisible(), isNull);
+      expect(service.deleted, ['v1']);
+
+      vm.setScope(null);
+      expect(await vm.deleteVisible(), isNull);
+      expect(service.deleted, ['v1', 'v1', 'v2']);
+
+      service.deleteError = permissionDenied();
+      expect(await vm.deleteVisible(), contains('quyền'));
+      expect(vm.deletingAll, isFalse);
+    });
   });
 }

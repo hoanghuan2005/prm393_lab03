@@ -44,10 +44,8 @@ const CARDS = [
 const STATUS_TPL = 'Đang viết nhận xét từ số liệu của bạn...'
 const STATUS_AI = 'Lời nhận xét do AI viết lại từ số liệu app đã tính. AI không tạo ra con số mới.'
 
-// final translateY of the list = content 1119 - body 618 (measured): bottom of the list
-const SCROLL_END = 501
-
 const STYLE = `
+.scr-ins,.scr-ins *,.scr-ins *::before,.scr-ins *::after{box-sizing:border-box}
 .scr-ins .scr-ins__month{display:flex;align-items:center;justify-content:space-between;padding:2px 8px;border-radius:14px;background:var(--surface);border:1px solid var(--divider)}
 .scr-ins .scr-ins__month .wib-iconbtn{width:48px;height:48px;color:var(--text-2)}
 .scr-ins .scr-ins__ai{margin-top:12px;padding:12px 8px 12px 16px;border-radius:16px;background:var(--primary-container);border:1px solid rgba(255,222,2,.5)}
@@ -145,12 +143,37 @@ export default {
       cards[i].querySelectorAll('.scr-ins__swap').forEach((box) => swapText(tl, box, p))
     })
 
-    // 4. scroll down so the rejected card and the last AI cards are in view
-    tl.to(k.q('[data-k="scroll"]'), { y: -SCROLL_END, duration: 1.0, ease: 'power2.inOut' }, T + 0.55)
+    // 4. scroll to the bottom of the list (measured with every AI sentence in place)
+    tl.to(k.q('[data-k="scroll"]'), { y: () => -finalScroll(root), duration: 1.0, ease: 'power2.inOut' }, T + 0.55)
     k.callout(tl, chips[3], 'Gemini viết lại câu', { pos: T + 1.9 })
-    k.callout(tl, chips[2], 'Câu AI sai bị loại', { pos: T + 2.5 })
+    k.callout(tl, chips[2], 'Câu AI bị loại, giữ câu mẫu', { pos: T + 2.5 })
     tl.to({}, { duration: 2.3 }, T + 2.5)
   },
+}
+
+/**
+ * Scroll distance to the bottom of the list in the FINAL state (AI chips, AI
+ * sentences, progress bar gone). Applied for one synchronous measurement and
+ * restored, so it is right whatever the box model / fonts of the host page.
+ */
+function finalScroll(root) {
+  const scroll = root.querySelector('[data-k="scroll"]')
+  const body = root.querySelector('[data-k="body"]')
+  const prog = root.querySelector('[data-k="prog"]')
+  const chips = [...root.querySelectorAll('[data-k="chip"]')]
+  const boxes = [...root.querySelectorAll('.scr-ins__swap')].filter((b) => b.querySelector('.v-ai'))
+  const saved = { cls: chips.map((c) => c.className), h: boxes.map((b) => b.style.height), prog: prog.style.cssText }
+  CARDS.forEach((c, i) => {
+    if (c.ai) chips[i].className = 'wib-ai-chip scr-ins__chip is-ai'
+  })
+  prog.style.height = '0px'
+  prog.style.marginBottom = '0px'
+  boxes.forEach((b) => (b.style.height = `${b.querySelector('.v-ai').offsetHeight}px`))
+  const y = Math.max(0, scroll.offsetHeight - body.clientHeight)
+  chips.forEach((c, i) => (c.className = saved.cls[i]))
+  boxes.forEach((b, i) => (b.style.height = saved.h[i]))
+  prog.style.cssText = saved.prog
+  return y
 }
 
 /** cross-fade .v-tpl -> .v-ai inside `box`, animating the box height between the two */

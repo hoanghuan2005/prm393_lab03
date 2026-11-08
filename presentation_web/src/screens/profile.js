@@ -259,7 +259,7 @@ export default {
                 <div class="p-inbox">
                   <div class="p-new" style="display:none;overflow:hidden">
                     ${inboxRow(MSG_SALE.title, MSG_SALE.body)}
-                    <div class="wib-divider"></div>
+                    <div class="wib-divider" style="margin:7.5px 0"></div>
                   </div>
                   ${inboxRow(MSG_REVIEW.title, MSG_REVIEW.body)}
                 </div>`,
@@ -274,6 +274,8 @@ export default {
 
         <!-- SnackBar of Live Fetch (not floating: full width above the nav) -->
         <div class="wib-snackbar p-snack-fixed" data-k="snack-rc"><span class="wib-snackbar__text">Đã cập nhật cấu hình Remote Config mới nhất từ Firebase.</span></div>
+        <!-- after the permission is granted (floating) -->
+        <div class="wib-snackbar" data-k="snack-perm"><span class="wib-snackbar__text">Đã bật thông báo. Tin nhắn FCM và nhắc xem lại sẽ hiện kể cả khi app đang đóng.</span></div>
         <!-- foreground FCM message (AppLifecycleBridge): floating, action 'Xem' for type sale -->
         <div class="wib-snackbar p-snack-fcm" data-k="snack-fcm">
           <span class="wib-snackbar__text"><span class="p-snack-fcm__t" style="display:block">${MSG_SALE.title}</span><span class="p-snack-fcm__b">${MSG_SALE.body}</span></span>
@@ -298,13 +300,15 @@ export default {
     const body = k.q('[data-k="body"]')
     const max = () => Math.max(0, scroll.offsetHeight - body.clientHeight)
     const clamp = (y) => Math.min(max(), Math.max(0, y))
+    // lazy: false writes the offset at once, so a tap that starts right after reads the real layout
     const scrollTo = (yFn, pos, duration = 0.85) =>
-      tl.to(scroll, { y: () => -clamp(yFn()), duration, ease: 'power3.inOut' }, pos)
+      tl.to(scroll, { y: () => -clamp(yFn()), duration, ease: 'power3.inOut', lazy: false }, pos)
     const rc = k.q('.p-rc')
     const rows = k.q('.p-rc-rows')
     const cool = k.q('.p-cool')
     const fetch = k.q('.p-fetch')
     const snackRc = k.q('[data-k="snack-rc"]')
+    const snackPerm = k.q('[data-k="snack-perm"]')
     const snackFcm = k.q('[data-k="snack-fcm"]')
     const fresh = k.q('.p-new')
 
@@ -312,45 +316,50 @@ export default {
     k.reveal(tl, '[data-k="account"], .p-linked, .p-devices', { stagger: 0.08 })
 
     // 2. Settings: theme, daily reminder 21:00, CSV export, delete data
-    scrollTo(() => offsetIn(k.q('.p-theme'), scroll) - 12, 0.7)
+    scrollTo(() => offsetIn(k.q('.p-theme'), scroll) - 12, 0.5, 0.8)
 
-    // 3. Remote Config card: tap Live Fetch -> spinner -> new value + SnackBar
-    scrollTo(() => offsetIn(rc, scroll) - 12, 2.0, 0.9)
-    k.tap(tl, fetch, { pos: 2.9, then: () => fetch.classList.add('is-loading') })
-    tl.addLabel('fetched', 3.95)
+    // 3. Remote Config card. cooling_off_days starts at the code default 3
+    // (remote-config-defaults.json); the team publishes 5 in the Console
+    // (docs/video-demo-script.md) and Live Fetch applies it without an update.
+    scrollTo(() => offsetIn(rc, scroll) - 12, 1.75, 0.85)
+    k.tap(tl, fetch, { pos: 2.6, then: () => fetch.classList.add('is-loading') })
+    tl.addLabel('fetched', 3.6)
     tl.call(() => fetch.classList.remove('is-loading'), null, 'fetched')
     k.text(tl, cool, '5 ngày', 'fetched')
     tl.fromTo(cool, { backgroundColor: 'rgba(255,222,2,0.9)' }, { backgroundColor: 'rgba(255,222,2,0)', duration: 1.6, ease: 'power1.in', immediateRender: false }, 'fetched')
     k.snack(tl, snackRc, { pos: 'fetched' })
-    k.callout(tl, rows, 'Đổi cấu hình, không cập nhật app', { pos: 'fetched+=0.1' })
+    k.callout(tl, cool, 'Đổi trên Console: 3 → 5 ngày', { pos: 'fetched+=0.1' })
     tl.to(snackRc, { opacity: 0, y: 16, duration: 0.3, ease: 'power2.in' }, 'fetched+=1.0')
 
     // 4. FCM Center: the permission is asked only from the tap on 'Bật thông báo'
-    scrollTo(() => offsetIn(rows, scroll) - 4, 'fetched+=0.95', 0.7)
-    k.tap(tl, '.p-perm-btn', { pos: 'fetched+=1.6' })
-    k.dialog(tl, '[data-k="perm"]', { scrim: '[data-k="perm-scrim"]', pos: 'fetched+=2.25' })
-    k.tap(tl, '[data-k="perm-allow"]', { pos: 'fetched+=2.7' })
-    k.dialog(tl, '[data-k="perm"]', { scrim: '[data-k="perm-scrim"]', open: false, pos: 'fetched+=3.4' })
+    scrollTo(() => offsetIn(rows, scroll) - 4, 'fetched+=0.9', 0.6)
+    k.tap(tl, '.p-perm-btn', { pos: 'fetched+=1.5' })
+    k.dialog(tl, '[data-k="perm"]', { scrim: '[data-k="perm-scrim"]', pos: 'fetched+=2.1' })
+    k.tap(tl, '[data-k="perm-allow"]', { pos: 'fetched+=2.5' })
+    k.dialog(tl, '[data-k="perm"]', { scrim: '[data-k="perm-scrim"]', open: false, pos: 'fetched+=3.25' })
     tl.call(() => {
       k.q('.p-perm-btn').style.display = 'none'
       k.q('.p-perm-on').style.display = ''
-    }, null, 'fetched+=3.5')
-    k.lift(tl, 'fetched+=3.5')
+    }, null, 'fetched+=3.35')
+    k.lift(tl, 'fetched+=3.35')
+    k.snack(tl, snackPerm, { pos: 'fetched+=3.4' })
 
-    // 5. A push arrives while the app is open: SnackBar + new row on top of the inbox
-    tl.addLabel('push', 'fetched+=3.95')
-    k.snack(tl, snackFcm, { pos: 'push' })
-    k.text(tl, '.p-inbox-head', 'Hộp thư nhận thông báo (2 tin nhắn):', 'push+=0.15')
-    tl.set(fresh, { display: '' }, 'push+=0.15')
-    tl.fromTo(fresh, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.45, ease: 'power3.out', immediateRender: false }, 'push+=0.15')
+    // 5. A push arrives while the app is open: the bridge hides the current SnackBar,
+    // shows the message, and the on-device history gets a new row on top
+    tl.addLabel('push', 'fetched+=4.15')
+    tl.to(snackPerm, { opacity: 0, y: 16, duration: 0.2, ease: 'power2.in' }, 'push')
+    k.snack(tl, snackFcm, { pos: 'push+=0.2' })
+    k.text(tl, '.p-inbox-head', 'Hộp thư nhận thông báo (2 tin nhắn):', 'push+=0.3')
+    tl.set(fresh, { display: '' }, 'push+=0.3')
+    tl.fromTo(fresh, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.45, ease: 'power3.out', immediateRender: false }, 'push+=0.3')
     // keep the new row above the SnackBar
     scrollTo(() => {
       const snackTop = snackFcm.offsetTop - body.offsetTop
       const want = offsetIn(fresh, scroll) + fresh.scrollHeight - snackTop + 8
       return Math.max(-gsap.getProperty(scroll, 'y'), want)
-    }, 'push+=0.15', 0.45)
-    k.callout(tl, '.p-inbox', 'Tin FCM: mở, nền, đã đóng', { pos: 'push+=0.4' })
-    tl.to({}, { duration: 0.01 }, 'push+=1.0')
+    }, 'push+=0.3', 0.45)
+    k.callout(tl, '.p-inbox-head', 'Lịch sử FCM trên máy, tối đa 50', { pos: 'push+=0.55' })
+    tl.to({}, { duration: 0.01 }, 'push+=0.99')
   },
 
   demos: {

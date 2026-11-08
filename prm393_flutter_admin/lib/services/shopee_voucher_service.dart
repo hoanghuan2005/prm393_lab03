@@ -8,6 +8,9 @@ abstract class ShopeeVoucherService {
   Stream<List<ShopeeVoucher>> watchVouchers();
 
   Future<void> delete(String id);
+
+  /// Deletes many vouchers in batches (Firestore allows 500 writes each)
+  Future<void> deleteMany(List<String> ids);
 }
 
 class FirestoreShopeeVoucherService implements ShopeeVoucherService {
@@ -30,4 +33,15 @@ class FirestoreShopeeVoucherService implements ShopeeVoucherService {
 
   @override
   Future<void> delete(String id) => _vouchers.doc(id).delete();
+
+  @override
+  Future<void> deleteMany(List<String> ids) async {
+    for (var i = 0; i < ids.length; i += 450) {
+      final batch = _db.batch();
+      for (final id in ids.skip(i).take(450)) {
+        batch.delete(_vouchers.doc(id));
+      }
+      await batch.commit();
+    }
+  }
 }

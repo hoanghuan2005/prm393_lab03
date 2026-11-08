@@ -99,7 +99,7 @@ export class PhoneStage {
     this.pointer = { x: 0, y: 0, sx: 0, sy: 0 }
     this.idle = true
     this.listeners = new Set()
-    this.clock = new THREE.Clock()
+    this.timer = new THREE.Timer()
   }
 
   init() {
@@ -241,7 +241,8 @@ export class PhoneStage {
       clearcoat: 1,
       iridescence: 1,
       iridescenceIOR: 1.6,
-      iridescenceThicknessRange: [200, 600],
+      iridescenceThicknessMinimum: 200,
+      iridescenceThicknessMaximum: 600,
     })
     const lensPos = [
       [0.055, 0.09],
@@ -367,7 +368,8 @@ export class PhoneStage {
 
   loop() {
     requestAnimationFrame(this.loop)
-    const t = this.clock.getElapsedTime()
+    this.timer.update()
+    const t = this.timer.getElapsed()
     const p = this.pose
     const motion = !this.reduced && this.idle
     this.pointer.sx += (this.pointer.x - this.pointer.sx) * 0.05

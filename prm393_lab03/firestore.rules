@@ -423,6 +423,7 @@ service cloud.firestore {
     function validShopeeVoucher() {
       return d().keys().hasOnly(['raw', 'kind', 'scope', 'unavailable', 'sourceUrl', 'capturedBy', 'source', 'lastSeenAt',
                                  'amountVnd', 'percent', 'capVnd', 'minSpendVnd', 'usedPct', 'minQty', 'expiresText',
+                                 'expiresDate', 'startsText', 'saleLabel', 'appliesText',
                                  'shopId', 'shopName', 'productKey', 'productTitle'])
         && text(d().raw, 300)
         && d().kind in ['amount', 'percent', 'shipping', 'coin', 'bundle', 'unknown']
@@ -433,7 +434,9 @@ service cloud.firestore {
         && optInt('amountVnd', 999999999) && optInt('percent', 100) && optInt('capVnd', 999999999)
         && optInt('minSpendVnd', 999999999) && optInt('usedPct', 100) && optInt('minQty', 999)
         && optText('expiresText', 40) && optText('shopId', 40) && optText('shopName', 100)
-        && optText('productKey', 128) && optText('productTitle', 120);
+        && optText('productKey', 128) && optText('productTitle', 120)
+        && (!('expiresDate' in d()) || (d().expiresDate is string && d().expiresDate.matches('20[0-9]{2}-[0-9]{2}-[0-9]{2}')))
+        && optText('startsText', 40) && optText('saleLabel', 40) && optText('appliesText', 120);
     }
     match /shopeeVouchers/{id} {
       allow read, delete: if isStaff();

@@ -282,4 +282,10 @@ class FakeShopeeVoucherService implements ShopeeVoucherService {
     if (deleteError != null) throw deleteError!;
     deleted.add(id);
   }
+
+  @override
+  Future<void> deleteMany(List<String> ids) async {
+    if (deleteError != null) throw deleteError!;
+    deleted.addAll(ids);
+  }
 }

@@ -8,6 +8,7 @@ import { html, icon, appBar, field, button, motiveChip, statusBadge, wishlistCar
 /* Chi tiết & Quyết định (shared with review-wait.js)                  */
 /* ------------------------------------------------------------------ */
 export const DETAIL_CSS = `
+.scr-item-detail,.scr-item-detail *{box-sizing:border-box}
 .scr-item-detail{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)}
 .scr-item-detail .d-view{position:relative;flex:1;min-height:0;overflow:hidden}
 .scr-item-detail .d-scroll{position:relative;padding:16px 16px 34px;will-change:transform}
@@ -37,10 +38,11 @@ export const DETAIL_CSS = `
 .scr-item-detail .d-cool{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px;border-radius:12px;background:#f3e8ff;border:1px solid rgba(168,85,247,.3)}
 .scr-item-detail .d-cool>.mi{font-size:28px;color:#a855f7}
 .scr-item-detail .d-box{margin-bottom:16px;padding:16px;border-radius:12px;background:var(--surface-variant)}
-.scr-item-detail .d-pill{flex:none;padding:3px 12px;border-radius:999px;background:var(--surface-variant);box-shadow:inset 0 0 0 1px var(--outline);font-size:14px;font-weight:600;line-height:1.4}
+.scr-item-detail .d-pill{flex:none;padding:4px 12px;border-radius:999px;background:var(--surface-variant);box-shadow:inset 0 0 0 1px var(--outline);font-size:14px;font-weight:600;line-height:1.4}
 .scr-item-detail .d-src{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--surface-variant);color:var(--text-body);font-size:11px;font-weight:700}
 .scr-item-detail .d-src .mi{font-size:12px}
 .scr-item-detail .d-acts{display:flex;flex-wrap:wrap;column-gap:8px}
+.scr-item-detail .d-acts .d-tbtn{min-height:40px;padding:0 16px 0 12px}
 .scr-item-detail .d-btns{display:flex;flex-direction:column;gap:12px}
 `
 
@@ -182,6 +184,7 @@ const CAMERA = {
 }
 
 const CSS = `
+.scr-wishlist *{box-sizing:border-box}
 .scr-wishlist .wl-page{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)}
 .scr-wishlist .wl-mrow{flex:none;display:flex;gap:8px;height:48px;padding:0 16px;overflow:hidden}
 .scr-wishlist .wl-mrow .wib-motive{flex:none;min-height:48px}
@@ -228,29 +231,41 @@ export default {
     const list = k.q('[data-k="list"]')
     const detail = k.q('[data-k="detail"]')
     const scroller = k.q('[data-k="dscroll"]')
+    const cool = k.q('[data-k="cool"]')
+    // both badges of "Máy ảnh film mini" are in the DOM; "Bỏ qua" shows after the decision
+    const camBadge = k.q('.wl-card-camera [data-status]')
+    camBadge.insertAdjacentHTML('afterend', statusBadge('skipped'))
+    const skipBadge = camBadge.nextElementSibling
+    skipBadge.style.display = 'none'
 
-    // Smart Wishlist: six demo items, newest first
+    // Smart Wishlist: six demo items, newest first, purple "2 ngày hoãn" on the first
     k.reveal(tl, '.wl-list .wib-wish', { stagger: 0.06, duration: 0.45 })
-    k.callout(tl, '.wl-card-course [data-status="cooldown"]', 'Huy hiệu tím đếm ngược ngày hoãn', { pos: 0.6 })
 
     // open "Máy ảnh film mini"
-    k.tap(tl, '.wl-card-camera', { pos: 1.35 })
-    k.page(tl, list, detail, { pos: '+=0.02' })
+    k.tap(tl, '.wl-card-camera', { pos: 1.05 })
+    tl.addLabel('open', '+=0.02')
+    k.page(tl, list, detail, { pos: 'open' })
+    k.lift(tl, 'open')
 
-    // cooldown box, then the Decision Card and the three equal buttons
-    tl.to(scroller, { y: () => -scrollY(root, k.q('[data-k="cool"]')), duration: 0.8, ease: 'power3.inOut' }, '+=0.55')
-    tl.to(scroller, { y: () => -scrollY(root, null), duration: 0.85, ease: 'power3.inOut' }, '+=0.85')
-    k.callout(tl, '[data-k="decide"]', 'Ba nút cùng cỡ, cùng màu', { pos: '+=0.05' })
+    // cooldown box ("Còn lại khoảng 1 ngày 23 giờ…"), then the Decision Card and Mua · Chờ · Bỏ qua
+    tl.to(scroller, { y: () => -scrollY(root, cool), duration: 0.8, ease: 'power3.inOut' }, 'open+=0.75')
+    tl.to(scroller, { y: () => -scrollY(root, null), duration: 0.85, ease: 'power3.inOut' }, '+=1.05')
 
-    // "Bỏ qua": write, pop back to the list, 5-second undo SnackBar
-    k.tap(tl, '[data-k="btn-skip"]', { pos: '+=0.75' })
-    tl.call(() => {
-      const badge = k.q('.wl-card-camera [data-status]')
-      if (badge) badge.outerHTML = statusBadge('skipped')
-    }, null, '+=0.05')
-    k.page(tl, detail, list, { pos: '<', dir: -1 })
-    k.lift(tl, '<')
-    k.snack(tl, '[data-k="snack"]', { pos: '-=0.05' })
-    k.wait(tl, 1.1)
+    // "Bỏ qua": status skipped, pop back to the list, 5-second undo SnackBar
+    k.tap(tl, '[data-k="btn-skip"]', { pos: '+=0.5' })
+    tl.addLabel('pop', '+=0.02')
+    tl.set(camBadge, { display: 'none' }, 'pop')
+    tl.set(skipBadge, { display: '' }, 'pop')
+    // back to the list: plain to() tweens, so the list is not hidden before this point
+    tl.set(list, { display: '' }, 'pop')
+    tl.to(list, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 'pop')
+    tl.to(detail, { opacity: 0, x: 36, duration: 0.3, ease: 'power2.in' }, 'pop')
+    tl.set(detail, { display: 'none' }, 'pop+=0.3')
+    k.lift(tl, 'pop')
+    k.snack(tl, '[data-k="snack"]', { pos: 'pop+=0.2' })
+    // callouts only on what stays on screen until the end (a hidden page would leave a dangling line)
+    k.callout(tl, '.wl-card-course [data-status="cooldown"]', 'Huy hiệu tím đếm ngược ngày hoãn', { pos: 'pop+=0.5' })
+    k.callout(tl, '[data-k="snack"] .wib-snackbar__action', 'Hoàn tác trong 5 giây', { pos: 'pop+=0.75' })
+    k.wait(tl, 1.0)
   },
 }

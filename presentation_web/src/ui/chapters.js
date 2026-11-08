@@ -136,7 +136,10 @@ export class ChapterText {
       })
       s._split = split
     })
-    this.sections.forEach((s) => gsap.set(s.querySelectorAll('[data-r], [data-ri]'), { opacity: 0, y: 18 }))
+    this.sections.forEach((s) => {
+      const els = s.querySelectorAll('[data-r], [data-ri]')
+      if (els.length) gsap.set(els, { opacity: 0, y: 18 })
+    })
   }
 
   /** reveal the text of step i (only the first time it is reached) */
@@ -155,9 +158,9 @@ export class ChapterText {
       return
     }
     const tl = gsap.timeline()
-    tl.to(lines, { yPercent: 0, duration: 1.05, stagger: 0.07, ease: 'expo.out' }, 0)
-    tl.to(items, { opacity: 1, y: 0, duration: 0.8, stagger: 0.06, ease: 'expo.out' }, 0.12)
-    tl.to(inner, { opacity: 1, y: 0, duration: 0.7, stagger: 0.05, ease: 'expo.out' }, 0.3)
+    if (lines.length) tl.to(lines, { yPercent: 0, duration: 1.05, stagger: 0.07, ease: 'expo.out' }, 0)
+    if (items.length) tl.to(items, { opacity: 1, y: 0, duration: 0.8, stagger: 0.06, ease: 'expo.out' }, 0.12)
+    if (inner.length) tl.to(inner, { opacity: 1, y: 0, duration: 0.7, stagger: 0.05, ease: 'expo.out' }, 0.3)
     s.querySelectorAll('[data-count]').forEach((el) => {
       const to = parseInt(el.dataset.count, 10)
       if (!Number.isFinite(to)) return

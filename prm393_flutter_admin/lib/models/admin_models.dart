@@ -169,3 +169,127 @@ class DashboardMetrics {
   }
 }
 
+class VoucherItem {
+  final String id;
+  final String code;
+  final String title;
+  final String platform; // 'Shopee', 'Lazada', 'Tất cả'
+  final int discountAmount; // VND (e.g. 30000)
+  final int minOrder; // VND (e.g. 150000)
+  final String validUntil; // formatted or ISO (e.g. '2026-11-15')
+  final String affiliateUrl;
+  final bool isActive;
+  final String category; // 'Tất cả', 'Thời trang', 'Công nghệ', v.v.
+
+  const VoucherItem({
+    required this.id,
+    required this.code,
+    required this.title,
+    required this.platform,
+    required this.discountAmount,
+    required this.minOrder,
+    required this.validUntil,
+    this.affiliateUrl = '',
+    this.isActive = true,
+    this.category = 'Tất cả',
+  });
+
+  VoucherItem copyWith({
+    String? id,
+    String? code,
+    String? title,
+    String? platform,
+    int? discountAmount,
+    int? minOrder,
+    String? validUntil,
+    String? affiliateUrl,
+    bool? isActive,
+    String? category,
+  }) {
+    return VoucherItem(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      title: title ?? this.title,
+      platform: platform ?? this.platform,
+      discountAmount: discountAmount ?? this.discountAmount,
+      minOrder: minOrder ?? this.minOrder,
+      validUntil: validUntil ?? this.validUntil,
+      affiliateUrl: affiliateUrl ?? this.affiliateUrl,
+      isActive: isActive ?? this.isActive,
+      category: category ?? this.category,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'code': code,
+      'title': title,
+      'platform': platform,
+      'discountAmount': discountAmount,
+      'minOrder': minOrder,
+      'validUntil': validUntil,
+      'affiliateUrl': affiliateUrl,
+      'isActive': isActive,
+      'category': category,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  factory VoucherItem.fromMap(Map<String, dynamic> map, [String? docId]) {
+    return VoucherItem(
+      id: docId ?? map['id']?.toString() ?? '',
+      code: map['code']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      platform: map['platform']?.toString() ?? 'Shopee',
+      discountAmount: (map['discountAmount'] as num?)?.toInt() ?? 0,
+      minOrder: (map['minOrder'] as num?)?.toInt() ?? 0,
+      validUntil: map['validUntil']?.toString() ?? '',
+      affiliateUrl: map['affiliateUrl']?.toString() ?? '',
+      isActive: map['isActive'] == true || map['isActive'] == null,
+      category: map['category']?.toString() ?? 'Tất cả',
+    );
+  }
+}
+
+class AdminSaleEvent {
+  final String id;
+  final String name;
+  final String date;
+  final String type; // 'double_day', 'mid_month', 'payday', 'other'
+  final bool confirmed;
+  final String highlight;
+
+  const AdminSaleEvent({
+    required this.id,
+    required this.name,
+    required this.date,
+    required this.type,
+    this.confirmed = true,
+    this.highlight = '',
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'date': date,
+      'type': type,
+      'confirmed': confirmed,
+      'highlight': highlight,
+    };
+  }
+
+  factory AdminSaleEvent.fromMap(Map<String, dynamic> map) {
+    return AdminSaleEvent(
+      id: map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
+      date: map['date']?.toString() ?? '',
+      type: map['type']?.toString() ?? 'other',
+      confirmed: map['confirmed'] == true,
+      highlight: map['highlight']?.toString() ?? '',
+    );
+  }
+}
+
+

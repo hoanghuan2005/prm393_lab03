@@ -21,7 +21,10 @@ class CrashlyticsService {
   void initCrashlyticsHandlers() {
     // Crashlytics is mobile-only; accessing it on web/Windows throws and aborts main().
     if (!PlatformSupport.supportsCrashlytics) return;
-    FlutterError.onError = _crashlytics.recordFlutterFatalError;
+    FlutterError.onError = (details) {
+      FlutterError.dumpErrorToConsole(details);
+      _crashlytics.recordFlutterFatalError(details);
+    };
     PlatformDispatcher.instance.onError = (error, stack) {
       _crashlytics.recordError(error, stack, fatal: true);
       return true;

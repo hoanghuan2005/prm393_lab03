@@ -9,6 +9,7 @@ import 'users_screen.dart';
 import 'push_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'crash_monitor_screen.dart';
+import 'promotions_screen.dart';
 
 class AdminMainLayout extends StatelessWidget {
   const AdminMainLayout({super.key});
@@ -23,6 +24,7 @@ class AdminMainLayout extends StatelessWidget {
       PushScreen(),
       AiAssistantScreen(),
       CrashMonitorScreen(),
+      PromotionsScreen(),
     ];
 
     final titles = [
@@ -31,6 +33,7 @@ class AdminMainLayout extends StatelessWidget {
       'Trung Tâm Gửi Thông Điệp (Push Broadcast)',
       'Trợ Lý AI & Gợi Ý Câu Hỏi Tự Vấn',
       'Cảnh Báo Sự Cố & Giám Sát Crash',
+      'Săn Voucher & Lịch Sale TMĐT',
     ];
 
     return Scaffold(
@@ -87,12 +90,15 @@ class AdminMainLayout extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  'Why I Buy',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    color: AdminColors.textPrimary,
+                                Flexible(
+                                  child: Text(
+                                    'Why I Buy',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: AdminColors.textPrimary,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -204,6 +210,15 @@ class AdminMainLayout extends StatelessWidget {
                             ? '${admin.activeCrashesCount} lỗi'
                             : null,
                         badgeColor: AdminColors.rose,
+                      ),
+                      _buildNavItem(
+                        context,
+                        5,
+                        'Săn Voucher & Lịch Sale',
+                        Icons.local_offer_rounded,
+                        admin.selectedTabIndex == 5,
+                        badge: 'Mới',
+                        badgeColor: AdminColors.emerald,
                       ),
                     ],
                   ),

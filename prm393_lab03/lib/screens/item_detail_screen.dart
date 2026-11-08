@@ -25,6 +25,8 @@ import '../widgets/product_image.dart';
 import '../widgets/review_date_sheet.dart';
 import '../widgets/shared_price_section.dart';
 import '../widgets/undo_snack_bar.dart';
+import '../widgets/voucher_suggestion_card.dart';
+import '../widgets/why_i_buy_logo.dart';
 import '../widgets/wishlist_card.dart';
 
 /// Screen 03: Item Detail & Decision Card from Figma "Why I Buy"
@@ -315,9 +317,45 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final needsPurchase =
         item.status == WishlistStatus.purchased && item.purchaseId == null;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Chi tiết & Quyết định'),
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Chi tiết & Quyết định',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Sửa thông tin món',
@@ -446,6 +484,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ? null
                     : (amount) => _useSharedPrice(item, amount),
               ),
+
+            // Voucher & promotion suggestions from Admin / Shopee / Lazada
+            VoucherSuggestionCard(item: item),
 
             // Comparison between multiple shops in Wishlist
             _ShopPriceComparisonSection(

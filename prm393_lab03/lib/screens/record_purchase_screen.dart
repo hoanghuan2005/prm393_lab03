@@ -25,6 +25,7 @@ import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_dropdown_field.dart';
 import '../widgets/item_suggestions.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Shared Android/web form. Wishlist items are only changed by a successful save.
 class RecordPurchaseScreen extends StatefulWidget {
@@ -297,6 +298,8 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final vm = context.watch<PurchaseViewModel>();
     final groups = _groups(context.watch<BudgetViewModel>());
     final activeSession = _sessionUid != null && vm.uid == _sessionUid;
@@ -307,16 +310,41 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         if (!didPop && !busy) _back();
       },
       child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          title: Text(
-            widget.existingPurchase == null
-                ? 'Ghi khoản mua'
-                : 'Chỉnh sửa khoản mua',
-          ),
+          backgroundColor: isDark
+              ? AppColors.darkSurface
+              : theme.colorScheme.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          automaticallyImplyLeading: false,
+          leadingWidth: 42,
           leading: IconButton(
+            padding: EdgeInsets.zero,
             tooltip: 'Quay lại',
             onPressed: busy ? null : _back,
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          ),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.existingPurchase == null
+                      ? 'Ghi khoản mua'
+                      : 'Chỉnh sửa khoản mua',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
           ),
           actions: [
             if (_step == 2)

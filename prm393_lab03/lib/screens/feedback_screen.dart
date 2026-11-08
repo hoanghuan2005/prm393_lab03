@@ -7,6 +7,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Cá nhân → Hỗ trợ & thông tin → "Gửi góp ý": báo lỗi hoặc đề xuất tính năng mới
 class FeedbackScreen extends StatefulWidget {
@@ -50,8 +51,42 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final isSending = context.select<SettingsViewModel, bool>(
       (vm) => vm.isSendingFeedback,
     );
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Gửi góp ý')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Gửi góp ý',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppDimens.space16),

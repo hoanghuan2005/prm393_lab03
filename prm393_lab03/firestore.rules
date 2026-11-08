@@ -221,5 +221,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+
+    match /vouchers/{id} {
+      allow read: if request.auth != null;
+      allow write: if isStaff() || isAdmin();
+    }
   }
 }

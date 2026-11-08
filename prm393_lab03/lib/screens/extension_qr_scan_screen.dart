@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../models/extension_session.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Cá nhân → Thiết bị đã liên kết → "Quét mã QR": reads the QR shown by the Chrome
 /// extension and pops with its pairing id (null when the user goes back).
@@ -46,8 +48,42 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Quét mã QR liên kết')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Text(
+              'Quét mã QR liên kết',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Expanded(

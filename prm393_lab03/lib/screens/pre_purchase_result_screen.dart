@@ -16,6 +16,7 @@ import '../viewmodels/shopping_profile_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/insight_source_chip.dart';
+import '../widgets/why_i_buy_logo.dart';
 
 /// Flow 9: screen 17 "AI đang phân tích" then screen 18 "Nhận định trước khi mua".
 /// "Để mình nghĩ thêm" returns home without saving; "Vẫn mua" opens Flow 1 pre-filled.
@@ -103,10 +104,45 @@ class _PrePurchaseResultScreenState extends State<PrePurchaseResultScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<PrePurchaseViewModel>().state;
     final insight = state is UiSuccess<PrePurchaseInsight> ? state.data : null;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          insight == null ? 'AI đang phân tích' : 'Nhận định trước khi mua',
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : theme.colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leadingWidth: 42,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          tooltip: 'Quay lại',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                insight == null
+                    ? 'AI đang phân tích'
+                    : 'Nhận định trước khi mua',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: SafeArea(

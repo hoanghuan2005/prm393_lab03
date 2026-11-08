@@ -45,6 +45,18 @@ class ShopeeVoucher {
   final int? usedPct;
   final int? minQty;
   final String? expiresText;
+
+  /// "2026-10-31" when the page showed the full date
+  final String? expiresDate;
+
+  /// Not usable yet: "00:00 11/11" or "còn 2 giờ"
+  final String? startsText;
+
+  /// Sale the voucher belongs to: "11.11 · Siêu Sale"
+  final String? saleLabel;
+
+  /// "Áp dụng cho …" as written on the voucher
+  final String? appliesText;
   final String? shopId;
   final String? shopName;
   final String? productTitle;
@@ -65,6 +77,10 @@ class ShopeeVoucher {
     this.usedPct,
     this.minQty,
     this.expiresText,
+    this.expiresDate,
+    this.startsText,
+    this.saleLabel,
+    this.appliesText,
     this.shopId,
     this.shopName,
     this.productTitle,
@@ -88,11 +104,26 @@ class ShopeeVoucher {
       usedPct: readInt(data['usedPct']),
       minQty: readInt(data['minQty']),
       expiresText: readText(data['expiresText']),
+      expiresDate: readText(data['expiresDate']),
+      startsText: readText(data['startsText']),
+      saleLabel: readText(data['saleLabel']),
+      appliesText: readText(data['appliesText']),
       shopId: readText(data['shopId']),
-      shopName: readText(data['shopName']),
+      shopName: _realShopName(readText(data['shopName'])),
       productTitle: readText(data['productTitle']),
     );
   }
+
+  /// Older extension builds could save a status line of the shop box
+  /// ("Không có sẵn", "Online 5 phút trước"…) as the shop name: ignore it.
+  static final _notAShopName = RegExp(
+    r'có sẵn|hết hàng|online|hoạt động|truy cập|phản hồi|theo dõi|tham gia|'
+    r'^(xem shop|chat ngay|chat|đánh giá|sản phẩm)$',
+    caseSensitive: false,
+  );
+
+  static String? _realShopName(String? name) =>
+      name == null || _notAShopName.hasMatch(name) ? null : name;
 
   /// "Giảm 20.000 ₫", "Giảm 10% tối đa 50.000 ₫", "Miễn phí vận chuyển"…
   String get valueLabel {
@@ -116,11 +147,32 @@ class ShopeeVoucher {
     }
   }
 
+  /// Where the voucher can be used: the shop for a shop voucher, the whole
+  /// platform for a Shopee voucher, or the "Áp dụng cho …" text if any.
+  /// A voucher scraped from a product page is one Shopee offers for that
+  /// product, so it can be used at that product's shop whatever its scope.
+  String? get usableAt {
+    if (shopName != null && (shopId != null || scope == VoucherScope.shop)) {
+      return 'Dùng được tại shop $shopName';
+    }
+    if (appliesText != null) return appliesText;
+    if (scope == VoucherScope.platform) return 'Toàn sàn Shopee';
+    return null;
+  }
+
+  /// Same voucher text whatever shop it was scraped at (platform vouchers
+  /// appear once per shop)
+  String get sameVoucherKey => raw.toLowerCase();
+
   /// "Đơn tối thiểu 99.000 ₫ · HSD 30.11 · Đã dùng 80%"
   String get conditionLabel => [
     if (minSpendVnd != null && minSpendVnd! > 0)
       'Đơn tối thiểu ${formatVnd(minSpendVnd!)}',
-    if (expiresText != null) 'HSD $expiresText',
+    if (startsText != null) 'Bắt đầu $startsText',
+    if (expiresDate != null)
+      'HSD ${expiresDate!.split('-').reversed.join('/')}'
+    else if (expiresText != null)
+      'HSD $expiresText',
     if (usedPct != null) 'Đã dùng $usedPct%',
   ].join(' · ');
 }

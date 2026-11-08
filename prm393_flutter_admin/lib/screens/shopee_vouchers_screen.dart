@@ -45,6 +45,28 @@ class _ShopeeVouchersScreenState extends State<ShopeeVouchersScreen> {
     if (mounted) showMessage(context, error ?? 'Đã xoá voucher.');
   }
 
+  Future<void> _deleteVisible() async {
+    final vm = context.read<ShopeeVouchersViewModel>();
+    final count = vm.visible.length;
+    if (count == 0) return;
+    final filtered = count != vm.totalCount;
+    final ok = await ConfirmDialog.show(
+      context,
+      title: filtered
+          ? 'Xoá $count voucher đang hiện?'
+          : 'Xoá tất cả $count voucher?',
+      message:
+          '${filtered ? 'Các voucher khớp bộ lọc hiện tại' : 'Toàn bộ voucher đang tải'} '
+          'sẽ bị xoá khỏi Firebase và không khôi phục được. '
+          'Lần cào sau, voucher còn trên Shopee sẽ được thêm lại.',
+      confirmLabel: 'Xoá $count voucher',
+      isDanger: true,
+    );
+    if (!ok || !mounted) return;
+    final error = await vm.deleteVisible();
+    if (mounted) showMessage(context, error ?? 'Đã xoá $count voucher.');
+  }
+
   Future<void> _copyLink(ShopeeVoucher v) async {
     await Clipboard.setData(ClipboardData(text: v.sourceUrl));
     if (mounted) showMessage(context, 'Đã chép link trang Shopee.');
@@ -86,6 +108,26 @@ class _ShopeeVouchersScreenState extends State<ShopeeVouchersScreen> {
               ),
             ],
           ),
+          if (vm.visible.isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: vm.deletingAll ? null : _deleteVisible,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              icon: vm.deletingAll
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_sweep_outlined),
+              label: Text(
+                vm.deletingAll
+                    ? 'Đang xoá…'
+                    : vm.visible.length == vm.totalCount
+                    ? 'Xoá tất cả (${vm.totalCount})'
+                    : 'Xoá ${vm.visible.length} voucher đang hiện',
+              ),
+            ),
         ],
       ),
     ),
@@ -117,6 +159,7 @@ class _ShopeeVouchersScreenState extends State<ShopeeVouchersScreen> {
                     const SizedBox(height: AppDimens.space12),
                 itemBuilder: (context, i) => _VoucherCard(
                   voucher: items[i],
+                  otherShops: vm.otherShopsFor(items[i]),
                   busy: vm.isBusy(items[i].id),
                   onCopyLink: () => _copyLink(items[i]),
                   onDelete: () => _delete(items[i]),
@@ -132,12 +175,14 @@ class _ShopeeVouchersScreenState extends State<ShopeeVouchersScreen> {
 
 class _VoucherCard extends StatelessWidget {
   final ShopeeVoucher voucher;
+  final List<String> otherShops;
   final bool busy;
   final VoidCallback onCopyLink;
   final VoidCallback onDelete;
 
   const _VoucherCard({
     required this.voucher,
+    this.otherShops = const [],
     required this.busy,
     required this.onCopyLink,
     required this.onDelete,
@@ -168,6 +213,12 @@ class _VoucherCard extends StatelessWidget {
               children: [
                 Text(v.valueLabel, style: t.text(AppTextStyles.titleLarge)),
                 StatusBadge(label: v.scope.label, tone: scopeTone),
+                if (v.saleLabel != null)
+                  StatusBadge(
+                    label: v.saleLabel!,
+                    tone: BadgeTone.warning,
+                    icon: Icons.local_fire_department_outlined,
+                  ),
                 if (v.unavailable)
                   const StatusBadge(
                     label: 'Hết lượt / đã dùng',
@@ -187,8 +238,18 @@ class _VoucherCard extends StatelessWidget {
               spacing: AppDimens.space16,
               runSpacing: AppDimens.space4,
               children: [
-                if (v.shopName != null)
-                  _Fact(icon: Icons.storefront_outlined, text: v.shopName!),
+                if (v.usableAt != null)
+                  _Fact(icon: Icons.storefront_outlined, text: v.usableAt!),
+                if (v.appliesText != null && v.usableAt != v.appliesText)
+                  _Fact(icon: Icons.rule, text: v.appliesText!),
+                if (otherShops.isNotEmpty)
+                  _Fact(
+                    icon: Icons.store_mall_directory_outlined,
+                    text:
+                        'Cũng dùng được ở ${otherShops.length} shop khác: '
+                        '${otherShops.take(5).join(', ')}'
+                        '${otherShops.length > 5 ? '…' : ''}',
+                  ),
                 if (v.productTitle != null)
                   _Fact(
                     icon: Icons.shopping_bag_outlined,

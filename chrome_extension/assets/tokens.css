@@ -1,0 +1,143 @@
+/* Token lấy từ Figma "Why I Buy ver2" (color/*, radius, spacing, typography Be Vietnam Pro). */
+@import '@fontsource/be-vietnam-pro/vietnamese-400.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-500.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-600.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-700.css';
+@import '@fontsource/be-vietnam-pro/latin-400.css';
+@import '@fontsource/be-vietnam-pro/latin-500.css';
+@import '@fontsource/be-vietnam-pro/latin-600.css';
+@import '@fontsource/be-vietnam-pro/latin-700.css';
+
+:root {
+  --primary: #ffde02;
+  --on-primary: #070e20;
+  --primary-container: #fffce6;
+  --on-accent: #070e20;
+  --on-surface: #070e20;
+  --on-surface-variant: #6d6e73;
+  --background: #f5f5f5;
+  --surface: #ffffff;
+  --surface-container: #f5f5f5;
+  --outline: #e5e7eb;
+  --error: #b42318;
+  --error-container: #fee4e2;
+  --price-lower-bg: #dcf1e3;  /* handoff 9.3: Thấp hơn nền xanh, chữ #1B5E36 */
+  --price-lower-on: #1b5e36;
+  --radius-full: 999px;
+  --font: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--font); color: var(--on-surface); background: var(--background); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--on-surface); outline-offset: 2px; }
+
+/* Typography (Figma text styles) */
+.t-title { font-size: 20px; line-height: 28px; font-weight: 600; margin: 0; }
+.t-subtitle { font-size: 16px; line-height: 24px; font-weight: 600; margin: 0; }
+.t-label { font-size: 14px; line-height: 20px; font-weight: 500; margin: 0; }
+.t-body-sm { font-size: 14px; line-height: 20px; font-weight: 400; margin: 0; }
+.t-caption { font-size: 12px; line-height: 16px; font-weight: 500; margin: 0; }
+.t-caption-strong { font-size: 12px; line-height: 16px; font-weight: 700; margin: 0; }
+.t-overline { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: .42px; text-transform: uppercase; margin: 0; }
+.muted { color: var(--on-surface-variant); }
+
+/* Button (Figma: Large/Primary 56, Medium 48, Tonal = primary-container, Text) */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--radius-full);
+  padding: 0 16px; height: 48px; font-size: 16px; line-height: 24px; font-weight: 600; cursor: pointer; background: transparent; color: var(--on-accent); white-space: nowrap; }
+.btn.lg { height: 56px; padding: 0 24px; }
+.btn.block { width: 100%; }
+.btn { transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+.btn.primary { background: linear-gradient(180deg, #ffe733 0%, var(--primary) 55%, #f5cf00 100%); color: var(--on-primary); font-weight: 700;
+  box-shadow: 0 6px 16px rgba(242, 200, 0, .35), inset 0 -2px 0 rgba(7, 14, 32, .08); }
+.btn.primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(242, 200, 0, .45), inset 0 -2px 0 rgba(7, 14, 32, .08); }
+.btn.primary:not(:disabled):active { transform: translateY(0); box-shadow: 0 3px 8px rgba(242, 200, 0, .35); }
+.btn.tonal { background: var(--primary-container); }
+.btn.danger { background: var(--error); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:not(:disabled):hover { filter: brightness(.97); }
+
+/* Price tag */
+.ptag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-full); font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+.ptag.lower { background: var(--price-lower-bg); color: var(--price-lower-on); }
+.ptag.stable, .ptag.higher { background: var(--surface-container); color: var(--on-surface-variant); }
+.ptag.need { border: 1px solid var(--outline); color: var(--on-surface-variant); }
+
+/* Motive chip */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 12px 2px 8px; border-radius: var(--radius-full); border: 0;
+  background: var(--surface-container); color: #47667b; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; }
+.chip[aria-pressed='true'] { background: var(--primary-container); color: var(--on-accent); box-shadow: inset 0 0 0 1px var(--primary); }
+.chip svg { width: 16px; height: 16px; }
+
+/* Switch (Figma 52×32 rãnh, vùng chạm 52×48) */
+.switch { width: 52px; height: 48px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; cursor: pointer; padding: 0; flex-shrink: 0; }
+.switch .track { width: 52px; height: 32px; border-radius: 16px; display: flex; align-items: center; padding: 0 4px; background: var(--surface-container); border: 2px solid var(--outline); }
+.switch .knob { width: 16px; height: 16px; border-radius: 8px; background: var(--outline); margin-left: 2px; }
+.switch[aria-checked='true'] .track { background: var(--primary); border-color: var(--primary); justify-content: flex-end; }
+.switch[aria-checked='true'] .knob { width: 24px; height: 24px; border-radius: 12px; background: var(--on-primary); display: flex; align-items: center; justify-content: center; margin: 0; }
+.switch[aria-checked='true'] .knob svg { width: 16px; height: 16px; color: var(--primary); }
+.switch:disabled { opacity: .45; cursor: default; }
+
+/* Code input (6 ô) */
+.code { display: flex; gap: 8px; }
+.code input { width: 42px; height: 52px; border-radius: 10px; border: 1px solid var(--outline); background: var(--surface); text-align: center;
+  font-size: 20px; line-height: 28px; font-weight: 600; padding: 0; caret-color: var(--on-surface); }
+.code.lg input { width: 48px; height: 56px; border-radius: 12px; }
+.code input:focus { border: 2px solid var(--primary); outline: none; }
+.code.error input { background: var(--error-container); border: 2px solid var(--error); }
+
+.field { width: 100%; height: 40px; border: 1px solid var(--outline); border-radius: 12px; padding: 0 12px; background: var(--surface); font-size: 14px; line-height: 20px; }
+.field:focus { outline: none; border-color: #f2c800; box-shadow: 0 0 0 3px rgba(255, 222, 2, .35); }
+.select-wrap { position: relative; width: 100%; }
+.select-wrap select { appearance: none; padding-right: 36px; cursor: pointer; }
+.select-wrap svg { position: absolute; right: 12px; top: 11px; width: 18px; height: 18px; pointer-events: none; }
+.error-text { display: flex; gap: 8px; align-items: flex-start; color: var(--error); font-size: 14px; line-height: 20px; }
+.error-text svg { flex-shrink: 0; width: 24px; height: 24px; }
+.linklike { border: 0; background: none; padding: 0; cursor: pointer; font-weight: 700; color: var(--on-accent); font-size: 12px; line-height: 16px; text-decoration: underline; text-underline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.sim-row { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 0; border-radius: 12px; padding: 8px 10px; cursor: pointer; }
+.sim-row:disabled { cursor: default; }
+.sim-row:not(:disabled):hover { box-shadow: inset 0 0 0 1px var(--outline); }
+.sim-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sim-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+
+.vtag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; background: var(--surface); box-shadow: inset 0 0 0 1px var(--outline); color: var(--on-surface); white-space: nowrap; }
+.stars { display: inline-flex; gap: 0; }
+.stars button { border: 0; background: none; padding: 2px; cursor: pointer; font-size: 16px; line-height: 16px; color: #c9cbd0; }
+.stars button[aria-pressed='true'] { color: #e0a800; }
+.stars.readonly button { cursor: default; padding: 0 1px; font-size: 13px; }
+.note-card { background: var(--primary-container); border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 18px; }
+.demo { border: 1px dashed var(--outline); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; color: var(--on-surface-variant); }
+.demo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.demo button { height: 32px; font-size: 13px; padding: 0 12px; }
+
+/* Khối quyết định có tiêu đề (handoff 9.3: Decision block = tiêu đề Label + nội dung) */
+.dsec { background: var(--background); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.dsec-title { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--on-surface-variant); margin: 0 0 2px; }
+.dsec.accent { background: var(--primary-container); }
+.thumb-ph { color: var(--on-surface-variant); }
+
+/* Dải gợi ý dùng chung (popup + trang extension) */
+.hint { display: flex; gap: 8px; align-items: flex-start; background: var(--surface-container); border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 18px; color: var(--on-surface); }
+.hint svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; color: var(--on-surface-variant); }
+.hint.warn { background: var(--primary-container); }
+
+/* Nút nhỏ dạng viên thuốc, thay cho chữ gạch chân */
+.chipbtn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 0; cursor: pointer; background: var(--surface); box-shadow: inset 0 0 0 1px var(--outline); font-size: 13px; line-height: 18px; font-weight: 600; color: var(--on-surface); text-decoration: none; white-space: nowrap; }
+.chipbtn:hover { background: var(--surface-container); }
+.chipbtn svg { width: 15px; height: 15px; }
+.chipbtn.danger { color: var(--error); box-shadow: none; background: none; }
+.chipbtn.danger:hover { background: var(--error-container); }
+/* Khối quyết định: phân cách bằng đường kẻ thay cho nhiều hộp xám */
+.dsec { background: none; border-radius: 0; padding: 14px 0; border-top: 1px solid var(--outline); }
+.dsec.accent { background: none; }
+.dsec .flashline { background: var(--primary-container); border-radius: 12px; padding: 8px 10px; margin: 2px 0 4px; }
+.decide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 14px; border-top: 1px solid var(--outline); }
+.decide .btn { height: auto; min-height: 52px; padding: 6px 8px; flex-direction: column; gap: 0; font-size: 15px; line-height: 20px; white-space: normal; text-align: center; }
+.decide .btn small { font-size: 11px; line-height: 14px; font-weight: 500; color: var(--on-surface-variant); }
+.dc-price { font-size: 24px; line-height: 32px; font-weight: 700; margin: 0; }
+.sim-row { background: var(--background); }

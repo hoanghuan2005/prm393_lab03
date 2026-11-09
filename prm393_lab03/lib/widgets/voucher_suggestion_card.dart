@@ -116,11 +116,15 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
               Expanded(
                 child: Row(
                   children: [
-                    Text(
-                      'Ưu đãi & Voucher $platform',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.textOnDark : AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        'Ưu đãi & Voucher $platform',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.textOnDark : AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),

@@ -1,0 +1,31 @@
+{
+  "name": "why-i-buy-extension",
+  "version": "0.3.5",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "build:lab": "wxt build --mode lab",
+    "zip": "wxt zip",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx tests/run.ts"
+  },
+  "dependencies": {
+    "@fontsource/be-vietnam-pro": "^5.1.0",
+    "firebase": "^12.19.0",
+    "qrcode-generator": "^1.4.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@wxt-dev/module-react": "^1.1.1",
+    "jsdom": "^25.0.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "wxt": "^0.19.29"
+  }
+}

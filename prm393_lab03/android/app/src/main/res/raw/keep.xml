@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- flutter_local_notifications looks up the notification icon by name at runtime
+     (ReviewReminderService: '@mipmap/ic_launcher'). The manifest no longer references it
+     (app icon is @drawable/brand_logo), so release resource shrinking would remove it. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@mipmap/ic_launcher" />

@@ -25,10 +25,11 @@ export function animateVisual(slot) {
   if (!pointerBound) {
     pointerBound = true
     window.addEventListener('pointermove', (e) => {
-      const dg = document.querySelector('.visual .dg--deep')
+      const dg = document.querySelector('.visual .visual__slot:not(.is-leaving) .dg--deep')
       if (!dg) return
       dg.style.setProperty('--mx', ((e.clientX / innerWidth) * 2 - 1).toFixed(3))
       dg.style.setProperty('--my', ((e.clientY / innerHeight) * 2 - 1).toFixed(3))
     })
   }
+  return tl
 }

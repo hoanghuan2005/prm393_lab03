@@ -59,15 +59,22 @@ async function boot() {
   const showVisual = (key) => {
     if (key === visualId) return
     visualId = key
-    const prev = visualEl.querySelector('.visual__slot')
-    if (prev) gsap.to(prev, { opacity: 0, y: -12, duration: 0.3, onComplete: () => prev.remove() })
+    // fade out every slot still on screen (fast paging can leave several), stopping their entrance animation
+    visualEl.querySelectorAll('.visual__slot:not(.is-leaving)').forEach((prev) => {
+      prev.classList.add('is-leaving')
+      const half = prev._tl && prev._tl.progress() < 1
+      prev._tl?.kill()
+      gsap.killTweensOf(prev)
+      if (half) return prev.remove() // never finished appearing: drop it at once
+      gsap.to(prev, { opacity: 0, y: -12, duration: 0.25, onComplete: () => prev.remove() })
+    })
     document.body.classList.toggle('has-visual', !!key)
     if (!key) return
     const slot = document.createElement('div')
     slot.className = 'visual__slot'
     slot.innerHTML = visuals[key]()
     visualEl.appendChild(slot)
-    animateVisual(slot)
+    slot._tl = animateVisual(slot)
   }
 
   const markStep = (i, k) => {

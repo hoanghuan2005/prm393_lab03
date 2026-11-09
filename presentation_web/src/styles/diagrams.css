@@ -207,7 +207,8 @@ body.has-visual .atmosphere__bloom {
 .dg-tag {
   position: absolute;
   z-index: 5;
-  transform: translate(-50%, -50%) translateZ(40px);
+  /* above the highest node (z 3 = 66px) so a label is never hidden behind a box */
+  transform: translate(-50%, -50%) translateZ(80px);
   max-width: 220px;
   padding: 0.4cqw 0.9cqw;
   border-radius: 999px;

@@ -1,6 +1,6 @@
 # Tính năng AI (Firebase AI Logic)
 
-**Dự án:** Why I Buy – PRM393 · **Phụ trách AI:** Đào Tâm Hoàng · **Cập nhật:** 05/11/2026
+**Dự án:** Why I Buy – PRM393 · **Phụ trách AI:** Đào Tâm Hoàng · **Cập nhật:** 09/11/2026
 
 Tài liệu này mô tả các tính năng AI của app mobile, cách cấu hình từ Console, cách bảo vệ, dữ liệu gửi đi, cách xử lý khi AI lỗi, cùng mẫu input/output **thật** lấy từ Gemini.
 
@@ -13,6 +13,37 @@ Tài liệu này mô tả các tính năng AI của app mobile, cách cấu hìn
 3. **Mọi đầu ra AI đều có nhãn.** `InsightSourceChip` hiện "AI" (biểu tượng ✨) hoặc "Câu mẫu". Ảnh và giá có thêm câu "AI ước lượng, giá thật ở mỗi shop có thể khác."
 4. **AI lỗi thì app vẫn chạy.** Mỗi tính năng có phương án dự phòng: câu mẫu do code viết, hoặc đơn giản là không có gợi ý (mục 6).
 5. **Kiểm tra đầu ra.** Câu AI có số không nằm trong `allowedNumbers`, có từ cấm (`AiInsightService.bannedPhrases`, ví dụ "nên mua", "lãng phí") hoặc quá dài đều bị loại, và app dùng câu mẫu thay vào. Lựa chọn của AI bị giới hạn bằng `responseSchema` kiểu enum.
+
+### Tối ưu phản hồi (09/11/2026)
+
+- Các yêu cầu giống nhau đang chạy dùng chung một lượt gọi Gemini. Khóa phụ thuộc phương thức, model, chỉ dẫn, prompt, schema và dấu băm ảnh; không gộp các ảnh hay schema khác nhau. Hết thời gian chờ hoặc lỗi thì người dùng vẫn thử lại được. Cache kết quả vẫn do từng tính năng quản lý.
+- `ai_response` ghi thời gian phản hồi, model, tính năng và trạng thái thành công của lượt gọi thực tế; không ghi prompt, ảnh hay nội dung trả lời. Xem `analytics-plan.md`.
+- Giới hạn đầu ra cho các model Lite có mặc định ít/không suy luận: 2.048 token cho lựa chọn enum, 4.096 cho các trường văn bản/ảnh, 8.192 cho nhận xét tháng/tìm giá. Các model khác giữ ngân sách mặc định để tránh phần suy luận chiếm hết token trước khi trả JSON. Cơ sở: [tài liệu thinking của Firebase](https://firebase.google.com/docs/ai-logic/thinking).
+- “Trước khi mua” không ép chờ thêm 1,5 giây khi kết quả đã sẵn sàng. Ảnh cũ hoặc tác vụ đã bị bỏ không cập nhật ngược kết quả mới. Gợi ý nhóm được tính lại khi đổi tên nhóm; gợi ý cũ được ẩn khi đầu vào thay đổi.
+
+Kiểm chứng ngày 09/11/2026: 149 test của các luồng AI đạt. Thử trực tiếp trên Redmi Note 14 qua Firebase AI Logic với model cấu hình `gemini-3.5-flash-lite`, dùng dữ liệu mẫu không ghi vào tài khoản:
+
+| Luồng | Phản hồi hợp lệ | Thời gian mẫu |
+|:---|:---:|---:|
+| Gợi ý nhóm | Có | 2.126 ms |
+| Món có thể trùng | Có | 1.790 ms |
+| Trước khi mua | Có | 2.246 ms |
+| Giải thích quyết định | Có | 1.766 ms |
+| Giải thích gói mua | Có | 2.051 ms |
+| Góc nhìn tháng | Có | 2.112 ms |
+| Nhận diện cùng sản phẩm | Có | 1.967 ms |
+| Nhận diện ảnh | Có, với hình vẽ chiếc cốc PNG 512 px | 2.957 ms |
+| Tìm giá qua Google Search | Chưa thử trực tiếp, `enable_ai_price_search` đang tắt | — |
+
+Đây là các lượt thử đơn lẻ, không phải cam kết tốc độ hay độ chính xác với mọi đầu vào. Bộ thử thiết bị nằm trong thư mục build bị Git bỏ qua; APK release dùng `lib/main.dart` bình thường.
+
+Các file của đợt sửa AI này:
+
+- Services: `lib/services/ai_service.dart`, `ai_suggestion_service.dart`, `instrumented_ai_service.dart`, `analytics_events.dart`, `analytics_service.dart`.
+- ViewModels: `lib/viewmodels/photo_search_viewmodel.dart`, `pre_purchase_viewmodel.dart`.
+- Giao diện liên quan: `lib/widgets/item_suggestions.dart`, `voucher_suggestion_card.dart`, `lib/screens/item_detail_screen.dart`.
+- Test: `test/ai_instrumentation_test.dart`, `decision_and_budget_test.dart`, `item_suggestion_test.dart`, `photo_search_test.dart`, `pre_purchase_test.dart`.
+- Tài liệu: `docs/ai-feature.md`, `docs/analytics-plan.md`.
 
 ---
 

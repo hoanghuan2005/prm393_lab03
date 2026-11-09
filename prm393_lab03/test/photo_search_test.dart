@@ -400,6 +400,7 @@ OFFER | Link giả | 990.000 | javascript:alert(1)
       await running;
       expect(vm.state, isA<UiInitial<ItemRecognition>>());
       expect(vm.imageBytes, isNull);
+      expect(vm.selectedName, isNull);
     });
 
     test(
@@ -420,8 +421,45 @@ OFFER | Link giả | 990.000 | javascript:alert(1)
         gate.complete();
         await running;
         expect(vm.state, isA<UiInitial<ItemRecognition>>());
+        expect(vm.selectedName, isNull);
         expect(notified, 0);
       },
     );
+
+
+    test('disposing during recognition ignores the pending response', () async {
+      final gate = Completer<void>();
+      ai
+        ..gate = gate.future
+        ..reply = _mouseReply;
+      final vm = build();
+      final running = vm.identify(_photo);
+      await Future<void>.delayed(Duration.zero);
+      vm.dispose();
+      gate.complete();
+      await running;
+      expect(vm.imageBytes, isNull);
+      expect(vm.selectedName, isNull);
+    });
+
+    test('an older photo cannot overwrite a newer selected name', () async {
+      final gate = Completer<void>();
+      ai
+        ..gate = gate.future
+        ..reply = _mouseReply;
+      final vm = build();
+      final older = vm.identify(_photo);
+      await Future<void>.delayed(Duration.zero);
+      ai
+        ..gate = null
+        ..reply = '{"name":"Bình nước"}';
+      await vm.identify(Uint8List.fromList([4, 5, 6]));
+      expect(vm.selectedName, 'Bình nước');
+      ai.reply = _mouseReply;
+      gate.complete();
+      await older;
+      expect(vm.selectedName, 'Bình nước');
+      expect(vm.searchQuery, 'Bình nước');
+    });
   });
 }

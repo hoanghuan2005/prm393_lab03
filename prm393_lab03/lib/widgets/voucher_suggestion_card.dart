@@ -228,7 +228,10 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     // Code Box
                     Container(
@@ -248,7 +251,6 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Text(
                       'Giảm ${formatVnd(voucher.discountAmount)}',
                       style: AppTextStyles.labelLarge.copyWith(

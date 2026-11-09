@@ -16,7 +16,7 @@ class PrePurchaseViewModel extends ChangeNotifier {
   final PreferencesService preferencesService;
   final bool Function() _platformSupportsAi;
 
-  /// Screen 17 stays at least this long (Figma: ~1,5 giây) so it does not flash
+  /// Optional minimum loading duration; cached/fallback results are immediate by default.
   final Duration minLoading;
 
   PrePurchaseViewModel({
@@ -24,7 +24,7 @@ class PrePurchaseViewModel extends ChangeNotifier {
     required this.remoteConfigService,
     required this.preferencesService,
     bool Function()? platformSupportsAi,
-    this.minLoading = const Duration(milliseconds: 1500),
+    this.minLoading = Duration.zero,
   }) : _platformSupportsAi =
            platformSupportsAi ?? (() => PlatformSupport.supportsFirebaseAi);
 
@@ -50,7 +50,9 @@ class PrePurchaseViewModel extends ChangeNotifier {
 
     final started = DateTime.now();
     var insight = PrePurchaseRules.templateInsight(answers, facts: facts);
-    if (await _aiAllowed()) {
+    final allowed = await _aiAllowed();
+    if (run != _run) return;
+    if (allowed) {
       try {
         final text = await aiService.write(answers, facts: facts);
         insight = insight.withAi(
@@ -64,6 +66,7 @@ class PrePurchaseViewModel extends ChangeNotifier {
       }
     }
 
+    if (run != _run) return;
     final left = minLoading - DateTime.now().difference(started);
     if (left > Duration.zero) await Future<void>.delayed(left);
     if (run != _run) return;
@@ -75,5 +78,11 @@ class PrePurchaseViewModel extends ChangeNotifier {
   void reset() {
     _run++;
     _state = const UiInitial();
+  }
+
+  @override
+  void dispose() {
+    _run++;
+    super.dispose();
   }
 }

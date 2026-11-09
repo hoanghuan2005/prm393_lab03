@@ -107,8 +107,9 @@ class PhotoSearchViewModel extends ChangeNotifier {
     _state = const UiLoading();
     notifyListeners();
 
-    if (!await _aiAllowed()) {
-      if (run != _run) return;
+    final allowed = await _aiAllowed();
+    if (run != _run) return;
+    if (!allowed) {
       _state = const UiError(message: aiOffMessage);
       notifyListeners();
       return;
@@ -117,6 +118,7 @@ class PhotoSearchViewModel extends ChangeNotifier {
     UiState<ItemRecognition> next;
     try {
       final result = await aiService.identify(bytes, mimeType);
+      if (run != _run) return;
       next = result.isEmpty
           ? UiEmpty(
               message: notFoundMessage,
@@ -157,7 +159,9 @@ class PhotoSearchViewModel extends ChangeNotifier {
     notifyListeners();
 
     UiState<PriceSearchResult> next;
-    if (!await _aiAllowed()) {
+    final allowed = await _aiAllowed();
+    if (run != _priceRun) return;
+    if (!allowed) {
       next = const UiError(message: aiOffMessage);
     } else {
       try {
@@ -214,5 +218,11 @@ class PhotoSearchViewModel extends ChangeNotifier {
     _selectedName = null;
     _clearPrices();
     _state = const UiInitial();
+  }
+
+  @override
+  void dispose() {
+    discard();
+    super.dispose();
   }
 }

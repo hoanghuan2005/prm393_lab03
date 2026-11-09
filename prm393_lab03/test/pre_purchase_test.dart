@@ -369,7 +369,6 @@ void main() {
       remoteConfigService: RemoteConfigService(remoteConfig: config),
       preferencesService: PreferencesService(),
       platformSupportsAi: () => platformAi,
-      minLoading: Duration.zero,
     );
 
     setUp(() {
@@ -378,6 +377,32 @@ void main() {
       config = _FakeRemoteConfig();
       platformAi = true;
     });
+
+    testWidgets(
+      'cached and fallback results do not force an extra loading delay',
+      (tester) async {
+        final vm = build();
+        var completed = false;
+        final running = vm.analyze(_headphones()).then((_) => completed = true);
+        await tester.pump();
+        expect(completed, isTrue);
+        await running;
+        vm.dispose();
+      },
+    );
+
+    test(
+      'reset before the preference check avoids an obsolete AI request',
+      () async {
+        final vm = build();
+        final running = vm.analyze(_headphones());
+        vm.reset();
+        await running;
+        expect(ai.calls, 0);
+        expect(vm.state, isA<UiInitial<PrePurchaseInsight>>());
+        vm.dispose();
+      },
+    );
 
     test('no AI on this platform (no token): template result, AI not called', () async {
       platformAi = false;

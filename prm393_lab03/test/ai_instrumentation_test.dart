@@ -20,6 +20,21 @@ import 'package:prm393_lab03/viewmodels/item_suggestion_viewmodel.dart';
 
 class _Analytics extends Fake implements AppAnalyticsService {
   final events = <String>[];
+  final responses =
+      <({String feature, String model, int durationMs, bool succeeded})>[];
+
+  @override
+  Future<void> logAiResponse({
+    required String feature,
+    required String model,
+    required int durationMs,
+    required bool succeeded,
+  }) async => responses.add((
+    feature: feature,
+    model: model,
+    durationMs: durationMs,
+    succeeded: succeeded,
+  ));
 
   @override
   Future<void> logAiRequest({
@@ -42,9 +57,14 @@ class _Analytics extends Fake implements AppAnalyticsService {
 class _Gemini implements AiService, AiImageService, AiWebSearchService {
   String? lastInstruction;
   Object? error;
+  int calls = 0;
+  Future<void>? gate;
 
   Future<String> _reply(String instruction) async {
+    calls++;
     lastInstruction = instruction;
+    final wait = gate;
+    if (wait != null) await wait;
     if (error != null) throw error!;
     return '{}';
   }
@@ -89,11 +109,12 @@ class _Gemini implements AiService, AiImageService, AiWebSearchService {
 
 class _Config extends Fake implements FirebaseRemoteConfig {
   String prompts = '{}';
+  String model = 'gemini-test';
 
   @override
   String getString(String key) => switch (key) {
     RemoteConfigService.keyAiPrompts => prompts,
-    RemoteConfigService.keyAiInsightModel => 'gemini-test',
+    RemoteConfigService.keyAiInsightModel => model,
     _ => '',
   };
 
@@ -164,7 +185,103 @@ void main() {
     );
     expect(analytics.events, ['request:insight:gemini-test']);
     expect(gemini.lastInstruction, AiInsightService.systemInstruction);
+    expect(analytics.responses.single.feature, AiFeatures.insight);
+    expect(analytics.responses.single.model, 'gemini-test');
+    expect(analytics.responses.single.succeeded, isTrue);
+    expect(analytics.responses.single.durationMs, greaterThanOrEqualTo(0));
   });
+
+  test(
+    'identical concurrent requests share one call, completed results do not',
+    () async {
+      final gate = Completer<void>();
+      gemini.gate = gate.future;
+      Future<String> request() => ai.generateFields(
+        systemInstruction: AiPrePurchaseService.systemInstruction,
+        prompt: 'same answers',
+        fields: const ['summary'],
+      );
+      final first = request();
+      final second = request();
+      expect(gemini.calls, 1);
+      gate.complete();
+      expect(await Future.wait([first, second]), ['{}', '{}']);
+      expect(analytics.responses, hasLength(1));
+      await request();
+      expect(gemini.calls, 2);
+    },
+  );
+
+  test(
+    'different prompts, schemas and remote instructions are not shared',
+    () async {
+      final gate = Completer<void>();
+      gemini.gate = gate.future;
+      Future<String> request(String prompt, List<String> fields) =>
+          ai.generateFields(
+            systemInstruction: AiPrePurchaseService.systemInstruction,
+            prompt: prompt,
+            fields: fields,
+          );
+      final calls = [
+        request('a', ['summary']),
+        request('b', ['summary']),
+        request('a', ['question']),
+      ];
+      config.prompts = '{"pre_purchase":"new instruction"}';
+      calls.add(request('a', ['summary']));
+      expect(gemini.calls, 4);
+      gate.complete();
+      await Future.wait(calls);
+    },
+  );
+
+  test(
+    'identical photo bytes share a call, a different photo does not',
+    () async {
+      final gate = Completer<void>();
+      gemini.gate = gate.future;
+      Future<String> request(List<int> bytes) => ai.generateFromImage(
+        systemInstruction: AiPhotoSearchService.systemInstruction,
+        prompt: 'photo',
+        imageBytes: Uint8List.fromList(bytes),
+        mimeType: 'image/jpeg',
+        fields: const ['name'],
+      );
+      final calls = [
+        request([1, 2]),
+        request([1, 2]),
+        request([1, 3]),
+      ];
+      expect(gemini.calls, 2);
+      gate.complete();
+      await Future.wait(calls);
+    },
+  );
+
+  test(
+    'shared failures are removed so an explicit retry can succeed',
+    () async {
+      final gate = Completer<void>();
+      gemini
+        ..gate = gate.future
+        ..error = StateError('offline');
+      Future<String> request() => ai.generateFields(
+        systemInstruction: AiPrePurchaseService.systemInstruction,
+        prompt: 'same answers',
+        fields: const ['summary'],
+      );
+      final first = expectLater(request(), throwsStateError);
+      final second = expectLater(request(), throwsStateError);
+      expect(gemini.calls, 1);
+      gate.complete();
+      await Future.wait([first, second]);
+      expect(analytics.responses.single.succeeded, isFalse);
+      gemini.error = null;
+      expect(await request(), '{}');
+      expect(gemini.calls, 2);
+    },
+  );
 
   test(
     'a prompt set in Remote Config replaces that feature\'s instruction only',
@@ -199,6 +316,86 @@ void main() {
     );
   });
 
+  for (final method in ['json', 'choice', 'web']) {
+    test(
+      '$method calls with the same input share one pending request',
+      () async {
+        final gate = Completer<void>();
+        gemini.gate = gate.future;
+        Future<Object> request() => switch (method) {
+          'json' => ai.generateJson(
+            systemInstruction: AiInsightService.systemInstruction,
+            prompt: 'same',
+            cardIds: const ['dominant_motive'],
+          ),
+          'choice' => ai.generateChoice(
+            systemInstruction: AiSuggestionService.systemInstruction,
+            prompt: 'same',
+            schema: const AiChoiceSchema(
+              oneOf: {
+                'groupId': ['tech'],
+              },
+            ),
+          ),
+          _ => ai.searchWeb(
+            systemInstruction: AiPriceSearchService.systemInstruction,
+            prompt: 'same',
+          ),
+        };
+        final calls = [request(), request()];
+        expect(gemini.calls, 1);
+        gate.complete();
+        await Future.wait(calls);
+      },
+    );
+  }
+
+  test(
+    'changing the model does not share a previous pending request',
+    () async {
+      final gate = Completer<void>();
+      gemini.gate = gate.future;
+      Future<String> request() => ai.generateFields(
+        systemInstruction: AiPrePurchaseService.systemInstruction,
+        prompt: 'same',
+        fields: const ['summary'],
+      );
+      final first = request();
+      config.model = 'new-model';
+      final second = request();
+      expect(gemini.calls, 2);
+      gate.complete();
+      await Future.wait([first, second]);
+    },
+  );
+
+  testWidgets(
+    'a timeout allows retry while the original response is still pending',
+    (tester) async {
+      final oldGate = Completer<void>();
+      gemini.gate = oldGate.future;
+      Future<String> request() => ai.generateFields(
+        systemInstruction: AiPrePurchaseService.systemInstruction,
+        prompt: 'same',
+        fields: const ['summary'],
+      );
+      final expired = expectLater(request(), throwsA(isA<TimeoutException>()));
+      await tester.pump(const Duration(seconds: 12));
+      await expired;
+      expect(analytics.responses.single.succeeded, isFalse);
+      final retryGate = Completer<void>();
+      gemini.gate = retryGate.future;
+      final retry = request();
+      oldGate.complete();
+      await tester.pump();
+      final sharedRetry = request();
+      expect(gemini.calls, 2);
+      retryGate.complete();
+      await tester.pump();
+      await Future.wait([retry, sharedRetry]);
+    },
+  );
+
   test('a failed call logs ai_error with its type and still fails', () async {
     gemini.error = const AppException('ai-quota-exceeded', 'hết lượt');
     await expectLater(
@@ -213,6 +410,7 @@ void main() {
       'request:pre_purchase:gemini-test',
       'error:pre_purchase:quota',
     ]);
+    expect(analytics.responses.single.succeeded, isFalse);
   });
 
   test('errors are sorted into the planned error types', () {

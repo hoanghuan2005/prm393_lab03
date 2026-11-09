@@ -450,9 +450,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       Text('• $v', style: AppTextStyles.caption.themed(context)),
                   ],
                   const SizedBox(height: AppDimens.space12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppDimens.space8,
+                    runSpacing: AppDimens.space8,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,15 +526,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   const SizedBox(height: AppDimens.space12),
                   Divider(height: 1, color: theme.dividerColor),
                   const SizedBox(height: AppDimens.space12),
-                  Row(
+                  Wrap(
+                    spacing: AppDimens.space8,
+                    runSpacing: AppDimens.space8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       MotiveChip(motive: item.displayMotive),
                       if (item.isDemo) ...[
-                        const SizedBox(width: AppDimens.space8),
                         const DemoDataBadge(),
                       ],
                       if (item.shopName != null && item.shopName!.isNotEmpty) ...[
-                        const SizedBox(width: AppDimens.space8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -552,10 +555,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                item.shopName!,
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  item.shopName!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.labelMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -563,10 +570,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ),
                       ],
                       if (item.isFromExtension) ...[
-                        const SizedBox(width: AppDimens.space8),
                         WishlistCard.fromExtensionChip(),
                       ],
-                      const Spacer(),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

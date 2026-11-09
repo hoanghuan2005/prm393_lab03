@@ -27,9 +27,9 @@ export const visuals = {
     ${table({
       cols: [{ label: 'Pain point', w: '1fr' }, { label: 'Giải pháp trong app', w: '1.35fr' }, { label: 'Giá trị kỳ vọng', w: '1fr' }],
       rows: [
-        ['Mua theo cảm xúc', 'Danh sách cân nhắc + thời gian hoãn mặc định 3 ngày; Mua · Chờ · Bỏ qua ngang hàng', 'Có một khoảng dừng trước khi trả tiền'],
+        ['Mua theo cảm xúc', 'Danh sách cân nhắc + thời gian hoãn mặc định 3 ngày; Mua · Chờ · Bỏ qua ngang hàng; bong bóng nhắc khi xem một món quá 15 giây', 'Có một khoảng dừng trước khi trả tiền, ngay trong app mua sắm'],
         ['Không biết vì sao mua', '8 động cơ mua gắn vào mọi món và khoản mua; Mô hình, Góc nhìn AI, Chiêm nghiệm', 'Thấy được mình mua vì đâu, lúc nào'],
-        ['Món rải rác', 'Chia sẻ link Shopee vào app; tiện ích Chrome lưu món, ghép với app bằng QR', 'Một chỗ duy nhất, có lịch sử giá'],
+        ['Món rải rác', 'Chia sẻ link Shopee vào app; bong bóng lưu link vừa sao chép; tiện ích Chrome lưu món, ghép với app bằng QR', 'Một chỗ duy nhất, có lịch sử giá'],
       ],
     })}
     <div class="vis-grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
@@ -42,7 +42,7 @@ export const visuals = {
       cols: [{ label: 'Actor', w: '0.9fr' }, { label: 'Là ai', w: '1.25fr' }, { label: 'Quyền hạn chính', w: '1.45fr' }],
       rows: [
         [`Người dùng ${tag('role: user')}`, 'Người trẻ hay mua sắm online, dùng app Android', 'Lưu món, quyết định Mua · Chờ · Bỏ qua, ghi khoản mua, xem góc nhìn; chỉ dữ liệu của chính mình'],
-        [`Nhân viên ${tag('role: staff', 'brand')}`, 'Người vận hành nội dung trên web admin', 'Quản lý sự kiện sale, duyệt đề xuất, đăng thông báo, nhắn tin riêng'],
+        [`Nhân viên ${tag('role: staff', 'brand')}`, 'Người vận hành nội dung trên web admin', 'Quản lý sự kiện sale, duyệt đề xuất, đăng thông báo, nhắn tin riêng; lấy voucher Shopee bằng tiện ích, xem và xoá trên web'],
         [`Quản trị viên ${tag('role: admin', 'brand')}`, 'Người phụ trách hệ thống', 'Như staff + dashboard số liệu thật toàn hệ thống + đổi vai trò người khác'],
         [`Tiện ích Chrome ${tag('client')}`, 'Phần mở rộng trình duyệt của chính người dùng', 'Đăng nhập ẩn danh, ghép đôi bằng QR rồi ghi món vào danh sách của chủ tài khoản'],
         [`Firebase · Gemini ${tag('hệ thống ngoài', 'ok')}`, 'Dịch vụ Google Cloud', 'Xác thực, lưu trữ, gửi thông báo, cấu hình từ xa; Gemini chỉ viết lại câu chữ'],
@@ -52,10 +52,10 @@ export const visuals = {
 
   features: () => `
     <div class="vis-grid" style="grid-template-columns:1fr 1fr">
-      <div class="vis-card"><span class="k">Nhóm 1 · WF-01</span><h4>Lưu & cân nhắc</h4><p>Chia sẻ từ Shopee · tiện ích Chrome + QR · danh sách mong muốn · thời gian hoãn · lịch sử giá</p></div>
+      <div class="vis-card"><span class="k">Nhóm 1 · WF-01</span><h4>Lưu & cân nhắc</h4><p>Chia sẻ từ Shopee · bong bóng nổi Android (xem lâu, sao chép link) · tiện ích Chrome + QR · danh sách mong muốn · thời gian hoãn · lịch sử giá</p></div>
       <div class="vis-card"><span class="k">Nhóm 2 · WF-02</span><h4>Quyết định & ghi chi</h4><p>Trước khi mua (thẻ quan sát + Gemini) · Mua · Chờ (lịch sale) · Bỏ qua (hoàn tác) · Ghi khoản mua 2 bước</p></div>
       <div class="vis-card"><span class="k">Nhóm 3 · WF-03</span><h4>Nhìn lại</h4><p>Ngân sách không chặn mua · Mô hình theo động cơ, khung giờ · Góc nhìn AI · Chiêm nghiệm + PDF</p></div>
-      <div class="vis-card"><span class="k" style="color:var(--ink-2)">Nhóm 4 · hỗ trợ</span><h4>Vận hành</h4><p>Web admin (sale, đề xuất, thông báo, dashboard) · Remote Config · FCM · Analytics · Crashlytics</p></div>
+      <div class="vis-card"><span class="k" style="color:var(--ink-2)">Nhóm 4 · hỗ trợ</span><h4>Vận hành</h4><p>Web admin (sale, voucher Shopee, đề xuất, thông báo, dashboard) · Remote Config · FCM · Analytics · Crashlytics</p></div>
     </div>
     <p class="vis-note" style="margin-top:12px">3 workflow được chọn để demo đều đổi trạng thái của món hoặc tạo dữ liệu mới, không phải "mở màn hình".</p>`,
 
@@ -135,7 +135,7 @@ export const visuals = {
         { id: 'ac', x: 600, y: 332, w: 180, h: 64, title: 'App Check', z: 1 },
         { id: 'an', x: 790, y: 332, w: 180, h: 64, title: 'Analytics · Crashlytics', z: 1 },
         { id: 'host', x: 600, y: 408, w: 370, h: 64, title: 'Hosting', sub: 'web admin (Flutter Web)', z: 1 },
-        { id: 'app', x: 20, y: 70, w: 320, h: 104, tone: 'accent', kicker: 'Android', title: 'App Why I Buy? (Flutter)', sub: 'MVVM: Screen → ViewModel → Service', z: 2 },
+        { id: 'app', x: 20, y: 70, w: 320, h: 104, tone: 'accent', kicker: 'Android', title: 'App Why I Buy? (Flutter)', sub: 'MVVM: Screen → ViewModel → Service · Kotlin: bong bóng nổi', z: 2 },
         { id: 'ext', x: 20, y: 214, w: 320, h: 84, kicker: 'Chrome / Edge', title: 'Tiện ích Why I Buy?', z: 2 },
         { id: 'web', x: 20, y: 338, w: 320, h: 92, kicker: 'staff · admin', title: 'Web admin (Flutter Web)', z: 2 },
         { id: 'push', x: 20, y: 470, w: 320, h: 84, tone: 'muted', kicker: 'Java 21', title: 'Push server (Spring Boot)', z: 1 },
@@ -154,6 +154,7 @@ export const visuals = {
       cols: [{ label: 'Mảng', w: '0.75fr' }, { label: 'Công nghệ', w: '1.4fr' }, { label: 'Vai trò', w: '1.35fr' }],
       rows: [
         ['App mobile', 'Flutter · Dart · Provider · Material 3', 'Giao diện Android, MVVM, một luồng phụ thuộc Screen → ViewModel → Service'],
+        ['Android native', 'Kotlin · MethodChannel · Overlay · AccessibilityService', 'Bong bóng nổi trên app mua sắm; xem một món quá 15 giây thì nhắc; chỉ đọc trên máy, không gửi lên server'],
         ['Dữ liệu', 'Cloud Firestore · Security Rules · Indexes', 'Lưu theo users/{uid}, đồng bộ realtime, bộ đệm offline, phân quyền user/staff/admin'],
         ['Xác thực', 'Firebase Auth · google_sign_in · App Check', 'Email, Google, GitHub, Khách; chặn client giả gọi AI'],
         ['AI', 'Firebase AI Logic (Gemini)', 'Chỉ viết lại câu từ số liệu code đã tính; có câu mẫu dự phòng'],

@@ -15,7 +15,8 @@ import insights from './insights.js'
 import reflection from './reflection.js'
 import profile from './profile.js'
 import history from './history.js'
+import bubble from './bubble.js'
 
 export const screens = Object.fromEntries(
-  [home, lockscreen, onboarding, login, addItem, extensionLink, wishlist, reviewWait, prePurchase, recordPurchase, budget, patterns, insights, reflection, profile, history].map((m) => [m.id, m]),
+  [home, lockscreen, onboarding, login, addItem, extensionLink, wishlist, reviewWait, prePurchase, recordPurchase, budget, patterns, insights, reflection, profile, history, bubble].map((m) => [m.id, m]),
 )

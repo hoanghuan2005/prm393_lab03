@@ -37,13 +37,13 @@ export const TC = [
 export const WF_SPEC = {
   'WF-01': {
     name: 'Lưu món vào danh sách cân nhắc',
-    actor: 'Người dùng · Tiện ích Chrome',
-    trigger: 'Chia sẻ link Shopee / bấm lưu trên tiện ích',
+    actor: 'Người dùng · Tiện ích Chrome · Bong bóng Android',
+    trigger: 'Chia sẻ link Shopee / bấm lưu trên tiện ích / bong bóng nhắc khi xem một món quá 15 giây',
     pre: 'Đã đăng nhập; nếu chưa, dữ liệu chia sẻ được giữ lại',
     decision: 'Động cơ Nhu cầu? → không hoãn (BR-01) · có giá? (BR-06) · yêu cầu ghép còn hạn? (BR-08)',
     exception: 'Không đọc được giá → để trống; mã QR hết hạn → báo tạo mã mới; mất mạng → ghi offline',
     post: 'wishlistItems: considering, cooldownUntil',
-    trace: 'F-01 · UI-03, UI-13 · ShareIntentService · TC-01, 02, 09, 11',
+    trace: 'F-01 · UI-03, UI-13 · ShareIntentService, FloatingBubbleService · TC-01, 02, 09, 11',
   },
   'WF-02': {
     name: 'Quyết định mua và ghi khoản mua',
@@ -77,7 +77,7 @@ visuals.traceability = () =>
       { label: 'BR → Test', w: '0.95fr' },
     ],
     rows: [
-      ['F-01 Lưu món ' + tag('WF-01', 'brand'), 'UI-03 · UI-13', 'ShareIntentService · ExtensionLinkViewModel', 'wishlistItems · extensionSessions', 'BR-01, 06, 08 → TC-01, 02, 09, 11'],
+      ['F-01 Lưu món ' + tag('WF-01', 'brand'), 'UI-03 · UI-13', 'ShareIntentService · FloatingBubbleService · ExtensionLinkViewModel', 'wishlistItems · extensionSessions', 'BR-01, 06, 08 → TC-01, 02, 09, 11'],
       ['F-02 Quyết định ' + tag('WF-02', 'brand'), 'UI-05 · UI-06', 'WishlistViewModel · WishlistService', 'wishlistItems · decisions', 'BR-02…05 → TC-03…08'],
       ['F-03 Ghi chi ' + tag('WF-02', 'brand'), 'UI-07', 'PurchaseService.buyFromWishlist', 'purchases', 'BR-02 → TC-04'],
       ['F-04 Nhìn lại ' + tag('WF-03', 'brand'), 'UI-09 · UI-11 · UI-12', 'BudgetViewModel · AiInsightService', 'budgets · reflections', 'BR-07 → TC-10'],
@@ -166,6 +166,7 @@ visuals.limitations = () =>
     cols: [{ label: 'Giới hạn', w: '1.25fr' }, { label: 'Loại · ưu tiên', w: '0.72fr' }, { label: 'Tác động', w: '1.1fr' }, { label: 'Bước tiếp theo', w: '1.1fr' }],
     rows: [
       ['App chưa đọc thông báo, hộp thư, lịch sale do web admin đăng (backend đã sẵn)', `${tag('product')} ${tag('cao', 'warn')}`, 'Staff đăng nội dung nhưng người dùng chưa thấy trong app', 'Nối app với InboxService, AnnouncementService trong packages/core'],
+      ['Bong bóng nổi chưa có test tự động; chỉ chạy trên Android', `${tag('testing')} ${tag('trung bình')}`, 'Chỉ kiểm bằng tay trên máy thật; cần người dùng tự cấp quyền Overlay và Trợ năng', 'Viết test cho MethodChannel; thêm hướng dẫn cấp quyền trong app'],
       ['TC-07 đang lỗi: Bỏ qua → Hoàn tác', `${tag('testing')} ${tag('cao', 'warn')}`, 'BR-04 chưa có kiểm thử tự động xanh hoàn toàn', 'Sửa test trước buổi bảo vệ, chạy lại flutter test'],
       ['Chưa có khảo sát người dùng định lượng', `${tag('data')} ${tag('trung bình')}`, 'Chưa đo được mức giảm mua bốc đồng', 'Khảo sát trước/sau 2 tuần với nhóm dùng thử'],
     ],
@@ -177,7 +178,7 @@ visuals.achievements = () =>
     rows: [
       ['Khoảng dừng trước khi mua', 'Danh sách cân nhắc, hoãn 3 ngày, Mua · Chờ · Bỏ qua ngang hàng', 'WF-01, WF-02 · TC-01, 05, 06'],
       ['Ghi được lý do mua', '8 động cơ ở mọi món, khoản mua; Mô hình, Góc nhìn, Chiêm nghiệm', 'WF-03 · TC-10'],
-      ['Lưu món nhanh từ Shopee', 'Android Share Intent + tiện ích Chrome ghép QR', 'TC-09, TC-11'],
+      ['Lưu món nhanh từ Shopee', 'Android Share Intent + bong bóng nổi + tiện ích Chrome ghép QR', 'TC-09, TC-11 · bong bóng: thử tay'],
       ['Một hệ thống trên Firebase', 'App Android · tiện ích · web admin dùng chung Firestore, 3 role', '268/268 ca Rules · TC-12'],
     ],
   }) +

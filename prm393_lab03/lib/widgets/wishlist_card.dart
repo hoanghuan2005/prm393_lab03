@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/buying_motive.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 import 'demo_data_badge.dart';
 import 'motive_chip.dart';
 import 'product_image.dart';
@@ -26,9 +28,9 @@ class WishlistCard extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.only(bottom: AppDimens.space12),
         elevation: 0,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: AppDimens.borderLarge,
-          side: BorderSide(color: AppColors.divider, width: 1),
+          side: BorderSide(color: Theme.of(context).dividerColor, width: 1),
         ),
         child: InkWell(
           onTap: onTap,
@@ -48,7 +50,8 @@ class WishlistCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.title,
-                        style: AppTextStyles.titleMedium,
+                        // themed: the default styles are dark text, unreadable in dark mode
+                        style: AppTextStyles.titleMedium.themed(context),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -57,13 +60,15 @@ class WishlistCard extends StatelessWidget {
                     Text(
                       formatVnd(item.latestPriceVnd),
                       style: item.hasPrice
-                          ? AppTextStyles.titleMedium.copyWith(
-                              color: AppColors.onPrimary,
-                              fontWeight: FontWeight.w700,
-                            )
-                          : AppTextStyles.labelMedium.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          ? AppTextStyles.titleMedium
+                                .copyWith(
+                                  color: AppColors.onPrimary,
+                                  fontWeight: FontWeight.w700,
+                                )
+                                .themed(context)
+                          : AppTextStyles.labelMedium
+                                .copyWith(color: AppColors.textSecondary)
+                                .themed(context),
                     ),
                   ],
                 ),
@@ -71,7 +76,7 @@ class WishlistCard extends StatelessWidget {
                   const SizedBox(height: AppDimens.space4),
                   Text(
                     'Phân loại: ${item.variantLabel}',
-                    style: AppTextStyles.caption,
+                    style: AppTextStyles.caption.themed(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -80,7 +85,7 @@ class WishlistCard extends StatelessWidget {
                   const SizedBox(height: AppDimens.space4),
                   Text(
                     'Shop: ${item.shopName}',
-                    style: AppTextStyles.caption,
+                    style: AppTextStyles.caption.themed(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -94,7 +99,7 @@ class WishlistCard extends StatelessWidget {
                     MotiveChip(motive: item.displayMotive, isCompact: true),
                     if (item.isDemo) const DemoDataBadge(),
                     if (item.isFromExtension) fromExtensionChip(),
-                    _buildStatusBadge(),
+                    _buildStatusBadge(context),
                   ],
                 ),
               ],
@@ -105,32 +110,35 @@ class WishlistCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(BuildContext context) {
     if (item.isInCooldown) {
-      final timeText = '${item.remainingCooldownLabel} hoãn';
+      // Theme palette of "Cảm xúc" (purple): light and dark variants
+      final palette = MotiveColors.of(context).paletteOf(BuyingMotive.emotion);
+      // Same wording as the detail screen: time left to think it over
+      final timeText = 'Còn ${item.remainingCooldownLabel}';
 
       return Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.space8,
           vertical: AppDimens.space4,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.motiveEmotionBg,
+        decoration: BoxDecoration(
+          color: palette.background,
           borderRadius: AppDimens.borderPill,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.timer_outlined,
               size: 14,
-              color: AppColors.motiveEmotion,
+              color: palette.foreground,
             ),
             const SizedBox(width: AppDimens.space4),
             Text(
               timeText,
               style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.motiveEmotion,
+                color: palette.foreground,
               ),
             ),
           ],

@@ -11,8 +11,10 @@ class InsightSourceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = fromAi ? AppColors.onAiContainer : AppColors.textBody;
+    // One label for screen readers; the visible "AI"/"Câu mẫu" text is not read again
     return Semantics(
       label: fromAi ? 'Do AI viết' : 'Câu mẫu',
+      excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(

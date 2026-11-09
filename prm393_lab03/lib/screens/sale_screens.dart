@@ -89,7 +89,13 @@ class SaleCalendarScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // Edge-to-edge (Android 15+): the last card stays above the navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           Text(
             'Lịch sale chung theo thông báo công khai của Shopee VN. '
@@ -319,7 +325,13 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // Edge-to-edge (Android 15+): the last card stays above the navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           Text(
             'Mỗi phương án xếp các món đang cân nhắc vào phần khả dụng tháng này '

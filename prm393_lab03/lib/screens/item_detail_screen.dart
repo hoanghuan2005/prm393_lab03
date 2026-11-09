@@ -379,7 +379,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // Edge-to-edge (Android 15+): the last buttons stay above the navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -388,9 +394,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(AppDimens.space20),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                // Theme surface and text colours: readable in dark mode too
+                color: theme.colorScheme.surface,
                 borderRadius: AppDimens.borderLarge,
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: theme.dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,12 +412,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                     const SizedBox(height: AppDimens.space16),
                   ],
-                  Text(item.title, style: AppTextStyles.headlineMedium),
+                  Text(item.title, style: AppTextStyles.headlineMedium.themed(context)),
                   if (item.variantLabel != null) ...[
                     const SizedBox(height: AppDimens.space4),
                     Text(
                       'Phân loại: ${item.variantLabel}',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.themed(context),
                     ),
                   ],
                   // Ratings the extension read on Shopee; nothing when unknown
@@ -429,7 +436,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     const SizedBox(height: AppDimens.space4),
                     Text(
                       'Shop: ${item.shopName}',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.themed(context),
                     ),
                   ],
                   if (item.vouchers case final vouchers? when vouchers.isNotEmpty) ...[
@@ -437,10 +444,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     Text(
                       'Voucher đã lưu'
                       '${item.vouchersAt != null ? ' (${formatDate(item.vouchersAt!)})' : ''}:',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.themed(context),
                     ),
                     for (final v in vouchers)
-                      Text('• $v', style: AppTextStyles.caption),
+                      Text('• $v', style: AppTextStyles.caption.themed(context)),
                   ],
                   const SizedBox(height: AppDimens.space12),
                   Row(
@@ -454,18 +461,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             formatVnd(item.latestPriceVnd),
                             style: item.hasPrice
                                 ? AppTextStyles.displayMedium.copyWith(
-                                    color: AppColors.onPrimary,
+                                    color: theme.colorScheme.onSurface,
                                     fontWeight: FontWeight.w700,
                                   )
                                 : AppTextStyles.titleLarge.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             _priceNote(item),
                             style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -490,16 +497,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.edit_outlined,
                                     size: 14,
-                                    color: AppColors.accentNeutral,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : AppColors.accentNeutral,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     item.hasPrice ? 'Cập nhật giá' : 'Nhập giá',
                                     style: AppTextStyles.labelMedium.copyWith(
-                                      color: AppColors.accentNeutral,
+                                      color: isDark
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : AppColors.accentNeutral,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -511,7 +522,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: AppDimens.space12),
-                  const Divider(height: 1, color: AppColors.divider),
+                  Divider(height: 1, color: theme.dividerColor),
                   const SizedBox(height: AppDimens.space12),
                   Row(
                     children: [
@@ -535,10 +546,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.storefront_outlined,
                                 size: 13,
-                                color: AppColors.textSecondary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -640,7 +651,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             ),
                           ),
                           Text(
-                            'Còn lại khoảng ${item.remainingCooldown.inDays} ngày ${item.remainingCooldown.inHours % 24} giờ để bạn cân nhắc lý do mua.',
+                            'Còn khoảng ${item.remainingCooldownLabel} để bạn cân nhắc lý do mua.',
                             style: AppTextStyles.bodyMedium,
                           ),
                         ],
@@ -664,7 +675,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // Decision Card (Why I Buy Core)
             Text(
-              'Thẻ Quyết Định (Decision Card)',
+              'Thẻ Quyết Định',
               style: AppTextStyles.titleLarge,
             ),
             const SizedBox(height: AppDimens.space8),

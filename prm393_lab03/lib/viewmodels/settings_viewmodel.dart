@@ -245,6 +245,10 @@ class SettingsViewModel extends ChangeNotifier
   bool get notificationsEnabled => _notificationsEnabled;
 
   /// Must be called from a user's tap
+  /// After a refused request: the system settings are the only way to allow them
+  Future<bool> openNotificationSettings() =>
+      notificationService.openSystemSettings();
+
   Future<bool> enableNotifications() async {
     _notificationsEnabled = await notificationService
         .requestPermissionFromUser();

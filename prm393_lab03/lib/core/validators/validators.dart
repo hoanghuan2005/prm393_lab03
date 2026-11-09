@@ -31,6 +31,21 @@ class Validators {
     return validateAmount(value);
   }
 
+  /// Empty is allowed; otherwise a web address ("https://…", or "shopee.vn/…" typed
+  /// without the scheme), so a typo is not saved silently as the item's link
+  static String? validateOptionalUrl(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final withScheme = text.contains('://') ? text : 'https://$text';
+    final uri = Uri.tryParse(withScheme);
+    final valid =
+        uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.contains('.') &&
+        !text.contains(' ');
+    return valid ? null : 'Link chưa đúng. Dán link sản phẩm, ví dụ https://shopee.vn/…';
+  }
+
   static String? validateNote(String? value) {
     if ((value ?? '').trim().length > AppConstants.noteMaxLength) {
       return 'Ghi chú tối đa ${AppConstants.noteMaxLength} ký tự';

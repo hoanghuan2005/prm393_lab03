@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/notification_target.dart';
@@ -138,6 +139,10 @@ class WhyIBuyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeVm.themeMode,
+        // The app is Vietnamese only: built-in pickers and dialogs follow it
+        locale: const Locale('vi'),
+        supportedLocales: const [Locale('vi')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         navigatorObservers: [
           ...analyticsService.navigatorObservers,
           crashlyticsService.screenObserver,

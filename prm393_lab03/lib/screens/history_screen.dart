@@ -103,6 +103,7 @@ class HistoryScreen extends StatelessWidget {
                         final picked = await MonthPickerSheet.show(
                           context,
                           selectedMonth,
+                          lastMonth: DateTime.now(),
                         );
                         if (picked != null) {
                           purchaseVm.setSelectedMonth(picked);
@@ -147,7 +148,9 @@ class HistoryScreen extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                       tooltip: 'Tháng sau',
-                      onPressed: () => purchaseVm.nextMonth(),
+                      onPressed: purchaseVm.canGoToNextMonth
+                          ? purchaseVm.nextMonth
+                          : null,
                     ),
                   ],
                 ),
@@ -232,13 +235,12 @@ class HistoryScreen extends StatelessWidget {
                               purchaseVm.hasActiveFilter
                                   ? 'Không có khoản chi nào khớp bộ lọc trong $monthLabel'
                                   : 'Không có khoản chi nào trong $monthLabel',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -365,6 +367,31 @@ class HistoryScreen extends StatelessWidget {
     final budget = budgetVm.totalLimit;
     final progress = budgetVm.progress;
     final isExceeded = budgetVm.isExceeded;
+
+    // No limit set: say so (as Trang chủ does) instead of "0 ₫ · Trong hạn mức"
+    if (budget <= 0) {
+      return Material(
+        color: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.dividerColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          key: const ValueKey('history-budget-unset'),
+          leading: Icon(
+            Icons.account_balance_wallet_outlined,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          title: const Text('Ngân sách tháng: chưa đặt'),
+          subtitle: const Text(
+            'Đặt mốc cho từng nhóm để so với số đã chi. App không chặn mua.',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.budget),
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -619,7 +646,9 @@ class HistoryScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final motivePalette = MotiveColors.of(context).paletteOf(item.motive);
 
-    return ListTile(
+    // Read as one item by TalkBack, including rows that have a note
+    return MergeSemantics(
+      child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       onTap: () {
         Navigator.pushNamed(
@@ -687,6 +716,7 @@ class HistoryScreen extends StatelessWidget {
           color: isDark ? AppColors.primary : AppColors.accentNeutral,
         ),
       ),
+    ),
     );
   }
 

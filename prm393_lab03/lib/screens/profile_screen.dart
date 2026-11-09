@@ -124,26 +124,29 @@ class ProfileScreen extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                   title: const Text('Chế độ tối'),
-                  trailing: Switch(
-                    value: isDark,
-                    activeTrackColor: AppColors.primary,
-                    inactiveTrackColor:
-                        theme.colorScheme.surfaceContainerHighest,
-                    activeThumbColor: AppColors.onPrimary,
-                    inactiveThumbColor: AppColors.primary,
-                    thumbIcon: WidgetStateProperty.resolveWith(
-                      (states) => Icon(
-                        states.contains(WidgetState.selected)
-                            ? Icons.dark_mode_rounded
-                            : Icons.light_mode_rounded,
-                        color: states.contains(WidgetState.selected)
-                            ? AppColors.primary
-                            : AppColors.onPrimary,
-                        size: 16,
+                  trailing: Semantics(
+                    label: 'Chế độ tối',
+                    child: Switch(
+                      value: isDark,
+                      activeTrackColor: AppColors.primary,
+                      inactiveTrackColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      activeThumbColor: AppColors.onPrimary,
+                      inactiveThumbColor: AppColors.primary,
+                      thumbIcon: WidgetStateProperty.resolveWith(
+                        (states) => Icon(
+                          states.contains(WidgetState.selected)
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          color: states.contains(WidgetState.selected)
+                              ? AppColors.primary
+                              : AppColors.onPrimary,
+                          size: 16,
+                        ),
                       ),
-                    ),
-                    onChanged: (value) => themeVm.setThemeMode(
-                      value ? ThemeMode.dark : ThemeMode.light,
+                      onChanged: (value) => themeVm.setThemeMode(
+                        value ? ThemeMode.dark : ThemeMode.light,
+                      ),
                     ),
                   ),
                 ),
@@ -173,8 +176,9 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 _SettingsTile(
                   key: const ValueKey('clear-all-data'),
-                  title: 'Xóa toàn bộ dữ liệu',
-                  subtitle: 'Xóa vĩnh viễn mọi khoản mua đã ghi.',
+                  title: 'Xoá toàn bộ dữ liệu',
+                  subtitle:
+                      'Xoá vĩnh viễn khoản mua, món mong muốn, ngân sách và chiêm nghiệm.',
                   isDanger: true,
                   onTap: settingsVm.isDemoBusy
                       ? null
@@ -255,7 +259,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
-                'FIREBASE DEMO AREA',
+                'NGÂN SÁCH & HỒ SƠ MUA SẮM',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: isDark ? AppColors.primary : AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
@@ -270,7 +274,7 @@ class ProfileScreen extends StatelessWidget {
               icon: Icons.account_balance_wallet_outlined,
               children: [
                 Text(
-                  'Thiết lập ngân sách tham chiếu theo tháng và theo nhóm hàng, tự động đồng bộ Firestore:',
+                  'Đặt mốc tham chiếu cho từng nhóm hàng mỗi tháng để so với số đã chi. App không chặn mua.',
                   style: TextStyle(
                     fontSize: 13,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -312,6 +316,31 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space16),
 
+            // Demo data, sample price chart, Remote Config and test tools are for the team
+            // and the demo video: folded away so users do not land on developer panels
+            Theme(
+              data: theme.copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                key: const ValueKey('profile-dev-tools'),
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.build_outlined,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                title: Text(
+                  'Công cụ cho nhóm phát triển',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                subtitle: Text(
+                  'Dữ liệu demo, Remote Config, thử thông báo',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                children: [
             // Demo data (never seeded automatically)
             SectionCard(
               title: 'Dữ liệu demo',
@@ -350,7 +379,7 @@ class ProfileScreen extends StatelessWidget {
 
             // 1. Remote Config Section
             SectionCard(
-              title: '1. Firebase Remote Config',
+              title: 'Firebase Remote Config',
               icon: Icons.tune,
               children: [
                 _buildKeyValueRow(
@@ -397,10 +426,14 @@ class ProfileScreen extends StatelessWidget {
 
             // Crashlytics and local notification test buttons (debug builds only)
             FirebaseDemoTools(userId: authVm.userId ?? 'unknown_user'),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDimens.space16),
 
             // 2. FCM Notification Center
             SectionCard(
-              title: '2. Cloud Messaging (FCM) Center',
+              title: 'Thông báo',
               icon: Icons.notifications_active_outlined,
               children: [
                 if (settingsVm.asksNotificationPermissionInApp) ...[
@@ -423,9 +456,16 @@ class ProfileScreen extends StatelessWidget {
                             content: Text(
                               ok
                                   ? 'Đã bật thông báo. Tin nhắn FCM và nhắc xem lại sẽ hiện kể cả khi app đang đóng.'
-                                  : 'Chưa được phép gửi thông báo. Bạn có thể bật lại trong cài đặt của máy hoặc trình duyệt.',
+                                  : 'Thông báo đang bị chặn. Bật lại trong cài đặt của máy hoặc trình duyệt.',
                             ),
                             behavior: SnackBarBehavior.floating,
+                            action: ok
+                                ? null
+                                : SnackBarAction(
+                                    label: 'Mở cài đặt',
+                                    onPressed: () => settingsVm
+                                        .openNotificationSettings(),
+                                  ),
                           ),
                         );
                       },
@@ -445,7 +485,7 @@ class ProfileScreen extends StatelessWidget {
                       vertical: AppDimens.space12,
                     ),
                     child: Text(
-                      'Chưa có thông báo nào. Bạn có thể gửi tin nhắn thử từ Firebase Console FCM để kiểm tra nhận thông báo ở 3 trạng thái.',
+                      'Chưa có thông báo nào.',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -829,10 +869,13 @@ class _DailyReminderTile extends StatelessWidget {
         ),
       ),
       onTap: supported ? () => _pickTime(context) : null,
-      trailing: Switch(
-        key: const ValueKey('daily-reminder-switch'),
-        value: supported && settingsVm.dailyReminderEnabled,
-        onChanged: supported ? (on) => _toggle(context, on) : null,
+      trailing: Semantics(
+        label: 'Nhắc ghi khoản mua',
+        child: Switch(
+          key: const ValueKey('daily-reminder-switch'),
+          value: supported && settingsVm.dailyReminderEnabled,
+          onChanged: supported ? (on) => _toggle(context, on) : null,
+        ),
       ),
     );
   }
@@ -1000,9 +1043,12 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Switch(
-                  value: isAndroid && _isRunning,
-                  onChanged: isAndroid ? _toggle : null,
+              : Semantics(
+                  label: 'Bong bóng trợ lý',
+                  child: Switch(
+                    value: isAndroid && _isRunning,
+                    onChanged: isAndroid ? _toggle : null,
+                  ),
                 ),
         ),
         if (_isRunning)

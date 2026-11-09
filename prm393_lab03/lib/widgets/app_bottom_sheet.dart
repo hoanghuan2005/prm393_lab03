@@ -54,11 +54,13 @@ class AppBottomSheet {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
+                // useSafeArea only covers the top; keep the last option and the
+                // save button above the navigation bar (0 while the keyboard is up)
+                padding: EdgeInsets.fromLTRB(
                   AppDimens.space16,
                   AppDimens.space8,
                   AppDimens.space16,
-                  AppDimens.space24,
+                  AppDimens.space24 + MediaQuery.paddingOf(sheetContext).bottom,
                 ),
                 child: child,
               ),

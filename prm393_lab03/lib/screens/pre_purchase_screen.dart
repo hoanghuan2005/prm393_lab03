@@ -54,6 +54,12 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
   ];
 
   int get _stepNumber => _steps.indexOf(_step) + 1;
+
+  /// The sale step is only known after the motive step, so until then the header
+  /// counts it: the total may drop from 4 to 3 but never grows mid-flow
+  int get _totalSteps => _step == _Step.item || _step == _Step.motive
+      ? _Step.values.length
+      : _steps.length;
   bool get _isLast => _step == _steps.last;
 
   String get _title => _titleController.text.trim();
@@ -176,7 +182,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
                     children: [
                       _StepHeader(
                         step: _stepNumber,
-                        total: _steps.length,
+                        total: _totalSteps,
                         heading: heading,
                       ),
                       const SizedBox(height: AppDimens.space16),

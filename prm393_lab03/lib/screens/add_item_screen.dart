@@ -54,7 +54,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _urlController = TextEditingController();
   final _shopController = TextEditingController();
 
-  BuyingMotive _selectedMotive = BuyingMotive.emotion;
+  /// No default: the user picks the motive honestly (spec); editing starts from the item's
+  BuyingMotive? _selectedMotive;
+  bool _showMotiveError = false;
   String? _budgetGroupId;
   int _priority = WishlistItem.defaultPriority;
   bool _isSaving = false;
@@ -179,7 +181,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
   Future<void> _handleSave() async {
     // Also reached from the SnackBar retry, possibly after leaving the screen
     if (!mounted || _isSaving) return;
-    if (_formKey.currentState?.validate() != true) return;
+    final formValid = _formKey.currentState?.validate() == true;
+    final motive = _selectedMotive;
+    if (motive == null) setState(() => _showMotiveError = true);
+    if (!formValid || motive == null) return;
 
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
@@ -191,14 +196,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
             existing,
             title: _titleController.text,
             url: url,
-            motive: _selectedMotive,
+            motive: motive,
             budgetGroupId: _budgetGroupId,
             priority: _priority,
           )
         : await wishlistVm.addItem(
             title: _titleController.text.trim(),
             price: parseVnd(_priceController.text),
-            motive: _selectedMotive,
+            motive: motive,
             productUrl: url.isNotEmpty ? url : null,
             budgetGroupId: _budgetGroupId,
             priority: _priority,
@@ -219,7 +224,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             content: Text(
               _isEdit
                   ? 'Đã lưu thay đổi.'
-                  : !_selectedMotive.skipsCooldown
+                  : !motive.skipsCooldown
                   ? 'Đã lưu vào danh sách cân nhắc. Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
                   : 'Đã lưu vào danh sách cân nhắc.',
             ),
@@ -288,7 +293,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // The save button is the last child: keep it above the system navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Form(
           key: _formKey,
           child: Column(
@@ -451,6 +462,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 controller: _urlController,
                 keyboardType: TextInputType.url,
                 prefixIcon: Icons.link,
+                validator: Validators.validateOptionalUrl,
               ),
               const SizedBox(height: AppDimens.space16),
 
@@ -549,14 +561,27 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   return MotiveChip(
                     motive: motive,
                     isSelected: isSelected,
-                    onSelected: (m) => setState(() => _selectedMotive = m),
+                    onSelected: (m) => setState(() {
+                      _selectedMotive = m;
+                      _showMotiveError = false;
+                    }),
                   );
                 }).toList(),
               ),
+              if (_showMotiveError) ...[
+                const SizedBox(height: AppDimens.space8),
+                Text(
+                  'Chọn một động cơ gần nhất với lý do bạn muốn mua.',
+                  key: const ValueKey('wishlist-motive-error'),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppDimens.space20),
 
               // Cooldown Hint if Emotion/Social is selected
-              if (!_isEdit && !_selectedMotive.skipsCooldown)
+              if (!_isEdit && !(_selectedMotive?.skipsCooldown ?? true))
                 Container(
                   padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(

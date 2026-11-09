@@ -33,20 +33,24 @@ class AppHeaderActions extends StatelessWidget {
           ),
         Padding(
           padding: const EdgeInsets.only(right: 12, left: 2),
-          child: InkWell(
-            onTap: onProfileTap,
-            borderRadius: BorderRadius.circular(999),
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person,
-                color: AppColors.onPrimary,
-                size: 20,
+          // Icon-only button: the tooltip also names it for TalkBack
+          child: Tooltip(
+            message: 'Cá nhân',
+            child: InkWell(
+              onTap: onProfileTap,
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person,
+                  color: AppColors.onPrimary,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -156,8 +160,25 @@ class _NotificationButton extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: () async {
-                      await settingsVm.enableNotifications();
+                      final messenger = ScaffoldMessenger.of(context);
+                      final ok = await settingsVm.enableNotifications();
                       if (sheetContext.mounted) Navigator.pop(sheetContext);
+                      // Denied before: Android shows no dialog, so say so and offer settings
+                      if (!ok) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                              'Thông báo đang bị chặn cho Why I Buy.',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            action: SnackBarAction(
+                              label: 'Mở cài đặt',
+                              onPressed: () =>
+                                  settingsVm.openNotificationSettings(),
+                            ),
+                          ),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.notifications_outlined),
                     label: const Text('Bật thông báo'),

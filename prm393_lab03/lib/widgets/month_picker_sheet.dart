@@ -6,14 +6,22 @@ import '../theme/app_colors.dart';
 class MonthPickerSheet extends StatefulWidget {
   final DateTime initialDate;
 
-  const MonthPickerSheet({super.key, required this.initialDate});
+  /// Months after this one cannot be picked (screens that only show the past)
+  final DateTime? lastMonth;
 
-  static Future<DateTime?> show(BuildContext context, DateTime initialDate) {
+  const MonthPickerSheet({super.key, required this.initialDate, this.lastMonth});
+
+  static Future<DateTime?> show(
+    BuildContext context,
+    DateTime initialDate, {
+    DateTime? lastMonth,
+  }) {
     return showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => MonthPickerSheet(initialDate: initialDate),
+      builder: (_) =>
+          MonthPickerSheet(initialDate: initialDate, lastMonth: lastMonth),
     );
   }
 
@@ -50,7 +58,13 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      // Last row of months above the navigation bar (edge-to-edge)
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        32 + MediaQuery.paddingOf(context).bottom,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -87,6 +101,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                   size: 20,
                   color: AppColors.textSecondary,
                 ),
+                tooltip: 'Đóng',
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -110,6 +125,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                     size: 22,
                     color: AppColors.onPrimary,
                   ),
+                  tooltip: 'Năm trước',
                   onPressed: () {
                     setState(() => _selectedYear--);
                   },
@@ -128,9 +144,13 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                     size: 22,
                     color: AppColors.onPrimary,
                   ),
-                  onPressed: () {
-                    setState(() => _selectedYear++);
-                  },
+                  tooltip: 'Năm sau',
+                  onPressed: widget.lastMonth != null &&
+                          _selectedYear >= widget.lastMonth!.year
+                      ? null
+                      : () {
+                          setState(() => _selectedYear++);
+                        },
                 ),
               ],
             ),
@@ -154,12 +174,22 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
               final isSelected =
                   month == _selectedMonth &&
                   _selectedYear == widget.initialDate.year;
+              final last = widget.lastMonth;
+              final isFuture =
+                  last != null &&
+                  DateTime(_selectedYear, month).isAfter(
+                    DateTime(last.year, last.month),
+                  );
 
-              return InkWell(
-                onTap: () {
-                  final newDate = DateTime(_selectedYear, month, 1);
-                  Navigator.pop(context, newDate);
-                },
+              return Opacity(
+                opacity: isFuture ? 0.35 : 1,
+                child: InkWell(
+                onTap: isFuture
+                    ? null
+                    : () {
+                        final newDate = DateTime(_selectedYear, month, 1);
+                        Navigator.pop(context, newDate);
+                      },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   alignment: Alignment.center,
@@ -187,6 +217,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                           : AppColors.accentNeutral,
                     ),
                   ),
+                ),
                 ),
               );
             },

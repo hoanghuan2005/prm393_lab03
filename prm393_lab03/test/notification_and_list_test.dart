@@ -298,6 +298,10 @@ void main() {
       expect(find.text('5.000.000'), findsOneWidget);
       expect(find.text('₫'), findsOneWidget);
 
+      // No motive is pre-selected: the user picks one
+      await tester.ensureVisible(find.text('Mong muốn'));
+      await tester.tap(find.text('Mong muốn'));
+      await tester.pump();
       await tester.tap(find.text('Lưu vào Wishlist'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),

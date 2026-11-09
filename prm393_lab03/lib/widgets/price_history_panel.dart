@@ -191,7 +191,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                 const Icon(Icons.timeline_outlined),
                 const SizedBox(width: AppDimens.space8),
                 Expanded(
-                  child: Text('Lịch sử giá', style: AppTextStyles.titleMedium),
+                  child: Text('Lịch sử giá', style: AppTextStyles.titleMedium.themed(context)),
                 ),
               ],
             ),
@@ -203,7 +203,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                 child: Text(
                   'Ghi thêm giá để xem biến động',
                   key: const ValueKey('price-record-more'),
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ),
             if (productKey != null && community == null && communityLoaded)
@@ -213,7 +213,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                   'Chưa đủ người ghi giá để vẽ đường cộng đồng '
                   '(${_community!.reportCount} lần ghi)',
                   key: const ValueKey('price-community-too-few'),
-                  style: AppTextStyles.labelMedium,
+                  style: AppTextStyles.labelMedium.themed(context),
                 ),
               ),
             if ((productKey, community) case (final key?, _?))
@@ -236,7 +236,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
               for (final note in notes)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppDimens.space4),
-                  child: Text('• $note', style: AppTextStyles.bodyMedium),
+                  child: Text('• $note', style: AppTextStyles.bodyMedium.themed(context)),
                 ),
             ],
             if (history.isNotEmpty)
@@ -249,7 +249,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 title: Text(
                   'Các lần ghi (${history.length})',
-                  style: AppTextStyles.labelLarge,
+                  style: AppTextStyles.labelLarge.themed(context),
                 ),
                 children: [
                   for (final (index, s) in history.indexed)
@@ -263,7 +263,7 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                   const SizedBox(height: AppDimens.space4),
                   Text(
                     'Giá do bạn tự ghi hoặc lưu từ extension; app không theo dõi giá trên Shopee.',
-                    style: AppTextStyles.labelMedium,
+                    style: AppTextStyles.labelMedium.themed(context),
                   ),
                 ],
               ),
@@ -303,22 +303,22 @@ class _RecordRow extends StatelessWidget {
           Expanded(
             child: Text(
               formatDate(s.observedAt) + (isSaved ? ' · lúc lưu' : ''),
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
           ),
           Text(
             s.isRange
                 ? '${formatVnd(s.minVnd)} – ${formatVnd(s.maxVnd)}'
                 : formatVnd(s.amountVnd),
-            style: AppTextStyles.titleMedium,
+            style: AppTextStyles.titleMedium.themed(context),
           ),
           if (_tagFor(s) case final tag?) ...[
             const SizedBox(width: AppDimens.space8),
-            Text(tag, style: AppTextStyles.labelMedium),
+            Text(tag, style: AppTextStyles.labelMedium.themed(context)),
           ],
           if (freshness case final label?) ...[
             const SizedBox(width: AppDimens.space8),
-            Text(label, style: AppTextStyles.labelMedium),
+            Text(label, style: AppTextStyles.labelMedium.themed(context)),
           ],
         ],
       ),
@@ -370,7 +370,7 @@ class _AddLinkHint extends StatelessWidget {
       ),
       Text(
         'Có link thì xem được giá người khác ghi và cùng món ở shop khác.',
-        style: AppTextStyles.labelMedium,
+        style: AppTextStyles.labelMedium.themed(context),
       ),
     ],
   );

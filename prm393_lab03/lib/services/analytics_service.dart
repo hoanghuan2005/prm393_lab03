@@ -146,6 +146,19 @@ class AppAnalyticsService {
     AnalyticsParams.errorType: errorType,
   });
 
+  /// Duration of a real Gemini call, including failures; never logs its content.
+  Future<void> logAiResponse({
+    required String feature,
+    required String model,
+    required int durationMs,
+    required bool succeeded,
+  }) => _log(AnalyticsEvents.aiResponse, {
+    AnalyticsParams.aiFeature: feature,
+    AnalyticsParams.aiModel: model,
+    AnalyticsParams.durationMs: durationMs,
+    AnalyticsParams.succeeded: succeeded ? 1 : 0,
+  });
+
   /// [mode]: `product` or `group`; no product key or title is sent
   Future<void> logViewPriceHistory({
     required String mode,

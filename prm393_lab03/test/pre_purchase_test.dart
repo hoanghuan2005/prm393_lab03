@@ -369,7 +369,6 @@ void main() {
       remoteConfigService: RemoteConfigService(remoteConfig: config),
       preferencesService: PreferencesService(),
       platformSupportsAi: () => platformAi,
-      minLoading: Duration.zero,
     );
 
     setUp(() {
@@ -378,6 +377,32 @@ void main() {
       config = _FakeRemoteConfig();
       platformAi = true;
     });
+
+    testWidgets(
+      'cached and fallback results do not force an extra loading delay',
+      (tester) async {
+        final vm = build();
+        var completed = false;
+        final running = vm.analyze(_headphones()).then((_) => completed = true);
+        await tester.pump();
+        expect(completed, isTrue);
+        await running;
+        vm.dispose();
+      },
+    );
+
+    test(
+      'reset before the preference check avoids an obsolete AI request',
+      () async {
+        final vm = build();
+        final running = vm.analyze(_headphones());
+        vm.reset();
+        await running;
+        expect(ai.calls, 0);
+        expect(vm.state, isA<UiInitial<PrePurchaseInsight>>());
+        vm.dispose();
+      },
+    );
 
     test('no AI on this platform (no token): template result, AI not called', () async {
       platformAi = false;
@@ -470,10 +495,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 1: name is required
-    expect(find.text('BƯỚC 1/3'), findsOneWidget);
+    expect(find.text('BƯỚC 1/4'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('pre-purchase-next')));
     await tester.pumpAndSettle();
-    expect(find.text('BƯỚC 1/3'), findsOneWidget);
+    expect(find.text('BƯỚC 1/4'), findsOneWidget);
     await tester.enterText(
       find.descendant(
         of: find.byKey(const ValueKey('pre-purchase-title')),
@@ -491,8 +516,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('pre-purchase-next')));
     await tester.pumpAndSettle();
 
-    // Step 2: both answers needed; "Khuyến mãi" leads to step 3
-    expect(find.text('BƯỚC 2/3'), findsOneWidget);
+    // Step 2: both answers needed; until it is answered the possible sale step is counted
+    expect(find.text('BƯỚC 2/4'), findsOneWidget);
     expect(find.text('Tai nghe Bluetooth · 389.000 ₫'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('why-want')));
     await tester.tap(find.byKey(const ValueKey('influence-sale')));
@@ -500,7 +525,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('pre-purchase-next')));
     await tester.pumpAndSettle();
 
-    // Step 3: "Khuyến mãi" added the sale step, so there are 4 steps now
+    // Step 3: "Khuyến mãi" keeps the sale step, so the total stays 4
     expect(find.text('BƯỚC 3/4'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('without-sale-unsure')));
     await tester.pump();
@@ -585,6 +610,8 @@ void main() {
     );
     await tester.tap(find.text('home'));
     await tester.pumpAndSettle();
+    // The observation cards come after the summary and the question
+    await tester.scrollUntilVisible(find.text('Không có tác động'), 200);
     expect(find.text('Không có tác động'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('pre-purchase-think-more')));

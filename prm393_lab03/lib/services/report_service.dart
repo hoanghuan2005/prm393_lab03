@@ -148,7 +148,8 @@ class ReportService {
               cellAlignment: pw.Alignment.centerLeft,
               cellAlignments: {2: pw.Alignment.centerRight},
               columnWidths: {
-                0: const pw.FixedColumnWidth(70),
+                // dd/MM/yyyy plus cell padding needs ~72 pt; 70 wrapped the year
+                0: const pw.FixedColumnWidth(84),
                 1: const pw.FlexColumnWidth(3),
                 2: const pw.FixedColumnWidth(90),
                 3: const pw.FlexColumnWidth(2),

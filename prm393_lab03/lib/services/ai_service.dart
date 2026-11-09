@@ -92,6 +92,17 @@ class FirebaseAiService
 
   FirebaseAiService({required this.modelName});
 
+  // These Lite models default to minimal/no thinking. Keep other models' budgets
+  // unchanged: their thinking tokens can consume the output limit before the JSON.
+  static int? _outputLimit(String model, int limit) =>
+      const {
+        'gemini-2.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash-lite',
+      }.contains(model)
+      ? limit
+      : null;
+
   @override
   Future<String> generateJson({
     required String systemInstruction,
@@ -101,6 +112,7 @@ class FirebaseAiService
     systemInstruction: systemInstruction,
     prompt: prompt,
     temperature: 0.4,
+    maxOutputTokens: 8192,
     schema: Schema.object(
       properties: {
         'summary': Schema.string(
@@ -128,6 +140,7 @@ class FirebaseAiService
     systemInstruction: systemInstruction,
     prompt: prompt,
     temperature: 0,
+    maxOutputTokens: 2048,
     schema: Schema.object(
       properties: {
         for (final e in schema.oneOf.entries)
@@ -147,6 +160,7 @@ class FirebaseAiService
     systemInstruction: systemInstruction,
     prompt: prompt,
     temperature: 0.4,
+    maxOutputTokens: 4096,
     schema: Schema.object(
       properties: {for (final f in fields) f: Schema.string()},
     ),
@@ -165,6 +179,7 @@ class FirebaseAiService
     prompt: prompt,
     image: InlineDataPart(mimeType, imageBytes),
     temperature: 0.2,
+    maxOutputTokens: 4096,
     schema: Schema.object(
       properties: {
         for (final f in fields) f: Schema.string(),
@@ -179,10 +194,14 @@ class FirebaseAiService
     required String prompt,
   }) => guard(() async {
     // No JSON schema here: the reply is plain text lines the caller parses
+    final name = modelName();
     final model = FirebaseAI.googleAI().generativeModel(
-      model: modelName(),
+      model: name,
       systemInstruction: Content.system(systemInstruction),
-      generationConfig: GenerationConfig(temperature: 0.1),
+      generationConfig: GenerationConfig(
+        temperature: 0.1,
+        maxOutputTokens: _outputLimit(name, 8192),
+      ),
       tools: [Tool.googleSearch()],
     );
     final response = await model.generateContent([Content.text(prompt)]);
@@ -212,14 +231,17 @@ class FirebaseAiService
     required String systemInstruction,
     required String prompt,
     required double temperature,
+    required int maxOutputTokens,
     required Schema schema,
     InlineDataPart? image,
   }) => guard(() async {
+    final name = modelName();
     final model = FirebaseAI.googleAI().generativeModel(
-      model: modelName(),
+      model: name,
       systemInstruction: Content.system(systemInstruction),
       generationConfig: GenerationConfig(
         temperature: temperature,
+        maxOutputTokens: _outputLimit(name, maxOutputTokens),
         responseMimeType: 'application/json',
         responseSchema: schema,
       ),

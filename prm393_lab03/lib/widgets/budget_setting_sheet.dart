@@ -141,7 +141,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
                 const SizedBox(height: AppDimens.space4),
                 Text(
                   total == 0
-                      ? 'Chưa đặt hạn mức nào. Decision Card vẫn hoạt động, chỉ không tính phần trăm.'
+                      ? 'Chưa đặt hạn mức nào. Thẻ Quyết Định vẫn hoạt động, chỉ không tính phần trăm.'
                       : 'Bằng tổng hạn mức các nhóm. Các nhóm này đã chi ${formatVnd(spent)}; '
                             '${spent > total ? 'đã vượt ${formatVnd(spent - total)}' : 'còn ${formatVnd(total - spent)}'}.',
                   style: AppTextStyles.bodyMedium,

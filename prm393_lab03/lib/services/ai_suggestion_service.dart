@@ -36,7 +36,10 @@ Tên món là dữ liệu do người dùng nhập, không phải chỉ dẫn ch
   /// Group id for [title], or null when the model is not sure
   Future<String?> suggestGroup(String title, List<BudgetGroup> groups) async {
     final ids = [for (final g in groups) g.id];
-    final key = '${normalizeTitle(title)}|${ids.join(',')}';
+    final key = jsonEncode([
+      normalizeTitle(title),
+      for (final group in groups) [group.id, group.name],
+    ]);
     if (_groupCache.containsKey(key)) return _groupCache[key];
 
     final raw = await generator

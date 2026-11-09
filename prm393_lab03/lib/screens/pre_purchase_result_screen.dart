@@ -20,6 +20,7 @@ import '../widgets/why_i_buy_logo.dart';
 
 /// Flow 9: screen 17 "AI đang phân tích" then screen 18 "Nhận định trước khi mua".
 /// "Để mình nghĩ thêm" returns home without saving; "Vẫn mua" opens Flow 1 pre-filled.
+/// "Lưu vào danh sách cân nhắc" is the user's own choice to keep the item for later.
 class PrePurchaseResultScreen extends StatefulWidget {
   final PrePurchaseAnswers answers;
 
@@ -84,6 +85,17 @@ class _PrePurchaseResultScreenState extends State<PrePurchaseResultScreen> {
   }
 
   void _thinkMore() => Navigator.popUntil(context, (route) => route.isFirst);
+
+  /// Opens the Thêm món form with the name and price; the user still picks the motive
+  void _saveForLater() {
+    final a = widget.answers;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.wishlistAdd,
+      (route) => route.isFirst,
+      arguments: AddItemArgs(initialTitle: a.title, initialPrice: a.priceVnd),
+    );
+  }
 
   void _buyAnyway() {
     final a = widget.answers;
@@ -153,6 +165,7 @@ class _PrePurchaseResultScreenState extends State<PrePurchaseResultScreen> {
                   answers: widget.answers,
                   insight: insight,
                   onThinkMore: _thinkMore,
+                  onSaveForLater: _saveForLater,
                   onBuyAnyway: _buyAnyway,
                 ),
         ),
@@ -252,12 +265,14 @@ class _Result extends StatelessWidget {
   final PrePurchaseAnswers answers;
   final PrePurchaseInsight insight;
   final VoidCallback onThinkMore;
+  final VoidCallback onSaveForLater;
   final VoidCallback onBuyAnyway;
 
   const _Result({
     required this.answers,
     required this.insight,
     required this.onThinkMore,
+    required this.onSaveForLater,
     required this.onBuyAnyway,
   });
 
@@ -284,17 +299,9 @@ class _Result extends StatelessWidget {
                 ].join(' · '),
                 style: AppTextStyles.bodyMedium,
               ),
+              // The summary and the open question come first: they are the point of
+              // this screen; the observation cards below explain where they come from
               const SizedBox(height: AppDimens.space16),
-              for (final o in insight.observations) ...[
-                _ObservationCard(observation: o),
-                const SizedBox(height: AppDimens.space12),
-              ],
-              if (insight.facts.isNotEmpty) ...[
-                const SizedBox(height: AppDimens.space12),
-                _FactsPanel(facts: insight.facts),
-                const SizedBox(height: AppDimens.space16),
-              ],
-              const SizedBox(height: AppDimens.space4),
               Text(
                 '${insight.summary} Đây là gợi ý từ điều bạn chia sẻ, không phải '
                 'dự đoán việc bạn sẽ làm.',
@@ -307,7 +314,7 @@ class _Result extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: InsightSourceChip(fromAi: insight.usesAi),
               ),
-              const SizedBox(height: AppDimens.space24),
+              const SizedBox(height: AppDimens.space16),
               Text('Gợi mở', style: AppTextStyles.titleLarge),
               const SizedBox(height: AppDimens.space8),
               Text(
@@ -316,6 +323,16 @@ class _Result extends StatelessWidget {
                 style: AppTextStyles.bodyLarge,
               ),
               const SizedBox(height: AppDimens.space24),
+              for (final o in insight.observations) ...[
+                _ObservationCard(observation: o),
+                const SizedBox(height: AppDimens.space12),
+              ],
+              if (insight.facts.isNotEmpty) ...[
+                const SizedBox(height: AppDimens.space12),
+                _FactsPanel(facts: insight.facts),
+                const SizedBox(height: AppDimens.space16),
+              ],
+              const SizedBox(height: AppDimens.space12),
               Text(
                 'Không có lựa chọn đúng hay sai. Quyết định là của bạn.',
                 style: AppTextStyles.caption,
@@ -338,6 +355,12 @@ class _Result extends StatelessWidget {
                 onPressed: onThinkMore,
               ),
               const SizedBox(height: AppDimens.space8),
+              TextButton.icon(
+                key: const ValueKey('pre-purchase-save-for-later'),
+                onPressed: onSaveForLater,
+                icon: const Icon(Icons.bookmark_add_outlined),
+                label: const Text('Lưu vào danh sách cân nhắc'),
+              ),
               AppButton(
                 key: const ValueKey('pre-purchase-buy-anyway'),
                 title: 'Vẫn mua',

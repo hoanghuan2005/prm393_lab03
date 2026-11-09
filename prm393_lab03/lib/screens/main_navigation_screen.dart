@@ -28,6 +28,22 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
+  late final List<Widget> _screens = [
+    HomeScreen(onNavigateTab: _navigateToTab),
+    HistoryScreen(
+      onProfileTap: () => _navigateToTab(4),
+      onBackTap: () => _navigateToTab(0),
+    ),
+    PatternsScreen(
+      onProfileTap: () => _navigateToTab(4),
+      onBackTap: () => _navigateToTab(0),
+    ),
+    InsightsScreen(
+      onProfileTap: () => _navigateToTab(4),
+      onBackTap: () => _navigateToTab(0),
+    ),
+    ProfileScreen(onBackTap: () => _navigateToTab(0)),
+  ];
   late final PurchaseViewModel _purchaseVm = context.read<PurchaseViewModel>();
   late final ExtensionLinkViewModel _extensionVm = context
       .read<ExtensionLinkViewModel>();
@@ -117,6 +133,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const int _insightsTabIndex = 3;
 
   void _navigateToTab(int index) {
+    if (_currentIndex == index) return;
     setState(() {
       _currentIndex = index;
     });
@@ -127,23 +144,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screens = [
-      HomeScreen(onNavigateTab: _navigateToTab),
-      HistoryScreen(
-        onProfileTap: () => _navigateToTab(4),
-        onBackTap: () => _navigateToTab(0),
-      ),
-      PatternsScreen(
-        onProfileTap: () => _navigateToTab(4),
-        onBackTap: () => _navigateToTab(0),
-      ),
-      InsightsScreen(
-        onProfileTap: () => _navigateToTab(4),
-        onBackTap: () => _navigateToTab(0),
-      ),
-      ProfileScreen(onBackTap: () => _navigateToTab(0)),
-    ];
-
     // Android back on another tab returns to Trang chủ instead of closing the app
     return PopScope(
       canPop: _currentIndex == 0,
@@ -151,7 +151,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         if (!didPop) _navigateToTab(0);
       },
       child: Scaffold(
-        body: IndexedStack(index: _currentIndex, children: screens),
+        body: IndexedStack(index: _currentIndex, children: _screens),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,

@@ -9,6 +9,7 @@ import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/motive_colors.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
@@ -21,6 +22,12 @@ class HomeScreen extends StatelessWidget {
   final Function(int)? onNavigateTab;
 
   const HomeScreen({super.key, this.onNavigateTab});
+
+  /// "Chào Tâm," when the account has a name; guests and email-only accounts get "Chào bạn,"
+  static String _greeting(AuthViewModel? authVm) {
+    final name = authVm == null || authVm.isAnonymous ? '' : authVm.displayName.trim();
+    return name.isEmpty || name.contains('@') ? 'Chào bạn,' : 'Chào $name,';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,15 +45,9 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        // Home is the first tab: no "back to Trang chủ" arrow here
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Trang chủ',
-          onPressed: () => onNavigateTab?.call(0),
-        ),
-        titleSpacing: 0,
+        titleSpacing: 16,
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
@@ -70,7 +71,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             // Greeting
             Text(
-              'Chào bạn,',
+              _greeting(context.watch<AuthViewModel?>()),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -220,6 +221,7 @@ class HomeScreen extends StatelessWidget {
                   final picked = await MonthPickerSheet.show(
                     context,
                     purchaseVm.selectedMonth,
+                    lastMonth: DateTime.now(),
                   );
                   if (picked != null) {
                     purchaseVm.setSelectedMonth(picked);

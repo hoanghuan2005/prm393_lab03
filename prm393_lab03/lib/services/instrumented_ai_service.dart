@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 
 import '../core/errors/app_exception.dart';
 import 'ai_decision_service.dart';
@@ -30,6 +33,9 @@ class InstrumentedAiService
 
   /// Instruction set in the console for a feature; null keeps the built-in one
   final String? Function(String feature) promptFor;
+
+  // Only share requests while they are running; feature services own result caches.
+  final Map<String, Future<Object>> _inFlight = {};
 
   InstrumentedAiService({
     required this.text,
@@ -80,19 +86,48 @@ class InstrumentedAiService
     _ => AiErrorTypes.unavailable,
   };
 
-  Future<T> _call<T>(
+  Future<T> _call<T extends Object>(
     String feature,
     Future<T> Function(String instruction) run,
     String builtIn,
+    List<Object> input,
   ) async {
     final instruction = promptFor(feature) ?? builtIn;
+    final model = modelName();
+    final key = sha256
+        .convert(
+          utf8.encode(jsonEncode([feature, model, instruction, ...input])),
+        )
+        .toString();
+    final running = _inFlight[key];
+    if (running != null) return await (running as Future<T>);
+
+    final request = _run(feature, model, instruction, run);
+    _inFlight[key] = request;
+    try {
+      return await request;
+    } finally {
+      unawaited(_inFlight.remove(key));
+    }
+  }
+
+  Future<T> _run<T>(
+    String feature,
+    String model,
+    String instruction,
+    Future<T> Function(String instruction) run,
+  ) async {
+    final stopwatch = Stopwatch()..start();
+    var succeeded = false;
     unawaited(
-      analyticsService?.logAiRequest(feature: feature, model: modelName()) ??
+      analyticsService?.logAiRequest(feature: feature, model: model) ??
           Future<void>.value(),
     );
     try {
-      return await run(instruction)
+      final result = await run(instruction)
           .timeout(_timeouts[feature] ?? _defaultTimeout);
+      succeeded = true;
+      return result;
     } catch (e) {
       unawaited(
         analyticsService?.logAiError(
@@ -102,6 +137,17 @@ class InstrumentedAiService
             Future<void>.value(),
       );
       rethrow;
+    } finally {
+      stopwatch.stop();
+      unawaited(
+        analyticsService?.logAiResponse(
+              feature: feature,
+              model: model,
+              durationMs: stopwatch.elapsedMilliseconds,
+              succeeded: succeeded,
+            ) ??
+            Future<void>.value(),
+      );
     }
   }
 
@@ -118,6 +164,7 @@ class InstrumentedAiService
       cardIds: cardIds,
     ),
     systemInstruction,
+    ['json', prompt, cardIds],
   );
 
   @override
@@ -133,6 +180,7 @@ class InstrumentedAiService
       schema: schema,
     ),
     systemInstruction,
+    ['choice', prompt, schema.oneOf, schema.manyOf],
   );
 
   @override
@@ -148,6 +196,7 @@ class InstrumentedAiService
       fields: fields,
     ),
     systemInstruction,
+    ['fields', prompt, fields],
   );
 
   @override
@@ -169,6 +218,14 @@ class InstrumentedAiService
       listFields: listFields,
     ),
     systemInstruction,
+    [
+      'image',
+      prompt,
+      mimeType,
+      fields,
+      listFields,
+      sha256.convert(imageBytes).toString(),
+    ],
   );
 
   @override
@@ -180,5 +237,6 @@ class InstrumentedAiService
     (instruction) =>
         web.searchWeb(systemInstruction: instruction, prompt: prompt),
     systemInstruction,
+    ['web', prompt],
   );
 }

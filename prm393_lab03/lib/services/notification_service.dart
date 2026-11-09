@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
@@ -218,6 +219,21 @@ class NotificationService {
       debugPrint(
         'NotificationService requestPermission error: ${describeError(e)}',
       );
+      return false;
+    }
+  }
+
+  /// Android: the app's notification settings, for when the permission was denied
+  /// for good and requesting it again shows nothing. Same channel as the share intent.
+  Future<bool> openSystemSettings() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      return await const MethodChannel(
+            'com.group07.whyibuy/share_intent',
+          ).invokeMethod<bool>('openNotificationSettings') ??
+          false;
+    } catch (e) {
+      debugPrint('NotificationService openSystemSettings: ${describeError(e)}');
       return false;
     }
   }

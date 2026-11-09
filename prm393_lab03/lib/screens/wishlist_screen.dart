@@ -38,6 +38,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
     text: context.read<WishlistViewModel>().searchQuery,
   );
 
+  /// Kept for [dispose], where the context can no longer be read
+  late final WishlistViewModel _wishlistVm = context.read<WishlistViewModel>();
+
   @override
   void initState() {
     super.initState();
@@ -63,12 +66,22 @@ class _WishlistScreenState extends State<WishlistScreen> {
   void dispose() {
     _saleNoticeTimer?.cancel();
     _searchController.dispose();
+    // Filters are for this visit only; otherwise the list looks empty next time.
+    // After this frame: listeners may not rebuild while the tree is being torn down.
+    final vm = _wishlistVm;
+    if (vm.hasActiveFilter) Future.microtask(vm.clearFilters);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final wishlistVm = context.watch<WishlistViewModel>();
+    // The view model cleared the query (e.g. after saving an item): empty the box too
+    if (wishlistVm.searchQuery.isEmpty && _searchController.text.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && wishlistVm.searchQuery.isEmpty) _searchController.clear();
+      });
+    }
     final decisionVm = context.watch<DecisionSupportViewModel>();
     final nextSale = decisionVm.upcomingSales.firstOrNull;
     final hasSale = nextSale != null;
@@ -101,12 +114,15 @@ class _WishlistScreenState extends State<WishlistScreen> {
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
             const SizedBox(width: 4),
-            Text(
-              'Smart Wishlist',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            Flexible(
+              child: Text(
+                'Danh sách mong muốn',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ),
           ],
@@ -162,6 +178,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 20),
+                      tooltip: 'Xoá tìm kiếm',
                       onPressed: () {
                         _searchController.clear();
                         wishlistVm.setSearchQuery('');
@@ -290,7 +307,10 @@ class _WishlistScreenState extends State<WishlistScreen> {
       selectedColor: AppColors.primaryContainer,
       checkmarkColor: AppColors.onPrimary,
       labelStyle: AppTextStyles.labelMedium.copyWith(
-        color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+        // Selected chips sit on the light primaryContainer in both themes
+        color: isSelected
+            ? AppColors.onPrimary
+            : Theme.of(context).colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
       ),
       shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderPill),
@@ -312,14 +332,17 @@ class _WishlistScreenState extends State<WishlistScreen> {
             onAction: () => Navigator.pushNamed(context, AppRoutes.wishlistAdd),
           );
         }
+        // The active chip may be scrolled out of sight: one button clears everything
         return EmptyView(
           title: msg,
-          subtitle: 'Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc động cơ.',
-          actionTitle: vm.searchQuery.isNotEmpty ? 'Xóa tìm kiếm' : null,
-          onAction: vm.searchQuery.isNotEmpty
+          subtitle: vm.searchQuery.trim().isNotEmpty
+              ? 'Thử từ khoá khác, hoặc xoá tìm kiếm và bộ lọc để xem mọi món.'
+              : 'Xoá bộ lọc để xem mọi món trong danh sách.',
+          actionTitle: vm.hasActiveFilter ? 'Xoá bộ lọc' : null,
+          onAction: vm.hasActiveFilter
               ? () {
                   _searchController.clear();
-                  vm.setSearchQuery('');
+                  vm.clearFilters();
                 }
               : null,
         );
@@ -330,7 +353,18 @@ class _WishlistScreenState extends State<WishlistScreen> {
         final visible = vm.visibleOf(items);
         final hidden = items.length - visible.length;
         return ListView.builder(
-          padding: const EdgeInsets.all(AppDimens.space16),
+          // A new filter starts at the top instead of keeping the old scroll offset
+          key: ValueKey(
+            '${vm.searchQuery}|${vm.selectedMotiveFilter}|'
+            '${vm.selectedStatusFilter}|${vm.reviewDueOnly}',
+          ),
+          // Room for the system navigation bar under the last card (edge-to-edge)
+          padding: EdgeInsets.fromLTRB(
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+          ),
           itemCount: visible.length + (hidden > 0 ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == visible.length) {

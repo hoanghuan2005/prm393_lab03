@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
 import '../../theme/app_dimens.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -35,24 +34,28 @@ class EmptyView extends StatelessWidget {
               Container(
                 width: 72,
                 height: 72,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 36, color: AppColors.textSecondary),
+                child: Icon(
+                  icon,
+                  size: 36,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppDimens.space20),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: AppDimens.space8),
                 Text(
                   subtitle!,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ],
               if (actionTitle != null && onAction != null) ...[

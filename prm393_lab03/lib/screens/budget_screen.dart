@@ -197,7 +197,7 @@ class BudgetScreen extends StatelessWidget {
                     // Note at bottom (Figma 31)
                     const Center(
                       child: Text(
-                        'Bỏ qua cũng được: Decision Card vẫn hoạt động, chỉ không tính phần trăm.',
+                        'Bỏ qua cũng được: Thẻ Quyết Định vẫn hoạt động, chỉ không tính phần trăm.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
@@ -266,6 +266,7 @@ class BudgetScreen extends StatelessWidget {
               Icons.chevron_left_rounded,
               color: AppColors.onPrimary,
             ),
+            tooltip: 'Tháng trước',
             onPressed: () => purchaseVm.previousMonth(),
           ),
           InkWell(
@@ -311,6 +312,7 @@ class BudgetScreen extends StatelessWidget {
               Icons.chevron_right_rounded,
               color: AppColors.onPrimary,
             ),
+            tooltip: 'Tháng sau',
             onPressed: () => purchaseVm.nextMonth(),
           ),
         ],

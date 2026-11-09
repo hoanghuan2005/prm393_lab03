@@ -86,3 +86,26 @@ class AppTextStyles {
     letterSpacing: 0.5,
   );
 }
+
+/// [AppTextStyles] carry light-mode text colours, which are dark on dark surfaces.
+/// `themed` keeps a style unchanged in light mode and, in dark mode, swaps those
+/// colours for the theme's text colours. Styles with any other colour stay as they are.
+extension ThemedTextStyle on TextStyle {
+  TextStyle themed(BuildContext context) {
+    final theme = Theme.of(context);
+    if (theme.brightness == Brightness.light) return this;
+    final scheme = theme.colorScheme;
+    final c = color;
+    if (c == AppColors.textPrimary ||
+        c == AppColors.textBody ||
+        c == AppColors.onPrimary) {
+      return copyWith(color: scheme.onSurface);
+    }
+    if (c == AppColors.textSecondary ||
+        c == AppColors.textHint ||
+        c == AppColors.accentNeutral) {
+      return copyWith(color: scheme.onSurfaceVariant);
+    }
+    return this;
+  }
+}

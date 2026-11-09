@@ -15,6 +15,7 @@ import 'package:prm393_lab03/services/ai_suggestion_service.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/remote_config_service.dart';
 import 'package:prm393_lab03/viewmodels/item_suggestion_viewmodel.dart';
+import 'package:prm393_lab03/widgets/item_suggestions.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -96,6 +97,63 @@ void main() {
   late _FakeAi ai;
   late _FakeRemoteConfig remoteConfig;
   late ItemSuggestionViewModel vm;
+
+  testWidgets(
+    'a changed group list clears the old hint and requests a new classification',
+    (tester) async {
+      Widget field(List<BudgetGroup> groups) => ChangeNotifierProvider.value(
+        value: vm,
+        child: MaterialApp(
+          home: Scaffold(
+            body: BudgetGroupSuggestion(
+              title: 'Gối ôm Totoro',
+              groups: groups,
+              selectedGroupId: null,
+              onApply: (_) {},
+            ),
+          ),
+        ),
+      );
+      ai.response = '{"groupId":"tech"}';
+      await tester.pumpWidget(field(defaultBudgetGroups));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(find.text('Gợi ý nhóm: Công nghệ'), findsOneWidget);
+      ai.response = '{"groupId":"none"}';
+      await tester.pumpWidget(
+        field([
+          for (final g in defaultBudgetGroups)
+            g.id == 'tech' ? g.copyWith(name: 'Ăn uống mới') : g,
+        ]),
+      );
+      expect(find.text('Gợi ý nhóm: Ăn uống mới'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(ai.prompts, hasLength(2));
+      expect(
+        find.byKey(const ValueKey('budget-group-suggestion')),
+        findsNothing,
+      );
+    },
+  );
+
+  test(
+    'renaming a budget group invalidates the AI classification cache',
+    () async {
+      final generator = _FakeAi()..response = '{"groupId":"custom"}';
+      final service = AiSuggestionService(generator: generator);
+      const before = BudgetGroup(id: 'custom', name: 'Công nghệ', order: 0);
+      await service.suggestGroup('Tai nghe mới', [before]);
+      await service.suggestGroup('Tai nghe mới', [before]);
+      expect(generator.prompts, hasLength(1));
+      generator.response = '{"groupId":"none"}';
+      final result = await service.suggestGroup('Tai nghe mới', [
+        before.copyWith(name: 'Ăn uống'),
+      ]);
+      expect(result, isNull);
+      expect(generator.prompts, hasLength(2));
+    },
+  );
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});

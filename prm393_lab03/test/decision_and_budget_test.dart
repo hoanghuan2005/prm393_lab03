@@ -313,6 +313,7 @@ void main() {
       tester,
     ) async {
       await openDetail(tester);
+      await tester.ensureVisible(find.text('Chờ'));
       await tester.tap(find.text('Chờ'));
       await tester.pumpAndSettle();
       expect(find.text('Xem lại món này khi nào?'), findsOneWidget);
@@ -326,6 +327,7 @@ void main() {
     testWidgets('a skipped item offers "Cân nhắc lại"', (tester) async {
       await h.wishlist.skip(sampleWishlist());
       await openDetail(tester);
+      await tester.ensureVisible(find.text('Cân nhắc lại'));
       await tester.tap(find.text('Cân nhắc lại'));
       await tester.pumpAndSettle();
       expect((await itemData())['status'], WishlistStatus.considering.key);

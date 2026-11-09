@@ -141,6 +141,7 @@ class InsightsScreen extends StatelessWidget {
                 final picked = await MonthPickerSheet.show(
                   context,
                   purchaseVm.selectedMonth,
+                  lastMonth: DateTime.now(),
                 );
                 if (picked != null) purchaseVm.setSelectedMonth(picked);
               },
@@ -181,7 +182,9 @@ class InsightsScreen extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             tooltip: 'Tháng sau',
-            onPressed: purchaseVm.nextMonth,
+            onPressed: purchaseVm.canGoToNextMonth
+                ? purchaseVm.nextMonth
+                : null,
           ),
         ],
       ),

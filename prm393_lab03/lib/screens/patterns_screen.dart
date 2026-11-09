@@ -52,12 +52,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
     ),
   );
 
+  bool get _canGoToNextWeek => _weekStart.isBefore(
+    PurchaseViewModel.weekStartOf(DateTime.now()),
+  );
+
   Future<void> _pickWeek() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _weekStart,
       firstDate: DateTime(2000),
-      lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+      lastDate: DateTime.now(),
       helpText: 'Chọn một ngày trong tuần',
     );
     if (picked != null) {
@@ -187,6 +191,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             final picked = await MonthPickerSheet.show(
                               context,
                               purchaseVm.selectedMonth,
+                              lastMonth: DateTime.now(),
                             );
                             if (picked != null) {
                               purchaseVm.setSelectedMonth(picked);
@@ -239,9 +244,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         tooltip: isWeek ? 'Tuần sau' : 'Tháng sau',
+                        // No future periods: nothing can have been recorded there yet
                         onPressed: isWeek
-                            ? () => _shiftWeek(1)
-                            : purchaseVm.nextMonth,
+                            ? (_canGoToNextWeek ? () => _shiftWeek(1) : null)
+                            : (purchaseVm.canGoToNextMonth
+                                  ? purchaseVm.nextMonth
+                                  : null),
                       ),
                     ],
                   ),

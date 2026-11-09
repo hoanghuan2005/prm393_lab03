@@ -250,6 +250,12 @@ class PurchaseViewModel extends ChangeNotifier
     notifyListeners();
   }
 
+  /// Screens that look back (Lịch sử, Mô hình, Góc nhìn) stop at the current month
+  bool get canGoToNextMonth {
+    final now = DateTime.now();
+    return _selectedMonth.isBefore(DateTime(now.year, now.month));
+  }
+
   void nextMonth() {
     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
     notifyListeners();

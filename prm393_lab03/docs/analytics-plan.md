@@ -12,7 +12,7 @@
 3. **Không gửi thông tin định danh (No PII).** Không gửi email, tên hiển thị, tên món, nội dung tìm kiếm, ghi chú, link sản phẩm. User ID của Analytics và Crashlytics là Firebase `uid`; xoá khi đăng xuất.
 4. **Không gửi số tiền chính xác.** Tiền được gửi dưới dạng `amount_bucket`: `lt_100k` (< 100.000 ₫) · `100k_500k` (100.000–500.000 ₫) · `gt_500k` (> 500.000 ₫). Món chưa có giá: `has_price = 0`, không có `amount_bucket`.
 5. **Mỗi event trả lời một câu hỏi sản phẩm.** Câu hỏi được viết trung tính (không coi "Bỏ qua" là thành công, không nói "tiết kiệm").
-6. **Event AI không chứa nội dung.** `ai_request`, `ai_error`, `ai_result_accepted` chỉ có tên tính năng, tên model và loại lỗi; không gửi prompt, tên món hay câu trả lời của AI. Xem `docs/ai-feature.md`.
+6. **Event AI không chứa nội dung.** `ai_request`, `ai_error`, `ai_response`, `ai_result_accepted` chỉ có tên tính năng, tên model, loại lỗi, thời gian phản hồi và trạng thái thành công; không gửi prompt, tên món hay câu trả lời của AI. Xem `docs/ai-feature.md`.
 7. Màn hình (`screen_view`) được ghi tự động bởi `FirebaseAnalyticsObserver` theo tên route trong `AppRoutes`.
 
 ---
@@ -37,6 +37,7 @@
 | 14 | `view_price_history` | `mode` (string: `product` · `group`), `range_days` (int: 7 · 30 · 90), `is_demo` (0/1) | `PriceHistoryViewModel` – mỗi lần màn "Giá tham khảo" có kết quả (mở màn, đổi khoảng ngày, đổi "Chỉ món này / Cả nhóm"); biểu đồ xem trước trong khu "Lịch sử giá" ở Chi tiết món (G6b) không ghi, nút "Xem toàn màn hình" mở màn thì ghi | Người dùng có xem giá tham khảo không, xem một món hay cả nhóm, khoảng ngày nào; bao nhiêu lượt là dữ liệu mẫu? |
 | 15 | `view_same_product` | `result_count` (int: 1–3), `is_demo` (0/1) | `SameProductViewModel` – mỗi lần mở Chi tiết món mà thẻ "Cùng món ở shop khác" có ít nhất 1 shop | Thẻ ghép cùng món có hiện thường xuyên không, thường có mấy shop? |
 | 16 | `hide_same_product_match` | – | `SameProductViewModel.hide` – bấm "Không phải món này" trên một dòng | Ghép tự động (mã món do AI) sai bao nhiêu, so với `view_same_product`? |
+| 17 | `ai_response` | `ai_feature` (string), `ai_model` (string), `duration_ms` (int), `succeeded` (0/1) | `InstrumentedAiService` – mỗi yêu cầu Gemini thực tế hoàn tất hoặc hết thời gian chờ; các yêu cầu giống nhau đang chạy dùng chung một lượt gọi | Chức năng AI nào chậm hoặc hay lỗi? Thành công ở đây là nhận được phản hồi từ dịch vụ, chưa bao gồm kiểm tra nội dung ở từng tính năng. |
 
 ---
 

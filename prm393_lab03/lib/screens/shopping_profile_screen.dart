@@ -89,7 +89,13 @@ class ShoppingProfileScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // Edge-to-edge (Android 15+): the last buttons stay above the navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           Text(
             'Tất cả đều tùy chọn. App không lấy lịch sử mua Shopee: bạn tự ghi đồ '

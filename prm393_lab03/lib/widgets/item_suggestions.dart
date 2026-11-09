@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +47,7 @@ abstract class _DebouncedState<W extends StatefulWidget, R> extends State<W> {
   void _schedule() {
     _timer?.cancel();
     _request++;
+    result = null;
     if (context.read<ItemSuggestionViewModel?>() == null) return;
     // Called from initState/didUpdateWidget, so the next build already shows this
     if (normalizeTitle(titleOf(widget)).length < 2) {
@@ -97,6 +99,12 @@ class _BudgetGroupSuggestionState
     extends _DebouncedState<BudgetGroupSuggestion, GroupSuggestion?> {
   @override
   String titleOf(BudgetGroupSuggestion widget) => widget.title;
+
+  @override
+  String keyOf(BudgetGroupSuggestion widget) => jsonEncode([
+    widget.title,
+    for (final group in widget.groups) [group.id, group.name],
+  ]);
 
   @override
   Future<GroupSuggestion?> load(ItemSuggestionViewModel vm) =>

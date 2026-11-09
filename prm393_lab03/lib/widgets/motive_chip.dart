@@ -4,6 +4,7 @@ import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 
 /// Reusable Motive Chip for the 8 Buying Motives.
 /// Tappable chips always get a 48dp touch target; [isCompact] only shrinks display-only chips.
@@ -23,8 +24,13 @@ class MotiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isSelected ? motive.color : motive.backgroundColor;
-    final fgColor = isSelected ? AppColors.textOnDark : motive.color;
+    // Theme palette: same colours as before in light mode, deep hues in dark mode
+    final palette = MotiveColors.of(context).paletteOf(motive);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isSelected ? palette.foreground : palette.background;
+    final fgColor = isSelected
+        ? (isDark ? AppColors.textPrimary : AppColors.textOnDark)
+        : palette.foreground;
     final isInteractive = onSelected != null;
 
     return Semantics(
@@ -52,8 +58,8 @@ class MotiveChip extends StatelessWidget {
               borderRadius: AppDimens.borderPill,
               border: Border.all(
                 color: isSelected
-                    ? motive.color
-                    : motive.color.withValues(alpha: 0.3),
+                    ? palette.foreground
+                    : palette.foreground.withValues(alpha: 0.3),
                 width: 1.2,
               ),
             ),

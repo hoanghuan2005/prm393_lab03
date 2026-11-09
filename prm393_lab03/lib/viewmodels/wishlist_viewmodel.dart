@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/buying_motive.dart';
+import '../models/item_suggestion.dart';
 import '../models/price_snapshot.dart';
 import '../models/ui_state.dart';
 import '../models/wishlist_item.dart';
@@ -123,6 +124,22 @@ class WishlistViewModel extends ChangeNotifier
         ..sort((a, b) => a.buyIntentAt!.compareTo(b.buyIntentAt!));
   bool get reviewDueOnly => _reviewDueOnly;
 
+  bool get hasActiveFilter =>
+      _searchQuery.trim().isNotEmpty ||
+      _selectedMotiveFilter != null ||
+      _selectedStatusFilter != null ||
+      _reviewDueOnly;
+
+  /// Back to "Tất cả" with no search: after saving an item, or from the empty state
+  void clearFilters() {
+    _searchQuery = '';
+    _selectedMotiveFilter = null;
+    _selectedStatusFilter = null;
+    _reviewDueOnly = false;
+    _showAll = false;
+    _updateFilteredState();
+  }
+
   /// Filtered items based on active motive, status, and search query
   List<WishlistItem> get filteredItems {
     return _allItems.where((item) {
@@ -135,12 +152,13 @@ class WishlistViewModel extends ChangeNotifier
           item.status != _selectedStatusFilter) {
         return false;
       }
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final matchesTitle = item.title.toLowerCase().contains(query);
-        final matchesMotive = item.displayMotive.label.toLowerCase().contains(
-          query,
-        );
+      if (_searchQuery.trim().isNotEmpty) {
+        // Without diacritics on both sides: "cam xuc" finds "Cảm xúc"
+        final query = normalizeTitle(_searchQuery);
+        final matchesTitle = normalizeTitle(item.title).contains(query);
+        final matchesMotive = normalizeTitle(
+          item.displayMotive.label,
+        ).contains(query);
         return matchesTitle || matchesMotive;
       }
       return true;
@@ -327,6 +345,8 @@ class WishlistViewModel extends ChangeNotifier
         analyticsService.logAddToWishlist(motive: motive.key, priceVnd: price),
       );
       _actionError = null;
+      // The new item must be visible when the user returns to the list
+      if (hasActiveFilter) clearFilters();
       return true;
     } catch (e, stack) {
       _actionError = messageFor(e, stack, reason: 'addItem');
@@ -491,6 +511,10 @@ class WishlistViewModel extends ChangeNotifier
         _state = UiEmpty(
           message: _reviewDueOnly
               ? 'Chưa có món nào đến ngày xem lại'
+              : _searchQuery.trim().isEmpty &&
+                    _selectedMotiveFilter == null &&
+                    _selectedStatusFilter != null
+              ? 'Chưa có món nào ở mục "${_selectedStatusFilter!.label}"'
               : 'Không tìm thấy món nào phù hợp với bộ lọc hiện tại',
         );
       }

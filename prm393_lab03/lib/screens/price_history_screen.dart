@@ -107,7 +107,13 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Giá tham khảo')),
       body: ListView(
-        padding: const EdgeInsets.all(AppDimens.space16),
+        // Edge-to-edge (Android 15+): the last buttons stay above the navigation bar
+        padding: EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           if (_title != null) ...[
             Text(_title!, style: AppTextStyles.titleMedium),

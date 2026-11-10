@@ -110,9 +110,20 @@ class ShopeeVoucher {
       appliesText: readText(data['appliesText']),
       shopId: readText(data['shopId']),
       shopName: _realShopName(readText(data['shopName'])),
-      productTitle: readText(data['productTitle']),
+      productTitle: _realProductTitle(readText(data['productTitle'])),
     );
   }
+
+  /// Older extension builds could save Shopee's generic page title
+  /// ("Shopee Việt Nam | Mua và Bán…") as the product: ignore it.
+  static String? _realProductTitle(String? title) =>
+      title == null ||
+          RegExp(
+            r'^shopee(\s+việt nam)?\s*(\||-|$)',
+            caseSensitive: false,
+          ).hasMatch(title)
+      ? null
+      : title;
 
   /// Older extension builds could save a status line of the shop box
   /// ("Không có sẵn", "Online 5 phút trước"…) as the shop name: ignore it.
@@ -160,17 +171,42 @@ class ShopeeVoucher {
     return null;
   }
 
+  /// The shop's page on Shopee: by shop id, or the scraped page when it was
+  /// the shop page itself (`shopee.vn/<shop-handle>`)
+  String? get shopUrl {
+    if (shopId != null && RegExp(r'^\d+$').hasMatch(shopId!)) {
+      return 'https://shopee.vn/shop/$shopId';
+    }
+    if (shopName != null &&
+        RegExp(r'^https://shopee\.vn/[A-Za-z0-9._-]+$').hasMatch(sourceUrl)) {
+      return sourceUrl;
+    }
+    return null;
+  }
+
   /// Same voucher text whatever shop it was scraped at (platform vouchers
   /// appear once per shop)
   String get sameVoucherKey => raw.toLowerCase();
 
-  /// "Đơn tối thiểu 99.000 ₫ · HSD 30.11 · Đã dùng 80%"
+  /// How long it can still be used, from [expiresDate]: "còn 3 ngày",
+  /// "hết hạn hôm nay" or "đã hết hạn"
+  String? get expiresIn {
+    final date = DateTime.tryParse(expiresDate ?? '');
+    if (date == null) return null;
+    final now = DateTime.now();
+    final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
+    if (days < 0) return 'đã hết hạn';
+    if (days == 0) return 'hết hạn hôm nay';
+    return 'còn $days ngày';
+  }
+
+  /// "Đơn tối thiểu 99.000 ₫ · HSD 23:59 30/11/2026 (còn 3 ngày) · Đã dùng 80%"
   String get conditionLabel => [
     if (minSpendVnd != null && minSpendVnd! > 0)
       'Đơn tối thiểu ${formatVnd(minSpendVnd!)}',
     if (startsText != null) 'Bắt đầu $startsText',
     if (expiresDate != null)
-      'HSD ${expiresDate!.split('-').reversed.join('/')}'
+      'HSD ${expiresText != null && RegExp(r'20\d\d').hasMatch(expiresText!) ? expiresText : expiresDate!.split('-').reversed.join('/')} ($expiresIn)'
     else if (expiresText != null)
       'HSD $expiresText',
     if (usedPct != null) 'Đã dùng $usedPct%',

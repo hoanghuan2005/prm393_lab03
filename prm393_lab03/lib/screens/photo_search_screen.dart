@@ -718,14 +718,21 @@ class _HeroPhoto extends StatelessWidget {
             if (image != null)
               Image.memory(image!, fit: BoxFit.cover, gaplessPlayback: true),
             if (dimmed)
-              const ColoredBox(color: Color(0x66000000))
+              ColoredBox(
+                color: AppSemanticColors.of(context).statusOverlay
+                    .withValues(alpha: 0.4),
+              )
             else
-              const DecoratedBox(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.center,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x00000000), Color(0x40000000)],
+                    colors: [
+                      Colors.transparent,
+                      AppSemanticColors.of(context).statusOverlay
+                          .withValues(alpha: 64 / 255),
+                    ],
                   ),
                 ),
               ),
@@ -852,26 +859,16 @@ class _PriceRange extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fg = isDark
-        ? AppColors.darkPrimaryContainerText
-        : AppColors.onPrimary;
-    final muted = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.textSecondary;
+    final semantic = AppSemanticColors.of(context);
+    final fg = semantic.onPrimaryContainer;
+    final muted = semantic.textSecondary;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkPrimaryContainer
-            : AppColors.primaryContainer,
+        color: semantic.primaryContainer,
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(
-          color: isDark
-              ? AppColors.darkPrimaryContainerOutline
-              : AppColors.primary.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: semantic.primaryContainerBorder),
       ),
       child: Row(
         children: [

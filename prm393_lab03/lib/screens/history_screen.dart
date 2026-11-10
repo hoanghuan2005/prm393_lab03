@@ -275,6 +275,26 @@ class HistoryScreen extends StatelessWidget {
                                   ),
                               textAlign: TextAlign.center,
                             ),
+                            const SizedBox(height: AppDimens.space12),
+                            TextButton.icon(
+                              key: const ValueKey('history-empty-action'),
+                              onPressed: purchaseVm.hasActiveFilter
+                                  ? purchaseVm.clearFilters
+                                  : () => Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.recordPurchase,
+                                    ),
+                              icon: Icon(
+                                purchaseVm.hasActiveFilter
+                                    ? Icons.filter_alt_off_outlined
+                                    : Icons.add,
+                              ),
+                              label: Text(
+                                purchaseVm.hasActiveFilter
+                                    ? 'Xoá bộ lọc'
+                                    : 'Ghi khoản mua đầu tiên',
+                              ),
+                            ),
                           ],
                         ),
                       )

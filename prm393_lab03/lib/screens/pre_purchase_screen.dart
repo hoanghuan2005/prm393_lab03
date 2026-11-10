@@ -11,6 +11,7 @@ import '../theme/app_text_styles.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Steps of "Trước khi mua"; [sale] only after "Khuyến mãi"
@@ -38,6 +39,18 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
   UsageAnswer? _usage;
   SimilarOwnedAnswer? _similar;
   MoodAnswer? _mood;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  bool get _hasChanges =>
+      _titleController.text.trim().isNotEmpty ||
+      _priceController.text.trim().isNotEmpty ||
+      _why != null ||
+      _influence != null ||
+      _withoutSale != null ||
+      _usage != null ||
+      _similar != null ||
+      _mood != null;
 
   @override
   void dispose() {
@@ -73,12 +86,26 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
   String get _itemLine =>
       _price == null ? _title : '$_title · ${formatVnd(_price!)}';
 
-  void _back() {
+  Future<void> _back() async {
     final index = _steps.indexOf(_step);
     if (index > 0) {
       setState(() => _step = _steps[index - 1]);
     } else {
-      Navigator.maybePop(context);
+      if (_confirmingExit) return;
+      if (_hasChanges) {
+        _confirmingExit = true;
+        final discard = await ConfirmDialog.show(
+          context,
+          title: 'Bỏ câu trả lời?',
+          message: 'Những câu trả lời bạn vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ câu trả lời',
+        );
+        _confirmingExit = false;
+        if (!mounted || !discard) return;
+      }
+      setState(() => _allowExit = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) Navigator.maybePop(context);
     }
   }
 
@@ -132,7 +159,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
       _Step.usage => ('Câu hỏi nhanh', 'Bạn sẽ dùng nó ra sao?'),
     };
     return PopScope(
-      canPop: _step == _Step.item,
+      canPop: _allowExit,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },

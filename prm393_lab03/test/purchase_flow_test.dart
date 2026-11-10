@@ -162,6 +162,9 @@ void main() {
       );
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsOneWidget);
+      await tester.tap(find.text('Bỏ thay đổi'));
+      await tester.pumpAndSettle();
       expect(find.byType(ItemDetailScreen), findsOneWidget);
       expect(h.service.buyCalls, 0);
       expect(h.purchases.allPurchases, isEmpty);

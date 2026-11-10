@@ -222,6 +222,43 @@ void main() {
     },
   );
 
+  testWidgets('budget sheet keeps an unsaved limit when Back is cancelled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(h.app(const BudgetScreen()));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đặt ngân sách cho tháng này'));
+    await tester.pumpAndSettle();
+    final field = find.descendant(
+      of: find.byKey(const ValueKey('budget-limit-tech')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(field, '1000000');
+    await tester.pump();
+    expect(find.text('Lưu hạn mức'), findsOneWidget);
+    expect(
+      tester
+          .widget<PopScope>(find.byWidgetPredicate((w) => w is PopScope).last)
+          .canPop,
+      isFalse,
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Lưu hạn mức'), findsOneWidget);
+    expect(find.text('Bỏ thay đổi hạn mức?'), findsOneWidget);
+    await tester.tap(find.text('Huỷ'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextFormField>(field).controller?.text, '1.000.000');
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bỏ thay đổi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lưu hạn mức'), findsNothing);
+  });
+
   testWidgets('a failed delete stays on the purchase and offers "Thử lại"', (
     tester,
   ) async {

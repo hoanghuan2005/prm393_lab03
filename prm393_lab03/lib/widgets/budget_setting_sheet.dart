@@ -10,6 +10,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import 'amount_field.dart';
 import 'app_bottom_sheet.dart';
 import 'app_button.dart';
+import 'confirm_dialog.dart';
 
 /// Figma "31 Ngân sách theo nhóm": a limit per group for the selected month.
 /// The month total is the sum of the group limits, never a separate number that could
@@ -39,11 +40,35 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
   late final BudgetViewModel _vm = context.read<BudgetViewModel>();
 
   /// groupId → value being edited (null = no limit)
-  late final Map<String, int?> _values = {
+  late final Map<String, int?> _initialValues = {
     for (final g in _vm.groups) g.id: _vm.limitFor(g.id),
   };
+  late final Map<String, int?> _values = {..._initialValues};
   bool _isSaving = false;
+  bool _allowClose = false;
+  bool _confirmingClose = false;
   String? _error;
+
+  bool get _hasChanges =>
+      _values.entries.any((entry) => entry.value != _initialValues[entry.key]);
+
+  Future<void> _requestClose() async {
+    if (_isSaving || _confirmingClose) return;
+    _confirmingClose = true;
+    final discard =
+        !_hasChanges ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ thay đổi hạn mức?',
+          message: 'Những hạn mức vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ thay đổi',
+        );
+    _confirmingClose = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowClose = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   int get _total => _values.values.fold(0, (sum, v) => sum + (v ?? 0));
 
@@ -69,6 +94,9 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
       return;
     }
     final messenger = ScaffoldMessenger.of(context);
+    setState(() => _allowClose = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
     Navigator.pop(context);
     messenger
       ..hideCurrentSnackBar()
@@ -141,7 +169,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
                 const SizedBox(height: AppDimens.space4),
                 Text(
                   total == 0
-                      ? 'Chưa đặt hạn mức nào. Thẻ Quyết Định vẫn hoạt động, chỉ không tính phần trăm.'
+                      ? 'Chưa đặt hạn mức nào. Thẻ quyết định vẫn hoạt động, chỉ không tính phần trăm.'
                       : 'Bằng tổng hạn mức các nhóm. Các nhóm này đã chi ${formatVnd(spent)}; '
                             '${spent > total ? 'đã vượt ${formatVnd(spent - total)}' : 'còn ${formatVnd(total - spent)}'}.',
                   style: AppTextStyles.bodyMedium.themed(context),
@@ -162,11 +190,19 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
             ),
           ],
           const SizedBox(height: AppDimens.space16),
-          AppButton(
-            title: _error == null ? 'Lưu hạn mức' : 'Thử lại',
-            icon: _error == null ? Icons.check_rounded : Icons.refresh_rounded,
-            isLoading: _isSaving,
-            onPressed: _save,
+          PopScope(
+            canPop: _allowClose || (!_isSaving && !_hasChanges),
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) _requestClose();
+            },
+            child: AppButton(
+              title: _error == null ? 'Lưu hạn mức' : 'Thử lại',
+              icon: _error == null
+                  ? Icons.check_rounded
+                  : Icons.refresh_rounded,
+              isLoading: _isSaving,
+              onPressed: _save,
+            ),
           ),
         ],
       ),

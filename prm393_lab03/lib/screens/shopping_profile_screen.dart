@@ -22,8 +22,35 @@ import '../widgets/why_i_buy_logo.dart';
 
 /// Screen 24 "Hồ sơ mua sắm" (spec 7.2, A-12): 24.1 empty · 24.2 owned items ·
 /// 24.3 add / edit. Everything is optional and never read from Shopee.
-class ShoppingProfileScreen extends StatelessWidget {
+class ShoppingProfileScreen extends StatefulWidget {
   const ShoppingProfileScreen({super.key});
+
+  @override
+  State<ShoppingProfileScreen> createState() => _ShoppingProfileScreenState();
+}
+
+class _ShoppingProfileScreenState extends State<ShoppingProfileScreen> {
+  final _tagsKey = GlobalKey<_TagsCardState>();
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  Future<void> _back() async {
+    if (_confirmingExit || _tagsKey.currentState?.isSaving == true) return;
+    _confirmingExit = true;
+    final discard =
+        _tagsKey.currentState?.hasChanges != true ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ thay đổi hồ sơ?',
+          message: 'Phong cách hoặc thương hiệu vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ thay đổi',
+        );
+    _confirmingExit = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   Future<void> _delete(BuildContext context, OwnedItem item) async {
     final vm = context.read<ShoppingProfileViewModel>();
@@ -64,11 +91,17 @@ class ShoppingProfileScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
         leadingWidth: AppDimens.minTouchTarget,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
+        leading: PopScope(
+          canPop: _allowExit,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _back();
+          },
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+            tooltip: 'Quay lại',
+            onPressed: _back,
+          ),
         ),
         titleSpacing: 0,
         title: Row(
@@ -157,7 +190,7 @@ class ShoppingProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimens.space16),
-          const _TagsCard(),
+          _TagsCard(key: _tagsKey),
         ],
       ),
     );
@@ -166,7 +199,7 @@ class ShoppingProfileScreen extends StatelessWidget {
 
 /// Phong cách và thương hiệu hay dùng: comma-separated tags
 class _TagsCard extends StatefulWidget {
-  const _TagsCard();
+  const _TagsCard({super.key});
 
   @override
   State<_TagsCard> createState() => _TagsCardState();
@@ -177,6 +210,12 @@ class _TagsCardState extends State<_TagsCard> {
   final _brands = TextEditingController();
   bool _loaded = false;
   bool _saving = false;
+  String _savedStyles = '';
+  String _savedBrands = '';
+
+  bool get isSaving => _saving;
+  bool get hasChanges =>
+      _styles.text != _savedStyles || _brands.text != _savedBrands;
 
   @override
   void dispose() {
@@ -195,6 +234,10 @@ class _TagsCardState extends State<_TagsCard> {
     );
     if (!mounted) return;
     setState(() => _saving = false);
+    if (ok) {
+      _savedStyles = _styles.text;
+      _savedBrands = _brands.text;
+    }
     messenger.showSnackBar(
       SnackBar(
         content: Text(
@@ -214,6 +257,8 @@ class _TagsCardState extends State<_TagsCard> {
       _loaded = true;
       _styles.text = tags.styles.join(', ');
       _brands.text = tags.brands.join(', ');
+      _savedStyles = _styles.text;
+      _savedBrands = _brands.text;
     }
     return SectionCard(
       title: 'Phong cách và thương hiệu',
@@ -274,6 +319,32 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
   late String? _groupId = widget.existing?.budgetGroupId;
   bool _saving = false;
   String? _error;
+  bool _allowClose = false;
+  bool _confirmingClose = false;
+
+  bool get _hasChanges =>
+      _name.text != (widget.existing?.name ?? '') ||
+      _tags.text != (widget.existing?.tags.join(', ') ?? '') ||
+      _note.text != (widget.existing?.note ?? '') ||
+      _groupId != widget.existing?.budgetGroupId;
+
+  Future<void> _requestClose() async {
+    if (_saving || _confirmingClose) return;
+    _confirmingClose = true;
+    final discard =
+        !_hasChanges ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ thay đổi đồ đang dùng?',
+          message: 'Thông tin bạn vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ thay đổi',
+        );
+    _confirmingClose = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowClose = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   @override
   void dispose() {
@@ -301,6 +372,9 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
     );
     if (!mounted) return;
     if (ok) {
+      setState(() => _allowClose = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
       Navigator.pop(context);
       return;
     }
@@ -371,12 +445,18 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
             ),
           ],
           const SizedBox(height: AppDimens.space16),
-          AppButton(
-            key: const ValueKey('owned-save'),
-            title: 'Lưu',
-            icon: Icons.check,
-            isLoading: _saving,
-            onPressed: _save,
+          PopScope(
+            canPop: _allowClose,
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) _requestClose();
+            },
+            child: AppButton(
+              key: const ValueKey('owned-save'),
+              title: 'Lưu',
+              icon: Icons.check,
+              isLoading: _saving,
+              onPressed: _save,
+            ),
           ),
         ],
       ),

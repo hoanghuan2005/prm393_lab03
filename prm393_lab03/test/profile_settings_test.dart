@@ -420,7 +420,7 @@ void main() {
       );
       expect(
         reminders.immediate.last.body,
-        'Lỗi thử đã được gửi lên Firebase Crashlytics.',
+        'Lỗi thử đã được gửi lên Firebase Crashlytics & Admin Web.',
       );
       for (final n in reminders.immediate) {
         expect('${n.title}${n.body}', isNot(contains('uid-123')));

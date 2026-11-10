@@ -17,9 +17,8 @@ import '../widgets/states/empty_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 import '../widgets/wishlist_card.dart';
 
-String _countdown(SaleEvent sale, DateTime now) {
-  final days = sale.daysUntil(now);
-  return days == 0 ? 'Hôm nay' : 'Còn $days ngày';
+String _saleDateLabel(SaleEvent sale, DateTime now) {
+  return sale.daysUntil(now) == 0 ? 'Hôm nay' : formatWeekdayDate(sale.date);
 }
 
 /// "Đã xác nhận" (Shopee announced it) or "Dự kiến" (public pattern)
@@ -127,9 +126,7 @@ class SaleCalendarScreen extends StatelessWidget {
                   sale.name,
                   style: AppTextStyles.titleMedium.themed(context),
                 ),
-                subtitle: Text(
-                  '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
-                ),
+                subtitle: Text(_saleDateLabel(sale, vm.now)),
                 trailing: _SaleStatusChip(confirmed: sale.confirmed),
                 onTap: () => Navigator.pushNamed(
                   context,
@@ -197,7 +194,7 @@ class SaleListScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
+                    _saleDateLabel(sale, vm.now),
                     style: AppTextStyles.titleMedium.themed(context),
                   ),
                 ),

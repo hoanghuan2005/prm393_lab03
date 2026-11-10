@@ -16,14 +16,49 @@ import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/insight_source_chip.dart';
 import '../widgets/states/error_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 import 'insights_screen.dart';
 
 /// Screen 09: Monthly Reflection + PDF report shared from the device (D7: no Cloud Storage)
-class MonthlyReflectionScreen extends StatelessWidget {
+class MonthlyReflectionScreen extends StatefulWidget {
   const MonthlyReflectionScreen({super.key});
+
+  @override
+  State<MonthlyReflectionScreen> createState() =>
+      _MonthlyReflectionScreenState();
+}
+
+class _MonthlyReflectionScreenState extends State<MonthlyReflectionScreen> {
+  final _formKey = GlobalKey<_ReflectionFormState>();
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  Future<void> _back() async {
+    if (_confirmingExit || context.read<ReflectionViewModel>().isSaving) return;
+    _confirmingExit = true;
+    final discard =
+        _formKey.currentState?.hasChanges != true ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ chiêm nghiệm đang nhập?',
+          message: 'Mục tiêu hoặc mức độ hài lòng vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ thay đổi',
+        );
+    _confirmingExit = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
+
+  Future<void> _exitAfterSave() async {
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +83,17 @@ class MonthlyReflectionScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
         leadingWidth: AppDimens.minTouchTarget,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
+        leading: PopScope(
+          canPop: _allowExit,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _back();
+          },
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+            tooltip: 'Quay lại',
+            onPressed: _back,
+          ),
         ),
         titleSpacing: 0,
         title: Row(
@@ -238,7 +279,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space32),
 
-            const _ReflectionForm(),
+            _ReflectionForm(key: _formKey, onSaved: _exitAfterSave),
             const SizedBox(height: AppDimens.space16),
 
             // PDF report: built on the device and shared with `printing`
@@ -288,7 +329,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
 
 /// Mức độ hài lòng 1–5 + mục tiêu tháng sau (handoff 09), saved through ReflectionViewModel
 class _ReflectionForm extends StatefulWidget {
-  const _ReflectionForm();
+  final Future<void> Function() onSaved;
+
+  const _ReflectionForm({super.key, required this.onSaved});
 
   @override
   State<_ReflectionForm> createState() => _ReflectionFormState();
@@ -297,6 +340,14 @@ class _ReflectionForm extends StatefulWidget {
 class _ReflectionFormState extends State<_ReflectionForm> {
   final _goalController = TextEditingController();
   String? _loadedMonth;
+  String _baselineGoal = '';
+  bool _loadedFromSaved = false;
+  final Map<String, String> _draftGoals = {};
+
+  bool get hasChanges =>
+      _goalController.text != _baselineGoal ||
+      context.read<ReflectionViewModel>().rating !=
+          context.read<ReflectionViewModel>().saved?.rating;
 
   @override
   void dispose() {
@@ -306,7 +357,6 @@ class _ReflectionFormState extends State<_ReflectionForm> {
 
   Future<void> _save(ReflectionViewModel vm) async {
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
     final ok = await vm.save(_goalController.text);
     if (!mounted) return;
     if (!ok) {
@@ -319,7 +369,7 @@ class _ReflectionFormState extends State<_ReflectionForm> {
       );
       return;
     }
-    navigator.pop();
+    await widget.onSaved();
     messenger.showSnackBar(
       SnackBar(content: Text('Đã lưu chiêm nghiệm tháng ${vm.month.month}')),
     );
@@ -329,11 +379,23 @@ class _ReflectionFormState extends State<_ReflectionForm> {
   Widget build(BuildContext context) {
     final vm = context.watch<ReflectionViewModel>();
 
-    // Fill the goal once per month with what was saved before
+    // Keep an unsaved goal when the selected month changes and restore it on return.
     final monthLabel = formatMonthLabel(vm.month);
-    if (_loadedMonth != monthLabel && vm.saved != null) {
+    if (_loadedMonth != monthLabel) {
+      if (_loadedMonth != null && _goalController.text != _baselineGoal) {
+        _draftGoals[_loadedMonth!] = _goalController.text;
+      }
       _loadedMonth = monthLabel;
-      _goalController.text = vm.saved!.goal ?? '';
+      _loadedFromSaved = vm.saved != null;
+      _baselineGoal = vm.saved?.goal ?? '';
+      _goalController.text = _draftGoals[monthLabel] ?? _baselineGoal;
+    } else if (!_loadedFromSaved && vm.saved != null) {
+      _loadedFromSaved = true;
+      final savedGoal = vm.saved!.goal ?? '';
+      if (_goalController.text == _baselineGoal) {
+        _goalController.text = savedGoal;
+      }
+      _baselineGoal = savedGoal;
     }
 
     return Column(

@@ -57,8 +57,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   /// Runs one decision write; success and failure are only reported after the write returns
-  Future<bool> _run(Future<bool> Function(WishlistViewModel vm) action) async {
-    if (_isProcessing) return false;
+  Future<bool> _run(
+    Future<bool> Function(WishlistViewModel vm) action, {
+    required VoidCallback onRetry,
+  }) async {
+    if (!mounted || _isProcessing) return false;
     setState(() => _isProcessing = true);
     final vm = context.read<WishlistViewModel>();
     final ok = await action(vm);
@@ -68,7 +71,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       _showRetry(
         ScaffoldMessenger.of(context),
         vm.actionError ?? 'Chưa lưu được quyết định.',
-        () => _run(action),
+        onRetry,
       );
     }
     return ok;
@@ -102,7 +105,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       sale: context.read<DecisionSupportViewModel?>()?.nextConfirmedSale,
     );
     if (reviewAt == null || !mounted) return;
-    final ok = await _run((vm) => vm.wait(item, reviewAt));
+    await _saveReviewDate(item, reviewAt);
+  }
+
+  Future<void> _saveReviewDate(WishlistItem item, DateTime reviewAt) async {
+    if (!mounted) return;
+    final vm = context.read<WishlistViewModel>();
+    final ok = await _run(
+      (vm) => vm.wait(item, reviewAt),
+      onRetry: () => _saveReviewDate(item, reviewAt),
+    );
     if (!ok || !mounted) return;
     // Permission is asked here, right after the user chose to be reminded (spec 4.1 A-09)
     final permission = await vm.requestReminderPermission();
@@ -125,7 +137,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// "Bỏ qua": back to the list with a 5-second "Hoàn tác"
   Future<void> _skip(WishlistItem item) async {
-    final ok = await _run((vm) => vm.skip(item));
+    final ok = await _run((vm) => vm.skip(item), onRetry: () => _skip(item));
     if (!ok || !mounted) return;
     final vm = context.read<WishlistViewModel>();
     final messenger = ScaffoldMessenger.of(context);
@@ -165,7 +177,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// Decision Card label 5 (spec 7.4): the user marks the item as (not) a duplicate
   Future<void> _setDuplicate(WishlistItem item, bool value) async {
-    final ok = await _run((vm) => vm.setConfirmedDuplicate(item, value));
+    final ok = await _run(
+      (vm) => vm.setConfirmedDuplicate(item, value),
+      onRetry: () => _setDuplicate(item, value),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -183,7 +198,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// A skipped item can be considered again later
   Future<void> _reconsider(WishlistItem item) async {
-    final ok = await _run((vm) => vm.reconsider(item));
+    final ok = await _run(
+      (vm) => vm.reconsider(item),
+      onRetry: () => _reconsider(item),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -214,8 +232,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       currentPriceAt: item.latestPriceAt,
     );
     if (amount == null || !mounted) return;
+    await _savePrice(item, amount);
+  }
+
+  Future<void> _savePrice(WishlistItem item, int amount) async {
     final confirmed = amount == item.latestPriceVnd;
-    final ok = await _run((vm) => vm.updatePrice(item, amount));
+    final ok = await _run(
+      (vm) => vm.updatePrice(item, amount),
+      onRetry: () => _savePrice(item, amount),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -243,8 +268,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       confirmLabel: 'Dùng giá này',
     );
     if (!ok || !mounted) return;
+    await _saveSharedPrice(item, amount);
+  }
+
+  Future<void> _saveSharedPrice(WishlistItem item, int amount) async {
     final saved = await _run(
       (vm) => vm.updatePrice(item, amount, source: PriceSource.community),
+      onRetry: () => _saveSharedPrice(item, amount),
     );
     if (!saved || !mounted) return;
     ScaffoldMessenger.of(context)
@@ -270,7 +300,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       isDanger: true,
     );
     if (!confirmed || !mounted) return;
-    final ok = await _run((vm) => vm.deleteItem(item));
+    await _deleteItem(item);
+  }
+
+  Future<void> _deleteItem(WishlistItem item) async {
+    final ok = await _run(
+      (vm) => vm.deleteItem(item),
+      onRetry: () => _deleteItem(item),
+    );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
@@ -687,7 +724,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 ),
                           ),
                           Text(
-                            'Còn khoảng ${item.remainingCooldownLabel} để bạn cân nhắc lý do mua.',
+                            'Mốc cân nhắc: ${formatTime(item.cooldownUntil!)} ngày ${formatDate(item.cooldownUntil!)}. Bạn có thể chọn hành động bất cứ lúc nào.',
                             style: AppTextStyles.bodyMedium.themed(context),
                           ),
                         ],
@@ -711,12 +748,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // Decision Card (Why I Buy Core)
             Text(
-              'Thẻ Quyết Định',
+              'Thẻ quyết định',
               style: AppTextStyles.titleLarge.themed(context),
             ),
             const SizedBox(height: AppDimens.space8),
             Text(
-              'Sau khi suy ngẫm, bạn lựa chọn hành động nào cho món đồ này?',
+              'Mua mở form ghi khoản đã mua. Chờ đặt ngày xem lại. Bỏ qua có thể hoàn tác.',
               style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),

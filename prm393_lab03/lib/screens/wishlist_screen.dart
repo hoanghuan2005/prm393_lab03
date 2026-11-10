@@ -9,6 +9,7 @@ import '../models/ui_state.dart';
 import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
@@ -39,11 +40,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
   );
 
   /// Kept for [dispose], where the context can no longer be read
-  late final WishlistViewModel _wishlistVm = context.read<WishlistViewModel>();
+  late final WishlistViewModel _wishlistVm;
 
   @override
   void initState() {
     super.initState();
+    _wishlistVm = context.read<WishlistViewModel>();
     _startSaleNoticeTimer();
   }
 
@@ -79,7 +81,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
     // The view model cleared the query (e.g. after saving an item): empty the box too
     if (wishlistVm.searchQuery.isEmpty && _searchController.text.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && wishlistVm.searchQuery.isEmpty) _searchController.clear();
+        if (mounted && wishlistVm.searchQuery.isEmpty) {
+          _searchController.clear();
+        }
       });
     }
     final decisionVm = context.watch<DecisionSupportViewModel>();
@@ -87,7 +91,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
     final hasSale = nextSale != null;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return Stack(
@@ -95,203 +99,205 @@ class _WishlistScreenState extends State<WishlistScreen> {
         Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        leadingWidth: 42,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                'Danh sách mong muốn',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
+            backgroundColor: theme.colorScheme.surface,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
+            automaticallyImplyLeading: false,
+            leadingWidth: 42,
+            leading: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.chevron_left_rounded, size: 30),
+              tooltip: 'Quay lại',
+              onPressed: () => Navigator.of(context).pop(),
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
+            titleSpacing: 0,
+            title: Row(
               children: [
-                const Icon(Icons.event_outlined),
-                if (hasSale)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
+                const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'Danh sách mong muốn',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
+                ),
               ],
             ),
-            tooltip: 'Lịch sale',
-            onPressed: () {
-              _dismissSaleNotice();
-              Navigator.pushNamed(context, AppRoutes.sales);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Thêm món',
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.wishlistAdd);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.space16,
-              vertical: AppDimens.space8,
-            ),
-            child: AppTextField(
-              controller: _searchController,
-              hint: 'Tìm kiếm sản phẩm hoặc động cơ...',
-              prefixIcon: Icons.search,
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      tooltip: 'Xoá tìm kiếm',
-                      onPressed: () {
-                        _searchController.clear();
-                        wishlistVm.setSearchQuery('');
-                      },
-                    )
-                  : null,
-              onChanged: (val) {
-                wishlistVm.setSearchQuery(val);
-              },
-            ),
-          ),
-
-          // Horizontal 8 Motive Filters
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.space16,
+            actions: [
+              IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.event_outlined),
+                    if (hasSale)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                tooltip: 'Lịch sale',
+                onPressed: () {
+                  _dismissSaleNotice();
+                  Navigator.pushNamed(context, AppRoutes.sales);
+                },
               ),
-              itemCount: BuyingMotive.values.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppDimens.space8),
-              itemBuilder: (context, index) {
-                final motive = BuyingMotive.values[index];
-                final isSelected = wishlistVm.selectedMotiveFilter == motive;
-                return MotiveChip(
-                  motive: motive,
-                  isSelected: isSelected,
-                  isCompact: true,
-                  onSelected: (m) => wishlistVm.setMotiveFilter(m),
-                );
-              },
-            ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Thêm món',
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.wishlistAdd);
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: AppDimens.space8),
-
-          // Status Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
-            child: Row(
-              children: [
-                _buildStatusFilterChip(
-                  context,
-                  label: 'Tất cả',
-                  isSelected:
-                      wishlistVm.selectedStatusFilter == null &&
-                      !wishlistVm.reviewDueOnly,
-                  onTap: () {
-                    wishlistVm.setReviewDueFilter(false);
-                    wishlistVm.setStatusFilter(null);
+          body: Column(
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.space16,
+                  vertical: AppDimens.space8,
+                ),
+                child: AppTextField(
+                  controller: _searchController,
+                  hint: 'Tìm kiếm sản phẩm hoặc động cơ...',
+                  prefixIcon: Icons.search,
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          tooltip: 'Xoá tìm kiếm',
+                          onPressed: () {
+                            _searchController.clear();
+                            wishlistVm.setSearchQuery('');
+                          },
+                        )
+                      : null,
+                  onChanged: (val) {
+                    wishlistVm.setSearchQuery(val);
                   },
                 ),
-                const SizedBox(width: AppDimens.space8),
-                // "Cần xem lại": also the fallback when reminders are off or unsupported
-                _buildStatusFilterChip(
-                  context,
-                  label: 'Cần xem lại (${wishlistVm.reviewDueCount})',
-                  isSelected: wishlistVm.reviewDueOnly,
-                  onTap: () =>
-                      wishlistVm.setReviewDueFilter(!wishlistVm.reviewDueOnly),
+              ),
+
+              // Horizontal 8 Motive Filters
+              SizedBox(
+                height: 48,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.space16,
+                  ),
+                  itemCount: BuyingMotive.values.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppDimens.space8),
+                  itemBuilder: (context, index) {
+                    final motive = BuyingMotive.values[index];
+                    final isSelected =
+                        wishlistVm.selectedMotiveFilter == motive;
+                    return MotiveChip(
+                      motive: motive,
+                      isSelected: isSelected,
+                      isCompact: true,
+                      onSelected: (m) => wishlistVm.setMotiveFilter(m),
+                    );
+                  },
                 ),
-                const SizedBox(width: AppDimens.space8),
-                ...WishlistStatus.values.map((status) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppDimens.space8),
-                    child: _buildStatusFilterChip(
+              ),
+              const SizedBox(height: AppDimens.space8),
+
+              // Status Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.space16,
+                ),
+                child: Row(
+                  children: [
+                    _buildStatusFilterChip(
                       context,
-                      label: status.label,
-                      isSelected: wishlistVm.selectedStatusFilter == status,
-                      onTap: () => wishlistVm.setStatusFilter(status),
+                      label: 'Tất cả',
+                      isSelected:
+                          wishlistVm.selectedStatusFilter == null &&
+                          !wishlistVm.reviewDueOnly,
+                      onTap: () {
+                        wishlistVm.setReviewDueFilter(false);
+                        wishlistVm.setStatusFilter(null);
+                      },
                     ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppDimens.space8),
-          const Divider(),
+                    const SizedBox(width: AppDimens.space8),
+                    // "Cần xem lại": also the fallback when reminders are off or unsupported
+                    _buildStatusFilterChip(
+                      context,
+                      label: 'Cần xem lại (${wishlistVm.reviewDueCount})',
+                      isSelected: wishlistVm.reviewDueOnly,
+                      onTap: () => wishlistVm.setReviewDueFilter(
+                        !wishlistVm.reviewDueOnly,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimens.space8),
+                    ...WishlistStatus.values.map((status) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: AppDimens.space8),
+                        child: _buildStatusFilterChip(
+                          context,
+                          label: status.label,
+                          isSelected: wishlistVm.selectedStatusFilter == status,
+                          onTap: () => wishlistVm.setStatusFilter(status),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppDimens.space8),
+              const Divider(),
 
-          // Marked "Mua" in the Chrome extension, waiting for the purchase form
-          const BuyIntentSection(),
+              // Marked "Mua" in the Chrome extension, waiting for the purchase form
+              const BuyIntentSection(),
 
-          // Items Content
-          Expanded(child: _buildBodyContent(context, wishlistVm)),
-        ],
-      ),
-    ),
-    if (hasSale)
-      Positioned(
-        top: topPadding + kToolbarHeight - 10,
-        right: 12,
-        child: IgnorePointer(
-          ignoring: !_showSaleNotice,
-          child: AnimatedOpacity(
-            opacity: _showSaleNotice ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: _SaleTooltipPopup(
-              saleName: nextSale.name,
-              daysUntil: nextSale.daysUntil(decisionVm.now),
-              onTap: () {
-                _dismissSaleNotice();
-                Navigator.pushNamed(context, AppRoutes.sales);
-              },
-              onClose: _dismissSaleNotice,
-            ),
+              // Items Content
+              Expanded(child: _buildBodyContent(context, wishlistVm)),
+            ],
           ),
         ),
-      ),
-  ],
-);
+        if (hasSale)
+          Positioned(
+            top: topPadding + kToolbarHeight - 10,
+            right: 12,
+            child: IgnorePointer(
+              ignoring: !_showSaleNotice,
+              child: AnimatedOpacity(
+                opacity: _showSaleNotice ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _SaleTooltipPopup(
+                  saleName: nextSale.name,
+                  daysUntil: nextSale.daysUntil(decisionVm.now),
+                  onTap: () {
+                    _dismissSaleNotice();
+                    Navigator.pushNamed(context, AppRoutes.sales);
+                  },
+                  onClose: _dismissSaleNotice,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildStatusFilterChip(
@@ -304,15 +310,17 @@ class _WishlistScreenState extends State<WishlistScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      selectedColor: AppColors.primaryContainer,
+      selectedColor: AppSemanticColors.of(context).primaryContainer,
       checkmarkColor: AppColors.onPrimary,
-      labelStyle: AppTextStyles.labelMedium.copyWith(
-        // Selected chips sit on the light primaryContainer in both themes
-        color: isSelected
-            ? AppColors.onPrimary
-            : Theme.of(context).colorScheme.onSurfaceVariant,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-      ),
+      labelStyle: AppTextStyles.labelMedium
+          .themed(context)
+          .copyWith(
+            // Selected chips sit on the light primaryContainer in both themes
+            color: isSelected
+                ? AppColors.onPrimary
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
       shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderPill),
     );
   }
@@ -374,7 +382,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   children: [
                     Text(
                       'Đang hiện ${visible.length}/${items.length} món.',
-                      style: AppTextStyles.labelMedium,
+                      style: AppTextStyles.labelMedium.themed(context),
                     ),
                     TextButton(
                       key: const ValueKey('wishlist-show-all'),
@@ -417,7 +425,6 @@ class _SaleTooltipPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final timeStr = daysUntil == 0
         ? 'Hôm nay'
         : (daysUntil == 1 ? 'Ngày mai' : 'còn $daysUntil ngày');
@@ -446,7 +453,7 @@ class _SaleTooltipPopup extends StatelessWidget {
             child: CustomPaint(
               size: const Size(16, 10),
               painter: _TooltipArrowPainter(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+                color: AppSemanticColors.of(context).comparisonSurface,
               ),
             ),
           ),
@@ -454,13 +461,16 @@ class _SaleTooltipPopup extends StatelessWidget {
             elevation: 8,
             shadowColor: Colors.black45,
             borderRadius: BorderRadius.circular(12),
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+            color: AppSemanticColors.of(context).comparisonSurface,
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: onTap,
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 290),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -514,10 +524,11 @@ class _SaleTooltipPopup extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Bấm để xem danh sách & kế hoạch mua',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppSemanticColors.of(context)
+                                  .comparisonHint,
                               fontSize: 11,
                             ),
                           ),

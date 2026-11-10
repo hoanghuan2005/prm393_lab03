@@ -13,12 +13,13 @@ import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/purchase_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/budget_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/wishlist_viewmodel.dart';
 import 'package:provider/provider.dart';
+
+import 'test_theme.dart';
 
 class TestAnalytics extends Fake implements AppAnalyticsService {
   int recordedPurchases = 0;
@@ -176,7 +177,7 @@ class PurchaseHarness {
       ),
     ],
     child: MaterialApp(
-      theme: AppTheme.lightTheme,
+      theme: testAppTheme,
       home: home,
       onGenerateRoute: AppRoutes.onGenerateRoute,
       builder: (context, child) => MediaQuery(

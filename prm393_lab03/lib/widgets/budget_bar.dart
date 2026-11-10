@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Budget meter (handoff "Budget meter"): neutral colors; over the limit the bar stays
@@ -42,24 +43,26 @@ class BudgetBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: AppColors.surfaceVariant,
-              color: exceeded ? AppColors.accentNeutral : AppColors.primary,
+              backgroundColor: AppSemanticColors.of(context).mutedSurface,
+              color: exceeded
+                  ? AppSemanticColors.of(context).accent
+                  : AppColors.primary,
             ),
           ),
           const SizedBox(height: AppDimens.space6),
           Text(
             '${formatVnd(spentVnd)} / ${formatVnd(limitVnd)}',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(color: AppSemanticColors.of(context).textPrimary),
           ),
           if (exceeded) ...[
             const SizedBox(height: AppDimens.space2),
             Text(
               'Đã vượt ${formatVnd(-remaining)} so với mốc bạn đặt. App không chặn mua.',
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.accentNeutral,
-              ),
+              style: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(color: AppSemanticColors.of(context).accent),
             ),
           ],
         ],

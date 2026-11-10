@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 
 class AppDropdownItem<T> {
   const AppDropdownItem({required this.value, required this.label});
@@ -42,7 +42,7 @@ class AppDropdownField<T> extends StatelessWidget {
       ),
       constraints: BoxConstraints.tightFor(width: renderBox.size.width),
       elevation: 8,
-      color: AppColors.surface,
+      color: AppSemanticColors.of(context).cardSurface,
       shape: const RoundedRectangleBorder(borderRadius: AppDimens.borderMedium),
       items: [
         for (var index = 0; index < items.length; index++)
@@ -53,8 +53,8 @@ class AppDropdownField<T> extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: items[index].value == value
-                  ? const BoxDecoration(
-                      color: AppColors.primaryContainer,
+                  ? BoxDecoration(
+                      color: AppSemanticColors.of(context).primaryContainer,
                       borderRadius: AppDimens.borderSmall,
                     )
                   : null,

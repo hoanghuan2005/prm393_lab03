@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -162,18 +163,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Icon(
                         Icons.shield_outlined,
                         size: 14,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.7,
-                        ),
+                        color: AppSemanticColors.of(context).subtleText,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Dữ liệu an toàn • Không phán xét chi tiêu',
                         style: TextStyle(
                           fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.7,
-                          ),
+                          color: AppSemanticColors.of(context).subtleText,
                         ),
                       ),
                     ],
@@ -190,7 +187,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ==================== SLIDE 1: MOTIVES ====================
   Widget _buildFirstSlide(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -205,9 +201,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark
-                    ? const [Color(0xFF3B3212), Color(0xFF1F2937)]
-                    : const [Color(0xFFFFF3B0), Color(0xFFF1F6F2)],
+                colors: [
+                  AppSemanticColors.of(context).onboardingGradientStart,
+                  AppSemanticColors.of(context).onboardingGradientEnd,
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -217,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                  color: AppSemanticColors.of(context).illustrationShadow,
                   blurRadius: 18,
                   offset: const Offset(0, 7),
                 ),
@@ -233,13 +230,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: 136,
                       height: 136,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF344A3D) : Colors.white,
+                        color: AppSemanticColors.of(context)
+                            .illustrationSurface,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.2 : 0.1,
-                            ),
+                            color: AppSemanticColors.of(context)
+                                .illustrationBadgeShadow,
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -250,17 +247,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 96,
                           height: 96,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF263B31)
-                                : const Color(0xFFE8F1ED),
+                            color: AppSemanticColors.of(context)
+                                .illustrationInset,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.spa_rounded,
                             size: 52,
-                            color: isDark
-                                ? AppColors.primary
-                                : AppColors.onPrimary,
+                            color: AppSemanticColors.of(context).emphasis,
                           ),
                         ),
                       ),
@@ -272,21 +266,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.primary
-                              : const Color(0xFF263B1E),
+                          color: AppSemanticColors.of(context)
+                              .illustrationBadge,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark
-                                ? const Color(0xFF344A3D)
-                                : const Color(0xFFE6F1EC),
+                            color: AppSemanticColors.of(context)
+                                .illustrationBadgeBorder,
                             width: 3,
                           ),
                         ),
                         child: Icon(
                           Icons.self_improvement_rounded,
                           size: 20,
-                          color: isDark ? AppColors.onPrimary : Colors.white,
+                          color: AppSemanticColors.of(context).onSelectedChip,
                         ),
                       ),
                     ),
@@ -302,9 +294,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF2C2706)
-                  : AppColors.primaryContainer,
+              color: AppSemanticColors.of(context).primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -313,7 +303,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: isDark ? AppColors.primary : AppColors.onPrimary,
+                color: AppSemanticColors.of(context).emphasis,
               ),
             ),
           ),
@@ -377,19 +367,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required String description,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1B2535) : Colors.white,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE8EDF2),
+          color: AppSemanticColors.of(context).onboardingBorder,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.035),
+            color: AppSemanticColors.of(context).budgetCardShadow5,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -401,15 +390,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF3B3212)
-                  : AppColors.primaryContainer,
+              color: AppSemanticColors.of(context).primaryContainer,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 19,
-              color: isDark ? AppColors.primaryLight : AppColors.onPrimary,
+              color: AppSemanticColors.of(context).emphasis,
             ),
           ),
           const SizedBox(width: 11),
@@ -445,7 +432,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ==================== SLIDE 2: COOLING-OFF ====================
   Widget _buildSecondSlide(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -460,12 +446,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1B202A) : Colors.white,
+              color: AppSemanticColors.of(context).cardSurface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: theme.dividerColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+                  color: AppSemanticColors.of(context).previewShadow,
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -481,9 +467,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF252D3C)
-                        : AppColors.surfaceVariant,
+                    color: AppSemanticColors.of(context).mutedSurface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -519,9 +503,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFF60A5FA)
-                                    : const Color(0xFF2563EB),
+                                color: AppSemanticColors.of(context).infoText,
                               ),
                             ),
                           ],
@@ -533,9 +515,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E2838)
-                              : const Color(0xFFDBEAFE),
+                          color: AppSemanticColors.of(context).infoContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -543,9 +523,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? const Color(0xFF93C5FD)
-                                : const Color(0xFF1D4ED8),
+                            color: AppSemanticColors.of(context)
+                                .onInfoContainer,
                           ),
                         ),
                       ),
@@ -560,19 +539,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildDecisionBadge(
+                      context: context,
                       icon: Icons.check_circle_outline,
                       label: 'Mua khi cần',
-                      color: AppColors.success,
-                      isDark: isDark,
+                      color: AppSemanticColors.of(context).success,
                     ),
                     const SizedBox(width: 12),
                     _buildDecisionBadge(
+                      context: context,
                       icon: Icons.remove_circle_outline,
                       label: 'Bỏ qua khi hết hứng',
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : AppColors.accentNeutral,
-                      isDark: isDark,
+                      color: AppSemanticColors.of(context).accent,
                     ),
                   ],
                 ),
@@ -586,7 +563,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E2838) : const Color(0xFFDBEAFE),
+              color: AppSemanticColors.of(context).infoContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -595,9 +572,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: isDark
-                    ? const Color(0xFF93C5FD)
-                    : const Color(0xFF1D4ED8),
+                color: AppSemanticColors.of(context).onInfoContainer,
               ),
             ),
           ),
@@ -636,7 +611,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // ==================== SLIDE 3: INSIGHTS & BUDGET ====================
   Widget _buildThirdSlide(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -651,12 +625,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1B202A) : Colors.white,
+              color: AppSemanticColors.of(context).cardSurface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: theme.dividerColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+                  color: AppSemanticColors.of(context).previewShadow,
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -675,9 +649,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Icon(
                           Icons.account_balance_wallet_outlined,
                           size: 18,
-                          color: isDark
-                              ? AppColors.primary
-                              : AppColors.accentNeutral,
+                          color: AppSemanticColors.of(context).accent,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -696,9 +668,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF064E3B)
-                            : AppColors.successContainer,
+                        color: AppSemanticColors.of(context).successContainer,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -706,9 +676,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? const Color(0xFF6EE7B7)
-                              : AppColors.onSuccessContainer,
+                          color: AppSemanticColors.of(context)
+                              .onSuccessContainer,
                         ),
                       ),
                     ),
@@ -722,9 +691,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: LinearProgressIndicator(
                     value: 0.38,
                     minHeight: 6,
-                    backgroundColor: isDark
-                        ? const Color(0xFF262D3B)
-                        : AppColors.surfaceVariant,
+                    backgroundColor: AppSemanticColors.of(context).mutedSurface,
                     color: AppColors.primary,
                   ),
                 ),
@@ -735,9 +702,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF2C2706)
-                        : AppColors.aiContainer,
+                    color: AppSemanticColors.of(context).aiContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -745,7 +710,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Icon(
                         Icons.auto_awesome,
                         size: 18,
-                        color: isDark ? AppColors.primary : AppColors.aiAccent,
+                        color: AppSemanticColors.of(context).aiAccent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -755,9 +720,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             height: 1.35,
-                            color: isDark
-                                ? const Color(0xFFFEF3C7)
-                                : AppColors.onAiContainer,
+                            color: AppSemanticColors.of(context).onAiContainer,
                           ),
                         ),
                       ),
@@ -774,9 +737,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF064E3B)
-                  : AppColors.successContainer,
+              color: AppSemanticColors.of(context).successContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -785,9 +746,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.1,
-                color: isDark
-                    ? const Color(0xFF6EE7B7)
-                    : AppColors.onSuccessContainer,
+                color: AppSemanticColors.of(context).onSuccessContainer,
               ),
             ),
           ),
@@ -828,12 +787,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required IconData icon,
     required String label,
     required Color color,
-    required bool isDark,
+    required BuildContext context,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+        color: color.withValues(
+          alpha: AppSemanticColors.of(context).statusOverlay.a,
+        ),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

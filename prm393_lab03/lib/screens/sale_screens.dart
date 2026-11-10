@@ -8,6 +8,7 @@ import '../models/sale_event.dart';
 import '../models/sale_plan.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -34,12 +35,16 @@ class _SaleStatusChip extends StatelessWidget {
       vertical: 2,
     ),
     decoration: BoxDecoration(
-      color: confirmed ? AppColors.primaryContainer : AppColors.surfaceVariant,
+      color: confirmed
+          ? AppSemanticColors.of(context).primaryContainer
+          : AppSemanticColors.of(context).mutedSurface,
       borderRadius: AppDimens.borderPill,
     ),
     child: Text(
       confirmed ? 'Đã xác nhận' : 'Dự kiến',
-      style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
+      style: AppTextStyles.labelMedium
+          .themed(context)
+          .copyWith(color: AppSemanticColors.of(context).textPrimary),
     ),
   );
 }
@@ -53,14 +58,11 @@ class SaleCalendarScreen extends StatelessWidget {
     final vm = context.watch<DecisionSupportViewModel>();
     final sales = vm.upcomingSales;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -101,7 +103,7 @@ class SaleCalendarScreen extends StatelessWidget {
             'Lịch sale chung theo thông báo công khai của Shopee VN. '
             '"Đã xác nhận": Shopee đã công bố. "Dự kiến": theo lịch định kỳ '
             '(ngày đôi, ngày 15, ngày 25). App không dự đoán giá.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           const _SaleReminderSetting(),
@@ -118,7 +120,10 @@ class SaleCalendarScreen extends StatelessWidget {
                 key: ValueKey('sale-${sale.id}'),
                 minTileHeight: AppDimens.minTouchTarget,
                 leading: const Icon(Icons.event_outlined),
-                title: Text(sale.name, style: AppTextStyles.titleMedium),
+                title: Text(
+                  sale.name,
+                  style: AppTextStyles.titleMedium.themed(context),
+                ),
                 subtitle: Text(
                   '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
                 ),
@@ -147,14 +152,11 @@ class SaleListScreen extends StatelessWidget {
     final vm = context.watch<DecisionSupportViewModel>();
     final items = vm.consideringItems;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -194,7 +196,7 @@ class SaleListScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
-                    style: AppTextStyles.titleMedium,
+                    style: AppTextStyles.titleMedium.themed(context),
                   ),
                 ),
                 _SaleStatusChip(confirmed: sale.confirmed),
@@ -219,7 +221,7 @@ class SaleListScreen extends StatelessWidget {
                       Text(
                         'Các món bạn đang cân nhắc, ưu tiên cao xếp trước. '
                         'Đợt sale không có nghĩa là phải mua.',
-                        style: AppTextStyles.bodyMedium,
+                        style: AppTextStyles.bodyMedium.themed(context),
                       ),
                       const SizedBox(height: AppDimens.space12),
                       for (final item in items)
@@ -286,14 +288,11 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -337,7 +336,7 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
             'Mỗi phương án xếp các món đang cân nhắc vào phần khả dụng tháng này '
             'của từng nhóm (giá làm tròn lên 1.000 ₫). Đây là cách sắp xếp để bạn '
             'tham khảo, không phải lời khuyên mua.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           if (_result.isEmpty)
@@ -358,14 +357,17 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
               ),
           if (_result.excluded.isNotEmpty) ...[
             const SizedBox(height: AppDimens.space8),
-            Text('Chưa đưa vào gói', style: AppTextStyles.titleMedium),
+            Text(
+              'Chưa đưa vào gói',
+              style: AppTextStyles.titleMedium.themed(context),
+            ),
             const SizedBox(height: AppDimens.space8),
             for (final entry in _result.excluded.entries)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppDimens.space4),
                 child: Text(
                   '• ${entry.key.title} – ${entry.value.reason}',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ),
           ],
@@ -388,20 +390,29 @@ class _PlanCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppDimens.space16),
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(plan.option.title, style: AppTextStyles.titleLarge),
+          Text(
+            plan.option.title,
+            style: AppTextStyles.titleLarge.themed(context),
+          ),
           const SizedBox(height: AppDimens.space4),
-          Text(plan.option.description, style: AppTextStyles.bodyMedium),
+          Text(
+            plan.option.description,
+            style: AppTextStyles.bodyMedium.themed(context),
+          ),
           const SizedBox(height: AppDimens.space8),
           Semantics(
             liveRegion: true,
-            child: Text(explanation.text, style: AppTextStyles.bodyLarge),
+            child: Text(
+              explanation.text,
+              style: AppTextStyles.bodyLarge.themed(context),
+            ),
           ),
           const SizedBox(height: AppDimens.space4),
           InsightSourceChip(fromAi: explanation.fromAi),
@@ -409,25 +420,25 @@ class _PlanCard extends StatelessWidget {
           Text(
             '${plan.itemCount} món · ${formatVnd(plan.total)} '
             '/ khả dụng ${formatVnd(plan.available)}',
-            style: AppTextStyles.labelLarge,
+            style: AppTextStyles.labelLarge.themed(context),
           ),
           for (final group in plan.groups) ...[
             const Divider(height: AppDimens.space24),
             Text(
               '${group.group.name}: ${formatVnd(group.total)} '
               '/ ${formatVnd(group.available)}',
-              style: AppTextStyles.titleMedium,
+              style: AppTextStyles.titleMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space4),
             if (group.chosen.isEmpty)
               Text(
                 'Không có món nào vừa trong phần này.',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
             for (final item in group.chosen)
               Text(
                 '• ${item.title} · ${formatVnd(item.latestPriceVnd)}',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
           ],
         ],
@@ -470,14 +481,17 @@ class _SaleReminderSetting extends StatelessWidget {
       key: const ValueKey('sale-reminder-setting'),
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Nhắc trước đợt sale', style: AppTextStyles.titleMedium),
+          Text(
+            'Nhắc trước đợt sale',
+            style: AppTextStyles.titleMedium.themed(context),
+          ),
           const SizedBox(height: AppDimens.space4),
           Text(
             vm.supportsSaleReminders
@@ -485,7 +499,7 @@ class _SaleReminderSetting extends StatelessWidget {
                       'danh sách còn món đang cân nhắc.'
                 : 'Thông báo nhắc chỉ có trên điện thoại. Ở đây bạn xem lịch '
                       'bên dưới.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           if (vm.supportsSaleReminders) ...[
             const SizedBox(height: AppDimens.space12),

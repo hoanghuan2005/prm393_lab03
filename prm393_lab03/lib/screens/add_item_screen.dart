@@ -8,7 +8,9 @@ import '../models/wishlist_item.dart';
 import '../services/product_metadata_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/amount_field.dart';
@@ -256,15 +258,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
     final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
     final groups = context.watch<BudgetViewModel>().groups;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
     final titleText = _isEdit ? 'Sửa thông tin món' : 'Thêm món cân nhắc';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -330,10 +330,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       Expanded(
                         child: Text(
                           'Đang tự động lấy thông tin từ Shopee...',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: AppTextStyles.bodyMedium
+                              .themed(context)
+                              .copyWith(
+                                color: AppSemanticColors.of(context).brandText,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ),
                     ],
@@ -345,10 +347,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   margin: const EdgeInsets.only(bottom: AppDimens.space16),
                   padding: const EdgeInsets.all(AppDimens.space12),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppSemanticColors.of(context).cardSurface,
                     borderRadius: AppDimens.borderMedium,
                     border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.6),
+                      color: AppSemanticColors.of(context).cardBorder
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                   child: Row(
@@ -363,10 +366,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           errorBuilder: (_, _, _) => Container(
                             width: 68,
                             height: 68,
-                            color: AppColors.background,
-                            child: const Icon(
+                            color: AppSemanticColors.of(context).background,
+                            child: Icon(
                               Icons.shopping_bag_outlined,
-                              color: AppColors.textSecondary,
+                              color: AppSemanticColors.of(context)
+                                  .textSecondary,
                             ),
                           ),
                         ),
@@ -382,16 +386,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEE4D2D)
+                                color: AppSemanticColors.of(context).shopeeBrand
                                     .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Shopee',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFFEE4D2D),
+                                  color: AppSemanticColors.of(context)
+                                      .shopeeBrand,
                                 ),
                               ),
                             ),
@@ -408,9 +413,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     'Shop: $name',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    style: AppTextStyles.caption
+                                        .themed(context)
+                                        .copyWith(
+                                          color: AppSemanticColors.of(context)
+                                              .textSecondary,
+                                        ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -519,7 +527,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
               const SizedBox(height: AppDimens.space24),
 
               // Priority (1–5 stars): used by "So sánh" and the sale plan (spec 7.5)
-              Text('Mức ưu tiên', style: AppTextStyles.titleMedium),
+              Text(
+                'Mức ưu tiên',
+                style: AppTextStyles.titleMedium.themed(context),
+              ),
               Row(
                 children: [
                   for (var i = 1; i <= 5; i++)
@@ -533,7 +544,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         i <= _priority
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        color: AppColors.motiveSale,
+                        color: MotiveColors.of(context)
+                            .paletteOf(BuyingMotive.sale)
+                            .foreground,
                       ),
                     ),
                 ],
@@ -543,12 +556,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
               // Motive Selection Header
               Text(
                 'Tại sao bạn muốn mua món này? *',
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space4),
               Text(
                 'Chọn thật lòng động cơ thúc đẩy quyết định của bạn:',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
 
@@ -573,9 +586,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 Text(
                   'Chọn một động cơ gần nhất với lý do bạn muốn mua.',
                   key: const ValueKey('wishlist-motive-error'),
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               ],
               const SizedBox(height: AppDimens.space20),
@@ -585,25 +598,36 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 Container(
                   padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(
-                    color: AppColors.motiveEmotionBg,
+                    color: MotiveColors.of(context)
+                        .paletteOf(BuyingMotive.emotion)
+                        .background,
                     borderRadius: AppDimens.borderMedium,
                     border: Border.all(
-                      color: AppColors.motiveEmotion.withValues(alpha: 0.3),
+                      color: MotiveColors.of(context)
+                          .paletteOf(BuyingMotive.emotion)
+                          .foreground
+                          .withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.psychology,
-                        color: AppColors.motiveEmotion,
+                        color: MotiveColors.of(context)
+                            .paletteOf(BuyingMotive.emotion)
+                            .foreground,
                       ),
                       const SizedBox(width: AppDimens.space12),
                       Expanded(
                         child: Text(
                           'Món này có $coolingOffDays ngày cân nhắc trước khi quyết định (mọi động cơ trừ Nhu cầu).',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.motiveEmotion,
-                          ),
+                          style: AppTextStyles.bodyMedium
+                              .themed(context)
+                              .copyWith(
+                                color: MotiveColors.of(context)
+                                    .paletteOf(BuyingMotive.emotion)
+                                    .foreground,
+                              ),
                         ),
                       ),
                     ],

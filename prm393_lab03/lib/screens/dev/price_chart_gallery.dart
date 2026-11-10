@@ -73,18 +73,24 @@ class _PriceChartGallerySectionState extends State<PriceChartGallerySection> {
       title: 'PriceHistoryChart',
       icon: Icons.show_chart_rounded,
       children: [
-        Text('Cả nhóm (3 shop)', style: AppTextStyles.labelLarge),
+        Text(
+          'Cả nhóm (3 shop)',
+          style: AppTextStyles.labelLarge.themed(context),
+        ),
         const SizedBox(height: AppDimens.space8),
         _chart(_group),
         const SizedBox(height: AppDimens.space24),
         Text(
           'Một sản phẩm (có giá lúc bạn lưu)',
-          style: AppTextStyles.labelLarge,
+          style: AppTextStyles.labelLarge.themed(context),
         ),
         const SizedBox(height: AppDimens.space8),
         _chart(_product, saved: _saved),
         const SizedBox(height: AppDimens.space24),
-        Text('Ít dữ liệu (3 ngày có giá)', style: AppTextStyles.labelLarge),
+        Text(
+          'Ít dữ liệu (3 ngày có giá)',
+          style: AppTextStyles.labelLarge.themed(context),
+        ),
         const SizedBox(height: AppDimens.space8),
         _chart(_few),
       ],

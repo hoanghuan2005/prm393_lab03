@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../app/routes.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
@@ -14,11 +15,10 @@ class AppHeaderActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Always provided in the app; a screen tested on its own may leave them out
     final settingsVm = context.watch<SettingsViewModel?>();
     final wishlistVm = context.watch<WishlistViewModel?>();
-    final iconColor = isDark ? AppColors.primary : AppColors.onPrimary;
+    final iconColor = AppSemanticColors.of(context).emphasis;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -90,14 +90,14 @@ class _NotificationButton extends StatelessWidget {
             child: IgnorePointer(
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: AppColors.error,
+                decoration: BoxDecoration(
+                  color: AppSemanticColors.of(context).notificationBadge,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppSemanticColors.of(context).onNotificationBadge,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -136,9 +136,10 @@ class _NotificationButton extends StatelessWidget {
                     .map(
                       (notification) => ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const CircleAvatar(
-                          backgroundColor: AppColors.primaryContainer,
-                          child: Icon(
+                        leading: CircleAvatar(
+                          backgroundColor: AppSemanticColors.of(context)
+                              .primaryContainer,
+                          child: const Icon(
                             Icons.notifications_active_outlined,
                             color: AppColors.onPrimary,
                           ),
@@ -220,14 +221,14 @@ class _WishlistButton extends StatelessWidget {
             child: IgnorePointer(
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: AppColors.error,
+                decoration: BoxDecoration(
+                  color: AppSemanticColors.of(context).notificationBadge,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppSemanticColors.of(context).onNotificationBadge,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),

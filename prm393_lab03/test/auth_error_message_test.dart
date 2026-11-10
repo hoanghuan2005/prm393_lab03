@@ -12,9 +12,10 @@ import 'package:prm393_lab03/services/auth_service.dart';
 import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
+
+import 'support/test_theme.dart';
 
 const _accountExistsMessage =
     'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách '
@@ -485,7 +486,7 @@ void main() {
         ChangeNotifierProvider.value(
           value: vm,
           child: MaterialApp(
-            theme: AppTheme.lightTheme,
+            theme: testAppTheme,
             home: const LoginScreen(),
           ),
         ),

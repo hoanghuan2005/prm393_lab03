@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/buying_motive.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 
@@ -26,10 +26,9 @@ class MotiveChip extends StatelessWidget {
   Widget build(BuildContext context) {
     // Theme palette: same colours as before in light mode, deep hues in dark mode
     final palette = MotiveColors.of(context).paletteOf(motive);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isSelected ? palette.foreground : palette.background;
     final fgColor = isSelected
-        ? (isDark ? AppColors.textPrimary : AppColors.textOnDark)
+        ? AppSemanticColors.of(context).onSelectedChip
         : palette.foreground;
     final isInteractive = onSelected != null;
 
@@ -72,8 +71,8 @@ class MotiveChip extends StatelessWidget {
                   motive.label,
                   style:
                       (isCompact
-                              ? AppTextStyles.labelMedium
-                              : AppTextStyles.labelLarge)
+                              ? AppTextStyles.labelMedium.themed(context)
+                              : AppTextStyles.labelLarge.themed(context))
                           .copyWith(
                             color: fgColor,
                             fontWeight: isSelected

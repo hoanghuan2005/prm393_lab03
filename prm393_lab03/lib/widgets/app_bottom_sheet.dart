@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Modal sheet with 24 top corners, drag handle and title. The content scrolls and moves
@@ -18,7 +18,7 @@ class AppBottomSheet {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppSemanticColors.of(context).cardSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppDimens.radiusXLarge),
@@ -37,8 +37,8 @@ class AppBottomSheet {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.outline,
+                decoration: BoxDecoration(
+                  color: AppSemanticColors.of(context).inputBorder,
                   borderRadius: AppDimens.borderPill,
                 ),
               ),
@@ -50,7 +50,10 @@ class AppBottomSheet {
                 AppDimens.space16,
                 AppDimens.space8,
               ),
-              child: Text(title, style: AppTextStyles.titleLarge),
+              child: Text(
+                title,
+                style: AppTextStyles.titleLarge.themed(context),
+              ),
             ),
             Flexible(
               child: SingleChildScrollView(

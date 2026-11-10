@@ -36,7 +36,7 @@ class LoadingView extends StatelessWidget {
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ],
             ],

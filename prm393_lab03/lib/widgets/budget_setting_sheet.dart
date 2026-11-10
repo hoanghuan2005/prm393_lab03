@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import 'amount_field.dart';
@@ -101,7 +101,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
           Text(
             'Đặt mốc tham chiếu cho từng nhóm hàng. Để trống nếu không muốn đặt hạn mức. '
             'App không chặn mua sắm.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           for (final group in vm.groups) ...[
@@ -121,14 +121,14 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
               ),
               child: Text(
                 'Đã chi tháng này: ${formatVnd(vm.spentFor(group.id))}',
-                style: AppTextStyles.labelMedium,
+                style: AppTextStyles.labelMedium.themed(context),
               ),
             ),
           ],
           Container(
             padding: const EdgeInsets.all(AppDimens.space16),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceVariant,
+            decoration: BoxDecoration(
+              color: AppSemanticColors.of(context).mutedSurface,
               borderRadius: AppDimens.borderMedium,
             ),
             child: Column(
@@ -136,7 +136,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
               children: [
                 Text(
                   'Tổng ngân sách tháng: ${formatVnd(total)}',
-                  style: AppTextStyles.titleMedium,
+                  style: AppTextStyles.titleMedium.themed(context),
                 ),
                 const SizedBox(height: AppDimens.space4),
                 Text(
@@ -144,7 +144,7 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
                       ? 'Chưa đặt hạn mức nào. Thẻ Quyết Định vẫn hoạt động, chỉ không tính phần trăm.'
                       : 'Bằng tổng hạn mức các nhóm. Các nhóm này đã chi ${formatVnd(spent)}; '
                             '${spent > total ? 'đã vượt ${formatVnd(spent - total)}' : 'còn ${formatVnd(total - spent)}'}.',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ],
             ),
@@ -155,9 +155,9 @@ class _BudgetLimitsFormState extends State<_BudgetLimitsForm> {
               liveRegion: true,
               child: Text(
                 _error!,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.error,
-                ),
+                style: AppTextStyles.bodyMedium
+                    .themed(context)
+                    .copyWith(color: AppSemanticColors.of(context).error),
               ),
             ),
           ],

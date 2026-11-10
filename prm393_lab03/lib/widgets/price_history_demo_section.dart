@@ -19,9 +19,9 @@ class PriceHistoryDemoSection extends StatelessWidget {
     final vm = context.watch<PriceHistoryDemoViewModel?>();
     if (vm == null || !vm.isAdmin) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    final muted = AppTextStyles.bodyMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.bodyMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimens.space16),
@@ -81,14 +81,20 @@ class PriceHistoryDemoSection extends StatelessWidget {
           ),
           if (vm.groups.isNotEmpty) ...[
             const SizedBox(height: AppDimens.space16),
-            Text('Mở biểu đồ nhóm mẫu', style: AppTextStyles.labelLarge),
+            Text(
+              'Mở biểu đồ nhóm mẫu',
+              style: AppTextStyles.labelLarge.themed(context),
+            ),
             for (final g in vm.groups)
               ListTile(
                 key: ValueKey('demo-group-${g.id}'),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 leading: const Icon(Icons.show_chart_rounded),
-                title: Text(g.name, style: AppTextStyles.bodyMedium),
+                title: Text(
+                  g.name,
+                  style: AppTextStyles.bodyMedium.themed(context),
+                ),
                 subtitle: Text('${g.productKeys.length} shop', style: muted),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.pushNamed(

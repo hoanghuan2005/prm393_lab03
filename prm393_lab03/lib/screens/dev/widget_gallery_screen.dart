@@ -49,7 +49,10 @@ class _WidgetGalleryScreenState extends State<WidgetGalleryScreen> {
             icon: Icons.layers_outlined,
             children: [
               for (final entry in _states.entries) ...[
-                Text(entry.key, style: AppTextStyles.labelLarge),
+                Text(
+                  entry.key,
+                  style: AppTextStyles.labelLarge.themed(context),
+                ),
                 SizedBox(
                   height: 220,
                   child: UiStateBuilder<String>(
@@ -170,7 +173,7 @@ class _WidgetGalleryScreenState extends State<WidgetGalleryScreen> {
               const SizedBox(height: AppDimens.space12),
               Text(
                 'isCompact (chỉ hiển thị)',
-                style: AppTextStyles.labelMedium,
+                style: AppTextStyles.labelMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space8),
               const Wrap(

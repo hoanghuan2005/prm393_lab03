@@ -9,6 +9,8 @@ import 'package:prm393_lab03/services/shared_price_service.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/widgets/demo_data_badge.dart';
 
+import 'support/test_theme.dart';
+
 const _key = 'shopee:446089250:44081797761';
 
 void main() {
@@ -59,7 +61,7 @@ void main() {
   });
 
   for (final (name, theme) in [
-    ('light', AppTheme.lightTheme),
+    ('light', testAppTheme),
     ('dark', AppTheme.darkTheme),
   ]) {
     testWidgets('DemoDataBadge uses the $name theme colors', (tester) async {

@@ -8,6 +8,7 @@ import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -25,23 +26,22 @@ class HomeScreen extends StatelessWidget {
 
   /// "Chào Tâm," when the account has a name; guests and email-only accounts get "Chào bạn,"
   static String _greeting(AuthViewModel? authVm) {
-    final name = authVm == null || authVm.isAnonymous ? '' : authVm.displayName.trim();
+    final name = authVm == null || authVm.isAnonymous
+        ? ''
+        : authVm.displayName.trim();
     return name.isEmpty || name.contains('@') ? 'Chào bạn,' : 'Chào $name,';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final purchaseVm = context.watch<PurchaseViewModel>();
     final wishlistVm = context.watch<WishlistViewModel>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -169,7 +169,6 @@ class HomeScreen extends StatelessWidget {
     PurchaseViewModel purchaseVm,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final budgetVm = context.watch<BudgetViewModel>();
 
     return Container(
@@ -181,7 +180,7 @@ class HomeScreen extends StatelessWidget {
         border: Border.all(color: theme.dividerColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+            color: AppSemanticColors.of(context).summaryCardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -269,7 +268,7 @@ class HomeScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.primary : AppColors.accentNeutral,
+              color: AppSemanticColors.of(context).accent,
               letterSpacing: -0.5,
             ),
           ),
@@ -372,7 +371,7 @@ class HomeScreen extends StatelessWidget {
                   Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 15,
-                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                    color: AppSemanticColors.of(context).accent,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -405,12 +404,8 @@ class HomeScreen extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: budgetVm.isExceeded
-                            ? (isDark
-                                  ? const Color(0xFF451A1A)
-                                  : AppColors.surfaceVariant)
-                            : (isDark
-                                  ? const Color(0xFF064E3B)
-                                  : AppColors.successContainer),
+                            ? (AppSemanticColors.of(context).mutedSurface)
+                            : (AppSemanticColors.of(context).successContainer),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -419,12 +414,9 @@ class HomeScreen extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: budgetVm.isExceeded
-                              ? (isDark
-                                    ? const Color(0xFFFCA5A5)
-                                    : AppColors.accentNeutral)
-                              : (isDark
-                                    ? const Color(0xFF6EE7B7)
-                                    : AppColors.onSuccessContainer),
+                              ? (AppSemanticColors.of(context).accent)
+                              : (AppSemanticColors.of(context)
+                                    .onSuccessContainer),
                         ),
                       ),
                     ),
@@ -449,7 +441,6 @@ class HomeScreen extends StatelessWidget {
     WishlistViewModel wishlistVm,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return InkWell(
       onTap: () {
@@ -467,7 +458,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Icon(
               Icons.bookmark_border_rounded,
-              color: isDark ? AppColors.primary : AppColors.onPrimary,
+              color: AppSemanticColors.of(context).emphasis,
               size: 22,
             ),
             const SizedBox(width: 14),
@@ -556,10 +547,11 @@ class HomeScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
-              side: const BorderSide(color: Color(0xFFEAB308), width: 1),
-              iconTheme: const IconThemeData(
-                color: AppColors.onPrimary,
+              side: BorderSide(
+                color: AppSemanticColors.of(context).budgetActionBorder,
+                width: 1,
               ),
+              iconTheme: const IconThemeData(color: AppColors.onPrimary),
               shape: const StadiumBorder(),
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.prePurchase),
@@ -579,10 +571,11 @@ class HomeScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
-              side: const BorderSide(color: Color(0xFFEAB308), width: 1),
-              iconTheme: const IconThemeData(
-                color: AppColors.onPrimary,
+              side: BorderSide(
+                color: AppSemanticColors.of(context).budgetActionBorder,
+                width: 1,
               ),
+              iconTheme: const IconThemeData(color: AppColors.onPrimary),
               shape: const StadiumBorder(),
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.photoSearch),
@@ -599,7 +592,6 @@ class HomeScreen extends StatelessWidget {
     PurchaseViewModel purchaseVm,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final recentList = purchaseVm.recentPurchases;
 
     return Column(
@@ -650,15 +642,13 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.primary
-                          : AppColors.accentNeutral,
+                      color: AppSemanticColors.of(context).accent,
                     ),
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                    color: AppSemanticColors.of(context).accent,
                   ),
                 ],
               ),
@@ -706,7 +696,6 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildPurchaseRow(BuildContext context, PurchaseItem item) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final motivePalette = MotiveColors.of(context).paletteOf(item.motive);
 
     return InkWell(
@@ -791,9 +780,7 @@ class HomeScreen extends StatelessWidget {
                         item.formattedTime,
                         style: TextStyle(
                           fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.7,
-                          ),
+                          color: AppSemanticColors.of(context).subtleText,
                         ),
                       ),
                     ],
@@ -808,7 +795,7 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                color: AppSemanticColors.of(context).accent,
               ),
             ),
           ],

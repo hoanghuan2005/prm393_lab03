@@ -116,7 +116,7 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
         ),
         children: [
           if (_title != null) ...[
-            Text(_title!, style: AppTextStyles.titleMedium),
+            Text(_title!, style: AppTextStyles.titleMedium.themed(context)),
             const SizedBox(height: AppDimens.space12),
           ],
           if (canSwitch) ...[
@@ -161,9 +161,9 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
               'Các shop được ghép tự động theo mã món và phân loại, có thể chưa '
               'đúng. Chỉ tính giá của cùng phân loại.',
               key: const ValueKey('same-product-note'),
-              style: AppTextStyles.labelMedium.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppDimens.space8),
           ],
@@ -171,9 +171,9 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
             'Giá do người dùng và extension ghi lại trên Shopee, chỉ để tham '
             'khảo. Ngày chưa có giá mới giữ giá gần nhất tối đa 7 ngày (nét '
             'đứt, mờ hơn); lâu hơn thì để trống.',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -191,9 +191,9 @@ class _Content extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = AppTextStyles.labelMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.labelMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -220,7 +220,7 @@ class _Content extends StatelessWidget {
                       Expanded(
                         child: Text(
                           p.shopName ?? 'Shop chưa rõ tên',
-                          style: AppTextStyles.bodyMedium,
+                          style: AppTextStyles.bodyMedium.themed(context),
                         ),
                       ),
                       const SizedBox(width: AppDimens.space8),
@@ -231,7 +231,7 @@ class _Content extends StatelessWidget {
                           children: [
                             Text(
                               formatVnd(p.vnd),
-                              style: AppTextStyles.labelLarge,
+                              style: AppTextStyles.labelLarge.themed(context),
                               textAlign: TextAlign.end,
                             ),
                             Text(

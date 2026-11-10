@@ -118,7 +118,7 @@ class PriceHistoryEntryCard extends StatelessWidget {
                         children: [
                           Text(
                             'Giá tham khảo',
-                            style: AppTextStyles.titleMedium,
+                            style: AppTextStyles.titleMedium.themed(context),
                           ),
                           if (view.isDemo) const DemoDataBadge(),
                         ],
@@ -126,13 +126,15 @@ class PriceHistoryEntryCard extends StatelessWidget {
                       const SizedBox(height: AppDimens.space4),
                       Text(
                         'Thấp nhất ${view.range.days} ngày: ${formatVnd(low.vnd)}',
-                        style: AppTextStyles.bodyMedium,
+                        style: AppTextStyles.bodyMedium.themed(context),
                       ),
                       Text(
                         'Có dữ liệu ${s.daysWithData}/${view.days.length} ngày',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: AppTextStyles.labelMedium
+                            .themed(context)
+                            .copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),

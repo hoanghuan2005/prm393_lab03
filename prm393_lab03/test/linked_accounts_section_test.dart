@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/errors/firebase_error_mapper.dart';
 import 'package:prm393_lab03/screens/profile_screen.dart';
 import 'package:prm393_lab03/services/auth_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
+import 'support/test_theme.dart';
 
 const _googleId = LinkedAccountsViewModel.googleId;
 const _githubId = LinkedAccountsViewModel.githubId;
@@ -34,7 +34,7 @@ Future<LinkedAccountsViewModel> _pump(
     ChangeNotifierProvider.value(
       value: vm,
       child: MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         home: const Scaffold(
           body: SingleChildScrollView(child: LinkedAccountsSection()),
         ),

@@ -79,14 +79,11 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -128,7 +125,7 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
                         ? 'App cần quyền camera để quét mã. Hãy cho phép trong Cài đặt của điện thoại.'
                         : 'Không mở được camera. Hãy thử lại.',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium,
+                    style: AppTextStyles.bodyMedium.themed(context),
                   ),
                 ),
               ),
@@ -143,7 +140,7 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
                   ? 'Đây không phải mã liên kết Why I Buy?. Hãy quét mã QR trong extension.'
                   : 'Trên máy tính: mở extension Why I Buy? → Liên kết thiết bị → Tạo mã QR, rồi hướng camera vào mã.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
           ),
           SafeArea(

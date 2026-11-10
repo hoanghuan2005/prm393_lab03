@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 
 /// Month Picker Bottom Sheet matching Figma "Month picker sheet"
 class MonthPickerSheet extends StatefulWidget {
@@ -9,7 +10,11 @@ class MonthPickerSheet extends StatefulWidget {
   /// Months after this one cannot be picked (screens that only show the past)
   final DateTime? lastMonth;
 
-  const MonthPickerSheet({super.key, required this.initialDate, this.lastMonth});
+  const MonthPickerSheet({
+    super.key,
+    required this.initialDate,
+    this.lastMonth,
+  });
 
   static Future<DateTime?> show(
     BuildContext context,
@@ -65,9 +70,9 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
         20,
         32 + MediaQuery.paddingOf(context).bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).cardSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -77,7 +82,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.outline,
+              color: AppSemanticColors.of(context).inputBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -96,10 +101,10 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                 ),
               ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: AppSemanticColors.of(context).textSecondary,
                 ),
                 tooltip: 'Đóng',
                 onPressed: () => Navigator.pop(context),
@@ -113,7 +118,7 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
+              color: AppSemanticColors.of(context).mutedSurface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -145,7 +150,8 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                     color: AppColors.onPrimary,
                   ),
                   tooltip: 'Năm sau',
-                  onPressed: widget.lastMonth != null &&
+                  onPressed:
+                      widget.lastMonth != null &&
                           _selectedYear >= widget.lastMonth!.year
                       ? null
                       : () {
@@ -177,47 +183,48 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
               final last = widget.lastMonth;
               final isFuture =
                   last != null &&
-                  DateTime(_selectedYear, month).isAfter(
-                    DateTime(last.year, last.month),
-                  );
+                  DateTime(
+                    _selectedYear,
+                    month,
+                  ).isAfter(DateTime(last.year, last.month));
 
               return Opacity(
                 opacity: isFuture ? 0.35 : 1,
                 child: InkWell(
-                onTap: isFuture
-                    ? null
-                    : () {
-                        final newDate = DateTime(_selectedYear, month, 1);
-                        Navigator.pop(context, newDate);
-                      },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                  onTap: isFuture
+                      ? null
+                      : () {
+                          final newDate = DateTime(_selectedYear, month, 1);
+                          Navigator.pop(context, newDate);
+                        },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.onPrimary
-                          : AppColors.divider,
-                      width: isSelected ? 1.5 : 1,
+                          ? AppColors.primary
+                          : AppSemanticColors.of(context).background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.onPrimary
+                            : AppSemanticColors.of(context).divider,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      monthNames[index],
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        color: isSelected
+                            ? AppColors.onPrimary
+                            : AppSemanticColors.of(context).accent,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    monthNames[index],
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.onPrimary
-                          : AppColors.accentNeutral,
-                    ),
-                  ),
-                ),
                 ),
               );
             },

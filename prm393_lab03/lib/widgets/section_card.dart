@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Card with a title row (optional icon and trailing [action]), a divider and content
@@ -22,7 +22,6 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
@@ -43,7 +42,7 @@ class SectionCard extends StatelessWidget {
                 if (icon != null) ...[
                   Icon(
                     icon,
-                    color: isDark ? AppColors.primary : AppColors.onPrimary,
+                    color: AppSemanticColors.of(context).emphasis,
                     size: 20,
                   ),
                   const SizedBox(width: AppDimens.space8),
@@ -51,9 +50,9 @@ class SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
+                    style: AppTextStyles.titleMedium
+                        .themed(context)
+                        .copyWith(color: theme.colorScheme.onSurface),
                   ),
                 ),
                 ?action,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Yes/no dialog with a "Huỷ" button. [isDanger] colors the confirm button with `error`
@@ -24,12 +25,15 @@ class ConfirmDialog {
           borderRadius: AppDimens.borderXLarge,
         ),
         icon: isDanger
-            ? const Icon(Icons.warning_amber_rounded, color: AppColors.error)
+            ? Icon(
+                Icons.warning_amber_rounded,
+                color: AppSemanticColors.of(context).error,
+              )
             : null,
         title: Text(title),
         content: Text(
           message,
-          style: AppTextStyles.bodyMedium.copyWith(height: 1.4),
+          style: AppTextStyles.bodyMedium.themed(context).copyWith(height: 1.4),
         ),
         actions: [
           TextButton(
@@ -39,9 +43,11 @@ class ConfirmDialog {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(0, AppDimens.minTouchTarget),
-              backgroundColor: isDanger ? AppColors.error : AppColors.primary,
+              backgroundColor: isDanger
+                  ? AppSemanticColors.of(context).error
+                  : AppColors.primary,
               foregroundColor: isDanger
-                  ? AppColors.textOnDark
+                  ? AppSemanticColors.of(context).onStatusFill
                   : AppColors.onPrimary,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),

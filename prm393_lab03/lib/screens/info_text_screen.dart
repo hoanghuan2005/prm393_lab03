@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/legal_texts.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -15,14 +16,11 @@ class InfoTextScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -57,23 +55,29 @@ class InfoTextScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppDimens.space16),
           children: [
-            Text('Cập nhật: ${document.updated}', style: AppTextStyles.caption),
+            Text(
+              'Cập nhật: ${document.updated}',
+              style: AppTextStyles.caption.themed(context),
+            ),
             const SizedBox(height: AppDimens.space8),
             Text(
               document.intro,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textBody,
-              ),
+              style: AppTextStyles.bodyLarge
+                  .themed(context)
+                  .copyWith(color: AppSemanticColors.of(context).textBody),
             ),
             for (final section in document.sections) ...[
               const SizedBox(height: AppDimens.space24),
-              Text(section.heading, style: AppTextStyles.titleMedium),
+              Text(
+                section.heading,
+                style: AppTextStyles.titleMedium.themed(context),
+              ),
               const SizedBox(height: AppDimens.space8),
               Text(
                 section.body,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textBody,
-                ),
+                style: AppTextStyles.bodyMedium
+                    .themed(context)
+                    .copyWith(color: AppSemanticColors.of(context).textBody),
               ),
             ],
             const SizedBox(height: AppDimens.space24),

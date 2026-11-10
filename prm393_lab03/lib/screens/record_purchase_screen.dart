@@ -16,6 +16,7 @@ import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -299,7 +300,6 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final vm = context.watch<PurchaseViewModel>();
     final groups = _groups(context.watch<BudgetViewModel>());
     final activeSession = _sessionUid != null && vm.uid == _sessionUid;
@@ -312,9 +312,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: isDark
-              ? AppColors.darkSurface
-              : theme.colorScheme.surface,
+          backgroundColor: theme.colorScheme.surface,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -369,7 +367,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                       _step == 1
                           ? 'Bước 1/2: Thông tin khoản mua'
                           : 'Bước 2/2: Động cơ và ghi chú',
-                      style: AppTextStyles.labelLarge,
+                      style: AppTextStyles.labelLarge.themed(context),
                     ),
                   ),
                   Expanded(
@@ -410,9 +408,11 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                         liveRegion: true,
                         child: Text(
                           _saveError!,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.error,
-                          ),
+                          style: AppTextStyles.bodyMedium
+                              .themed(context)
+                              .copyWith(
+                                color: AppSemanticColors.of(context).error,
+                              ),
                         ),
                       ),
                     ),
@@ -459,7 +459,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           const SizedBox(height: AppDimens.space8),
           Text(
             'Số tiền sau giảm giá, không bao gồm phí vận chuyển.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space12),
           Wrap(
@@ -561,10 +561,13 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           const SizedBox(height: AppDimens.space24),
           Text(
             'Điều gì thúc đẩy bạn mua món này?',
-            style: AppTextStyles.titleMedium,
+            style: AppTextStyles.titleMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space8),
-          Text('Chọn một động cơ chính.', style: AppTextStyles.bodyMedium),
+          Text(
+            'Chọn một động cơ chính.',
+            style: AppTextStyles.bodyMedium.themed(context),
+          ),
           const SizedBox(height: AppDimens.space16),
           LayoutBuilder(
             builder: (context, constraints) => Wrap(
@@ -584,12 +587,12 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
                           minimumSize: const Size(0, 72),
                           padding: const EdgeInsets.all(AppDimens.space12),
                           backgroundColor: _motive == motive
-                              ? AppColors.primaryContainer
-                              : AppColors.surface,
+                              ? AppSemanticColors.of(context).primaryContainer
+                              : AppSemanticColors.of(context).cardSurface,
                           side: BorderSide(
                             color: _motive == motive
                                 ? AppColors.onPrimary
-                                : AppColors.border,
+                                : AppSemanticColors.of(context).cardBorder,
                           ),
                           shape: const RoundedRectangleBorder(
                             borderRadius: AppDimens.borderMedium,
@@ -632,11 +635,11 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
 
   Widget _message(String text) => Container(
     padding: const EdgeInsets.all(AppDimens.space16),
-    decoration: const BoxDecoration(
-      color: AppColors.primaryContainer,
+    decoration: BoxDecoration(
+      color: AppSemanticColors.of(context).primaryContainer,
       borderRadius: AppDimens.borderMedium,
     ),
-    child: Text(text, style: AppTextStyles.bodyLarge),
+    child: Text(text, style: AppTextStyles.bodyLarge.themed(context)),
   );
 
   void _showMotiveHelp() {

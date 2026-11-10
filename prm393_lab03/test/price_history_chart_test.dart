@@ -7,9 +7,12 @@ import 'package:prm393_lab03/models/price_history.dart';
 import 'package:prm393_lab03/models/sale_event.dart';
 import 'package:prm393_lab03/models/ui_state.dart';
 import 'package:prm393_lab03/screens/dev/price_chart_gallery.dart';
+import 'package:prm393_lab03/theme/app_semantic_colors.dart';
 import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/price_history_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_history_chart.dart';
+
+import 'support/test_theme.dart';
 
 /// 2026-11-12 12:00 in Vietnam
 final _now = DateTime.utc(2026, 11, 12, 5);
@@ -152,7 +155,7 @@ Future<void> _pump(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
-      theme: theme ?? AppTheme.lightTheme,
+      theme: theme ?? testAppTheme,
       home: Scaffold(
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -602,7 +605,7 @@ void main() {
     await _pump(tester, await _view(_single()));
 
     final data = _data(tester);
-    final accent = priceLineColor(AppTheme.lightTheme);
+    final accent = priceLineColor(testAppTheme);
     final bars = data.lineBarsData;
     // Band edges (invisible), held part, recorded part, dots
     expect(bars, hasLength(5));
@@ -735,7 +738,7 @@ void main() {
     final (spot, dot) = _marks(_data(tester)).single;
     expect(spot, const FlSpot(5, 90000));
     expect(dot.label, '90k');
-    expect(dot.color, lowestDotColor(AppTheme.lightTheme));
+    expect(dot.color, lowestDotColor(testAppTheme));
     expect(dot.labelOnLeft, isFalse);
   });
 
@@ -757,7 +760,7 @@ void main() {
     final line = data.extraLinesData.verticalLines.single;
     expect(line.x, 5);
     expect(line.dashArray, isNotNull);
-    expect(line.color!.a, lessThanOrEqualTo(0.5));
+    expect(line.color, AppSemanticColors.fromTheme(testAppTheme).chartGuide);
     expect(line.label.show, isFalse);
     expect(data.titlesData.topTitles.sideTitles.showTitles, isTrue);
 
@@ -786,7 +789,7 @@ void main() {
     );
     expect(
       voucher.style!.color,
-      AppTheme.lightTheme.colorScheme.onSurfaceVariant,
+      testAppTheme.colorScheme.onSurfaceVariant,
     );
   });
 

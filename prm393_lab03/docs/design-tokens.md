@@ -1,158 +1,217 @@
-# Design tokens – Why I Buy? (PRM393 Lab 3)
+# Design tokens — Why I Buy?
 
-Nguồn: `lib/theme/` (`app_colors.dart`, `motive_colors.dart`, `app_text_styles.dart`, `app_dimens.dart`, `app_theme.dart`). Tài liệu này mô tả lại đúng giá trị trong code; khi đổi token thì sửa code trước, rồi cập nhật bảng.
+Cập nhật 10/11/2026. Nguồn thật: lib/theme. Báo cáo trước/sau và inventory: [dark-mode-audit.md](dark-mode-audit.md).
 
-## 1. Quy tắc
+## Quy tắc
 
-- **Chỉ dùng token.** Trong `lib/screens/` và `lib/widgets/` không viết `Color(0x...)`, không tự đặt cỡ chữ/khoảng cách lẻ khi đã có token. Kiểm tra: `grep -rn "Color(0x" lib/screens lib/widgets` phải ra 0 dòng.
-- Màu lấy từ `AppColors.x` hoặc `Theme.of(context).colorScheme.x`; màu động cơ lấy từ `MotiveColors.of(context).paletteOf(motive)` (hoặc `motive.color` / `motive.backgroundColor`, cùng một nguồn).
-- Token đặt tên theo **vai trò** (`textSecondary`, `border`, `navInactive`…), không theo màu (`grey500`).
-- **Không dùng chữ/icon màu vàng (`primary`) trên nền trắng hoặc xám nhạt.** Vàng chỉ làm nền (nút, chip được chọn, thanh tiến trình), chữ trên vàng luôn là `onPrimary`.
-- **Vượt ngân sách không dùng đỏ/`error`.** Dùng `surfaceVariant` (nền) + `accentNeutral` (chữ, thanh) và câu chữ "Đã vượt …".
-- Cần màu mới: thêm token vào `app_colors.dart` (người phụ trách base), cập nhật bảng dưới, không viết hex tại chỗ.
+- Screens/widgets không viết hex hoặc tự phân nhánh màu theo brightness. Dùng colorScheme, AppSemanticColors.of(context), MotiveColors.of(context).paletteOf(motive).
+- Primary vàng dùng cho nền nút/chip, chữ trên vàng là onPrimary. Chữ nhấn dark dùng emphasis/brandText. Giữ ngoại lệ màu light cũ theo phạm vi D1–D3.
+- Vượt ngân sách dùng mutedSurface + accent, không dùng error.
+- darkTextMuted chỉ trang trí. Hint, chữ phụ, nhãn tab dùng màu đạt ≥4,5:1. Viền input dùng inputBorder ≥3:1; viền card ≥1,5:1.
+- Light palette không thay đổi. AppTextStyles.*.themed(context) giữ nguyên style ở light, đổi đúng vai trò chữ ở dark; không đổi font/cỡ chữ/spacing.
+- Thêm màu theo mục đích tại theme, kèm đo tương phản và kiểm thử. Không thêm màu hex vào screen/widget.
 
-## 2. Màu
+## AppColors: giá trị đang dùng
 
-### 2.1 Thương hiệu, nền, chữ
+| Token | Hex |
+|---|---|
+| primary | #FFDE02 |
+| primaryLight | #FFE84D |
+| primaryContainer | #FFFCE6 |
+| onPrimary | #0F172A |
+| background | #F8FAFC |
+| surface | #FFFFFF |
+| surfaceVariant | #F1F5F9 |
+| divider | #E2E8F0 |
+| border | #E2E8F0 |
+| outline | #CBD5E1 |
+| textPrimary | #0F172A |
+| textBody | #334155 |
+| textSecondary | #64748B |
+| textHint | #94A3B8 |
+| textOnDark | #FFFFFF |
+| accentNeutral | #47667B |
+| navInactive | #94A3B8 |
+| success | #10B981 |
+| successLight | #34D399 |
+| successContainer | #ECFDF5 |
+| onSuccessContainer | #059669 |
+| warning | #F59E0B |
+| error | #EF4444 |
+| errorLight | #F87171 |
+| errorContainer | #FEE2E2 |
+| onErrorContainer | #DC2626 |
+| info | #3B82F6 |
+| infoLight | #60A5FA |
+| rose | #F43F5E |
+| roseLight | #FB7185 |
+| purple | #A855F7 |
+| purpleLight | #C084FC |
+| aiContainer | #FEF3C7 |
+| aiAccent | #B45309 |
+| onAiContainer | #92400E |
+| slotMorning | #3B82F6 |
+| slotNoon | #10B981 |
+| slotEvening | #F59E0B |
+| slotNight | #6366F1 |
+| chartStrong | #1E293B |
+| motiveNeed | #3B82F6 |
+| motiveNeedBg | #DBEAFE |
+| motiveWant | #EC4899 |
+| motiveWantBg | #FCE7F3 |
+| motiveSale | #F59E0B |
+| motiveSaleBg | #FEF3C7 |
+| motiveEmotion | #A855F7 |
+| motiveEmotionBg | #F3E8FF |
+| motiveSocial | #0EA5E9 |
+| motiveSocialBg | #E0F2FE |
+| motiveConvenience | #14B8A6 |
+| motiveConvenienceBg | #CCFBF1 |
+| motiveAds | #2563EB |
+| motiveAdsBg | #DBEAFE |
+| motiveOther | #64748B |
+| motiveOtherBg | #F1F5F9 |
+| darkBackground | #080E1A |
+| darkSurface | #222E40 |
+| darkSurfaceVariant | #2A384D |
+| darkBorder | #64748B |
+| darkOutline | #8A9BB3 |
+| darkTextPrimary | #F8FAFC |
+| darkTextSecondary | #B3BED0 |
+| darkTextHint | #B3BED0 |
+| darkTextMuted | #475569 |
+| darkPrimaryContainer | #2C2706 |
+| darkPrimaryContainerOutline | #7C7145 |
+| darkPrimaryText | #E5D99B |
+| darkPrimaryContainerText | #FEF3C7 |
+| darkCardSurface | #222E40 |
+| darkSurfaceMuted | #2A384D |
+| darkIndicatorInactive | #333B49 |
+| darkTextBody | #CBD5E1 |
+| darkNavInactive | #B3BED0 |
+| darkAccentNeutral | #93B5CE |
+| darkSuccessContainer | #064E3B |
+| darkOnSuccessContainer | #6EE7B7 |
+| darkErrorContainer | #451A1A |
+| darkOnErrorContainer | #FCA5A5 |
+| darkInfoContainer | #1E2838 |
+| darkOnInfoContainer | #93C5FD |
+| infoContainer | #DBEAFE |
+| onInfoContainer | #1D4ED8 |
+| infoText | #2563EB |
+## AppSemanticColors
 
-| Token | Hex | Dùng cho |
-|:---|:---|:---|
-| `primary` | `#FFDE02` | Nền nút chính, FAB, chip/tháng được chọn, thanh tiến trình ngân sách |
-| `onPrimary` | `#070E20` | Chữ/icon trên nền vàng; viền và nền tối của mục được chọn; con trỏ, vòng tải |
-| `primaryContainer` | `#FFFCE6` | Nền vàng nhạt (thẻ gợi ý, mục được chọn nhẹ) |
-| `background` | `#F8F9FA` | Nền Scaffold |
-| `surface` | `#FFFFFF` | Nền thẻ, AppBar, ô nhập |
-| `surfaceVariant` | `#F3F4F6` | Nền xám nhạt: chip chưa chọn, rãnh thanh tiến trình, nhãn "Đã vượt mốc" |
-| `divider` | `#E5E7EB` | Đường kẻ ngăn cách |
-| `border` | `#E5E7EB` | Viền mảnh của thẻ, chip, ô |
-| `outline` | `#D1D5DB` | Viền đậm hơn (nút viền, ô nhập mặc định, thẻ ngân sách khi đã vượt) |
-| `textPrimary` | `#070E20` | Chữ chính, tiêu đề |
-| `textBody` | `#374151` | Đoạn văn dài (nhận xét Góc nhìn) |
-| `textSecondary` | `#6D6E73` | Chữ phụ, mô tả, nhãn |
-| `textHint` | `#9CA3AF` | Gợi ý trong ô nhập, chữ mờ |
-| `textOnDark` | `#FFFFFF` | Chữ trên nền tối/màu đậm |
-| `accentNeutral` | `#47667B` | Nhấn trung tính: số liệu, nhãn ngân sách, trạng thái vượt mốc |
-| `navInactive` | `#9CA3AF` | Icon/nhãn tab chưa chọn ở thanh điều hướng dưới |
+ThemeExtension bất biến đăng ký trong cả lightTheme/darkTheme, có copyWith/lerp. of(context) theo dõi theme; fromTheme(theme) dành cho helper biểu đồ. Không cache palette ngoài build khi theme có thể đổi.
 
-### 2.2 Trạng thái, AI, biểu đồ
+- cardSurface/cardBorder/background/mutedSurface: lớp thẻ, viền và lớp nền.
+- inputBorder: viền input/outlined action; divider chỉ để phân tách, không dùng làm viền ô nhập.
+- textPrimary/textBody/textSecondary/hint/navInactive: chữ đúng vai trò.
+- success/info/warning/error Container + on-colour: luôn ghép cặp.
+- selectedChip/onSelectedChip: nền chọn và chữ; onSelectedChip dùng cả motive chip sáng.
+- chartLine/chartBand/chartLowest: nét, vùng tô, điểm giá thấp; nhãn dùng textSecondary.
+- emphasis/brandText/aiAccent: nhấn dịu ở dark, giữ từng màu light cũ.
+- onStatusFill/onBrandButton: chữ tối trên màu fill sáng ở dark, giữ chữ trắng light.
+- notificationBadge/onNotificationBadge: nền đậm và nhãn đủ tương phản ở dark.
+- illustration*, onboarding*, *Shadow, *Overlay: giữ hình minh hoạ và alpha light; thích nghi dark.
 
-| Token | Hex | Dùng cho |
-|:---|:---|:---|
-| `success` | `#10B981` | SnackBar lưu thành công |
-| `successContainer` / `onSuccessContainer` | `#ECFDF5` / `#059669` | Nhãn "Trong hạn mức" |
-| `warning` | `#F59E0B` | Cảnh báo |
-| `error` | `#EF4444` | Lỗi, nút/biểu tượng xoá, chấm thông báo — **không** dùng cho ngân sách |
-| `errorContainer` / `onErrorContainer` | `#FEE2E2` / `#DC2626` | Nhãn "Bắt buộc", nền thông báo lỗi |
-| `info` | `#3B82F6` | Thông tin |
-| `aiContainer` | `#FEF3C7` | Nền khối/chip nhận xét do AI viết |
-| `aiAccent` | `#B45309` | Icon ✨ của khối AI |
-| `onAiContainer` | `#92400E` | Chữ trên chip "AI" |
-| `slotMorning` / `slotNoon` / `slotEvening` / `slotNight` | `#3B82F6` / `#10B981` / `#F59E0B` / `#6366F1` | Icon khung giờ ở màn Thói quen |
-| `chartStrong` | `#1F2937` | Đoạn đậm trong thanh phân bổ động cơ (Trang chủ) |
+| Vai trò | Light | Dark |
+|---|---|---|
 
-### 2.3 Tám màu động cơ (`MotiveColors`)
+| linkedAccountAccent | #4CAF50 | #6EE7B7 |
+| linkedAccountText | #2E7D32 | #6EE7B7 |
+| inputEnabledBorder | #E2E8F0 | #8A9BB3 |
+| cardSurface | #FFFFFF | #222E40 |
+| cardBorder | #E2E8F0 | #64748B |
+| mutedSurface | #F1F5F9 | #2A384D |
+| background | #F8FAFC | #080E1A |
+| divider | #E2E8F0 | #64748B |
+| inputBorder | #CBD5E1 | #8A9BB3 |
+| textPrimary | #0F172A | #F8FAFC |
+| textBody | #334155 | #CBD5E1 |
+| textSecondary | #64748B | #B3BED0 |
+| hint | #94A3B8 | #B3BED0 |
+| accent | #47667B | #93B5CE |
+| navInactive | #94A3B8 | #B3BED0 |
+| emphasis | #0F172A | #E5D99B |
+| primaryContainer | #FFFCE6 | #2C2706 |
+| primaryContainerBorder | #FFDE02 / alpha 0.500 | #7C7145 |
+| onPrimaryContainer | #0F172A | #FEF3C7 |
+| successContainer | #ECFDF5 | #064E3B |
+| onSuccessContainer | #059669 | #6EE7B7 |
+| infoContainer | #DBEAFE | #1E2838 |
+| onInfoContainer | #1D4ED8 | #93C5FD |
+| infoText | #2563EB | #60A5FA |
+| warningContainer | #FEF3C7 | #45320C |
+| onWarningContainer | #92400E | #FCD68A |
+| aiContainer | #FEF3C7 | #2C2706 |
+| onAiContainer | #92400E | #FEF3C7 |
+| aiAccent | #B45309 | #E5D99B |
+| success | #10B981 | #6EE7B7 |
+| error | #EF4444 | #FCA5A5 |
+| info | #3B82F6 | #60A5FA |
+| warning | #F59E0B | #FCD68A |
+| errorContainer | #FEE2E2 | #451A1A |
+| onErrorContainer | #DC2626 | #FCA5A5 |
+| chartLine | #A855F7 | #C084FC |
+| chartBand | #A855F7 / alpha 0.200 | #C084FC / alpha 0.200 |
+| chartLowest | #059669 | #34D399 |
+| selectedChip | #0F172A | #FFDE02 |
+| onSelectedChip | #FFFFFF | #0F172A |
+| aiBody | #334155 | #FEF3C7 |
+| mutedText | #47667B | #CBD5E1 |
+| snackbarSuccess | #10B981 | #064E3B |
+| onSnackbarSuccess | #FFFFFF | #6EE7B7 |
+| shopeeBrand | #EE4D2D | #FFAA93 |
+| lazadaBrand | #0F146D | #BCBFFF |
+| shopeeButton | #EE4D2D | #EE4D2D |
+| lazadaButton | #0F146D | #0F146D |
+| onBrandButton | #FFFFFF | #0F172A |
+| savingsText | #047857 | #6EE7B7 |
+| budgetActionBorder | #EAB308 | #64748B |
+| onboardingGradientStart | #FFF3B0 | #2C2706 |
+| onboardingGradientEnd | #F1F6F2 | #222E40 |
+| illustrationSurface | #FFFFFF | #2A384D |
+| illustrationInset | #E8F1ED | #263B31 |
+| illustrationBadge | #263B1E | #FFDE02 |
+| illustrationBadgeBorder | #E6F1EC | #2A384D |
+| onboardingBorder | #E8EDF2 | #64748B |
+| comparisonSurface | #0F172A | #2A384D |
+| comparisonHint | #94A3B8 | #B3BED0 |
+| switchTrack | #0F172A | #7C7145 |
+| secondaryActionBorder | #CBD5E1 | #8A9BB3 |
+| secondaryActionText | #64748B | #CBD5E1 |
+| subtleText | #64748B / alpha 0.700 | #B3BED0 |
+| appBarSurface | #FFFFFF | #080E1A |
+| budgetCardShadow | #000000 / alpha 0.030 | #000000 / alpha 0.200 |
+| summaryCardShadow | #000000 / alpha 0.020 | #000000 / alpha 0.200 |
+| illustrationShadow | #000000 / alpha 0.080 | #000000 / alpha 0.300 |
+| illustrationBadgeShadow | #000000 / alpha 0.100 | #000000 / alpha 0.200 |
+| budgetCardShadow5 | #000000 / alpha 0.035 | #000000 / alpha 0.160 |
+| previewShadow | #000000 / alpha 0.040 | #000000 / alpha 0.300 |
+| segmentShadow | #000000 / alpha 0.060 | #000000 / alpha 0.300 |
+| statusOverlay | #000000 / alpha 0.100 | #000000 / alpha 0.150 |
+| insightOverlay | #000000 / alpha 0.100 | #000000 / alpha 0.200 |
+| brandShadow | #000000 / alpha 0.050 | #000000 / alpha 0.080 |
+| photoStatusContainer | #ECFDF5 | #2A384D |
+| onStatusFill | #FFFFFF | #0F172A |
+| notificationBadge | #EF4444 | #451A1A |
+| onNotificationBadge | #FFFFFF | #FCA5A5 |
+| brandText | #FFDE02 | #E5D99B |
+| slotMorning | #3B82F6 | #93C5FD |
+| slotNoon | #10B981 | #6EE7B7 |
+| slotEvening | #F59E0B | #E5D99B |
+| slotNight | #6366F1 | #BCBFFF |
+| chartStrong | #1E293B | #CBD5E1 |
+| statusNeutral | #47667B | #B3BED0 |
+| captionText | #64748B / alpha 0.800 | #B3BED0 |
+| chartGuide | #64748B / alpha 0.500 | #8A9BB3 |
+| chartSelection | #0F172A / alpha 0.350 | #8A9BB3 |
+## MotiveColors, typography, spacing
 
-`ThemeExtension<MotiveColors>` đăng ký trong `AppTheme.lightTheme`; giá trị gốc nằm ở `AppColors.motive*`.
+MotiveColors.light giữ nguyên 8 cặp AppColors.motive*. Dark dùng foreground sáng trên container đậm; mọi cặp và trạng thái selected được kiểm thử ≥4,5:1. Không dùng motive.color/backgroundColor của model để vẽ giao diện khi cần theo theme.
 
-| Key | Nhãn | Chữ/icon | Nền |
-|:---|:---|:---|:---|
-| `need` | Nhu cầu | `#4F46E5` | `#EEF2FF` |
-| `want` | Mong muốn | `#EC4899` | `#FCE7F3` |
-| `sale` | Khuyến mãi | `#D97706` | `#FEF3C7` |
-| `emotion` | Cảm xúc | `#7C3AED` | `#EDE9FE` |
-| `social` | Ảnh hưởng MXH | `#0284C7` | `#E0F2FE` |
-| `convenience` | Tiện lợi | `#0D9488` | `#CCFBF1` |
-| `ads` | Quảng cáo | `#2563EB` | `#DBEAFE` |
-| `other` | Khác | `#64748B` | `#F1F5F9` |
+AppTextStyles giữ Be Vietnam Pro và các kích thước/độ đậm hiện tại (display 32/28, headline 24/20, title 18/16, body 16/14, label 14/12, caption 11). Dark bodyMedium dùng darkTextBody.
 
-### 2.4 ColorScheme (Material 3)
+AppDimens không đổi: spacing 2/4/6/8/12/16/20/24/32/40/48, radius 8/12/16/24/999; vùng chạm tối thiểu 48dp.
 
-`primary`=`primary`, `onPrimary`=`onPrimary`, `primaryContainer`=`primaryContainer`, `secondary`=`onPrimary`, `secondaryContainer`=`primaryContainer`, `tertiary`=`accentNeutral`, `error`/`errorContainer`/`onErrorContainer`, `surface`, `onSurface`=`textPrimary`, `onSurfaceVariant`=`textSecondary`, `surfaceContainerHighest`=`surfaceVariant`, `outline`=`outline`, `outlineVariant`=`divider`, `inverseSurface`=`onPrimary`.
-
-Theme thành phần để widget mặc định không ra chữ vàng trên trắng: `TextButton` chữ `onPrimary`; `ProgressIndicator` màu `onPrimary`, rãnh `surfaceVariant`; con trỏ/tay chọn chữ `onPrimary`; FAB nền `primary` chữ `onPrimary`.
-
-### 2.5 Theme tối: ánh xạ màu cứng cũ sang token (cho bước A6b)
-
-Các màn đang viết `isDark ? const Color(0x...) : AppColors.x`. Ở bước A6b, chỉ cần thay phần `const Color(0x...)` bằng token ở cột "Token mới", còn nhánh sáng giữ nguyên (trừ các dòng có ghi chú). Token tối dùng tiền tố `dark*` cho khớp với các token `dark*` đã có.
-
-| Giá trị cũ | Token mới | Vai trò | Nhánh sáng đi kèm | Chỗ dùng |
-|:---|:---|:---|:---|:---|
-| `0xFF2C2706` | `AppColors.darkPrimaryContainer` | Nền vàng tối (thẻ gợi ý, avatar, khối AI) | `primaryContainer` (onboarding:669 là `aiContainer`) | profile:141, 329; onboarding:71, 339, 669; patterns:291; insights:197 |
-| `0xFF5E5410` | `AppColors.darkPrimaryContainerOutline` | Viền khối vàng tối | `primary` alpha 0,5 | insights:200 |
-| `0xFF332E05` | đã sửa: `isDark ? AppColors.darkPrimaryContainerOutline : AppColors.onPrimary` | Track Switch "Dùng AI" | (trước đây dùng chung cho cả hai theme) | insights:227 (đã sửa ở A6) |
-| `0xFFFEF3C7` | `AppColors.darkPrimaryContainerText` | Chữ trên nền vàng tối | `textBody`, `onAiContainer` | insights:246; onboarding:689 |
-| `0xFF1B202A` | `AppColors.darkCardSurface` | Nền thẻ nổi, ô segment được chọn | `Colors.white` → nên đổi thành `AppColors.surface` | onboarding:239, 402, 586; patterns:509 |
-| `0xFF262D3B`, `0xFF252D3C` | `AppColors.darkSurfaceMuted` (gộp, chênh nhau 1 đơn vị) | Chip chưa chọn, nền segmented, rãnh thanh tiến trình | `surfaceVariant` (patterns:123 là `divider`) | history:524, 562; onboarding:420, 656; patterns:123, 435, 580 |
-| `0xFF333B49` | `AppColors.darkIndicatorInactive` | Chấm trang chưa chọn | `outline` | onboarding:149 |
-| `0xFFCBD5E1` | `AppColors.darkTextBody` | Chữ chip chưa chọn | `accentNeutral` | history:566 |
-| `0xFF94A3B8` | `AppColors.darkTextSecondary` (đã có) | Icon/chữ phụ | `textSecondary`, `accentNeutral` | history:570; onboarding:507 |
-| `0xFF64748B` | `AppColors.darkNavInactive` | Tab chưa chọn ở thanh điều hướng | `navInactive` | main_navigation:213 |
-| `0xFF93B5CE` | `AppColors.darkAccentNeutral` | Nhấn trung tính | `accentNeutral` | insights:267 |
-| `0xFF064E3B` | `AppColors.darkSuccessContainer` | Nhãn "Trong hạn mức" | `successContainer` | history:420; home:472; onboarding:630, 707 |
-| `0xFF6EE7B7` | `AppColors.darkOnSuccessContainer` | Chữ nhãn "Trong hạn mức" | `onSuccessContainer` | history:434; home:486; onboarding:640, 716 |
-| `0xFF451A1A` | xem ghi chú (1) | Nền nhãn "Đã vượt" | `surfaceVariant` | history:417; home:469 |
-| `0xFFFCA5A5` | xem ghi chú (1) | Chữ nhãn "Đã vượt" | `accentNeutral` | history:431; home:483 |
-| `0xFFEF4444` | xem ghi chú (1) | Viền thẻ và thanh tiến trình khi đã vượt | `outline`, `accentNeutral` | history:366, 527 |
-| `0xFF1E2838` / `0xFFDBEAFE` | `AppColors.darkInfoContainer` / `AppColors.infoContainer` | Nền nhãn thông tin (xanh) | (cả hai nhánh đều là màu cứng) | onboarding:471-472, 523 |
-| `0xFF93C5FD` / `0xFF1D4ED8` | `AppColors.darkOnInfoContainer` / `AppColors.onInfoContainer` | Chữ nhãn thông tin | (cả hai nhánh đều là màu cứng) | onboarding:481-482, 532 |
-| `0xFF60A5FA` / `0xFF2563EB` | `AppColors.infoLight` (đã có) / `AppColors.infoText` | Chữ thông tin nhỏ | (cả hai nhánh đều là màu cứng) | onboarding:457-458 |
-| `0xFF1E1E38` / `0xFF818CF8` | `MotiveColors.of(context).paletteOf(BuyingMotive.need)` `.background` / `.foreground` | Huy hiệu động cơ "Nhu cầu" | `motiveNeedBg` / `motiveNeed` | onboarding:289-290 |
-| `0xFF2E1E38` / `0xFFA78BFA` | như trên với `BuyingMotive.emotion` | Huy hiệu "Cảm xúc" | `motiveEmotionBg` / `motiveEmotion` | onboarding:301-302 |
-| `0xFF382D1E` / `0xFFFBBF24` | như trên với `BuyingMotive.sale` | Huy hiệu "Khuyến mãi" | `motiveSaleBg` / `motiveSale` | onboarding:313-314 |
-| `0xFF1E3834` / `0xFF2DD4BF` | như trên với `BuyingMotive.convenience` | Huy hiệu "Tiện lợi" | `motiveConvenienceBg` / `motiveConvenience` | onboarding:325-326 |
-
-Ghi chú:
-
-1. **Vượt ngân sách ở theme tối đang dùng đỏ**, trái quy tắc ở mục 1 ("Vượt ngân sách không dùng đỏ"). Theme sáng đang dùng màu trung tính. Đề xuất cho theme tối: nền `darkSurfaceMuted`, chữ/viền/thanh `darkAccentNeutral`. Nếu nhóm quyết định giữ đỏ thì dùng `darkErrorContainer` (`0xFF451A1A`), `darkOnErrorContainer` (`0xFFFCA5A5`) và `colorScheme.error`.
-2. **Huy hiệu động cơ ở onboarding**: `MotiveColors.dark` có giá trị khác các màu cứng cũ (ví dụ "Nhu cầu" tối là `#60A5FA` trên `#172554`). Đổi sang `MotiveColors` sẽ làm màu hơi khác, nhưng sẽ khớp với chip động cơ ở các màn khác. Khi đã dùng `MotiveColors.of(context)` thì bỏ luôn `isDark ? … :`, vì extension tự chọn bản sáng/tối.
-3. Ở những chỗ cả hai nhánh đều là màu cứng (nhãn thông tin ở onboarding), thay cả hai nhánh.
-4. Bốn giá trị dùng trong `AppTheme.darkTheme` (`primaryContainer`, `tertiary`, `errorContainer`, `onErrorContainer`) giờ lấy từ chính các token trên, giá trị không đổi. Vì vậy ở nhiều chỗ có thể dùng `Theme.of(context).colorScheme.primaryContainer` / `.tertiary` thay cho `isDark ? … : …`.
-
-## 3. Typography
-
-Font **Be Vietnam Pro** (`google_fonts`), khai báo ở `AppTextStyles`.
-
-| Style | Cỡ | Độ đậm | Line height | Màu |
-|:---|:-:|:-:|:-:|:---|
-| `displayLarge` | 32 | 700 | 1.25 | textPrimary |
-| `displayMedium` | 28 | 700 | 1.3 | textPrimary |
-| `headlineLarge` | 24 | 700 | 1.3 | textPrimary |
-| `headlineMedium` | 20 | 600 | 1.35 | textPrimary |
-| `titleLarge` | 18 | 600 | 1.35 | textPrimary |
-| `titleMedium` | 16 | 600 | 1.4 | textPrimary |
-| `bodyLarge` | 16 | 400 | 1.45 | textPrimary |
-| `bodyMedium` | 14 | 400 | 1.45 | textSecondary |
-| `labelLarge` | 14 | 600 | 1.4 | textPrimary |
-| `labelMedium` | 12 | 500 | 1.35 | textSecondary |
-| `caption` | 11 | 500 | — (letterSpacing 0.5) | textSecondary |
-
-## 4. Spacing, radius, elevation (`AppDimens`)
-
-- **Spacing:** `space2` 2 · `space4` 4 · `space6` 6 · `space8` 8 · `space12` 12 · `space16` 16 · `space20` 20 · `space24` 24 · `space32` 32 · `space40` 40 · `space48` 48.
-- **Radius:** `radiusSmall` 8 · `radiusMedium` 12 · `radiusLarge` 16 · `radiusXLarge` 24 · `radiusPill` 999 (kèm `borderSmall`…`borderPill`).
-- **Elevation:** `elevationNone` 0 · `elevationLow` 1 · `elevationMedium` 3 · `elevationHigh` 6.
-- **Vùng chạm tối thiểu:** `minTouchTarget` 48.
-
-## 5. Tương phản (WCAG 2.1 AA, chữ thường ≥ 4,5:1)
-
-| Cặp | Tỉ lệ | Kết quả |
-|:---|:-:|:---|
-| `onPrimary` #070E20 trên `primary` #FFDE02 | 14,37 | Đạt |
-| `textPrimary` trên trắng | 19,22 | Đạt |
-| `textBody` trên trắng | 10,31 | Đạt |
-| `textSecondary` trên trắng / trên `background` | 5,09 / 4,83 | Đạt |
-| `accentNeutral` trên trắng / trên `surfaceVariant` | 6,08 / 5,52 | Đạt |
-| `onAiContainer` trên `aiContainer` | 6,37 | Đạt |
-| `primary` (vàng) trên trắng | 1,34 | **Không đạt** → không dùng làm màu chữ/icon |
-| `textHint` / `navInactive` trên trắng | 2,54 | Không đạt cho chữ thường (xem mục 6) |
-| `onSuccessContainer` trên `successContainer` | 3,58 | Không đạt cho chữ thường |
-| `onErrorContainer` trên `errorContainer` | 3,95 | Không đạt cho chữ thường |
-| Chữ trắng trên `success` (SnackBar) | 2,54 | Không đạt |
-| Màu động cơ trên nền của nó: need 5,62 · emotion 4,80 đạt; ads 4,24 · other 4,34 · social 3,57 · convenience 3,32 · want 3,00 · sale 2,86 | — | 6/8 cặp không đạt |
-
-## 6. Ghi chú sai khác (deviation)
-
-- **Màu chủ đạo vàng, khác Figma Lab 2 (indigo).** Nhóm quyết định giữ bảng màu vàng `#FFDE02` / `#070E20` hiện tại; Figma Lab 2 dùng indigo. Không đổi lại.
-- **Gộp màu gần giống (B4):** `#F9F9FB` và `#F9FAFB` → `background` (`#F8F9FA`); `#4B5563` (chữ chip "Câu mẫu") → `textBody` (`#374151`). Khác biệt mắt thường gần như không thấy.
-- **Vượt ngân sách (B4):** trước dùng đỏ (`#FEE2E2` / `#DC2626` / `#EF4444` / viền `#FCA5A5`), nay dùng `surfaceVariant` + `accentNeutral` (viền `outline`).
-- **Còn tồn tại, chưa sửa vì sẽ đổi màu hiển thị:** các cặp "Không đạt" ở mục 5 (chữ gợi ý/tab chưa chọn, nhãn trạng thái, chữ màu động cơ trên nền nhạt, SnackBar xanh). Cần nhóm quyết định trước khi đậm hoá các màu này.
+Các giới hạn tương phản đã tồn tại ở light (hint, success badge, vài motive palette) chưa sửa để bảo toàn light mode; không áp dụng chúng cho dark.

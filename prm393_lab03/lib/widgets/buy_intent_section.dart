@@ -6,6 +6,7 @@ import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
@@ -29,8 +30,8 @@ class BuyIntentSection extends StatelessWidget {
         0,
       ),
       padding: const EdgeInsets.all(AppDimens.space12),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryContainer,
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderLarge,
       ),
       child: Column(
@@ -46,14 +47,14 @@ class BuyIntentSection extends StatelessWidget {
               const SizedBox(width: AppDimens.space8),
               Text(
                 'Định mua từ máy tính (${items.length})',
-                style: AppTextStyles.labelLarge,
+                style: AppTextStyles.labelLarge.themed(context),
               ),
             ],
           ),
           const SizedBox(height: AppDimens.space4),
           Text(
             'Bạn đã bấm Mua trên extension. Ghi khoản mua khi đã mua thật.',
-            style: AppTextStyles.caption,
+            style: AppTextStyles.caption.themed(context),
           ),
           for (final item in items)
             _BuyIntentRow(key: ValueKey('buy-intent-${item.id}'), item: item),
@@ -79,7 +80,7 @@ class _BuyIntentRow extends StatelessWidget {
               item.variantLabel == null
                   ? item.title
                   : '${item.title} · ${item.variantLabel}',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

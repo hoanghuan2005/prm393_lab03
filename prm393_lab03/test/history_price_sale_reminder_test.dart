@@ -12,12 +12,12 @@ import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/remote_config_service.dart';
 import 'package:prm393_lab03/services/review_reminder_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_update_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/purchase_harness.dart';
+import 'support/test_theme.dart';
 
 final _now = DateTime(2026, 11, 2, 12);
 
@@ -209,7 +209,7 @@ void main() {
     int? result;
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(
@@ -236,7 +236,7 @@ void main() {
   testWidgets('a first price has no confirm button', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(

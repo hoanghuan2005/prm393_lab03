@@ -25,7 +25,7 @@ class ShopeeRatingLine extends StatelessWidget {
     if (productRating == null && shopRating == null) {
       return const SizedBox.shrink();
     }
-    final style = AppTextStyles.bodyMedium;
+    final style = AppTextStyles.bodyMedium.themed(context);
     final product = formatProductRating(productRating, productRatingCount);
     final shop = formatShopRating(shopName, shopRating);
     return Text.rich(

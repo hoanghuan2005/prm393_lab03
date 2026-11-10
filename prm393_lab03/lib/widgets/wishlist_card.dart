@@ -6,6 +6,7 @@ import '../models/buying_motive.dart';
 import '../models/wishlist_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import 'demo_data_badge.dart';
@@ -61,13 +62,18 @@ class WishlistCard extends StatelessWidget {
                       formatVnd(item.latestPriceVnd),
                       style: item.hasPrice
                           ? AppTextStyles.titleMedium
+                                .themed(context)
                                 .copyWith(
                                   color: AppColors.onPrimary,
                                   fontWeight: FontWeight.w700,
                                 )
                                 .themed(context)
                           : AppTextStyles.labelMedium
-                                .copyWith(color: AppColors.textSecondary)
+                                .themed(context)
+                                .copyWith(
+                                  color: AppSemanticColors.of(context)
+                                      .textSecondary,
+                                )
                                 .themed(context),
                     ),
                   ],
@@ -98,7 +104,7 @@ class WishlistCard extends StatelessWidget {
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
                     if (item.isDemo) const DemoDataBadge(),
-                    if (item.isFromExtension) fromExtensionChip(),
+                    if (item.isFromExtension) fromExtensionChip(context),
                     _buildStatusBadge(context),
                   ],
                 ),
@@ -129,17 +135,13 @@ class WishlistCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.timer_outlined,
-              size: 14,
-              color: palette.foreground,
-            ),
+            Icon(Icons.timer_outlined, size: 14, color: palette.foreground),
             const SizedBox(width: AppDimens.space4),
             Text(
               timeText,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: palette.foreground,
-              ),
+              style: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(color: palette.foreground),
             ),
           ],
         ),
@@ -149,6 +151,7 @@ class WishlistCard extends StatelessWidget {
     // "Chờ" keeps the status "Đang cân nhắc"; the review date is what the user needs to see
     if (item.isWaiting || item.isReviewDue) {
       return _badge(
+        context,
         icon: item.isReviewDue
             ? Icons.notifications_active_outlined
             : Icons.event,
@@ -159,24 +162,28 @@ class WishlistCard extends StatelessWidget {
     }
 
     return _badge(
+      context,
       icon: item.status.icon,
       text: item.status.label,
-      color: item.status.color,
+      color: AppSemanticColors.of(context).statusNeutral,
     );
   }
 
   /// "Từ máy tính": saved with the Chrome extension (saveChannel extension)
-  static Widget fromExtensionChip() => _badge(
+  static Widget fromExtensionChip(BuildContext context) => _badge(
+    context,
     icon: Icons.computer_rounded,
     text: 'Từ máy tính',
-    color: AppColors.textSecondary,
+    color: AppSemanticColors.of(context).textSecondary,
   );
 
-  static Widget _badge({
+  static Widget _badge(
+    BuildContext context, {
     required IconData icon,
     required String text,
-    Color color = AppColors.accentNeutral,
+    Color? color,
   }) {
+    color ??= AppSemanticColors.of(context).accent;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.space8,
@@ -191,7 +198,12 @@ class WishlistCard extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: AppDimens.space4),
-          Text(text, style: AppTextStyles.labelMedium.copyWith(color: color)),
+          Text(
+            text,
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(color: color),
+          ),
         ],
       ),
     );

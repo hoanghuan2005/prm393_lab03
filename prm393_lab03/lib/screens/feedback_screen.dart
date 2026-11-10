@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/feedback_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -52,14 +53,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       (vm) => vm.isSendingFeedback,
     );
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -94,7 +92,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             Text(
               'Báo lỗi hoặc đề xuất tính năng mới. Góp ý được lưu cùng tài khoản '
               'của bạn để nhóm phát triển đọc.',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),
             TextField(
@@ -111,7 +109,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 hintText: 'Bạn gặp lỗi gì, hay muốn app có thêm điều gì?',
                 errorText: _error,
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: AppSemanticColors.of(context).cardSurface,
                 border: const OutlineInputBorder(
                   borderRadius: AppDimens.borderMedium,
                 ),

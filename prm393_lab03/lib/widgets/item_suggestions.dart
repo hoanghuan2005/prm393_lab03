@@ -9,8 +9,8 @@ import '../core/formatters/money_format.dart';
 import '../models/budget_group.dart';
 import '../models/item_suggestion.dart';
 import '../services/analytics_events.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
 import 'insight_source_chip.dart';
@@ -213,25 +213,25 @@ class _DuplicateHintState
         margin: const EdgeInsets.only(bottom: AppDimens.space16),
         padding: const EdgeInsets.all(AppDimens.space16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: AppSemanticColors.of(context).mutedSurface,
           borderRadius: AppDimens.borderMedium,
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: AppSemanticColors.of(context).divider),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.layers_outlined,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: AppSemanticColors.of(context).textSecondary,
                 ),
                 const SizedBox(width: AppDimens.space8),
                 Expanded(
                   child: Text(
                     'Bạn đã có món tương tự',
-                    style: AppTextStyles.labelLarge,
+                    style: AppTextStyles.labelLarge.themed(context),
                   ),
                 ),
                 if (matches.any((m) => m.fromAi))
@@ -244,13 +244,13 @@ class _DuplicateHintState
                 padding: const EdgeInsets.only(bottom: AppDimens.space4),
                 child: Text(
                   '• ${m.candidate.title} · ${_detail(m.candidate)}',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ),
             const SizedBox(height: AppDimens.space4),
             Text(
               'Thông tin để bạn đối chiếu, không ảnh hưởng tới lựa chọn.',
-              style: AppTextStyles.labelMedium,
+              style: AppTextStyles.labelMedium.themed(context),
             ),
             if (widget.onConfirmDuplicate case final confirm?)
               TextButton.icon(

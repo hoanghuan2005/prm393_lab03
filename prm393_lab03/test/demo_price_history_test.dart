@@ -11,10 +11,11 @@ import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/services/demo_price_history_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/price_history_demo_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_history_demo_section.dart';
 import 'package:provider/provider.dart';
+
+import 'support/test_theme.dart';
 
 /// 2026-11-06 12:00 in Vietnam
 final _now = DateTime.utc(2026, 11, 6, 5);
@@ -781,7 +782,7 @@ void main() {
         ChangeNotifierProvider.value(
           value: vm,
           child: MaterialApp(
-            theme: AppTheme.lightTheme,
+            theme: testAppTheme,
             home: const Scaffold(
               body: SingleChildScrollView(child: PriceHistoryDemoSection()),
             ),

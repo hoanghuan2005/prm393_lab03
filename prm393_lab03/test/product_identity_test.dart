@@ -13,11 +13,12 @@ import 'package:prm393_lab03/services/instrumented_ai_service.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/price_history_contribution_service.dart';
 import 'package:prm393_lab03/services/shared_price_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/shared_price_viewmodel.dart';
 import 'package:prm393_lab03/widgets/shared_price_section.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/test_theme.dart';
 
 const _key = 'shopee:446089250:44081797761';
 
@@ -434,7 +435,7 @@ void main() {
       Widget screen() => ChangeNotifierProvider<SharedPriceViewModel>.value(
         value: vm,
         child: MaterialApp(
-          theme: AppTheme.lightTheme,
+          theme: testAppTheme,
           home: Scaffold(
             body: SingleChildScrollView(
               child: SharedPriceSection(item: noPrice),

@@ -33,10 +33,12 @@ class DemoDataBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               label,
-              style: AppTextStyles.caption.copyWith(
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.caption
+                  .themed(context)
+                  .copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurfaceVariant,
+                  ),
             ),
           ],
         ),

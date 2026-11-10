@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -76,17 +77,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 26),
                   Text(
                     _title,
-                    style: AppTextStyles.headlineLarge.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTextStyles.headlineLarge
+                        .themed(context)
+                        .copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     _subtitle,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.45,
+                        ),
                   ),
                   const SizedBox(height: 22),
                   if (authVm.errorMessage != null) ...[
@@ -294,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
         icon: const Icon(Icons.chevron_left_rounded, size: 24),
         label: const Text('Quay lại'),
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: AppSemanticColors.of(context).textPrimary,
           padding: EdgeInsets.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
@@ -309,10 +312,12 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(width: 10),
         Text(
           'Why I Buy?',
-          style: AppTextStyles.titleLarge.copyWith(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w800,
-          ),
+          style: AppTextStyles.titleLarge
+              .themed(context)
+              .copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
         ),
       ],
     );
@@ -340,14 +345,18 @@ class _LoginScreenState extends State<LoginScreen> {
         prefixIcon: Icon(icon, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: AppColors.surface,
-        border: const OutlineInputBorder(
+        fillColor: AppSemanticColors.of(context).cardSurface,
+        border: OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(
+            color: AppSemanticColors.of(context).inputBorder,
+          ),
         ),
-        enabledBorder: const OutlineInputBorder(
+        enabledBorder: OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: BorderSide(color: AppColors.divider),
+          borderSide: BorderSide(
+            color: AppSemanticColors.of(context).inputEnabledBorder,
+          ),
         ),
       ),
     );
@@ -357,18 +366,26 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color: AppSemanticColors.of(context).error.withValues(alpha: 0.1),
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppSemanticColors.of(context).error.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: AppColors.error, size: 20),
+          Icon(
+            Icons.info_outline,
+            color: AppSemanticColors.of(context).error,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodyMedium
+                  .themed(context)
+                  .copyWith(color: AppSemanticColors.of(context).error),
             ),
           ),
         ],
@@ -412,8 +429,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildTrustNote(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryContainer,
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderMedium,
       ),
       child: Row(

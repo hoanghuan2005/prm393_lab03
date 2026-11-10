@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/extension_session.dart';
 import '../screens/extension_qr_scan_screen.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
@@ -37,21 +37,21 @@ class LinkedDevicesSection extends StatelessWidget {
           Text(
             'Chưa có máy tính nào. Cài extension Why I Buy? trên Chrome hoặc Edge, '
             'chọn Tạo mã QR rồi quét bằng nút ở trên.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           )
         else
           for (final session in sessions)
             ListTile(
               key: ValueKey('linked-${session.id}'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(
+              leading: Icon(
                 Icons.laptop_chromebook_rounded,
-                color: AppColors.textSecondary,
+                color: AppSemanticColors.of(context).textSecondary,
               ),
               title: Text(session.deviceLabel),
               subtitle: Text(
                 'Liên kết ngày ${DateFormat('dd/MM/yyyy').format(session.approvedAt ?? session.createdAt)}',
-                style: AppTextStyles.caption,
+                style: AppTextStyles.caption.themed(context),
               ),
               trailing: TextButton(
                 onPressed: () => _revoke(context, vm, session),

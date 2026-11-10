@@ -1,7 +1,7 @@
 // Cào voucher từ trang chủ (bản Lab + Firebase, chỉ staff/admin): người dùng đứng ở trang chủ Shopee, bấm 1 nút →
 // gom link sản phẩm đang hiện → mỗi shop lấy 1 sản phẩm → background mở lần lượt từng sản phẩm ở tab nền,
 // đọc voucher như nút cào thường, ghi shopeeVouchers, đóng tab. Một tab mỗi lần, nghỉ giữa các trang, gặp
-// captcha / trang đăng nhập thì dừng. Không bấm "Lưu" mã, không đặt hàng.
+// captcha / trang đăng nhập thì đưa tab lên và chờ người dùng xác minh rồi làm tiếp. Không bấm "Lưu" mã, không đặt hàng.
 
 export const CRAWL_KEY = 'wib_voucher_crawl';
 export const CRAWL_MAX_SHOPS = 20;
@@ -26,7 +26,7 @@ export function isShopeeHome(url?: string): boolean {
   try { const u = new URL(url ?? ''); return /(^|\.)shopee\.vn$/i.test(u.hostname) && (u.pathname === '/' || u.pathname === ''); } catch { return false; }
 }
 
-// Trang Shopee chặn bot / bắt đăng nhập → phải dừng, không mở tiếp.
+// Trang Shopee chặn bot / bắt đăng nhập → chờ người dùng xác minh, không tự vượt.
 export function isBlockedUrl(url?: string): boolean {
   return /shopee\.vn\/(verify\/|buyer\/login|captcha)/i.test(url ?? '');
 }

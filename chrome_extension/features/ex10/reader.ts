@@ -25,6 +25,14 @@ export interface PageRead {
   productRatingCount: string | null;    // số lượt đánh giá sản phẩm, vd "2,3k"
   shopRating: string | null;            // đánh giá của shop trong khung "Xem Shop"
   notes: string[];
+  shopVouchers?: ShopVoucherRead[];     // voucher shop trong dữ liệu Shopee nhúng sẵn ở trang sản phẩm (chỉ khi bật vouchers)
+}
+// Từ khối <script type="text/mfe-initial-data"> của trang sản phẩm: có thời hạn chính xác và tên shop.
+export interface ShopVoucherRead {
+  promotionId: string; code: string; shopId: string; shopName: string;
+  startTime: number; endTime: number;   // giây (unix)
+  minSpendVnd: number; amountVnd: number; percent: number; capVnd: number; usedPct: number;
+  unavailable: boolean;
 }
 export interface FlashSaleRead { kind: 'upcoming' | 'ongoing'; startsAt?: string; endsAt?: string; text: string; isFlash: boolean; }
 
@@ -78,12 +86,14 @@ export function readPage(opts: { vouchers?: boolean; maxVouchers?: number } = {}
     }
   }
   const meta = (n: string) => str(document.querySelector(`meta[property="${n}"], meta[name="${n}"]`)?.getAttribute('content'));
-  if (!out.name && meta('og:title')) { out.name = cleanTitle(meta('og:title')); out.nameSource = 'og:title'; }
+  // Tiêu đề chung của Shopee ("Shopee Việt Nam | Mua và Bán…") lúc trang chưa dựng xong / trang xác minh → không phải tên sản phẩm
+  const siteTitle = (s: string) => /^shopee(\s+việt nam)?\s*(\||-|$)/i.test(s);
+  if (!out.name && meta('og:title') && !siteTitle(meta('og:title'))) { out.name = cleanTitle(meta('og:title')); out.nameSource = 'og:title'; }
   if (!out.image && meta('og:image')) { out.image = meta('og:image'); out.imageSource = 'og:image'; }
   const mp = toVnd(meta('product:price:amount') || meta('og:price:amount'));
   if (mp) fallback.push({ amount: mp, text: String(mp), source: 'meta' });
   if (!out.name) { const h1 = norm(document.querySelector('h1')?.textContent); if (h1) { out.name = h1; out.nameSource = 'h1'; } }
-  if (!out.name && out.title) { out.name = cleanTitle(out.title); out.nameSource = 'title'; }
+  if (!out.name && out.title && !siteTitle(out.title)) { out.name = cleanTitle(out.title); out.nameSource = 'title'; }
 
   // 2) Giá ĐANG HIỂN THỊ (phản ánh loại đang chọn). Xét ở mức phần tử vì Shopee tách "20.000" và "đ" ra hai thẻ.
   const num = String.raw`\d{1,3}(?:[.,]\d{3})+|\d{4,}`;
@@ -214,6 +224,40 @@ export function readPage(opts: { vouchers?: boolean; maxVouchers?: number } = {}
       const t = textOf(el);
       if (!out.voucherTexts.includes(t)) out.voucherTexts.push(t);
       if (out.voucherTexts.length >= (opts.maxVouchers ?? 40)) break;
+    }
+    // Voucher shop trong dữ liệu nhúng sẵn của trang sản phẩm. Chỉ nhận voucher của đúng shop trong URL
+    // (trang chuyển sản phẩm bằng JS thì khối này có thể còn là của sản phẩm trước).
+    const m = location.pathname.match(/-i\.(\d+)\.(\d+)|\/product\/(\d+)\/(\d+)/);
+    const urlShop = m ? (m[1] || m[3]) : '', urlItem = m ? (m[2] || m[4]) : '';
+    let itemName = '';
+    const data = document.querySelector('script[type="text/mfe-initial-data"]')?.textContent;
+    if (urlShop && data && data.includes('"shop_vouchers"')) {
+      const money = (v: unknown) => (typeof v === 'number' && v > 0 ? Math.round(v / 100000) : 0);
+      const found = new Map<string, ShopVoucherRead>();
+      const visit = (o: any, depth: number): void => {
+        if (!o || typeof o !== 'object' || depth > 14) return;
+        if (Array.isArray(o)) { o.forEach((x) => visit(x, depth + 1)); return; }
+        for (const k of Object.keys(o)) {
+          if (k === 'shop_vouchers' && Array.isArray(o[k])) {
+            // khối chứa shop_vouchers là thông tin sản phẩm → lấy tên khi đúng sản phẩm trong URL
+            if (!itemName && String(o.itemid ?? o.item_id ?? '') === urlItem && str(o.name)) itemName = str(o.name);
+            for (const v of o[k]) {
+              const id = String(v?.promotionid ?? '');
+              if (!id || found.has(id) || String(v.shop_id ?? '') !== urlShop || !(v.end_time > 0)) continue;
+              found.set(id, {
+                promotionId: id, code: str(v.voucher_code).slice(0, 40), shopId: urlShop, shopName: str(v.shop_name).slice(0, 100),
+                startTime: v.start_time > 0 ? v.start_time : 0, endTime: v.end_time,
+                minSpendVnd: money(v.min_spend), amountVnd: money(v.discount_value), percent: v.discount_percentage > 0 ? v.discount_percentage : 0,
+                capVnd: money(v.discount_cap), usedPct: v.percentage_used > 0 ? Math.min(100, v.percentage_used) : 0,
+                unavailable: !!(v.fully_redeemed || v.has_expired || v.disabled),
+              });
+            }
+          } else visit(o[k], depth + 1);
+        }
+      };
+      try { visit(JSON.parse(data), 0); } catch { /* bỏ qua */ }
+      if (found.size) out.shopVouchers = Array.from(found.values()).slice(0, opts.maxVouchers ?? 40);
+      if (itemName && (!out.name || out.nameSource === 'title' || out.nameSource === 'og:title')) { out.name = itemName; out.nameSource = 'json-ld'; }
     }
   }
   // 5) Flash Sale / đợt giảm giá đang hiển thị: "BẮT ĐẦU SAU 15:00, 26 Thg 10", "Kết thúc trong 01:23:45".

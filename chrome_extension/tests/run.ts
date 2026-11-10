@@ -483,7 +483,23 @@ await t('Admin cào voucher: id ổn định theo shop, bỏ trùng, đủ trư�
   for (const s of ['Giảm ₫100k Đơn tối thiểu ₫1.1tr', 'Giảm 2.2% tối đa 50k', 'Giảm ₫20k HSD: 12.12', 'Giảm ₫20k Có hiệu lực từ: 00:00 11.11.2026'])
     assert.equal(vc.parseVoucher(s).sale, undefined, `không phải đợt sale: ${s}`);
   assert.equal(vc.parseVoucher('Voucher 12.12 Giảm ₫50k').sale, '12.12');
+  // dữ liệu voucher nhúng sẵn trong trang → có hạn dùng + tên shop, dùng thay cho chữ trên trang
+  const end = new Date(2026, 10, 13, 23, 59).getTime() / 1000, start = new Date(2026, 10, 9).getTime() / 1000;
+  const js = { promotionId: '155', code: 'LAROD11N3', shopId: '111', shopName: 'La Roche-Posay Chính Hãng', startTime: start, endTime: end,
+    minSpendVnd: 300000, amountVnd: 0, percent: 4, capVnd: 90000, usedPct: 16, unavailable: false };
+  const jd = av.voucherDocs({ ...page, shopVouchers: [js] }, 'o', new Date(2026, 10, 10).getTime());
+  assert.equal(jd.length, 1, 'không lấy thêm chữ trên trang');
+  assert.equal(jd[0].data.raw, 'Giảm 4% Đơn Tối Thiểu 300.000₫ Giảm tối đa 90.000₫ HSD: 23:59 13/11/2026 Mã LAROD11N3');
+  assert.deepEqual([jd[0].data.expiresText, jd[0].data.expiresDate, jd[0].data.startsText, jd[0].data.shopName, jd[0].data.percent, jd[0].data.capVnd, jd[0].data.minSpendVnd, jd[0].data.unavailable],
+    ['23:59 13/11/2026', '2026-11-13', undefined, 'La Roche-Posay Chính Hãng', 4, 90000, 300000, false]);
+  assert.equal(av.voucherDocs({ ...page, shopVouchers: [js] }, 'o', new Date(2026, 10, 20).getTime())[0].data.unavailable, true, 'quá hạn');
+  assert.equal(av.voucherDocs({ ...page, shopVouchers: [js] }, 'o', new Date(2026, 10, 1).getTime())[0].data.startsText, '00:00 9/11/2026', 'chưa tới giờ');
+  assert.ok(Object.values(jd[0].data).every((v) => v !== undefined));
+  // tiêu đề chung của Shopee không phải tên sản phẩm; dải cam kết của Shopee không phải voucher
+  assert.equal(av.voucherDocs({ ...page, name: 'Shopee Việt Nam | Mua và Bán Trên Ứng Dụng Di Động Hoặc Website' }, 'o')[0].data.productTitle, undefined);
+  assert.equal(av.voucherDocs({ ...page, voucherTexts: ['Đổi ý miễn phí 15 ngày • Chính hãng 100% • Miễn phí vận chuyển • Bảo hiểm Thời trang'] }, 'o').length, 0);
   assert.equal(av.shopNameFromTitle('Shop Mèo, Cửa hàng trực tuyến | Shopee Việt Nam', 'https://shopee.vn/shopmeo?x=1'), 'Shop Mèo');
+  assert.equal(av.shopNameFromTitle('La Roche-Posay Chính Hãng - Shopee Mall Online | Shopee Việt Nam', 'https://shopee.vn/larocheposay_officialstore'), 'La Roche-Posay Chính Hãng');
   assert.equal(av.shopNameFromTitle('Shopee Việt Nam | Mua và Bán', 'https://shopee.vn/'), null);
   assert.equal(av.shopNameFromTitle('Đồ chơi | Shopee', 'https://shopee.vn/Do-Choi-i.111.222'), null);
   assert.deepEqual(av.ownerOf('uidA:anonB'), { uid: 'uidA', sid: 'anonB' }); assert.equal(av.ownerOf('bad'), null);

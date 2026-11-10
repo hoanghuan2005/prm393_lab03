@@ -147,6 +147,53 @@ class ShareIntentService {
     return _pendingInitialData.removeAt(0);
   }
 
+  Future<void> _handleSharedMap(Map<String, dynamic> map) async {
+    if (_isDisposed) return;
+    var title = (map['title'] as String?)?.trim() ?? '';
+    title = ShopeeUrlParser.cleanLeadingArtifacts(title);
+    final url = (map['url'] as String?)?.trim() ?? '';
+    final shopName = (map['shopName'] as String?)?.trim();
+    final imageUrl = (map['imageUrl'] as String?)?.trim();
+    final rawPrice = map['price'];
+    int? priceVnd;
+    if (rawPrice is int) {
+      priceVnd = rawPrice;
+    } else if (rawPrice is String) {
+      priceVnd = ShopeeUrlParser.extractPrice(rawPrice);
+    }
+
+    final data = SharedItemData(
+      title: title.isNotEmpty ? title : 'Sản phẩm Shopee',
+      url: url,
+      priceVnd: priceVnd,
+      imageUrl: imageUrl,
+      shopName: shopName,
+      platform: ShopeeUrlParser.isShopeeUrl(url) ? 'Shopee' : 'Khác',
+      rawText: '$title $url $shopName',
+    );
+
+    final key = '${data.title}_${data.url}_${data.priceVnd}';
+    if (!_receivedKeys.add(key)) return;
+    if (_receivedKeys.length > 20) {
+      _receivedKeys.remove(_receivedKeys.first);
+    }
+
+    if (_onDataReceived != null) {
+      _onDataReceived!(data);
+    } else {
+      _pendingInitialData.add(data);
+    }
+  }
+
+  Future<void> _handleIncomingData(dynamic raw) async {
+    if (_isDisposed || raw == null) return;
+    if (raw is Map) {
+      await _handleSharedMap(Map<String, dynamic>.from(raw));
+    } else if (raw is String) {
+      await _handleSharedText(raw);
+    }
+  }
+
   Future<void> _handleSharedText(String? text) async {
     if (_isDisposed) return;
     final parsed = SharedItemData.parse(text);
@@ -173,15 +220,15 @@ class ShareIntentService {
 
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onShareReceived') {
-        await _handleSharedText(call.arguments as String?);
+        await _handleIncomingData(call.arguments);
       }
     });
 
     try {
-      final initialText = await _channel.invokeMethod<String>(
+      final initialData = await _channel.invokeMethod<dynamic>(
         'getInitialShareText',
       );
-      await _handleSharedText(initialText);
+      await _handleIncomingData(initialData);
     } catch (e) {
       debugPrint('ShareIntentService getInitialShareText error: $e');
     }

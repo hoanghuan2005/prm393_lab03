@@ -1,5 +1,5 @@
 // Bong bóng trợ lý mua sắm (Android): FloatingBubbleService vẽ một bong bóng 54dp đè lên
-// app mua sắm; ShoppingAccessibilityService thấy người dùng xem một món > 15 s thì bong bóng
+// app mua sắm; ShoppingAccessibilityService thấy người dùng xem một món > 30 s thì bong bóng
 // "thở", rung nhẹ và mở thẻ nhắc (chữ lấy nguyên từ handleLingeringAlert). Bấm "Lưu" gửi
 // ACTION_SEND về MainActivity, tức là đi lại đúng đường Share Intent của màn Thêm món.
 // Trang sản phẩm phía sau là minh hoạ chung chung, không dựng lại giao diện của sàn nào.
@@ -44,7 +44,7 @@ export default {
         <div class="bb" data-k="bubble"><span class="bb-ring" data-k="ring"></span>${logo(34)}<span class="bb-dot" data-k="dot"></span></div>
         <div class="bb-card" data-k="card">
           <div class="bb-title">🛑 Dừng lại 1 chút! Đừng mua vội</div>
-          <div class="bb-body">Bạn đã dừng xem món này hơn 15 giây. Bạn đang thực sự CẦN hay chỉ là cảm xúc nhất thời? Hãy lưu lại để cân nhắc thêm nhé!</div>
+          <div class="bb-body">Bạn đã dừng xem món này hơn 30 giây. Bạn đang thực sự CẦN hay chỉ là cảm xúc nhất thời? Hãy lưu lại để cân nhắc thêm nhé!</div>
           <div class="bb-info">Máy ảnh film mini • 450.000 ₫</div>
           <div class="bb-btn" data-k="save">${icon('shopping_cart_rounded', 16)}Lưu vào Wishlist Why I Buy</div>
         </div>
@@ -54,16 +54,16 @@ export default {
   demo(tl, root, k) {
     const sec = k.q('[data-k="sec"]')
     k.callout(tl, '[data-k="bubble"]', 'Bong bóng nổi trên app mua sắm', { pos: 0.4 })
-    // người dùng xem trang sản phẩm, đồng hồ đếm thời gian xem (15 s, tua nhanh)
+    // người dùng xem trang sản phẩm, đồng hồ đếm thời gian xem (30 s, tua nhanh)
     tl.to(k.q('[data-k="timer"]'), { opacity: 1, duration: 0.3 }, '+=0.3')
-    k.count(tl, sec, 15, { duration: 2.2, format: (v) => String(Math.round(v)), pos: '<' })
+    k.count(tl, sec, 30, { duration: 2.2, format: (v) => String(Math.round(v)), pos: '<' })
     // bong bóng "thở", chấm đỏ, mở thẻ nhắc
     tl.to(k.q('[data-k="timer"]'), { opacity: 0, duration: 0.25 }, '+=0.3')
     tl.to(k.q('[data-k="dot"]'), { opacity: 1, duration: 0.2 }, '<')
     tl.fromTo(k.q('[data-k="ring"]'), { opacity: 1, boxShadow: '0 0 0 0 rgba(255,222,2,.7)' }, { boxShadow: '0 0 0 18px rgba(255,222,2,0)', duration: 0.9, repeat: 1, ease: 'power2.out' }, '<')
     tl.fromTo(k.q('[data-k="bubble"]'), { scale: 1 }, { scale: 1.12, duration: 0.45, yoyo: true, repeat: 3, ease: 'sine.inOut' }, '<')
     tl.fromTo(k.q('[data-k="card"]'), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.4)' }, '<+=0.3')
-    k.callout(tl, '[data-k="card"]', 'Xem một món > 15 s → nhắc dừng lại', { pos: '+=0.2' })
+    k.callout(tl, '[data-k="card"]', 'Xem một món > 30 s → nhắc dừng lại', { pos: '+=0.2' })
     k.tap(tl, '[data-k="save"]', { pos: '+=1.4' })
     k.callout(tl, '[data-k="save"]', 'Mở form Thêm món (đường Share Intent)', { pos: '+=0.1' })
     k.wait(tl, 1.2)

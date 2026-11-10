@@ -22,6 +22,10 @@ class RemoteConfigService {
   static const String keyMaxWishlistItems = 'max_wishlist_items_shown';
   static const String keySaleReminderEnabled = 'sale_reminder_enabled';
   static const String keyAiInsightModel = 'ai_insight_model';
+
+  /// "Chụp để tìm" needs a stronger model than the Lite one used for wording: it
+  /// must read logos and model numbers. Empty in the console = the default below.
+  static const String keyAiPhotoSearchModel = 'ai_photo_search_model';
   static const String keyEnableAiSuggestions = 'enable_ai_suggestions';
   static const String keySaleCalendar = 'sale_calendar';
 
@@ -47,6 +51,7 @@ class RemoteConfigService {
     keyMaxWishlistItems: 20,
     keySaleReminderEnabled: true,
     keyAiInsightModel: 'gemini-3.5-flash-lite',
+    keyAiPhotoSearchModel: 'gemini-3.5-flash',
     keyEnableAiSuggestions: true,
     keySaleCalendar: defaultSaleCalendar,
     keyEnableAiPriceSearch: false,
@@ -115,6 +120,14 @@ class RemoteConfigService {
         ? _remoteConfig.getString(keyAiInsightModel)
         : '';
     return value.isNotEmpty ? value : defaults[keyAiInsightModel] as String;
+  }
+
+  /// Gemini model for "Chụp để tìm" (photo recognition)
+  String get aiPhotoSearchModel {
+    final value = _isSupported
+        ? _remoteConfig.getString(keyAiPhotoSearchModel)
+        : '';
+    return value.isNotEmpty ? value : defaults[keyAiPhotoSearchModel] as String;
   }
 
   String? _promptsRaw;

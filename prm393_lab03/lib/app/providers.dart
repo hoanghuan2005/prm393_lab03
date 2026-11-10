@@ -64,16 +64,16 @@ import '../viewmodels/wishlist_viewmodel.dart';
 /// FirebaseSetup.initialize — Provider.create runs lazily, after runApp.
 InstrumentedAiService _gemini(
   BuildContext context,
-  RemoteConfigService remoteConfig,
-) {
-  final gemini = FirebaseAiService(
-    modelName: () => remoteConfig.aiInsightModel,
-  );
+  RemoteConfigService remoteConfig, {
+  String Function()? modelName,
+}) {
+  final model = modelName ?? () => remoteConfig.aiInsightModel;
+  final gemini = FirebaseAiService(modelName: model);
   return InstrumentedAiService(
     text: gemini,
     image: gemini,
     web: gemini,
-    modelName: () => remoteConfig.aiInsightModel,
+    modelName: model,
     promptFor: remoteConfig.aiPromptFor,
     analyticsService: context.read<AppAnalyticsService>(),
   );
@@ -171,8 +171,18 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) {
             final gemini = _gemini(context, remoteConfigService);
+            // Recognition uses its own, stronger model; the Lite one is the
+            // fallback when that model's free quota runs out
+            final vision = _gemini(
+              context,
+              remoteConfigService,
+              modelName: () => remoteConfigService.aiPhotoSearchModel,
+            );
             return PhotoSearchViewModel(
-              aiService: AiPhotoSearchService(generator: gemini),
+              aiService: AiPhotoSearchService(
+                generator: vision,
+                fallback: gemini,
+              ),
               analyticsService: context.read<AppAnalyticsService>(),
               priceSearchService: AiPriceSearchService(generator: gemini),
               remoteConfigService: remoteConfigService,

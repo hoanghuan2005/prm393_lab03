@@ -41,15 +41,17 @@ void openReviewDueList() {
   appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
 }
 
-/// Opens AddItemScreen with shared product title & url (from Android Share Sheet)
+/// Opens AddItemScreen with shared product title & url (from Android Share Sheet or Floating Bubble)
 void openAddItemWithSharedData(SharedItemData data) {
   final context = appNavigatorKey.currentContext;
   if (context == null || context.read<AuthViewModel>().userId == null) {
     _pendingSharedData.add(data);
     return;
   }
-  appNavigatorKey.currentState?.pushNamed(
+  // Clear any existing sub-routes (e.g. recordPurchase) so the user directly enters Wishlist Add
+  appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
     AppRoutes.wishlistAdd,
+    (route) => route.isFirst,
     arguments: AddItemArgs(
       initialTitle: data.title.isNotEmpty ? data.title : null,
       initialUrl: data.url.isNotEmpty ? data.url : null,

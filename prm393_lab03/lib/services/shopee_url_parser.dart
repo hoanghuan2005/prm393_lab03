@@ -247,11 +247,24 @@ class ShopeeUrlParser {
       RegExp(r'^[M|m]ua\s+(?:ngay\s+)?(?:sản\s+phẩm\s+)?'),
       '',
     );
+    text = cleanLeadingArtifacts(text);
     text = text.replaceAll(RegExp(r'[\-|:•\s.!]+$'), '');
     text = text.replaceAll(RegExp(r'^[\-|:•\s.!]+'), '');
     text = text.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
 
     return truncateToWordBoundary(text, maxLength: 60);
+  }
+
+  /// Removes stray leading digits/artifacts like "0Ô Dù" -> "Ô Dù", "01. "
+  static String cleanLeadingArtifacts(String raw) {
+    var t = raw.trim();
+    t = t.replaceFirst(RegExp(r'^[0-9]+(?=[A-Za-zÀ-ỹ])'), '');
+    t = t.replaceFirst(RegExp(r'^[0-9]+[\s.:\-–—|•]+(?=[A-Za-zÀ-ỹ])'), '');
+    t = t.replaceFirst(
+      RegExp(r'^(?:Top\s*(?:No\.?\s*)?\d+[\s:\-–—|•]+)', caseSensitive: false),
+      '',
+    );
+    return t.trim();
   }
 
   /// Truncates [text] at the last whole-word boundary before [maxLength].

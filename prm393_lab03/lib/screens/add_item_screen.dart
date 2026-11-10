@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/routes.dart';
 import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
@@ -227,10 +228,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
               _isEdit
                   ? 'Đã lưu thay đổi.'
                   : !motive.skipsCooldown
-                  ? 'Đã lưu vào danh sách cân nhắc. Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
-                  : 'Đã lưu vào danh sách cân nhắc.',
+                  ? 'Đã lưu vào danh sách cân nhắc (Wishlist). Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
+                  : 'Đã lưu vào danh sách cân nhắc (Wishlist).',
             ),
             behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Xem Wishlist',
+              textColor: AppColors.primary,
+              onPressed: () {
+                Navigator.of(context).pushNamed(AppRoutes.wishlist);
+              },
+            ),
           ),
         );
         Navigator.of(context).pop();

@@ -403,29 +403,25 @@ OFFER | Link giả | 990.000 | javascript:alert(1)
       expect(vm.selectedName, isNull);
     });
 
-    test(
-      'discard on leaving the screen drops the photo silently and ignores a late reply',
-      () async {
-        final gate = Completer<void>();
-        ai
-          ..gate = gate.future
-          ..reply = _mouseReply;
-        final vm = build();
-        final running = vm.identify(_photo);
-        await Future<void>.delayed(Duration.zero);
-        var notified = 0;
-        vm.addListener(() => notified++);
-        vm.discard();
-        expect(notified, 0);
-        expect(vm.imageBytes, isNull);
-        gate.complete();
-        await running;
-        expect(vm.state, isA<UiInitial<ItemRecognition>>());
-        expect(vm.selectedName, isNull);
-        expect(notified, 0);
-      },
-    );
-
+    test('discard on leaving the screen drops the photo silently and ignores a late reply', () async {
+      final gate = Completer<void>();
+      ai
+        ..gate = gate.future
+        ..reply = _mouseReply;
+      final vm = build();
+      final running = vm.identify(_photo);
+      await Future<void>.delayed(Duration.zero);
+      var notified = 0;
+      vm.addListener(() => notified++);
+      vm.discard();
+      expect(notified, 0);
+      expect(vm.imageBytes, isNull);
+      gate.complete();
+      await running;
+      expect(vm.state, isA<UiInitial<ItemRecognition>>());
+      expect(vm.selectedName, isNull);
+      expect(notified, 0);
+    });
 
     test('disposing during recognition ignores the pending response', () async {
       final gate = Completer<void>();
@@ -460,6 +456,99 @@ OFFER | Link giả | 990.000 | javascript:alert(1)
       await older;
       expect(vm.selectedName, 'Bình nước');
       expect(vm.searchQuery, 'Bình nước');
+    });
+  });
+
+  group('Photo search accuracy', () {
+    const keywordReply = '''
+{"visibleText":"logi | MX Master 3S","name":"Chuột không dây Logitech MX Master 3S",
+ "searchKeyword":"Logitech MX Master 3S","brand":"Logitech",
+ "alternatives":["logitech mx master 3s","Logitech MX Master 3"],"confidence":"high"}''';
+
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('reads the search keyword; drops an alternative equal to it', () {
+      final r = AiPhotoSearchService.parse(keywordReply);
+      expect(r.searchKeyword, 'Logitech MX Master 3S');
+      expect(r.alternatives, ['Logitech MX Master 3']);
+    });
+
+    test(
+      'the main guess is searched by its keyword, alternatives by name',
+      () async {
+        final vm = PhotoSearchViewModel(
+          aiService: AiPhotoSearchService(
+            generator: _FakeVision()..reply = keywordReply,
+          ),
+          remoteConfigService: RemoteConfigService(
+            remoteConfig: _FakeRemoteConfig(),
+          ),
+          preferencesService: PreferencesService(),
+          platformSupportsAi: () => true,
+        );
+        await vm.identify(_photo);
+        expect(vm.searchQuery, 'Logitech MX Master 3S');
+        vm.selectName('Logitech MX Master 3');
+        expect(vm.searchQuery, 'Logitech MX Master 3');
+      },
+    );
+
+    test('out of quota on the main model: the fallback answers', () async {
+      final main = _FakeVision()
+        ..error = const AppException('ai-quota-exceeded', 'hết lượt');
+      final lite = _FakeVision()..reply = keywordReply;
+      final service = AiPhotoSearchService(generator: main, fallback: lite);
+      final r = await service.identify(_photo, 'image/jpeg');
+      expect(r.name, 'Chuột không dây Logitech MX Master 3S');
+      expect(main.calls, 1);
+      expect(lite.calls, 1);
+    });
+
+    test('a network error does not switch model', () async {
+      final main = _FakeVision()
+        ..error = const AppException('network', 'mất mạng');
+      final lite = _FakeVision()..reply = keywordReply;
+      final service = AiPhotoSearchService(generator: main, fallback: lite);
+      await expectLater(
+        service.identify(_photo, 'image/jpeg'),
+        throwsA(isA<AppException>()),
+      );
+      expect(lite.calls, 0);
+    });
+
+    test('shop links search by best match, not by price', () {
+      expect(ShopSite.shopee.searchUrl('MX Master 3S').queryParameters, {
+        'keyword': 'MX Master 3S',
+      });
+      expect(ShopSite.lazada.searchUrl('x').queryParameters, {'q': 'x'});
+      expect(ShopSite.tiki.searchUrl('x').queryParameters, {'q': 'x'});
+      expect(ShopSite.googleShopping.searchUrl('x').queryParameters, {
+        'tbm': 'shop',
+        'q': 'x',
+      });
+    });
+
+    test('drops alternatives that only restate the main guess', () {
+      final r = AiPhotoSearchService.parse('''
+{"name":"Chuột không dây Logitech M705 Marathon","searchKeyword":"Logitech M705",
+ "alternatives":["Logitech M705 Marathon","chuột không dây Logitech M510",
+ "chuột Logitech M705","Logitech M705s"]}''');
+      expect(r.alternatives, [
+        'chuột không dây Logitech M510',
+        'Logitech M705s',
+      ]);
+    });
+
+    test('"high" without the model in the read text becomes "medium"', () {
+      final guessed = AiPhotoSearchService.parse('''
+{"visibleText":"Logitech","name":"Chuột Logitech M705","searchKeyword":"Logitech M705",
+ "brand":"Logitech","confidence":"high"}''');
+      expect(guessed.confidence, RecognitionConfidence.medium);
+      // The keyword reply read "MX Master 3S" on the mouse: stays high
+      expect(
+        AiPhotoSearchService.parse(keywordReply).confidence,
+        RecognitionConfidence.high,
+      );
     });
   });
 }

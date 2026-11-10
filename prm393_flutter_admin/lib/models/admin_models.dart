@@ -77,6 +77,46 @@ class CrashReport {
       isResolved: isResolved ?? this.isResolved,
     );
   }
+
+  factory CrashReport.fromMap(Map<String, dynamic> map, String docId) {
+    CrashSeverity parseSeverity(dynamic val) {
+      if (val == 'fatal') return CrashSeverity.fatal;
+      if (val == 'high') return CrashSeverity.high;
+      return CrashSeverity.warning;
+    }
+
+    return CrashReport(
+      id: docId,
+      feature: map['feature'] as String? ?? 'General',
+      errorCode: map['errorCode'] as String? ?? 'ERR_UNKNOWN',
+      errorMessage: map['errorMessage'] as String? ?? '',
+      stackTrace: map['stackTrace'] as String? ?? '',
+      severity: parseSeverity(map['severity']),
+      affectedUsers: (map['affectedUsers'] as num?)?.toInt() ?? 1,
+      occurrences: (map['occurrences'] as num?)?.toInt() ?? 1,
+      lastOccurred: map['lastOccurred'] as String? ?? 'Vừa xong',
+      appVersion: map['appVersion'] as String? ?? '1.0.0',
+      platform: map['platform'] as String? ?? 'Android',
+      isResolved: map['isResolved'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'feature': feature,
+      'errorCode': errorCode,
+      'errorMessage': errorMessage,
+      'stackTrace': stackTrace,
+      'severity': severity.name,
+      'affectedUsers': affectedUsers,
+      'occurrences': occurrences,
+      'lastOccurred': lastOccurred,
+      'appVersion': appVersion,
+      'platform': platform,
+      'isResolved': isResolved,
+    };
+  }
 }
 
 class PushBroadcast {

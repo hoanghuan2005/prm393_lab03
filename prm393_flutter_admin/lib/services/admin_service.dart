@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,6 +22,7 @@ class AdminService extends ChangeNotifier {
   bool _isLoading = false;
   bool _isDarkMode = true;
   String? _liveDataError;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _crashesSubscription;
 
   DashboardMetrics _metrics = MockAdminData.defaultMetrics;
   List<UserAnalytics> _users = List.from(MockAdminData.defaultUsers);
@@ -98,6 +100,16 @@ class AdminService extends ChangeNotifier {
   }
 
   void resolveCrash(String id) {
+    if (_isLiveFirebase) {
+      try {
+        FirebaseFirestore.instance
+            .collection('crashes')
+            .doc(id)
+            .update({'isResolved': true});
+      } catch (e) {
+        debugPrint('Lỗi cập nhật crash Firestore: $e');
+      }
+    }
     final index = _crashes.indexWhere((c) => c.id == id);
     if (index != -1) {
       _crashes[index] = _crashes[index].copyWith(isResolved: true);
@@ -350,6 +362,10 @@ class AdminService extends ChangeNotifier {
     if (_isLiveFirebase) {
       await fetchFirebaseData();
     } else {
+      _crashesSubscription?.cancel();
+      _crashesSubscription = null;
+      _crashes.clear();
+      _crashes.addAll(MockAdminData.defaultCrashes);
       _liveDataError = null;
       _users = List.from(MockAdminData.defaultUsers);
       _metrics = MockAdminData.defaultMetrics;
@@ -467,6 +483,43 @@ class AdminService extends ChangeNotifier {
       } catch (err) {
         debugPrint('Tải vouchers Firebase: $err');
       }
+
+      // Listen to live crashes from Firestore in real-time
+      try {
+        _crashesSubscription?.cancel();
+        _crashesSubscription = FirebaseFirestore.instance
+            .collection('crashes')
+            .snapshots()
+            .listen(
+          (snapshot) {
+            if (!_isLiveFirebase) return;
+            if (snapshot.docs.isNotEmpty) {
+              final liveCrashes = snapshot.docs
+                  .map((d) => CrashReport.fromMap(d.data(), d.id))
+                  .toList();
+              liveCrashes.sort((a, b) => b.lastOccurred.compareTo(a.lastOccurred));
+              _crashes.clear();
+              _crashes.addAll(liveCrashes);
+            } else {
+              _crashes.clear();
+            }
+            final activeCount = _crashes.where((c) => !c.isResolved).length;
+            final crashFreeRate = _users.isEmpty
+                ? 100.0
+                : (((_users.length - activeCount) / _users.length) * 100).clamp(0.0, 100.0);
+            _metrics = _metrics.copyWith(
+              activeCrashesCount: activeCount,
+              crashFreeUsersRate: double.parse(crashFreeRate.toStringAsFixed(1)),
+            );
+            notifyListeners();
+          },
+          onError: (err) {
+            debugPrint('Lỗi realtime crash stream: $err');
+          },
+        );
+      } catch (err) {
+        debugPrint('Khởi tạo crash listener: $err');
+      }
     } catch (e) {
       _liveDataError = 'Không thể tải dữ liệu Firebase ($readStage): $e';
       debugPrint('Firestore fetch error: $e');
@@ -486,6 +539,12 @@ class AdminService extends ChangeNotifier {
       first.year == second.year &&
       first.month == second.month &&
       first.day == second.day;
+
+  @override
+  void dispose() {
+    _crashesSubscription?.cancel();
+    super.dispose();
+  }
 
   static String _formatDateTime(DateTime? value) {
     if (value == null) return 'Chưa có hoạt động';

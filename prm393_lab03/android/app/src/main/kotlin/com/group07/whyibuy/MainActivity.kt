@@ -19,11 +19,11 @@ class MainActivity : FlutterActivity() {
 
     private var methodChannel: MethodChannel? = null
     private var bubbleChannel: MethodChannel? = null
-    private var pendingShareText: String? = null
+    private var pendingShareData: Any? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        extractShareText(intent)
+        extractShareData(intent)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -33,9 +33,9 @@ class MainActivity : FlutterActivity() {
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getInitialShareText" -> {
-                    val text = pendingShareText
-                    pendingShareText = null
-                    result.success(text)
+                    val data = pendingShareData
+                    pendingShareData = null
+                    result.success(data)
                 }
                 // Notification permission denied for good: Android shows no dialog any more,
                 // so "Bật thông báo" opens this app's notification settings instead
@@ -60,8 +60,8 @@ class MainActivity : FlutterActivity() {
         }
 
         // If a share text arrived before or during engine setup, notify Flutter if channel is ready
-        pendingShareText?.let { text ->
-            methodChannel?.invokeMethod("onShareReceived", text)
+        pendingShareData?.let { data ->
+            methodChannel?.invokeMethod("onShareReceived", data)
         }
 
         bubbleChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BUBBLE_CHANNEL)
@@ -141,12 +141,16 @@ class MainActivity : FlutterActivity() {
                 "showTestLingeringAlert" -> {
                     val title = call.argument<String>("title") ?: "Tai nghe không dây Bluetooth chống ồn"
                     val price = call.argument<String>("price") ?: "120.000 đ"
+                    val shop = call.argument<String>("shop") ?: "Baseus Official Store"
+                    val url = call.argument<String>("url") ?: "https://shopee.vn/search?keyword=Tai+nghe+Bluetooth+Baseus"
                     Log.d("MainActivity", "showTestLingeringAlert invoked for: $title - $price")
-                    FloatingBubbleService.activeInstance?.handleLingeringAlert(title, price, "com.shopee.vn") ?: run {
+                    FloatingBubbleService.activeInstance?.handleLingeringAlert(title, price, "com.shopee.vn", shop, url) ?: run {
                         val serviceIntent = Intent(this, FloatingBubbleService::class.java).apply {
                             action = FloatingBubbleService.ACTION_TEST_PULSE_ALERT
                             putExtra("title", title)
                             putExtra("price", price)
+                            putExtra("shopName", shop)
+                            putExtra("url", url)
                         }
                         startService(serviceIntent)
                     }
@@ -182,19 +186,40 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val text = extractShareText(intent)
-        if (!text.isNullOrBlank()) {
-            pendingShareText = text
-            methodChannel?.invokeMethod("onShareReceived", text)
+        val data = extractShareData(intent)
+        if (data != null) {
+            pendingShareData = data
+            methodChannel?.invokeMethod("onShareReceived", data)
         }
     }
 
-    private fun extractShareText(intent: Intent?): String? {
+    private fun extractShareData(intent: Intent?): Any? {
         if (intent == null) return null
         val action = intent.action
-        val type = intent.type
-
         if (Intent.ACTION_SEND != action) return null
+
+        // 1. Check for structured product extras (from FloatingBubbleService)
+        val itemTitle = intent.getStringExtra("item_title")
+        val itemPrice = intent.getStringExtra("item_price")
+        val itemShop = intent.getStringExtra("item_shop")
+        val itemUrl = intent.getStringExtra("item_url")
+        val itemImage = intent.getStringExtra("item_image")
+
+        if (!itemTitle.isNullOrBlank() || !itemUrl.isNullOrBlank() || !itemPrice.isNullOrBlank()) {
+            val map = hashMapOf<String, Any?>(
+                "title" to itemTitle,
+                "price" to itemPrice,
+                "shopName" to itemShop,
+                "url" to itemUrl,
+                "imageUrl" to itemImage
+            )
+            pendingShareData = map
+            Log.d("WhyIBuyShare", "Received structured product extras: $map")
+            return map
+        }
+
+        // 2. Fallback to standard plain text sharing (e.g. from native Android share sheet)
+        val type = intent.type
         if (type != null && !type.startsWith("text/")) return null
 
         val sharedText =
@@ -210,7 +235,7 @@ class MainActivity : FlutterActivity() {
                 ?: intent.dataString?.trim()?.takeIf { it.isNotEmpty() }
 
         if (!sharedText.isNullOrBlank()) {
-            pendingShareText = sharedText
+            pendingShareData = sharedText
             Log.d("WhyIBuyShare", "Received ACTION_SEND text (${sharedText.length} chars)")
             return sharedText
         }

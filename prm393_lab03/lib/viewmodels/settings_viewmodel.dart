@@ -371,20 +371,38 @@ class SettingsViewModel extends ChangeNotifier
           'screen': 'ProfileScreen/FirebaseDemo',
         },
       );
+      await crashlyticsService.logCrashToFirestore(
+        feature: 'ProfileDemo (Non-Fatal)',
+        errorCode: 'ERR_NON_FATAL_TEST',
+        errorMessage: 'Simulated non-fatal exception for Lab 3 validation (UID: $userId)',
+        stackTrace: stack.toString(),
+        severity: 'warning',
+        userId: userId,
+      );
+
       await reminderService?.showImmediateNotification(
         id: 998,
         title: 'Đã ghi lỗi có xử lý (Crashlytics)',
-        body: 'Lỗi thử đã được gửi lên Firebase Crashlytics.',
+        body: 'Lỗi thử đã được gửi lên Firebase Crashlytics & Admin Web.',
       );
     }
   }
 
   /// Trigger a forced test crash for Crashlytics dashboard evidence
-  Future<void> testForcedCrash() async {
+  Future<void> testForcedCrash({String? userId}) async {
     await reminderService?.showImmediateNotification(
       id: 999,
-      title: 'Sắp crash thử (Crashlytics)',
+      title: 'Sắp crash thử (Crashlytics & Admin Web)',
       body: 'App sẽ đóng để gửi báo cáo crash lên Firebase Crashlytics.',
+    );
+    final effectiveUid = userId ?? _uid ?? 'anonymous';
+    await crashlyticsService.logCrashToFirestore(
+      feature: 'ProfileDemo (Forced Crash)',
+      errorCode: 'FATAL_TEST_CRASH',
+      errorMessage: 'Kích hoạt thử nghiệm Crash thật từ Profile Demo (UID: $effectiveUid)',
+      stackTrace: StackTrace.current.toString(),
+      severity: 'fatal',
+      userId: effectiveUid,
     );
     await Future.delayed(const Duration(milliseconds: 600));
     crashlyticsService.forceCrashForTesting();

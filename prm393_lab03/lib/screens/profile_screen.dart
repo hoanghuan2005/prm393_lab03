@@ -1215,7 +1215,7 @@ class FirebaseDemoTools extends StatelessWidget {
                 confirmLabel: 'Crash thử',
                 isDanger: true,
               );
-              if (ok) await settingsVm.testForcedCrash();
+              if (ok) await settingsVm.testForcedCrash(userId: userId);
             },
           ),
           const SizedBox(height: AppDimens.space12),

@@ -62,11 +62,14 @@ class FloatingBubbleService : Service() {
             context: Context,
             title: String?,
             price: String?,
-            packageName: String?
+            packageName: String?,
+            shopName: String? = null,
+            url: String? = null,
+            imageUrl: String? = null
         ) {
             val service = activeInstance
             if (service != null && isRunning) {
-                service.handleLingeringAlert(title, price, packageName)
+                service.handleLingeringAlert(title, price, packageName, shopName, url, imageUrl)
             } else {
                 try {
                     val intent = Intent(context, FloatingBubbleService::class.java).apply {
@@ -74,6 +77,9 @@ class FloatingBubbleService : Service() {
                         putExtra("title", title)
                         putExtra("price", price)
                         putExtra("package", packageName)
+                        putExtra("shopName", shopName)
+                        putExtra("url", url)
+                        putExtra("imageUrl", imageUrl)
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         context.startForegroundService(intent)
@@ -141,12 +147,17 @@ class FloatingBubbleService : Service() {
                 val title = intent.getStringExtra("title")
                 val price = intent.getStringExtra("price")
                 val pkg = intent.getStringExtra("package")
-                handleLingeringAlert(title, price, pkg)
+                val shop = intent.getStringExtra("shopName")
+                val url = intent.getStringExtra("url")
+                val img = intent.getStringExtra("imageUrl")
+                handleLingeringAlert(title, price, pkg, shop, url, img)
             }
             ACTION_TEST_PULSE_ALERT -> {
                 val title = intent.getStringExtra("title") ?: "Tai nghe không dây Bluetooth chống ồn"
                 val price = intent.getStringExtra("price") ?: "120.000 đ"
-                handleLingeringAlert(title, price, "com.shopee.vn")
+                val shop = intent.getStringExtra("shopName") ?: "Baseus Official Store"
+                val url = intent.getStringExtra("url") ?: "https://shopee.vn/search?keyword=Tai+nghe+Bluetooth+Baseus"
+                handleLingeringAlert(title, price, "com.shopee.vn", shop, url)
             }
         }
         return START_STICKY
@@ -452,13 +463,32 @@ class FloatingBubbleService : Service() {
             return
         }
 
-        // Tapping the bubble inspects current clipboard content
+        // 1. If Accessibility Service is running, immediately capture product on screen
+        val a11y = ShoppingAccessibilityService.activeInstance
+        if (a11y != null && ShoppingAccessibilityService.isServiceConnected) {
+            val prod = a11y.captureCurrentProduct()
+            if (!prod.title.isNullOrBlank() || !prod.price.isNullOrBlank()) {
+                handleLingeringAlert(
+                    title = prod.title,
+                    price = prod.price,
+                    packageName = a11y.currentPackage,
+                    shopName = prod.shopName,
+                    url = prod.url,
+                    imageUrl = prod.imageUrl
+                )
+                return
+            }
+        }
+
+        // 2. Tapping the bubble inspects current clipboard content
         val copied = inspectClipboardText()
         if (isEcommerceLink(copied)) {
             triggerSaleAlert(copied!!, isSimulated = false)
-        } else {
-            showPromptCallout()
+            return
         }
+
+        // 3. Fallback: prompt card
+        showPromptCallout()
     }
 
     private fun setActionButtonWithCart(buttonText: String, onClick: () -> Unit) {
@@ -469,12 +499,32 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    private fun openAccessibilitySettings() {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open accessibility settings: ${e.message}")
+        }
+    }
+
     private fun showPromptCallout() {
         calloutTitle?.text = "Trợ lý Why I Buy"
-        calloutBody?.text = "Đang theo dõi giá sản phẩm. Khi bạn xem một món đồ, chỉ cần bấm 'Sao chép liên kết' (Copy link) hoặc chạm vào đây để Why I Buy giữ giá!"
-        calloutUrlText?.visibility = View.GONE
-        setActionButtonWithCart("Mở Why I Buy") {
-            openWhyIBuyWithLink(null)
+        val isA11yActive = ShoppingAccessibilityService.isServiceConnected
+        if (!isA11yActive) {
+            calloutBody?.text = "Bạn chưa bật quyền Hỗ trợ tiếp cận để Why I Buy tự đọc tên & giá món này. Hãy bấm 'Bật hỗ trợ tiếp cận' bên dưới hoặc bấm 'Sao chép liên kết' trên Shopee!"
+            calloutUrlText?.visibility = View.GONE
+            setActionButtonWithCart("Bật Hỗ trợ tiếp cận") {
+                openAccessibilitySettings()
+            }
+        } else {
+            calloutBody?.text = "Đang theo dõi sản phẩm. Khi bạn xem một món đồ, chỉ cần bấm 'Sao chép liên kết' (Copy link) hoặc chạm vào đây để Why I Buy giữ giá!"
+            calloutUrlText?.visibility = View.GONE
+            setActionButtonWithCart("Mở Why I Buy") {
+                openWhyIBuyWithLink(null)
+            }
         }
         showCallout(autoHideSeconds = 8)
     }
@@ -586,17 +636,25 @@ class FloatingBubbleService : Service() {
         showCallout(autoHideSeconds = 8)
     }
 
-    fun handleLingeringAlert(title: String?, price: String?, packageName: String?) {
+    fun handleLingeringAlert(
+        title: String?,
+        price: String?,
+        packageName: String?,
+        shopName: String? = null,
+        url: String? = null,
+        imageUrl: String? = null
+    ) {
         mainHandler.post {
             badgeDot?.visibility = View.VISIBLE
             pulseBubble()
             vibrateBreathingPulse()
 
             calloutTitle?.text = "🛑 Dừng lại 1 chút! Đừng mua vội"
-            calloutBody?.text = "Bạn đã dừng xem món này hơn 15 giây. Bạn đang thực sự CẦN hay chỉ là cảm xúc nhất thời? Hãy lưu lại để cân nhắc thêm nhé!"
+            calloutBody?.text = "Bạn đang xem và cân nhắc món này khá kỹ. Bạn đang thực sự CẦN hay chỉ là cảm xúc nhất thời? Hãy lưu lại để suy nghĩ thêm nhé!"
 
             val infoList = mutableListOf<String>()
-            if (!title.isNullOrBlank()) infoList.add(title.take(60))
+            if (!title.isNullOrBlank()) infoList.add(title.take(45))
+            if (!shopName.isNullOrBlank()) infoList.add("Shop: $shopName")
             if (!price.isNullOrBlank()) infoList.add(price)
 
             if (infoList.isNotEmpty()) {
@@ -609,11 +667,14 @@ class FloatingBubbleService : Service() {
             }
 
             setActionButtonWithCart("Lưu vào Wishlist Why I Buy") {
-                val shareText = buildString {
-                    if (!title.isNullOrBlank()) append(title)
-                    if (!price.isNullOrBlank()) append(" - Giá: ").append(price)
-                }.takeIf { it.isNotBlank() } ?: "Sản phẩm đang xem trên $packageName"
-                openWhyIBuyWithLink(shareText)
+                openWhyIBuyWithProduct(
+                    title = title,
+                    price = price,
+                    shopName = shopName,
+                    url = url,
+                    imageUrl = imageUrl,
+                    packageName = packageName
+                )
             }
 
             showCallout(autoHideSeconds = 8)
@@ -664,14 +725,54 @@ class FloatingBubbleService : Service() {
         }
     }
 
-    private fun openWhyIBuyWithLink(url: String?) {
+    private fun openWhyIBuyWithProduct(
+        title: String?,
+        price: String?,
+        shopName: String?,
+        url: String?,
+        imageUrl: String?,
+        packageName: String?
+    ) {
         try {
+            val clipText = inspectClipboardText()
+            val resolvedUrl = when {
+                !url.isNullOrBlank() -> url
+                isEcommerceLink(clipText) -> clipText
+                !title.isNullOrBlank() -> "https://shopee.vn/search?keyword=" + Uri.encode(title)
+                else -> null
+            }
+
+            val shareText = buildString {
+                if (!title.isNullOrBlank()) append(title)
+                if (!shopName.isNullOrBlank()) append(" - Shop: ").append(shopName)
+                if (!price.isNullOrBlank()) append(" - Giá: ").append(price)
+                if (!resolvedUrl.isNullOrBlank()) append("\n").append(resolvedUrl)
+            }.takeIf { it.isNotBlank() } ?: "Sản phẩm đang xem trên $packageName"
+
             val intent = Intent(this, MainActivity::class.java).apply {
                 action = Intent.ACTION_SEND
                 type = "text/plain"
-                if (!url.isNullOrBlank()) {
-                    putExtra(Intent.EXTRA_TEXT, url)
-                }
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                if (!title.isNullOrBlank()) putExtra("item_title", title)
+                if (!price.isNullOrBlank()) putExtra("item_price", price)
+                if (!shopName.isNullOrBlank()) putExtra("item_shop", shopName)
+                if (!resolvedUrl.isNullOrBlank()) putExtra("item_url", resolvedUrl)
+                if (!imageUrl.isNullOrBlank()) putExtra("item_image", imageUrl)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch Why I Buy: ${e.message}")
+        }
+    }
+
+    private fun openWhyIBuyWithLink(url: String?) {
+        try {
+            val textToSend = if (!url.isNullOrBlank()) url else "Sản phẩm cần cân nhắc"
+            val intent = Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, textToSend)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)

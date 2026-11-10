@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -104,6 +105,45 @@ class CrashlyticsService {
       'lab3_verification_forced_crash',
     );
     _crashlytics.crash();
+  }
+
+  /// Log a crash or error event to Firestore so Admin Web dashboard can monitor it in real time
+  Future<void> logCrashToFirestore({
+    required String feature,
+    required String errorCode,
+    required String errorMessage,
+    String? stackTrace,
+    String severity = 'fatal',
+    String? userId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final dateStr =
+          '${now.year}-${twoDigits(now.month)}-${twoDigits(now.day)} '
+          '${twoDigits(now.hour)}:${twoDigits(now.minute)}:${twoDigits(now.second)}';
+
+      final docRef = FirebaseFirestore.instance.collection('crashes').doc();
+      await docRef.set({
+        'id': docRef.id,
+        'feature': feature,
+        'errorCode': errorCode,
+        'errorMessage': errorMessage,
+        'stackTrace': stackTrace ?? '',
+        'severity': severity,
+        'affectedUsers': 1,
+        'occurrences': 1,
+        'lastOccurred': dateStr,
+        'appVersion': '1.0.0+3',
+        'platform': defaultTargetPlatform.name,
+        'userId': userId ?? 'anonymous',
+        'isResolved': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('Logged crash report to Firestore: ${docRef.id}');
+    } catch (e) {
+      debugPrint('Failed to log crash to Firestore: $e');
+    }
   }
 }
 

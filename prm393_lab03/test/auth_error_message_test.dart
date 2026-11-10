@@ -11,6 +11,7 @@ import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/auth_service.dart';
 import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
+import 'package:prm393_lab03/services/facebook_login_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,7 @@ import 'support/test_theme.dart';
 
 const _accountExistsMessage =
     'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách '
-    'bạn đã dùng trước đó (Google, GitHub hoặc email), rồi vào Cá nhân → Tài '
+    'bạn đã dùng trước đó (Google, Facebook, GitHub hoặc email), rồi vào Cá nhân → Tài '
     'khoản liên kết để thêm cách mới.';
 const _cancelledMessage =
     'Bạn đã huỷ đăng nhập. Chọn lại cách đăng nhập khi sẵn sàng.';
@@ -105,6 +106,11 @@ class _UnusedBudgetService extends Fake implements BudgetService {}
 
 class _UnusedAnalytics extends Fake implements AppAnalyticsService {}
 
+class _CancelledFacebook extends Fake implements FacebookLoginService {
+  @override
+  Future<OAuthCredential?> credential() async => null;
+}
+
 class _FakeCredential extends Fake implements UserCredential {}
 
 /// FirebaseAuth whose sign-in calls succeed
@@ -151,11 +157,15 @@ AuthViewModel _viewModel(
   crashlyticsService: crashlytics,
 );
 
-AuthService _authFailingWith(Object error, {GoogleSignIn? googleSignIn}) =>
-    AuthService(
-      auth: _FailingFirebaseAuth(error),
-      googleSignIn: googleSignIn ?? _FakeGoogleSignIn(),
-    );
+AuthService _authFailingWith(
+  Object error, {
+  GoogleSignIn? googleSignIn,
+  FacebookLoginService? facebookLogin,
+}) => AuthService(
+  auth: _FailingFirebaseAuth(error),
+  googleSignIn: googleSignIn ?? _FakeGoogleSignIn(),
+  facebookLogin: facebookLogin,
+);
 
 FirebaseAuthException _authError(String code) =>
     FirebaseAuthException(code: code, message: 'raw english message');
@@ -485,13 +495,40 @@ void main() {
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
           value: vm,
-          child: MaterialApp(
-            theme: testAppTheme,
-            home: const LoginScreen(),
-          ),
+          child: MaterialApp(theme: testAppTheme, home: const LoginScreen()),
         ),
       );
     }
+
+    testWidgets(
+      'Facebook button is between Google and GitHub and cancellation stays silent',
+      (tester) async {
+        final vm = _viewModel(
+          _authFailingWith(
+            _authError('internal-error'),
+            facebookLogin: _CancelledFacebook(),
+          ),
+          _CountingCrashlytics(),
+        );
+        addTearDown(vm.dispose);
+        await pumpLogin(tester, vm);
+        final facebook = find.text('Đăng nhập với Facebook');
+        expect(
+          tester.getTopLeft(find.text('Đăng nhập với Google')).dy,
+          lessThan(tester.getTopLeft(facebook).dy),
+        );
+        expect(
+          tester.getTopLeft(facebook).dy,
+          lessThan(tester.getTopLeft(find.text('Đăng nhập với GitHub')).dy),
+        );
+        await tester.ensureVisible(facebook);
+        await tester.tap(facebook);
+        await tester.pumpAndSettle();
+        expect(vm.status, AuthStatus.unauthenticated);
+        expect(vm.errorMessage, isNull);
+        expect(find.text(_cancelledMessage), findsNothing);
+      },
+    );
 
     testWidgets('shows the network message when Google sign-in is offline', (
       tester,

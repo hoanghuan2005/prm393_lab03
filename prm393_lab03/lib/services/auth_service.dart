@@ -1,25 +1,33 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/errors/app_exception.dart';
 import '../core/errors/describe_error.dart';
 import '../firebase/platform_support.dart';
+import 'facebook_login_service.dart';
 import 'service_guard.dart';
 
 /// Service abstraction for Authentication
 class AuthService {
   final FirebaseAuth _auth;
   final GoogleSignIn? _injectedGoogleSignIn;
+  final FacebookLoginService? _injectedFacebookLogin;
+  late final FacebookLoginService _facebookLogin =
+      _injectedFacebookLogin ?? FacebookLoginService();
 
   /// Created on first use, i.e. only on Android/iOS: the web uses Firebase's popup, and
   /// creating google_sign_in_web without a client-id meta tag fails an assertion on start.
   late final GoogleSignIn _googleSignIn =
       _injectedGoogleSignIn ?? GoogleSignIn();
 
-  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _injectedGoogleSignIn = googleSignIn;
+  AuthService({
+    FirebaseAuth? auth,
+    GoogleSignIn? googleSignIn,
+    FacebookLoginService? facebookLogin,
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _injectedGoogleSignIn = googleSignIn,
+       _injectedFacebookLogin = facebookLogin;
 
   /// Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -81,6 +89,21 @@ class AuthService {
         debugPrint('AuthService GoogleSignIn Error: ${describeError(e)}');
         rethrow;
       }
+    });
+  }
+
+  /// Native SDK token on mobile, Firebase popup on web; null when cancelled.
+  Future<UserCredential?> signInWithFacebook() async {
+    if (!PlatformSupport.supportsFacebookSignIn) {
+      throw UnsupportedError(
+        'Facebook sign-in is unavailable on this platform',
+      );
+    }
+    return guard(() async {
+      if (kIsWeb) return _auth.signInWithPopup(_facebookProvider());
+      final credential = await _facebookLogin.credential();
+      if (credential == null) return null;
+      return _auth.signInWithCredential(credential);
     });
   }
 
@@ -200,6 +223,42 @@ class AuthService {
     });
   }
 
+  /// Links Facebook without replacing the current account (also upgrades guests).
+  Future<UserCredential?> linkFacebook() async {
+    if (!PlatformSupport.supportsFacebookSignIn) {
+      throw UnsupportedError(
+        'Facebook sign-in is unavailable on this platform',
+      );
+    }
+    return guard(() async {
+      final user = _requireUser();
+      try {
+        final UserCredential result;
+        if (kIsWeb) {
+          result = await user.linkWithPopup(_facebookProvider());
+        } else {
+          final credential = await _facebookLogin.credential();
+          if (credential == null) return null;
+          result = await user.linkWithCredential(credential);
+        }
+        await _reloadQuietly(user);
+        return result;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'provider-already-linked') {
+          await _reloadQuietly(user);
+          return null;
+        }
+        if (e.code == 'credential-already-in-use') {
+          throw const AppException(
+            'credential-already-in-use',
+            'Tài khoản Facebook này đang dùng cho một tài khoản Why I Buy? khác. Đăng nhập tài khoản đó để huỷ liên kết trước.',
+          );
+        }
+        rethrow;
+      }
+    });
+  }
+
   /// Removes [providerId] from the current user; the last remaining one is kept
   Future<void> unlink(String providerId) async {
     final linked = linkedProviderIds;
@@ -213,6 +272,9 @@ class AuthService {
       if (providerId == GoogleAuthProvider.PROVIDER_ID &&
           PlatformSupport.isMobile) {
         await _signOutGoogleQuietly();
+      }
+      if (providerId == 'facebook.com' && PlatformSupport.isMobile) {
+        await _signOutFacebookQuietly();
       }
       await _reloadQuietly(user);
     });
@@ -268,14 +330,30 @@ class AuthService {
     ..addScope('read:user')
     ..addScope('user:email');
 
+  FacebookAuthProvider _facebookProvider() =>
+      FacebookAuthProvider()..addScope('email');
+
+  Future<void> _signOutFacebookQuietly() async {
+    try {
+      await _facebookLogin.logOut();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('AuthService Facebook signOut error: ${describeError(e)}');
+      }
+    }
+  }
+
   /// Sign in anonymously for test / guest mode; throws AppException
   Future<UserCredential> signInAnonymously() =>
       guard(() => _auth.signInAnonymously());
 
   /// Sign out
   Future<void> signOut() async {
+    final facebookLinked = linkedProviderIds.contains('facebook.com');
     try {
       await Future.wait([
+        if (facebookLinked && PlatformSupport.isMobile)
+          _signOutFacebookQuietly(),
         if (PlatformSupport.isMobile) _googleSignIn.signOut(),
         _auth.signOut(),
       ]);

@@ -21,7 +21,7 @@
 
 | # | Event | Tham số (kiểu) | ViewModel gọi (khi nào) | Câu hỏi sản phẩm |
 |:-:|:---|:---|:---|:---|
-| 1 | `login` | `method` (string: `google` · `guest`) | `AuthViewModel.signInWithGoogle` / `signInAnonymously` – đăng nhập thành công | Người dùng chọn cách đăng nhập nào, bao nhiêu người quay lại mỗi tuần? |
+| 1 | `login` | `method` (string: `google` · `facebook` · `github` · `email` · `guest`) | Các hàm đăng nhập của `AuthViewModel` – đăng nhập thành công; Facebook huỷ không ghi event | Người dùng chọn cách đăng nhập nào, bao nhiêu người quay lại mỗi tuần? |
 | 2 | `logout` | `session_duration_sec` (int, tuỳ chọn – hiện chưa gửi) | `AuthViewModel.signOut` | Người dùng có chủ động đăng xuất không, và sau bao lâu? |
 | 3 | `search` | `query_length` (int), `result_count` (int) | `WishlistViewModel.setSearchQuery` – mỗi lần ô tìm kiếm khác rỗng | Người dùng có dùng tìm kiếm trong danh sách mong muốn không, và có hay gặp kết quả rỗng không? |
 | 4 | `add_to_wishlist` | `motive` (string, key động cơ), `has_price` (0/1), `amount_bucket` (string, khi có giá) | `WishlistViewModel.addItem` – lưu món thành công | Món được lưu thường gắn với động cơ nào, ở khoảng giá nào, và bao nhiêu món được lưu khi chưa biết giá? |

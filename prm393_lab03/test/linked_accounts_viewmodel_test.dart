@@ -35,7 +35,7 @@ void main() {
     expect(maskEmail('not-an-email'), '…');
   });
 
-  test('rows show only Google and GitHub, with masked email and name', () {
+  test('rows show Google, Facebook and GitHub, with masked email and name', () {
     final auth = FakeLinkAuthService(
       FakeLinkUser([
         FakeUserInfo(_googleId, email: 'someone@gmail.com'),
@@ -45,7 +45,11 @@ void main() {
     );
     final vm = viewModel(auth);
 
-    expect(vm.rows.map((r) => r.providerId), [_googleId, _githubId]);
+    expect(vm.rows.map((r) => r.providerId), [
+      _googleId,
+      LinkedAccountsViewModel.facebookId,
+      _githubId,
+    ]);
     expect(vm.rowFor(_googleId).state, LinkState.linked);
     expect(vm.rowFor(_googleId).label, 's…@gmail.com');
     expect(vm.rowFor(_githubId).label, 'Ngo Gia Kiet');

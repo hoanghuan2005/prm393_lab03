@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chính sách quyền riêng tư · Why I Buy?</title>
+  <style>
+    body { font: 1rem/1.7 system-ui, sans-serif; color: #182230; background: #f5f7fa; margin: 0; }
+    main { max-width: 760px; margin: 2rem auto; padding: 1.5rem; background: white; border-radius: 16px; }
+    h1 { line-height: 1.25; } h2 { font-size: 1.2rem; margin-top: 2rem; }
+    a { color: #1558a6; overflow-wrap: anywhere; } p { white-space: pre-line; }
+    nav { display: flex; flex-wrap: wrap; gap: 1rem; }
+    @media (max-width: 800px) { main { margin: 0; border-radius: 0; } }
+  </style>
+</head>
+<body><main>
+  <nav aria-label="Chính sách"><a href="privacy.html">Quyền riêng tư</a><a href="data-deletion.html">Xoá dữ liệu</a></nav>
+  <h1>Chính sách quyền riêng tư</h1>
+  <p>Cập nhật: 10&#47;11&#47;2026</p>
+  <p>Trang này nói rõ app lưu gì, gửi gì đi và bạn kiểm soát dữ liệu của mình thế nào.</p>
+  <section><h2>Đăng nhập và Facebook</h2><p>App dùng Firebase Authentication để đăng nhập và liên kết các cách đăng nhập. Với Facebook, app chỉ xin public_profile và email để nhận mã định danh, tên hiển thị và email nếu bạn cung cấp. Không có email vẫn dùng được app. Nhà cung cấp có thể trả đường dẫn ảnh đại diện trong hồ sơ đăng nhập; app không yêu cầu quyền đọc bài viết hay danh sách bạn bè. Hồ sơ trong Firestore lưu tên, email nếu có và trạng thái tài khoản. Meta và Google xử lý dữ liệu đăng nhập theo chính sách của họ. App tắt tự động ghi sự kiện và thu thập mã quảng cáo của Facebook SDK trên Android.</p></section>
+  <section><h2>Dữ liệu app lưu</h2><p>Khoản mua, món mong muốn, quyết định Mua&#47;Chờ&#47;Bỏ qua, lịch sử giá, ngân sách, chiêm nghiệm tháng, hồ sơ mua sắm và góp ý bạn gửi. Dữ liệu được lưu trên máy và đồng bộ với tài khoản của bạn trên Cloud Firestore khi có mạng. Quyền truy cập được kiểm soát bằng Firebase Authentication và Firestore Rules; quản trị viên có quyền theo chức năng quản trị. Giá bạn chủ động chia sẻ được dùng làm dữ liệu tham khảo cộng đồng. Nhóm không bán dữ liệu cá nhân.</p></section>
+  <section><h2>Dữ liệu gửi cho AI</h2><p>Khi tạo nhận định, app gửi cho Gemini (qua Firebase AI Logic) các con số đã tính sẵn và tên món liên quan, không gửi email hay tên tài khoản. Bạn có thể tắt các gợi ý AI; khi đó app dùng câu mẫu. Khi bạn chủ động chụp&#47;chọn ảnh để tìm kiếm, ảnh được gửi cho dịch vụ AI để nhận diện món đồ. Tránh gửi ảnh có thông tin riêng tư không cần thiết.</p></section>
+  <section><h2>Thống kê và lỗi</h2><p>App dùng Firebase Analytics để đếm cách các màn hình được dùng và Firebase Crashlytics để ghi lỗi, giúp nhóm sửa app. Sự kiện thống kê chỉ ghi khoảng số tiền (ví dụ &quot;dưới 100 nghìn&quot;), không ghi số tiền chính xác, tên món hay ghi chú của bạn.</p></section>
+  <section><h2>Thông báo</h2><p>Nhắc ghi khoản mua và nhắc xem lại món là thông báo tạo ngay trên máy. App cũng dùng Firebase Cloud Messaging để nhận thông báo từ hệ thống; mã thiết bị được lưu để gửi thông báo. Bạn bật hoặc tắt chúng trong Cá nhân hoặc cài đặt của máy.</p></section>
+  <section><h2>Extension trình duyệt</h2><p>Extension chỉ đọc trang sản phẩm Shopee đang mở khi bạn bấm vào biểu tượng Why I Buy?, và chỉ liên kết với tài khoản sau khi bạn đồng ý trên điện thoại. Bạn có thể huỷ liên kết trong Cá nhân.</p></section>
+  <section><h2>Xuất và xoá dữ liệu</h2><p>File CSV và báo cáo PDF được tạo trên máy. Nút &quot;Xoá toàn bộ dữ liệu&quot; trong Cá nhân xoá các khoản mua, món mong muốn cùng lịch sử giá của chúng, quyết định, ngân sách, chiêm nghiệm và đồ đã sở hữu; không thể hoàn tác. Nút này vẫn giữ tài khoản đăng nhập, hồ sơ và nhóm ngân sách; không phải chức năng xoá tài khoản. Dữ liệu khác như góp ý, phiên extension hoặc giá đã chia sẻ không nằm trong thao tác này. Để yêu cầu xoá tài khoản và dữ liệu còn lại, liên hệ nhóm theo mục dưới.</p></section>
+  <section><h2>Liên hệ và thời gian xử lý</h2><p>Gửi yêu cầu tới daotamhoang2005@gmail.com, ghi rõ muốn xoá dữ liệu hay xoá cả tài khoản Why I Buy?, kèm UID (nếu biết), tên hiển thị hoặc email đăng nhập để nhóm xác định tài khoản. Không gửi mật khẩu, mã OTP hay access token. Với Facebook không có email, hãy nêu rõ và liên hệ nhóm để xác minh quyền sở hữu. Nhóm sẽ xác nhận phạm vi và thông báo thời gian xử lý sau khi tiếp nhận, xác minh yêu cầu; hiện chưa công bố thời hạn cố định. Bản CSV&#47;PDF bạn đã xuất cần được bạn tự xoá.</p></section>
+  <footer><a href="mailto:daotamhoang2005@gmail.com">daotamhoang2005@gmail.com</a> · Why I Buy? — PRM393</footer>
+</main></body>
+</html>

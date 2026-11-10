@@ -1402,7 +1402,7 @@ class LinkedAccountsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: AppDimens.space8),
               child: Text(
-                'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
+                'Liên kết Google, Facebook hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
                 style: AppTextStyles.bodyMedium
                     .themed(context)
                     .copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -1421,7 +1421,11 @@ class _LinkedAccountTile extends StatelessWidget {
   const _LinkedAccountTile({required this.row});
 
   bool get _isGoogle => row.providerId == LinkedAccountsViewModel.googleId;
-  String get _name => _isGoogle ? 'Google' : 'GitHub';
+  String get _name => switch (row.providerId) {
+    LinkedAccountsViewModel.googleId => 'Google',
+    LinkedAccountsViewModel.facebookId => 'Facebook',
+    _ => 'GitHub',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -1440,10 +1444,11 @@ class _LinkedAccountTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        _isGoogle ? Icons.g_mobiledata : Icons.code_rounded,
-        color: theme.colorScheme.onSurface,
-      ),
+      leading: Icon(switch (row.providerId) {
+        LinkedAccountsViewModel.googleId => Icons.g_mobiledata,
+        LinkedAccountsViewModel.facebookId => Icons.facebook,
+        _ => Icons.code_rounded,
+      }, color: theme.colorScheme.onSurface),
       title: Text(
         _name,
         style: AppTextStyles.titleMedium
@@ -1493,7 +1498,11 @@ class _LinkedAccountTile extends StatelessWidget {
 
   Future<void> _link(BuildContext context, LinkedAccountsViewModel vm) async {
     final messenger = ScaffoldMessenger.of(context);
-    await (_isGoogle ? vm.linkGoogle() : vm.linkGithub());
+    await switch (row.providerId) {
+      LinkedAccountsViewModel.googleId => vm.linkGoogle(),
+      LinkedAccountsViewModel.facebookId => vm.linkFacebook(),
+      _ => vm.linkGithub(),
+    };
     _showResult(messenger, vm);
   }
 

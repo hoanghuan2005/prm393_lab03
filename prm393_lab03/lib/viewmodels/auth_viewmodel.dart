@@ -47,7 +47,7 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
   AuthStatus get status => _status;
   bool get isAuthenticated => _currentUser != null;
 
-  /// Guest account; false once a guest links Google / GitHub
+  /// Guest account; false once a guest links Google / Facebook / GitHub.
   bool get isAnonymous => _currentUser?.isAnonymous ?? false;
   bool get requiresEmailVerification =>
       _currentUser != null &&
@@ -192,6 +192,36 @@ class AuthViewModel extends ChangeNotifier with ErrorReporting {
       return false;
     } catch (e, stack) {
       _onSignInFailed(e, stack, method: 'google');
+      return false;
+    }
+  }
+
+  /// Facebook cancellation is silent; user setup accepts a null email.
+  Future<bool> signInWithFacebook() async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final credential = await authService.signInWithFacebook();
+      if (credential == null) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
+      await _logLogin('facebook');
+      return true;
+    } on UnsupportedError {
+      _status = AuthStatus.error;
+      _errorMessage = 'Facebook chưa hỗ trợ trên thiết bị này. Hãy chọn cách đăng nhập khác.';
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      if (e is AppException && e.code == signInCancelled.code) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
+      _onSignInFailed(e, stack, method: 'facebook');
       return false;
     }
   }

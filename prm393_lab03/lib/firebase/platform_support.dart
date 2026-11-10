@@ -28,6 +28,9 @@ class PlatformSupport {
   /// Not available on Windows desktop.
   static bool get supportsGoogleSignIn => isMobile || kIsWeb;
 
+  /// Mobile Facebook SDK or Firebase popup; no desktop flow in this app.
+  static bool get supportsFacebookSignIn => isMobile || kIsWeb;
+
   /// Firebase AI Logic (Gemini) requires an App Check token. Windows has no attestation
   /// provider, so it only works with a registered debug token (not officially supported).
   static bool get supportsFirebaseAi =>

@@ -108,6 +108,18 @@ Future<void> _pump(WidgetTester tester, User user) async {
 }
 
 void main() {
+  testWidgets('Facebook without email uses the name and linked method', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _User(isAnonymous: false, displayName: 'An', providers: ['facebook.com']),
+    );
+    expect(find.text('An'), findsOneWidget);
+    expect(find.text('Đã liên kết: Facebook'), findsOneWidget);
+    expect(find.textContaining('Khách'), findsNothing);
+  });
+
   testWidgets('a guest is labelled "Khách"', (tester) async {
     await _pump(tester, _User(isAnonymous: true));
 

@@ -16,7 +16,7 @@ const _googleId = LinkedAccountsViewModel.googleId;
 const _githubId = LinkedAccountsViewModel.githubId;
 final _lastNote = AuthService.lastProvider.messageVi;
 const _guestNote =
-    'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.';
+    'Liên kết Google, Facebook hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.';
 
 Future<LinkedAccountsViewModel> _pump(
   WidgetTester tester,
@@ -55,7 +55,30 @@ bool _enabled(WidgetTester tester, Finder button) =>
     tester.widget<TextButton>(button).onPressed != null;
 
 void main() {
-  testWidgets('nothing linked: both rows offer "Liên kết"', (tester) async {
+  testWidgets('Facebook links without email, then asks before unlinking', (
+    tester,
+  ) async {
+    final auth = FakeLinkAuthService(FakeLinkUser([FakeUserInfo(_googleId)]))
+      ..afterLink = () => FakeLinkUser([
+        FakeUserInfo(_googleId),
+        FakeUserInfo(LinkedAccountsViewModel.facebookId, displayName: 'An'),
+      ]);
+    await _pump(tester, auth);
+    await tester.tap(_button('Facebook', 'Liên kết'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã liên kết Facebook.'), findsOneWidget);
+    expect(find.text('Đã liên kết · An'), findsOneWidget);
+    await tester.tap(_button('Facebook', 'Huỷ liên kết'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Huỷ liên kết'));
+    await tester.pumpAndSettle();
+    expect(auth.unlinked, [LinkedAccountsViewModel.facebookId]);
+  });
+
+  testWidgets('nothing linked: all three rows offer "Liên kết"', (
+    tester,
+  ) async {
     await _pump(
       tester,
       FakeLinkAuthService(FakeLinkUser([FakeUserInfo('password')])),
@@ -63,6 +86,7 @@ void main() {
 
     expect(find.text('Tài khoản liên kết'), findsOneWidget);
     expect(_enabled(tester, _button('Google', 'Liên kết')), isTrue);
+    expect(_enabled(tester, _button('Facebook', 'Liên kết')), isTrue);
     expect(_enabled(tester, _button('GitHub', 'Liên kết')), isTrue);
     expect(find.text('Huỷ liên kết'), findsNothing);
     expect(find.text(_guestNote), findsNothing);
@@ -104,7 +128,7 @@ void main() {
     await _pump(tester, FakeLinkAuthService(FakeLinkUser([])));
 
     expect(find.text(_guestNote), findsOneWidget);
-    expect(find.widgetWithText(TextButton, 'Liên kết'), findsNWidgets(2));
+    expect(find.widgetWithText(TextButton, 'Liên kết'), findsNWidgets(3));
     expect(find.text('Huỷ liên kết'), findsNothing);
     expect(find.text(_lastNote), findsNothing);
   });

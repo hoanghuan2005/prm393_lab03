@@ -28,6 +28,18 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.group07.whyibuy/facebook_config")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "isConfigured") {
+                    val appId = getString(R.string.facebook_app_id).trim()
+                    val clientToken = getString(R.string.facebook_client_token).trim()
+                    val scheme = getString(R.string.fb_login_protocol_scheme).trim()
+                    result.success(appId != "0" && appId.all { it.isDigit() } && appId.isNotEmpty()
+                        && clientToken.isNotEmpty() && clientToken != "0" && scheme == "fb$appId")
+                } else {
+                    result.notImplemented()
+                }
+            }
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
 
         methodChannel?.setMethodCallHandler { call, result ->

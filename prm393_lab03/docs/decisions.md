@@ -83,7 +83,9 @@ Người dùng xem giá một món theo thời gian (kiểu SteamDB) và giá c�
 - "Xoá dữ liệu giá mẫu": gỡ món mẫu của admin, rồi xoá `priceHistory` có `isDemo == true` cùng báo cáo `source == demo` của chúng và `productGroups` có `isDemo == true`; dữ liệu thật không bị đụng (rules cũng chặn xoá dữ liệu thật). "Gỡ món mẫu khỏi danh sách" chỉ xoá món `isDemo` của chính người đó, kèm lịch sử giá và quyết định của món.
 
 ### Liên kết nhiều cách đăng nhập vào một tài khoản
-Người dùng liên kết Google và GitHub vào cùng một tài khoản Firebase ở Cá nhân → "Tài khoản liên kết"; đăng nhập bằng cách nào cũng ra cùng `uid` và cùng dữ liệu.
+Người dùng liên kết Google, Facebook và GitHub vào cùng một tài khoản Firebase ở Cá nhân → "Tài khoản liên kết"; đăng nhập bằng cách nào cũng ra cùng `uid` và cùng dữ liệu.
+
+**Facebook (10/11/2026, F1–F3).** Android/iOS dùng `flutter_facebook_auth` 7.3.3, web dùng Firebase popup; chỉ xin `public_profile` và `email`. Email có thể null. iOS Limited Login dùng ID token và nonce; repo chưa có target iOS để kiểm tra. Huỷ Facebook không hiển thị lỗi. Khách được liên kết giữ UID giống Google/GitHub; không gộp tài khoản đã tồn tại, luôn giữ ít nhất một cách đăng nhập. Cấu hình Meta/Firebase F0, key hash, trang chính sách và checklist thử thật: [`auth-facebook.md`](auth-facebook.md). Chưa có App ID/Client Token thật; không xem test giả lập là xác nhận đăng nhập thật. Chính sách app/web sinh chung từ LegalTexts; xoá dữ liệu chi tiêu không đồng nghĩa xoá Auth user, yêu cầu đầy đủ xử lý qua email nhóm.
 
 **Vì sao thêm trong giai đoạn chốt tính năng.** Đăng nhập GitHub được thêm muộn (cùng nhánh share intent) và mỗi lần đăng nhập GitHub tạo một tài khoản riêng theo `uid`. Không có liên kết thì người dùng GitHub không dùng được extension, còn Khách mất dữ liệu khi đăng xuất hoặc đổi máy. Liên kết sửa cả hai mà không đổi cấu trúc dữ liệu, nên nhóm làm luôn thay vì bỏ đăng nhập GitHub.
 

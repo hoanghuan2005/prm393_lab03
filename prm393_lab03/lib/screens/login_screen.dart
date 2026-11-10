@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
+import '../firebase/platform_support.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
@@ -12,9 +13,9 @@ import '../widgets/why_i_buy_logo.dart';
 
 enum AuthMode { login, signup, forgotPassword }
 
-enum _AuthAction { email, google, github, guest }
+enum _AuthAction { email, google, facebook, github, guest }
 
-/// Email authentication plus the existing Google, GitHub and guest options.
+/// Email authentication plus Google, Facebook, GitHub and guest options.
 class LoginScreen extends StatefulWidget {
   final AuthMode mode;
 
@@ -234,6 +235,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           authVm.signInWithGoogle,
                         ),
                       ),
+                      if (PlatformSupport.supportsFacebookSignIn) ...[
+                        const SizedBox(height: 10),
+                        AppButton(
+                          title: 'Đăng nhập với Facebook',
+                          icon: Icons.facebook,
+                          variant: AppButtonVariant.secondary,
+                          isLoading: _loadingAction == _AuthAction.facebook,
+                          onPressed: () => _runAuthAction(
+                            _AuthAction.facebook,
+                            authVm.signInWithFacebook,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       AppButton(
                         title: 'Đăng nhập với GitHub',

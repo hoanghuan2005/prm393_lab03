@@ -12,6 +12,7 @@ import '../services/floating_bubble_service.dart';
 import '../services/pending_writes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -43,9 +44,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -177,8 +176,7 @@ class ProfileScreen extends StatelessWidget {
                 _SettingsTile(
                   key: const ValueKey('clear-all-data'),
                   title: 'Xoá toàn bộ dữ liệu',
-                  subtitle:
-                      'Xoá vĩnh viễn khoản mua, món mong muốn, ngân sách và chiêm nghiệm.',
+                  subtitle: 'Xoá vĩnh viễn khoản mua, món mong muốn, ngân sách và chiêm nghiệm.',
                   isDanger: true,
                   onTap: settingsVm.isDemoBusy
                       ? null
@@ -204,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
                     child: Text(
                       'Dữ liệu được lưu trên máy và đồng bộ với tài khoản của bạn '
                       'khi có mạng.',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.themed(context),
                     ),
                   ),
                 ],
@@ -253,17 +251,17 @@ class ProfileScreen extends StatelessWidget {
                 vertical: AppDimens.space6,
               ),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2C2706)
-                    : AppColors.primaryContainer,
+                color: AppSemanticColors.of(context).primaryContainer,
                 borderRadius: AppDimens.borderPill,
               ),
               child: Text(
                 'NGÂN SÁCH & HỒ SƠ MUA SẮM',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: isDark ? AppColors.primary : AppColors.onPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTextStyles.labelMedium
+                    .themed(context)
+                    .copyWith(
+                      color: AppSemanticColors.of(context).emphasis,
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
             ),
             const SizedBox(height: AppDimens.space16),
@@ -301,7 +299,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   'Ghi đồ đang dùng, phong cách và thương hiệu hay dùng để Thẻ '
                   'Quyết Định nhắc khi bạn cân nhắc món cùng loại. Tất cả tùy chọn.',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
                 const SizedBox(height: 12),
                 AppButton(
@@ -330,102 +328,108 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 title: Text(
                   'Công cụ cho nhóm phát triển',
-                  style: AppTextStyles.titleMedium.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: AppTextStyles.titleMedium
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurface),
                 ),
                 subtitle: Text(
                   'Dữ liệu demo, Remote Config, thử thông báo',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 children: [
-            // Demo data (never seeded automatically)
-            SectionCard(
-              title: 'Dữ liệu demo',
-              icon: Icons.dataset_outlined,
-              children: [
-                Text(
-                  'Tạo khoảng 20 khoản mua, 6 món mong muốn, ngân sách tháng này và chiêm nghiệm tháng trước để thử các màn hình.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  // Demo data (never seeded automatically)
+                  SectionCard(
+                    title: 'Dữ liệu demo',
+                    icon: Icons.dataset_outlined,
+                    children: [
+                      Text(
+                        'Tạo khoảng 20 khoản mua, 6 món mong muốn, ngân sách tháng này và chiêm nghiệm tháng trước để thử các màn hình.',
+                        style: AppTextStyles.bodyMedium
+                            .themed(context)
+                            .copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: AppDimens.space12),
+                      AppButton(
+                        title: 'Tạo lại dữ liệu demo',
+                        icon: Icons.auto_awesome_motion_outlined,
+                        isLoading: settingsVm.isDemoBusy,
+                        onPressed: () => _confirmSeed(context, settingsVm),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: AppDimens.space12),
-                AppButton(
-                  title: 'Tạo lại dữ liệu demo',
-                  icon: Icons.auto_awesome_motion_outlined,
-                  isLoading: settingsVm.isDemoBusy,
-                  onPressed: () => _confirmSeed(context, settingsVm),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space16),
+                  const SizedBox(height: AppDimens.space16),
 
-            // Sample data of "Biểu đồ giá tham khảo" (admins only)
-            const PriceHistoryDemoSection(),
+                  // Sample data of "Biểu đồ giá tham khảo" (admins only)
+                  const PriceHistoryDemoSection(),
 
-            if (kDebugMode) ...[
-              AppButton(
-                title: 'Widget Gallery (debug)',
-                icon: Icons.widgets_outlined,
-                variant: AppButtonVariant.secondary,
-                onPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.widgetGallery),
-              ),
-              const SizedBox(height: AppDimens.space16),
-            ],
+                  if (kDebugMode) ...[
+                    AppButton(
+                      title: 'Widget Gallery (debug)',
+                      icon: Icons.widgets_outlined,
+                      variant: AppButtonVariant.secondary,
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.widgetGallery),
+                    ),
+                    const SizedBox(height: AppDimens.space16),
+                  ],
 
-            // 1. Remote Config Section
-            SectionCard(
-              title: 'Firebase Remote Config',
-              icon: Icons.tune,
-              children: [
-                _buildKeyValueRow(
-                  context,
-                  'Thời gian hoãn mua (cooling_off_days):',
-                  '${settingsVm.coolingOffDays} ngày',
-                ),
-                _buildKeyValueRow(
-                  context,
-                  'Bật tính năng AI (enable_ai_insight):',
-                  settingsVm.enableAiInsight ? 'Bật (True)' : 'Tắt (False)',
-                ),
-                _buildKeyValueRow(
-                  context,
-                  'Số món tối đa (max_wishlist_items):',
-                  '${settingsVm.maxWishlistItems} món',
-                ),
-                _buildKeyValueRow(
-                  context,
-                  'Nhắc nhở đợt sale (sale_reminder_enabled):',
-                  settingsVm.saleReminderEnabled ? 'Bật (True)' : 'Tắt (False)',
-                ),
-                const SizedBox(height: AppDimens.space12),
-                AppButton(
-                  title: 'Cập nhật Remote Config (Live Fetch)',
-                  variant: AppButtonVariant.secondary,
-                  isLoading: settingsVm.isRefreshingConfig,
-                  onPressed: () async {
-                    await settingsVm.refreshRemoteConfig();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Đã cập nhật cấu hình Remote Config mới nhất từ Firebase.',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.space16),
+                  // 1. Remote Config Section
+                  SectionCard(
+                    title: 'Firebase Remote Config',
+                    icon: Icons.tune,
+                    children: [
+                      _buildKeyValueRow(
+                        context,
+                        'Thời gian hoãn mua (cooling_off_days):',
+                        '${settingsVm.coolingOffDays} ngày',
+                      ),
+                      _buildKeyValueRow(
+                        context,
+                        'Bật tính năng AI (enable_ai_insight):',
+                        settingsVm.enableAiInsight
+                            ? 'Bật (True)'
+                            : 'Tắt (False)',
+                      ),
+                      _buildKeyValueRow(
+                        context,
+                        'Số món tối đa (max_wishlist_items):',
+                        '${settingsVm.maxWishlistItems} món',
+                      ),
+                      _buildKeyValueRow(
+                        context,
+                        'Nhắc nhở đợt sale (sale_reminder_enabled):',
+                        settingsVm.saleReminderEnabled
+                            ? 'Bật (True)'
+                            : 'Tắt (False)',
+                      ),
+                      const SizedBox(height: AppDimens.space12),
+                      AppButton(
+                        title: 'Cập nhật Remote Config (Live Fetch)',
+                        variant: AppButtonVariant.secondary,
+                        isLoading: settingsVm.isRefreshingConfig,
+                        onPressed: () async {
+                          await settingsVm.refreshRemoteConfig();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Đã cập nhật cấu hình Remote Config mới nhất từ Firebase.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimens.space16),
 
-            // Crashlytics and local notification test buttons (debug builds only)
-            FirebaseDemoTools(userId: authVm.userId ?? 'unknown_user'),
+                  // Crashlytics and local notification test buttons (debug builds only)
+                  FirebaseDemoTools(userId: authVm.userId ?? 'unknown_user'),
                 ],
               ),
             ),
@@ -440,9 +444,9 @@ class ProfileScreen extends StatelessWidget {
                   if (settingsVm.notificationsEnabled)
                     Text(
                       'Đã bật thông báo cho ứng dụng.',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: AppTextStyles.bodyMedium
+                          .themed(context)
+                          .copyWith(color: theme.colorScheme.onSurfaceVariant),
                     )
                   else
                     OutlinedButton.icon(
@@ -463,8 +467,8 @@ class ProfileScreen extends StatelessWidget {
                                 ? null
                                 : SnackBarAction(
                                     label: 'Mở cài đặt',
-                                    onPressed: () => settingsVm
-                                        .openNotificationSettings(),
+                                    onPressed: () =>
+                                        settingsVm.openNotificationSettings(),
                                   ),
                           ),
                         );
@@ -474,9 +478,9 @@ class ProfileScreen extends StatelessWidget {
                 ],
                 Text(
                   'Hộp thư nhận thông báo (${settingsVm.notifications.length} tin nhắn):',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: AppTextStyles.labelLarge
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurface),
                 ),
                 const SizedBox(height: AppDimens.space8),
                 if (settingsVm.notifications.isEmpty)
@@ -486,9 +490,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Text(
                       'Chưa có thông báo nào.',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: AppTextStyles.bodyMedium
+                          .themed(context)
+                          .copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   )
                 else
@@ -504,33 +508,37 @@ class ProfileScreen extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                         // Same screen as tapping the system notification
                         onTap: () => openFromNotification(notif.data),
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.mark_email_unread_outlined,
-                          color: AppColors.info,
+                          color: AppSemanticColors.of(context).info,
                         ),
                         title: Text(
                           notif.title,
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
+                          style: AppTextStyles.titleMedium
+                              .themed(context)
+                              .copyWith(color: theme.colorScheme.onSurface),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               notif.body,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                              style: AppTextStyles.bodyMedium
+                                  .themed(context)
+                                  .copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                             if (notif.openedVia != null)
                               Text(
                                 'Đã mở',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                                style: AppTextStyles.caption
+                                    .themed(context)
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
                               ),
                           ],
                         ),
@@ -568,7 +576,7 @@ class ProfileScreen extends StatelessWidget {
             Center(
               child: Text(
                 'Phiên bản ${AppConstants.appVersion}',
-                style: AppTextStyles.caption,
+                style: AppTextStyles.caption.themed(context),
               ),
             ),
             const SizedBox(height: AppDimens.space24),
@@ -670,17 +678,17 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               key,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.bodyMedium
+                  .themed(context)
+                  .copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
           const SizedBox(width: AppDimens.space8),
           Text(
             value,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.labelLarge
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurface),
           ),
         ],
       ),
@@ -700,10 +708,12 @@ class _GroupLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppDimens.space8),
       child: Text(
         text.toUpperCase(),
-        style: AppTextStyles.labelMedium.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 0.4,
-        ),
+        style: AppTextStyles.labelMedium
+            .themed(context)
+            .copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              letterSpacing: 0.4,
+            ),
       ),
     );
   }
@@ -778,15 +788,15 @@ class _SettingsTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: AppTextStyles.titleMedium.copyWith(color: color),
+        style: AppTextStyles.titleMedium.themed(context).copyWith(color: color),
       ),
       subtitle: subtitle == null
           ? null
           : Text(
               subtitle!,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.bodyMedium
+                  .themed(context)
+                  .copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
       trailing: busy
           ? const SizedBox(
@@ -856,17 +866,17 @@ class _DailyReminderTile extends StatelessWidget {
       ),
       title: Text(
         'Nhắc ghi khoản mua',
-        style: AppTextStyles.titleMedium.copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
+        style: AppTextStyles.titleMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurface),
       ),
       subtitle: Text(
         supported
             ? 'Nhắc bạn ghi lại khoản mua lúc $time mỗi tối. Chạm để đổi giờ.'
             : 'Chỉ có trên ứng dụng Android.',
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        style: AppTextStyles.bodyMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
       onTap: supported ? () => _pickTime(context) : null,
       trailing: Semantics(
@@ -889,7 +899,8 @@ class _FloatingBubbleTile extends StatefulWidget {
   State<_FloatingBubbleTile> createState() => _FloatingBubbleTileState();
 }
 
-class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBindingObserver {
+class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
+    with WidgetsBindingObserver {
   bool _isRunning = false;
   bool _isLoading = false;
   bool _isA11yEnabled = false;
@@ -949,7 +960,10 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
               children: [
                 Icon(Icons.layers_outlined, color: AppColors.primary),
                 SizedBox(width: 8),
-                Text('Cấp quyền hiển thị', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Cấp quyền hiển thị',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             content: const Text(
@@ -1027,15 +1041,15 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
           leading: const WhyIBuyLogo(size: 36),
           title: Text(
             'Bong bóng trợ lý săn sale',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.titleMedium
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurface),
           ),
           subtitle: Text(
             'Tự động thức tỉnh khi xem lâu & giữ giá khi sao chép link.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.bodyMedium
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           trailing: _isLoading
               ? const SizedBox(
@@ -1053,7 +1067,12 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
         ),
         if (_isRunning)
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppDimens.space16, 0, AppDimens.space16, AppDimens.space12),
+            padding: const EdgeInsets.fromLTRB(
+              AppDimens.space16,
+              0,
+              AppDimens.space16,
+              AppDimens.space12,
+            ),
             child: Column(
               children: [
                 Row(
@@ -1062,10 +1081,18 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6)),
+                          side: BorderSide(
+                            color: AppColors.primary.withValues(alpha: 0.6),
+                          ),
                         ),
-                        icon: const Icon(Icons.notifications_active_outlined, size: 15),
-                        label: const Text('Thử thông báo', style: TextStyle(fontSize: 11)),
+                        icon: const Icon(
+                          Icons.notifications_active_outlined,
+                          size: 15,
+                        ),
+                        label: const Text(
+                          'Thử thông báo',
+                          style: TextStyle(fontSize: 11),
+                        ),
                         onPressed: () {
                           FloatingBubbleService.showTestAlert();
                         },
@@ -1076,10 +1103,15 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6)),
+                          side: BorderSide(
+                            color: AppColors.primary.withValues(alpha: 0.6),
+                          ),
                         ),
                         icon: const Icon(Icons.air_rounded, size: 15),
-                        label: const Text('Thử Pulse xem lâu', style: TextStyle(fontSize: 11)),
+                        label: const Text(
+                          'Thử Pulse xem lâu',
+                          style: TextStyle(fontSize: 11),
+                        ),
                         onPressed: () {
                           FloatingBubbleService.showTestLingeringAlert();
                         },
@@ -1095,15 +1127,26 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
                     },
                     borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(
+                          AppDimens.radiusSmall,
+                        ),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                          const Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -1122,22 +1165,37 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile> with WidgetsBi
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
-                      border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                      color: AppSemanticColors.of(context).linkedAccountAccent
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                        AppDimens.radiusSmall,
+                      ),
+                      border: Border.all(
+                        color: AppSemanticColors.of(context).linkedAccountAccent
+                            .withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded, size: 15, color: Colors.green),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 15,
+                          color: AppSemanticColors.of(context)
+                              .linkedAccountAccent,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             'Tự động thức tỉnh khi xem lâu đang hoạt động',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.green.shade800,
+                              color: AppSemanticColors.of(context)
+                                  .linkedAccountText,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1179,9 +1237,9 @@ class FirebaseDemoTools extends StatelessWidget {
         children: [
           Text(
             'Kiểm thử ghi nhận lỗi Crashlytics có gắn User ID và Custom Key per Lab 3:',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.bodyMedium
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppDimens.space12),
           AppButton(
@@ -1192,11 +1250,12 @@ class FirebaseDemoTools extends StatelessWidget {
               await settingsVm.testHandledNonFatalError(userId);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
+                  SnackBar(
+                    content: const Text(
                       'Đã ghi nhận 1 Non-fatal error lên Crashlytics dashboard.',
                     ),
-                    backgroundColor: AppColors.success,
+                    backgroundColor: AppSemanticColors.of(context)
+                        .snackbarSuccess,
                   ),
                 );
               }
@@ -1227,11 +1286,12 @@ class FirebaseDemoTools extends StatelessWidget {
               await settingsVm.sendTestNotification();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
+                  SnackBar(
+                    content: const Text(
                       'Đã kích hoạt hiển thị thông báo trên thanh trạng thái điện thoại.',
                     ),
-                    backgroundColor: AppColors.success,
+                    backgroundColor: AppSemanticColors.of(context)
+                        .snackbarSuccess,
                   ),
                 );
               }
@@ -1240,9 +1300,9 @@ class FirebaseDemoTools extends StatelessWidget {
           const SizedBox(height: AppDimens.space8),
           Text(
             'Thông báo FCM thật gửi từ Firebase Console.',
-            style: AppTextStyles.caption.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.caption
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -1279,9 +1339,9 @@ class AccountHeaderCard extends StatelessWidget {
             backgroundColor: AppColors.primary,
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : 'U',
-              style: AppTextStyles.headlineMedium.copyWith(
-                color: AppColors.onPrimary,
-              ),
+              style: AppTextStyles.headlineMedium
+                  .themed(context)
+                  .copyWith(color: AppColors.onPrimary),
             ),
           ),
           const SizedBox(width: AppDimens.space16),
@@ -1291,15 +1351,15 @@ class AccountHeaderCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: AppTextStyles.titleMedium.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: AppTextStyles.titleMedium
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurface),
                 ),
                 Text(
                   _accountLabel(authVm, linkedNames),
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -1342,10 +1402,10 @@ class LinkedAccountsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: AppDimens.space8),
               child: Text(
-                'Liên kết Google hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                'Liên kết Google, Facebook hoặc GitHub để giữ dữ liệu khi đổi máy hoặc đăng xuất.',
+                style: AppTextStyles.bodyMedium
+                    .themed(context)
+                    .copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ),
           for (final row in vm.rows) _LinkedAccountTile(row: row),
@@ -1361,7 +1421,11 @@ class _LinkedAccountTile extends StatelessWidget {
   const _LinkedAccountTile({required this.row});
 
   bool get _isGoogle => row.providerId == LinkedAccountsViewModel.googleId;
-  String get _name => _isGoogle ? 'Google' : 'GitHub';
+  String get _name => switch (row.providerId) {
+    LinkedAccountsViewModel.googleId => 'Google',
+    LinkedAccountsViewModel.facebookId => 'Facebook',
+    _ => 'GitHub',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -1374,21 +1438,22 @@ class _LinkedAccountTile extends StatelessWidget {
     final isLinked = row.state == LinkState.linked;
     // Why "Huỷ liên kết" is disabled: the only sign-in method left
     final showLastNote = isLinked && !vm.isGuest && !locked && !row.canUnlink;
-    final subtitleStyle = AppTextStyles.bodyMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final subtitleStyle = AppTextStyles.bodyMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        _isGoogle ? Icons.g_mobiledata : Icons.code_rounded,
-        color: theme.colorScheme.onSurface,
-      ),
+      leading: Icon(switch (row.providerId) {
+        LinkedAccountsViewModel.googleId => Icons.g_mobiledata,
+        LinkedAccountsViewModel.facebookId => Icons.facebook,
+        _ => Icons.code_rounded,
+      }, color: theme.colorScheme.onSurface),
       title: Text(
         _name,
-        style: AppTextStyles.titleMedium.copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
+        style: AppTextStyles.titleMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurface),
       ),
       subtitle: isLinked
           ? Column(
@@ -1433,7 +1498,11 @@ class _LinkedAccountTile extends StatelessWidget {
 
   Future<void> _link(BuildContext context, LinkedAccountsViewModel vm) async {
     final messenger = ScaffoldMessenger.of(context);
-    await (_isGoogle ? vm.linkGoogle() : vm.linkGithub());
+    await switch (row.providerId) {
+      LinkedAccountsViewModel.googleId => vm.linkGoogle(),
+      LinkedAccountsViewModel.facebookId => vm.linkFacebook(),
+      _ => vm.linkGithub(),
+    };
     _showResult(messenger, vm);
   }
 

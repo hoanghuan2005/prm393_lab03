@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
+import '../models/buying_motive.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
@@ -25,7 +28,6 @@ class InsightsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final insightsVm = context.watch<InsightsViewModel>();
     final purchaseVm = context.watch<PurchaseViewModel>();
     final stats = insightsVm.stats;
@@ -66,7 +68,7 @@ class InsightsScreen extends StatelessWidget {
             purchaseVm.state,
           ], loadingMessage: 'Đang tải khoản mua...') ??
           RefreshIndicator(
-            color: isDark ? AppColors.primary : AppColors.onPrimary,
+            color: AppSemanticColors.of(context).emphasis,
             onRefresh: () => insightsVm.refresh(force: true),
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -95,9 +97,7 @@ class InsightsScreen extends StatelessWidget {
                     icon: const Icon(Icons.auto_stories_outlined, size: 18),
                     label: const Text('Xem chiêm nghiệm tháng'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark
-                          ? AppColors.primary
-                          : AppColors.onPrimary,
+                      foregroundColor: AppSemanticColors.of(context).emphasis,
                       minimumSize: const Size.fromHeight(48),
                       side: BorderSide(color: theme.dividerColor),
                       shape: RoundedRectangleBorder(
@@ -192,8 +192,6 @@ class InsightsScreen extends StatelessWidget {
   }
 
   Widget _buildAiStatusCard(BuildContext context, InsightsViewModel vm) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final reason = vm.fallbackReason;
     final String status;
     if (vm.isGenerating) {
@@ -209,12 +207,10 @@ class InsightsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2706) : AppColors.primaryContainer,
+        color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF5E5410)
-              : AppColors.primary.withValues(alpha: 0.5),
+          color: AppSemanticColors.of(context).primaryContainerBorder,
         ),
       ),
       child: Column(
@@ -224,7 +220,7 @@ class InsightsScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.auto_awesome,
-                color: isDark ? AppColors.primary : AppColors.aiAccent,
+                color: AppSemanticColors.of(context).aiAccent,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -234,7 +230,7 @@ class InsightsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.primary : AppColors.onPrimary,
+                    color: AppSemanticColors.of(context).emphasis,
                   ),
                 ),
               ),
@@ -242,9 +238,7 @@ class InsightsScreen extends StatelessWidget {
                 value: vm.canToggleAi && vm.userAiEnabled,
                 activeThumbColor: AppColors.primary,
                 // Must stand out from the primaryContainer box behind it
-                activeTrackColor: isDark
-                    ? AppColors.darkPrimaryContainerOutline
-                    : AppColors.onPrimary,
+                activeTrackColor: AppSemanticColors.of(context).switchTrack,
                 onChanged: vm.canToggleAi ? vm.setUserAiEnabled : null,
               ),
             ],
@@ -263,9 +257,7 @@ class InsightsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.4,
-                    color: isDark
-                        ? const Color(0xFFFEF3C7)
-                        : AppColors.textBody,
+                    color: AppSemanticColors.of(context).aiBody,
                   ),
                 ),
                 if (reason == InsightFallbackReason.aiFailed &&
@@ -275,9 +267,7 @@ class InsightsScreen extends StatelessWidget {
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('Thử lại'),
                     style: TextButton.styleFrom(
-                      foregroundColor: isDark
-                          ? AppColors.primary
-                          : AppColors.onPrimary,
+                      foregroundColor: AppSemanticColors.of(context).emphasis,
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(48, 48),
                     ),
@@ -288,9 +278,7 @@ class InsightsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: isDark
-                        ? const Color(0xFF93B5CE)
-                        : AppColors.accentNeutral,
+                    color: AppSemanticColors.of(context).accent,
                   ),
                 ),
               ],
@@ -325,8 +313,14 @@ class _InsightCardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final color = card.kind.color;
+    final color = MotiveColors.of(context).paletteOf(switch (card.kind) {
+      InsightKind.dominantMotive => BuyingMotive.sale,
+      InsightKind.lateNight => BuyingMotive.need,
+      InsightKind.monthOverMonth => BuyingMotive.social,
+      InsightKind.largestPurchase => BuyingMotive.emotion,
+      InsightKind.skippedItems => BuyingMotive.convenience,
+      InsightKind.satisfactionByMotive => BuyingMotive.want,
+    }).foreground;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -345,7 +339,9 @@ class _InsightCardView extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+                  color: color.withValues(
+                    alpha: AppSemanticColors.of(context).insightOverlay.a,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(card.kind.icon, size: 20, color: color),

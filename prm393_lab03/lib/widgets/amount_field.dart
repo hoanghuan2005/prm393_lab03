@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import '../core/constants/app_constants.dart';
 import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// VND amount input: number keyboard, "389.000" grouping while typing, "₫" suffix,
@@ -70,7 +70,7 @@ class _AmountFieldState extends State<AmountField> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.label != null) ...[
-          Text(widget.label!, style: AppTextStyles.labelLarge),
+          Text(widget.label!, style: AppTextStyles.labelLarge.themed(context)),
           const SizedBox(height: AppDimens.space8),
         ],
         TextFormField(
@@ -78,7 +78,7 @@ class _AmountFieldState extends State<AmountField> {
           controller: _controller,
           keyboardType: TextInputType.number,
           inputFormatters: [_VndInputFormatter()],
-          style: AppTextStyles.bodyLarge,
+          style: AppTextStyles.bodyLarge.themed(context),
           validator: widget.optional
               ? Validators.validateOptionalAmount
               : Validators.validateAmount,
@@ -90,10 +90,10 @@ class _AmountFieldState extends State<AmountField> {
                 ? null
                 : IconButton(
                     tooltip: 'Xoá số tiền',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       size: 20,
-                      color: AppColors.textSecondary,
+                      color: AppSemanticColors.of(context).textSecondary,
                     ),
                     onPressed: widget.enabled ? _clear : null,
                   ),

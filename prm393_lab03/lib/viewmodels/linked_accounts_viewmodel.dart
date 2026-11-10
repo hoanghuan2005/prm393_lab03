@@ -15,12 +15,12 @@ import 'error_reporting.dart';
 
 enum LinkState { notLinked, linked, busy }
 
-/// One row of "Tài khoản liên kết": Google or GitHub
+/// One row of "Tài khoản liên kết": Google, Facebook or GitHub.
 class LinkedAccountRow {
   final String providerId;
   final LinkState state;
 
-  /// Masked email for Google, GitHub name if any; null when not linked
+  /// Masked email or provider name; null when not linked.
   final String? label;
 
   final bool canUnlink;
@@ -33,10 +33,11 @@ class LinkedAccountRow {
   });
 }
 
-/// "Tài khoản liên kết": link / unlink Google and GitHub on the signed-in account
+/// "Tài khoản liên kết": link / unlink Google, Facebook and GitHub.
 class LinkedAccountsViewModel extends ChangeNotifier
     with DeferredNotify, ErrorReporting {
   static const googleId = 'google.com';
+  static const facebookId = 'facebook.com';
   static const githubId = 'github.com';
 
   final AuthService authService;
@@ -71,14 +72,17 @@ class LinkedAccountsViewModel extends ChangeNotifier
 
   bool get isGuest => authService.currentUser?.isAnonymous ?? false;
 
-  /// "Google", "GitHub" for the rows that are linked, in row order
+  /// Display names of linked providers, in row order.
   List<String> get linkedProviderNames => [
-    for (final id in const [googleId, githubId])
+    for (final id in const [googleId, facebookId, githubId])
       if (_info(id) != null) _providerName(id),
   ];
 
-  /// Only Google and GitHub are shown, in this order
-  List<LinkedAccountRow> get rows => [rowFor(googleId), rowFor(githubId)];
+  List<LinkedAccountRow> get rows => [
+    rowFor(googleId),
+    if (PlatformSupport.supportsFacebookSignIn) rowFor(facebookId),
+    rowFor(githubId),
+  ];
 
   LinkedAccountRow rowFor(String providerId) {
     if (_busyProviderId == providerId) {
@@ -99,7 +103,7 @@ class LinkedAccountsViewModel extends ChangeNotifier
     );
   }
 
-  /// Counts every provider (password, phone, ...), not only the two rows shown
+  /// Counts every provider (password, phone, ...), including those not shown.
   bool canUnlink(String providerId) {
     final user = authService.currentUser;
     if (user == null || isGuest) return false;
@@ -140,6 +144,14 @@ class LinkedAccountsViewModel extends ChangeNotifier
     isLink: true,
   );
 
+  Future<bool> linkFacebook() => _run(
+    facebookId,
+    'link_facebook',
+    authService.linkFacebook,
+    success: 'Đã liên kết Facebook.',
+    isLink: true,
+  );
+
   Future<bool> unlink(String providerId) => _run(
     providerId,
     'unlink',
@@ -171,7 +183,8 @@ class LinkedAccountsViewModel extends ChangeNotifier
       _successMessage = success;
       return true;
     } on UnsupportedError {
-      _errorMessage = 'Liên kết Google chưa hỗ trợ trên Windows.';
+      _errorMessage =
+          'Liên kết ${_providerName(providerId)} chưa hỗ trợ trên Windows.';
       return false;
     } catch (e, stack) {
       if (e is AppException && e.code == signInCancelled.code) return false;
@@ -216,6 +229,14 @@ class LinkedAccountsViewModel extends ChangeNotifier
   }
 
   String? _labelFor(String providerId, UserInfo info) {
+    if (providerId == facebookId) {
+      final name = info.displayName?.trim();
+      if (name != null && name.isNotEmpty) return name;
+      final email = info.email;
+      return email == null || email.isEmpty
+          ? 'Chưa có email'
+          : maskEmail(email);
+    }
     if (providerId == googleId) {
       final email = info.email;
       return email == null || email.isEmpty ? null : maskEmail(email);
@@ -224,8 +245,11 @@ class LinkedAccountsViewModel extends ChangeNotifier
     return name == null || name.isEmpty ? null : name;
   }
 
-  String _providerName(String providerId) =>
-      providerId == githubId ? 'GitHub' : 'Google';
+  String _providerName(String providerId) => switch (providerId) {
+    facebookId => 'Facebook',
+    githubId => 'GitHub',
+    _ => 'Google',
+  };
 
   @override
   void dispose() {

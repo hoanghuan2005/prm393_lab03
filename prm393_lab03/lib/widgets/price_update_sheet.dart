@@ -65,7 +65,7 @@ class _PriceFormState extends State<_PriceForm> {
                 : 'Giá đã ghi: ${formatVnd(current)}'
                       '${at == null ? '' : ' (ngày ${formatDate(at)})'}. '
                       'Nhập giá bạn đang thấy; giá cũ vẫn được giữ trong lịch sử.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           if (current != null) ...[
             const SizedBox(height: AppDimens.space16),
@@ -78,7 +78,10 @@ class _PriceFormState extends State<_PriceForm> {
               onPressed: () => Navigator.pop(context, current),
             ),
             const SizedBox(height: AppDimens.space8),
-            Text('Hoặc nhập giá mới:', style: AppTextStyles.labelMedium),
+            Text(
+              'Hoặc nhập giá mới:',
+              style: AppTextStyles.labelMedium.themed(context),
+            ),
           ],
           const SizedBox(height: AppDimens.space16),
           AmountField(

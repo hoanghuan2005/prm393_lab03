@@ -117,43 +117,48 @@ class AppColors {
   static const Color motiveOtherBg = Color(0xFFF1F5F9); // slate-100
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // DARK MODE COLORS (Matching Web Admin Portal Tailwind dark palette)
+  // DARK MODE — readable text and distinct card, input and background layers
   // ═══════════════════════════════════════════════════════════════════════════
-  static const Color darkBackground = Color(0xFF020617); // slate-950
-  static const Color darkSurface = Color(0xFF0F172A); // slate-900
-  static const Color darkSurfaceVariant = Color(0xFF1E293B); // slate-800
-  static const Color darkBorder = Color(0xFF1E293B); // slate-800
-  static const Color darkOutline = Color(0xFF334155); // slate-700
+  static const Color darkBackground = Color(0xFF080E1A);
+  static const Color darkSurface = Color(0xFF222E40);
+  static const Color darkSurfaceVariant = Color(0xFF2A384D);
+  static const Color darkBorder = Color(0xFF64748B);
+  static const Color darkOutline = Color(0xFF8A9BB3);
 
   static const Color darkTextPrimary = Color(0xFFF8FAFC); // slate-50
-  static const Color darkTextSecondary = Color(0xFF94A3B8); // slate-400
-  static const Color darkTextHint = Color(0xFF64748B); // slate-500
+  static const Color darkTextSecondary = Color(0xFFB3BED0);
+  static const Color darkTextHint = darkTextSecondary;
+
+  /// Decorative only; never use for text or interactive icons.
   static const Color darkTextMuted = Color(0xFF475569); // slate-600
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // DARK MODE — role tokens for the `isDark ? dark* : light` branches in screens
-  // (mapping from the old hex values: docs/design-tokens.md, section 2.5)
+  // DARK MODE — counterparts used by AppSemanticColors and ColorScheme
+  // Contrast measurements and migration inventory: docs/dark-mode-audit.md
   // ═══════════════════════════════════════════════════════════════════════════
   /// Dark counterpart of [primaryContainer] (also `colorScheme.primaryContainer`)
   static const Color darkPrimaryContainer = Color(0xFF2C2706);
 
   /// Border of a [darkPrimaryContainer] box; active Switch track on that box
-  static const Color darkPrimaryContainerOutline = Color(0xFF5E5410);
+  static const Color darkPrimaryContainerOutline = Color(0xFF7C7145);
+
+  /// Subdued emphasis on dark surfaces; brand yellow remains a filled accent.
+  static const Color darkPrimaryText = Color(0xFFE5D99B);
 
   /// Text on [darkPrimaryContainer] (AI note, tips)
   static const Color darkPrimaryContainerText = Color(0xFFFEF3C7); // amber-100
 
   /// Raised card on the dark background (light: [surface])
-  static const Color darkCardSurface = Color(0xFF1B202A);
+  static const Color darkCardSurface = darkSurface;
 
   /// Unselected chip, segmented control, progress track (light: [surfaceVariant])
-  static const Color darkSurfaceMuted = Color(0xFF262D3B);
+  static const Color darkSurfaceMuted = darkSurfaceVariant;
 
   /// Inactive page dot (light: [outline])
   static const Color darkIndicatorInactive = Color(0xFF333B49);
 
   static const Color darkTextBody = Color(0xFFCBD5E1); // slate-300
-  static const Color darkNavInactive = Color(0xFF64748B); // slate-500
+  static const Color darkNavInactive = darkTextSecondary;
 
   /// Dark counterpart of [accentNeutral] (also `colorScheme.tertiary`)
   static const Color darkAccentNeutral = Color(0xFF93B5CE);

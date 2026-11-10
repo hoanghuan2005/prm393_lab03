@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 enum AppButtonVariant { primary, secondary, danger }
@@ -38,13 +39,16 @@ class AppButton extends StatelessWidget {
         side = BorderSide.none;
         break;
       case AppButtonVariant.secondary:
-        bgColor = AppColors.surface;
-        fgColor = AppColors.textPrimary;
-        side = const BorderSide(color: AppColors.outline, width: 1.5);
+        bgColor = AppSemanticColors.of(context).cardSurface;
+        fgColor = AppSemanticColors.of(context).textPrimary;
+        side = BorderSide(
+          color: AppSemanticColors.of(context).inputBorder,
+          width: 1.5,
+        );
         break;
       case AppButtonVariant.danger:
-        bgColor = AppColors.error;
-        fgColor = AppColors.textOnDark;
+        bgColor = AppSemanticColors.of(context).error;
+        fgColor = AppSemanticColors.of(context).onStatusFill;
         side = BorderSide.none;
         break;
     }
@@ -99,9 +103,9 @@ class AppButton extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: fgColor,
-                          ),
+                          style: AppTextStyles.labelLarge
+                              .themed(context)
+                              .copyWith(color: fgColor),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,

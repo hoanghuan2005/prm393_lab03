@@ -82,6 +82,9 @@ class FakeLinkAuthService extends Fake implements AuthService {
   Future<UserCredential?> linkGithub() => _link();
 
   @override
+  Future<UserCredential?> linkFacebook() => _link();
+
+  @override
   Future<void> unlink(String providerId) async {
     await gate?.future;
     if (error != null) throw error!;

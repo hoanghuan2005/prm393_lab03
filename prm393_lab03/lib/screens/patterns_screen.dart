@@ -6,6 +6,7 @@ import '../core/formatters/money_format.dart';
 import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
@@ -32,11 +33,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
     TimeSlot.evening: Icons.nightlight_round,
   };
 
-  static const Map<TimeSlot, Color> _slotColors = {
-    TimeSlot.morning: AppColors.slotMorning,
-    TimeSlot.noon: AppColors.slotNoon,
-    TimeSlot.afternoon: AppColors.slotEvening,
-    TimeSlot.evening: AppColors.slotNight,
+  Map<TimeSlot, Color> get _slotColors => {
+    TimeSlot.morning: AppSemanticColors.of(context).slotMorning,
+    TimeSlot.noon: AppSemanticColors.of(context).slotNoon,
+    TimeSlot.afternoon: AppSemanticColors.of(context).slotEvening,
+    TimeSlot.evening: AppSemanticColors.of(context).slotNight,
   };
 
   StatsPeriod _period = StatsPeriod.week;
@@ -52,9 +53,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
     ),
   );
 
-  bool get _canGoToNextWeek => _weekStart.isBefore(
-    PurchaseViewModel.weekStartOf(DateTime.now()),
-  );
+  bool get _canGoToNextWeek =>
+      _weekStart.isBefore(PurchaseViewModel.weekStartOf(DateTime.now()));
 
   Future<void> _pickWeek() async {
     final picked = await showDatePicker(
@@ -81,7 +81,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final purchaseVm = context.watch<PurchaseViewModel>();
     final isWeek = _period == StatsPeriod.week;
     // Total, count, motives and time slots all come from this one period
@@ -135,7 +134,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252D3C) : AppColors.divider,
+                    color: AppSemanticColors.of(context).divider,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -286,9 +285,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? AppColors.primary
-                                  : AppColors.accentNeutral,
+                              color: AppSemanticColors.of(context).accent,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -306,16 +303,12 @@ class _PatternsScreenState extends State<PatternsScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2C2706)
-                              : AppColors.primaryContainer,
+                          color: AppSemanticColors.of(context).primaryContainer,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.pie_chart_rounded,
-                          color: isDark
-                              ? AppColors.primary
-                              : AppColors.onPrimary,
+                          color: AppSemanticColors.of(context).emphasis,
                           size: 24,
                         ),
                       ),
@@ -411,9 +404,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
-                                                color: isDark
-                                                    ? AppColors.primary
-                                                    : AppColors.accentNeutral,
+                                                color: AppSemanticColors.of(
+                                                  context,
+                                                ).accent,
                                               ),
                                             ),
                                           ],
@@ -457,9 +450,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                 child: LinearProgressIndicator(
                                   value: percent,
                                   minHeight: 6,
-                                  backgroundColor: isDark
-                                      ? const Color(0xFF262D3B)
-                                      : AppColors.surfaceVariant,
+                                  backgroundColor: AppSemanticColors.of(context)
+                                      .mutedSurface,
                                   color: motive == BuyingMotive.sale
                                       ? AppColors.primary
                                       : motivePalette.foreground,
@@ -522,7 +514,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
     StatsPeriod period,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isSelected = _period == period;
 
     return InkWell(
@@ -532,13 +523,13 @@ class _PatternsScreenState extends State<PatternsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? const Color(0xFF1B202A) : Colors.white)
+              ? (AppSemanticColors.of(context).cardSurface)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                    color: AppSemanticColors.of(context).segmentShadow,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -552,7 +543,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
-                ? (isDark ? AppColors.primary : AppColors.onPrimary)
+                ? (AppSemanticColors.of(context).emphasis)
                 : theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -569,7 +560,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
     double progress,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -602,9 +592,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,
-            backgroundColor: isDark
-                ? const Color(0xFF262D3B)
-                : AppColors.surfaceVariant,
+            backgroundColor: AppSemanticColors.of(context).mutedSurface,
             color: color,
           ),
         ),

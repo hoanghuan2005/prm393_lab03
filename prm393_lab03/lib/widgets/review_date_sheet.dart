@@ -76,7 +76,7 @@ class _ReviewDateOptions extends StatelessWidget {
       children: [
         Text(
           'Món vẫn ở "Đang cân nhắc". Bạn vẫn có thể Mua hoặc Bỏ qua bất cứ lúc nào.',
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.bodyMedium.themed(context),
         ),
         const SizedBox(height: AppDimens.space8),
         for (final days in dayOptions)

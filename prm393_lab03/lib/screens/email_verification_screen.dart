@@ -44,33 +44,33 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   Text(
                     'Xác minh email của bạn',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTextStyles.headlineMedium
+                        .themed(context)
+                        .copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     'Chúng mình đã gửi một đường dẫn xác minh đến:',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: AppDimens.space8),
                   Text(
                     email,
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
+                    style: AppTextStyles.titleMedium
+                        .themed(context)
+                        .copyWith(color: theme.colorScheme.onSurface),
                   ),
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     'Mở email và bấm vào đường dẫn xác minh của Firebase. Sau đó quay lại đây để tiếp tục.',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: AppDimens.space24),
                   AppButton(

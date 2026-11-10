@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- F0: <điền App ID> và <điền Client Token>. 0 là placeholder, không phải cấu hình thật.
+         Không để trống: Facebook SDK được tạo khi Flutter đăng ký plugin.
+         MainActivity chặn đăng nhập khi các giá trị vẫn là 0. Không đặt App Secret ở đây. -->
+    <string name="facebook_app_id" translatable="false">0</string>
+    <string name="facebook_client_token" translatable="false">0</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb0</string>
     <string name="accessibility_service_description">Tự động nhận diện khi bạn chần chừ xem sản phẩm lâu trên Shopee, Lazada để nhắc nhở tránh mua sắm bốc đồng.</string>
 </resources>
 

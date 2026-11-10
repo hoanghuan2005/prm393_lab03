@@ -15,11 +15,12 @@ import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/purchase_service.dart';
 import 'package:prm393_lab03/services/remote_config_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/insights_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/test_theme.dart';
 
 /// The demo data PurchaseViewModel used to seed before B7 (10/2026 + 9/2026)
 final _purchases = [
@@ -198,7 +199,7 @@ void main() {
           ChangeNotifierProvider.value(value: insightsVm),
         ],
         child: MaterialApp(
-          theme: AppTheme.lightTheme,
+          theme: testAppTheme,
           home: const InsightsScreen(),
         ),
       ),

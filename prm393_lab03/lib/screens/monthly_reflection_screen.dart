@@ -8,7 +8,9 @@ import '../models/buying_motive.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
@@ -36,14 +38,11 @@ class MonthlyReflectionScreen extends StatelessWidget {
     };
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -87,7 +86,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(AppDimens.space20),
               decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
+                color: AppSemanticColors.of(context).primaryContainer,
                 borderRadius: AppDimens.borderLarge,
                 border: Border.all(color: AppColors.primary),
               ),
@@ -103,7 +102,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                               : formatMonthLabel(
                                   DateTime(stats.year, stats.month),
                                 ),
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.themed(context),
                         ),
                       ),
                       if (report != null)
@@ -113,14 +112,16 @@ class MonthlyReflectionScreen extends StatelessWidget {
                   const SizedBox(height: AppDimens.space12),
                   Text(
                     formatVnd(stats?.totalSpent ?? 0),
-                    style: AppTextStyles.headlineLarge.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTextStyles.headlineLarge
+                        .themed(context)
+                        .copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                   Text(
                     'Tổng đã chi từ ${stats?.purchaseCount ?? 0} khoản mua bạn đã ghi',
-                    style: AppTextStyles.bodyMedium,
+                    style: AppTextStyles.bodyMedium.themed(context),
                   ),
                   const SizedBox(height: AppDimens.space16),
                   if (insightsVm.isGenerating) ...[
@@ -129,7 +130,9 @@ class MonthlyReflectionScreen extends StatelessWidget {
                   ],
                   Text(
                     report?.summary ?? 'Chưa có dữ liệu cho tháng này.',
-                    style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
+                    style: AppTextStyles.bodyLarge
+                        .themed(context)
+                        .copyWith(height: 1.5),
                   ),
                   if (insightsVm.fallbackReason != null) ...[
                     const SizedBox(height: AppDimens.space8),
@@ -137,7 +140,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
                       InsightsScreen.fallbackMessage(
                         insightsVm.fallbackReason!,
                       ),
-                      style: AppTextStyles.caption,
+                      style: AppTextStyles.caption.themed(context),
                     ),
                   ],
                 ],
@@ -151,14 +154,16 @@ class MonthlyReflectionScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppDimens.space16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppSemanticColors.of(context).cardSurface,
                   borderRadius: AppDimens.borderMedium,
-                  border: Border.all(color: AppColors.divider),
+                  border: Border.all(
+                    color: AppSemanticColors.of(context).divider,
+                  ),
                 ),
                 child: Text(
                   'Tháng này bạn đã cân nhắc và không mua ${stats.skippedCount} món, '
                   '${stats.skippedValueText}.',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.themed(context),
                 ),
               ),
               const SizedBox(height: AppDimens.space16),
@@ -166,11 +171,14 @@ class MonthlyReflectionScreen extends StatelessWidget {
             const SizedBox(height: AppDimens.space8),
 
             // Motives breakdown of recorded purchases in the selected month
-            Text('Phân bổ 8 động cơ mua sắm', style: AppTextStyles.titleLarge),
+            Text(
+              'Phân bổ 8 động cơ mua sắm',
+              style: AppTextStyles.titleLarge.themed(context),
+            ),
             const SizedBox(height: AppDimens.space8),
             Text(
               'Số khoản mua trong tháng theo động cơ bạn đã ghi:',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),
 
@@ -186,23 +194,38 @@ class MonthlyReflectionScreen extends StatelessWidget {
                     vertical: AppDimens.space8,
                   ),
                   decoration: BoxDecoration(
-                    color: motive.backgroundColor,
+                    color: MotiveColors.of(context)
+                        .paletteOf(motive)
+                        .background,
                     borderRadius: AppDimens.borderMedium,
                     border: Border.all(
-                      color: motive.color.withValues(alpha: 0.3),
+                      color: MotiveColors.of(context)
+                          .paletteOf(motive)
+                          .foreground
+                          .withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(motive.icon, size: 16, color: motive.color),
+                      Icon(
+                        motive.icon,
+                        size: 16,
+                        color: MotiveColors.of(context)
+                            .paletteOf(motive)
+                            .foreground,
+                      ),
                       const SizedBox(width: AppDimens.space6),
                       Text(
                         '${motive.label}: $count',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: motive.color,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTextStyles.labelMedium
+                            .themed(context)
+                            .copyWith(
+                              color: MotiveColors.of(context)
+                                  .paletteOf(motive)
+                                  .foreground,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -216,12 +239,15 @@ class MonthlyReflectionScreen extends StatelessWidget {
 
             // PDF report: built on the device and shared with `printing`
             // (decision D7 – no Cloud Storage on the Spark plan)
-            Text('Báo cáo PDF', style: AppTextStyles.titleLarge),
+            Text(
+              'Báo cáo PDF',
+              style: AppTextStyles.titleLarge.themed(context),
+            ),
             const SizedBox(height: AppDimens.space8),
             Text(
               'Báo cáo ${formatMonthLabel(month).toLowerCase()} được tạo ngay trên máy. '
               'Bạn chọn ứng dụng để lưu hoặc gửi.',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),
             if (reportVm.status == ReportStatus.error)
@@ -232,7 +258,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
             else if (reportVm.status == ReportStatus.shared) ...[
               Text(
                 'Đã tạo ${ReportViewModel.fileNameFor(month)}.',
-                style: AppTextStyles.labelMedium,
+                style: AppTextStyles.labelMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
             ],
@@ -313,14 +339,17 @@ class _ReflectionFormState extends State<_ReflectionForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(AppDimens.space16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppSemanticColors.of(context).cardSurface,
             borderRadius: AppDimens.borderMedium,
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppSemanticColors.of(context).cardBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Mức độ hài lòng của bạn', style: AppTextStyles.titleMedium),
+              Text(
+                'Mức độ hài lòng của bạn',
+                style: AppTextStyles.titleMedium.themed(context),
+              ),
               const SizedBox(height: AppDimens.space12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,10 +362,11 @@ class _ReflectionFormState extends State<_ReflectionForm> {
                       showCheckmark: false,
                       shape: const CircleBorder(),
                       selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surfaceVariant,
-                      labelStyle: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.onPrimary,
-                      ),
+                      backgroundColor: AppSemanticColors.of(context)
+                          .mutedSurface,
+                      labelStyle: AppTextStyles.labelLarge
+                          .themed(context)
+                          .copyWith(color: AppColors.onPrimary),
                     ),
                 ],
               ),
@@ -344,8 +374,14 @@ class _ReflectionFormState extends State<_ReflectionForm> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Không hài lòng', style: AppTextStyles.labelMedium),
-                  Text('Rất hài lòng', style: AppTextStyles.labelMedium),
+                  Text(
+                    'Không hài lòng',
+                    style: AppTextStyles.labelMedium.themed(context),
+                  ),
+                  Text(
+                    'Rất hài lòng',
+                    style: AppTextStyles.labelMedium.themed(context),
+                  ),
                 ],
               ),
             ],
@@ -356,16 +392,16 @@ class _ReflectionFormState extends State<_ReflectionForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(AppDimens.space16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppSemanticColors.of(context).cardSurface,
             borderRadius: AppDimens.borderMedium,
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppSemanticColors.of(context).cardBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Mục tiêu cho tháng ${vm.nextMonth.month}',
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
               TextField(

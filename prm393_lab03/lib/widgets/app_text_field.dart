@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Reusable App Text Field conforming to Figma specs
@@ -42,7 +42,7 @@ class AppTextField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!, style: AppTextStyles.labelLarge),
+          Text(label!, style: AppTextStyles.labelLarge.themed(context)),
           const SizedBox(height: AppDimens.space8),
         ],
         TextFormField(
@@ -54,11 +54,15 @@ class AppTextField extends StatelessWidget {
           maxLines: maxLines,
           readOnly: readOnly,
           onTap: onTap,
-          style: AppTextStyles.bodyLarge,
+          style: AppTextStyles.bodyLarge.themed(context),
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: AppColors.textSecondary, size: 20)
+                ? Icon(
+                    prefixIcon,
+                    color: AppSemanticColors.of(context).textSecondary,
+                    size: 20,
+                  )
                 : null,
             suffixIcon: suffixIcon,
           ),

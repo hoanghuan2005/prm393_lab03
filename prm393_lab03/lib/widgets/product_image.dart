@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 
 /// Product photo saved by the Chrome extension (`WishlistItem.imageUrl`, a Shopee CDN link).
 /// Shows nothing when there is no usable http(s) link, and a quiet placeholder while
@@ -40,18 +40,25 @@ class ProductImage extends StatelessWidget {
         cacheWidth: cacheSize,
         excludeFromSemantics: true,
         loadingBuilder: (context, child, progress) =>
-            progress == null ? child : _placeholder(),
+            progress == null ? child : _placeholder(context),
         errorBuilder: (context, error, stack) =>
-            _placeholder(icon: Icons.image_not_supported_outlined),
+            _placeholder(context, icon: Icons.image_not_supported_outlined),
       ),
     );
   }
 
-  Widget _placeholder({IconData icon = Icons.image_outlined}) => Container(
+  Widget _placeholder(
+    BuildContext context, {
+    IconData icon = Icons.image_outlined,
+  }) => Container(
     width: size,
     height: size,
-    color: AppColors.surfaceVariant,
+    color: AppSemanticColors.of(context).mutedSurface,
     alignment: Alignment.center,
-    child: Icon(icon, size: size * 0.4, color: AppColors.textSecondary),
+    child: Icon(
+      icon,
+      size: size * 0.4,
+      color: AppSemanticColors.of(context).textSecondary,
+    ),
   );
 }

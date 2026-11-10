@@ -84,7 +84,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
         padding: const EdgeInsets.only(bottom: AppDimens.space16),
         child: Text(
           'Thêm link sản phẩm Shopee của món để so với giá người khác đã ghi.',
-          style: AppTextStyles.labelMedium,
+          style: AppTextStyles.labelMedium.themed(context),
         ),
       );
     }
@@ -100,7 +100,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
             Expanded(
               child: Text(
                 'Giá người khác ghi',
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
               ),
             ),
           ],
@@ -111,7 +111,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
           const SizedBox(height: AppDimens.space4),
           Text(
             'Món chưa rõ phân loại: chỉ so với giá cũng chưa rõ phân loại, giá thật có thể khác.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
         ],
         const Divider(height: AppDimens.space24),
@@ -122,7 +122,10 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
       return Column(
         key: const ValueKey('shared-prices'),
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [const Divider(height: AppDimens.space24), content],
+        children: [
+          const Divider(height: AppDimens.space24),
+          content,
+        ],
       );
     }
     return Card(
@@ -149,7 +152,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
         return [
           Text(
             'Chưa tải được giá người khác ghi. Kiểm tra mạng rồi thử lại.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           TextButton.icon(
             onPressed: () => vm.load(widget.item, mine: mine, force: true),
@@ -162,7 +165,7 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
           Text(
             'Chưa đủ dữ liệu: cần ít nhất ${SharedPriceSummary.minPeople} người khác '
             'ghi giá cùng sản phẩm và phân loại trong ${SharedPriceSummary.windowDays} ngày qua.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
         ];
       case SharedPriceStatus.ready:
@@ -176,28 +179,28 @@ class _SharedPriceSectionState extends State<SharedPriceSection> {
               '${SharedPriceSummary.windowDays} ngày qua'
               '${state.priceType == PriceType.flash ? ' (giá Flash Sale)' : ''}',
               key: const ValueKey('shared-price-median'),
-              style: AppTextStyles.titleMedium,
+              style: AppTextStyles.titleMedium.themed(context),
             ),
           ),
           const SizedBox(height: AppDimens.space4),
           Text(
             'Thấp nhất ${formatVnd(s.minVnd)} · cao nhất ${formatVnd(s.maxVnd)}',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           if (diff != null)
             Text(
               'Giá bạn ghi ${formatVnd(mine?.amountVnd)} ${_percent(diff)}.',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
           if (s.excludedCount > 0)
             Text(
               'Đã bỏ ${s.excludedCount} giá lệch hơn ${SharedPriceSummary.outlierPercent}% so với trung vị.',
-              style: AppTextStyles.labelMedium,
+              style: AppTextStyles.labelMedium.themed(context),
             ),
           const SizedBox(height: AppDimens.space4),
           Text(
             'Ẩn danh: app không lưu và không hiện ai đã ghi. Giá chỉ để tham khảo.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
           if (widget.onUsePrice case final use?)
             TextButton.icon(
@@ -223,7 +226,7 @@ class _SharingSwitch extends StatelessWidget {
     if (!vm.canContribute) {
       return Text(
         'Tài khoản khách chỉ xem được; đăng nhập Google để góp giá ẩn danh.',
-        style: AppTextStyles.labelMedium,
+        style: AppTextStyles.labelMedium.themed(context),
       );
     }
     return SwitchListTile(
@@ -237,7 +240,7 @@ class _SharingSwitch extends StatelessWidget {
         'link hay tài khoản. Giá đã góp hết hiệu lực sau ${SharedPriceSummary.windowDays} ngày. '
         'Giá cũng được lưu ẩn danh vào biểu đồ "Giá tham khảo" (kèm tên món, tên shop '
         'và đánh giá nếu có).',
-        style: AppTextStyles.labelMedium,
+        style: AppTextStyles.labelMedium.themed(context),
       ),
     );
   }

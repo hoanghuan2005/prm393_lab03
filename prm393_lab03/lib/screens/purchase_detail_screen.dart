@@ -5,8 +5,11 @@ import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/utils/time_slot.dart';
 import '../models/budget_group.dart';
+import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/satisfaction_dialog.dart';
@@ -91,14 +94,11 @@ class PurchaseDetailScreen extends StatelessWidget {
     );
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -127,9 +127,9 @@ class PurchaseDetailScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.delete_outline_rounded,
-              color: AppColors.error,
+              color: AppSemanticColors.of(context).error,
             ),
             tooltip: 'Xoá khoản mua',
             onPressed: () => _confirmDelete(context),
@@ -146,17 +146,17 @@ class PurchaseDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Card 1: Purchase Summary (Figma 05)
-                    _buildSummaryCard(currentItem),
+                    _buildSummaryCard(context, currentItem),
 
                     const SizedBox(height: 16),
 
                     // Card 2: Details (Time & Note)
-                    _buildDetailsCard(currentItem),
+                    _buildDetailsCard(context, currentItem),
 
                     const SizedBox(height: 16),
 
                     // Card 3: Behavioral Insight
-                    _buildBehavioralCard(currentItem),
+                    _buildBehavioralCard(context, currentItem),
 
                     const SizedBox(height: 16),
 
@@ -176,14 +176,14 @@ class PurchaseDetailScreen extends StatelessWidget {
   }
 
   // ==================== PURCHASE SUMMARY CARD ====================
-  Widget _buildSummaryCard(PurchaseItem item) {
+  Widget _buildSummaryCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppSemanticColors.of(context).cardBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -199,26 +199,30 @@ class PurchaseDetailScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'MỤC ĐÃ CHI TIÊU',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: AppColors.textSecondary,
+                  color: AppSemanticColors.of(context).textSecondary,
                 ),
               ),
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: item.motive.backgroundColor,
+                  color: MotiveColors.of(context)
+                      .paletteOf(item.motive)
+                      .background,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   item.motive.icon,
                   size: 18,
-                  color: item.motive.color,
+                  color: MotiveColors.of(context)
+                      .paletteOf(item.motive)
+                      .foreground,
                 ),
               ),
             ],
@@ -241,29 +245,32 @@ class PurchaseDetailScreen extends StatelessWidget {
           // Big Amount
           Text(
             item.formattedAmount,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: AppColors.accentNeutral,
+              color: AppSemanticColors.of(context).accent,
               letterSpacing: -0.5,
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1, color: AppColors.surfaceVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Divider(
+              height: 1,
+              color: AppSemanticColors.of(context).mutedSurface,
+            ),
           ),
 
           // Motive Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Động cơ',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+                  color: AppSemanticColors.of(context).textSecondary,
                 ),
               ),
               Container(
@@ -272,20 +279,30 @@ class PurchaseDetailScreen extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: item.motive.backgroundColor,
+                  color: MotiveColors.of(context)
+                      .paletteOf(item.motive)
+                      .background,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(item.motive.icon, size: 14, color: item.motive.color),
+                    Icon(
+                      item.motive.icon,
+                      size: 14,
+                      color: MotiveColors.of(context)
+                          .paletteOf(item.motive)
+                          .foreground,
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       item.motive.label,
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: item.motive.color,
+                        color: MotiveColors.of(context)
+                            .paletteOf(item.motive)
+                            .foreground,
                       ),
                     ),
                   ],
@@ -299,14 +316,14 @@ class PurchaseDetailScreen extends StatelessWidget {
   }
 
   // ==================== DETAILS CARD ====================
-  Widget _buildDetailsCard(PurchaseItem item) {
+  Widget _buildDetailsCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppSemanticColors.of(context).cardBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -326,13 +343,13 @@ class PurchaseDetailScreen extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: AppSemanticColors.of(context).mutedSurface,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.access_time_rounded,
                   size: 18,
-                  color: AppColors.accentNeutral,
+                  color: AppSemanticColors.of(context).accent,
                 ),
               ),
               const SizedBox(width: 12),
@@ -340,12 +357,12 @@ class PurchaseDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Thời gian ghi nhận',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: AppSemanticColors.of(context).textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -360,9 +377,9 @@ class PurchaseDetailScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       formatWeekdayDate(item.occurredAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: AppSemanticColors.of(context).textSecondary,
                       ),
                     ),
                   ],
@@ -371,9 +388,12 @@ class PurchaseDetailScreen extends StatelessWidget {
             ],
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1, color: AppColors.surfaceVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Divider(
+              height: 1,
+              color: AppSemanticColors.of(context).mutedSurface,
+            ),
           ),
 
           // Note Row
@@ -384,7 +404,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
+                  color: AppSemanticColors.of(context).primaryContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -398,12 +418,12 @@ class PurchaseDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Ghi chú của bạn',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: AppSemanticColors.of(context).textSecondary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -411,9 +431,11 @@ class PurchaseDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppSemanticColors.of(context).background,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(
+                          color: AppSemanticColors.of(context).cardBorder,
+                        ),
                       ),
                       child: Text(
                         (item.note != null && item.note!.trim().isNotEmpty)
@@ -430,7 +452,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                               (item.note != null &&
                                   item.note!.trim().isNotEmpty)
                               ? AppColors.onPrimary
-                              : AppColors.textHint,
+                              : AppSemanticColors.of(context).hint,
                           height: 1.4,
                         ),
                       ),
@@ -446,12 +468,12 @@ class PurchaseDetailScreen extends StatelessWidget {
   }
 
   // ==================== BEHAVIORAL INSIGHT CARD ====================
-  Widget _buildBehavioralCard(PurchaseItem item) {
+  Widget _buildBehavioralCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryContainer,
+        color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
       ),
@@ -479,9 +501,9 @@ class PurchaseDetailScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   _describe(item),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: AppColors.accentNeutral,
+                    color: AppSemanticColors.of(context).accent,
                     height: 1.4,
                   ),
                 ),
@@ -497,9 +519,14 @@ class PurchaseDetailScreen extends StatelessWidget {
   Widget _buildBottomBar(BuildContext context, PurchaseItem item) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).cardSurface,
+        border: Border(
+          top: BorderSide(
+            color: AppSemanticColors.of(context).cardBorder,
+            width: 1,
+          ),
+        ),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -551,9 +578,9 @@ class _SatisfactionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppSemanticColors.of(context).cardBorder),
       ),
       child: Row(
         children: [
@@ -575,9 +602,11 @@ class _SatisfactionCard extends StatelessWidget {
                                 ? 'Bạn đã bỏ qua câu hỏi này'
                                 : 'Chưa chấm')
                           : '★' * stars + '☆' * (5 - stars),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.motiveSale,
+                        color: MotiveColors.of(context)
+                            .paletteOf(BuyingMotive.sale)
+                            .foreground,
                       ),
                     ),
                   ),

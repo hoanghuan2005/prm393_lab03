@@ -8,12 +8,12 @@ import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/auth_service.dart';
 import 'package:prm393_lab03/services/budget_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
+import 'support/test_theme.dart';
 
 const _uid = 'abcdef1234567890';
 
@@ -95,7 +95,7 @@ Future<void> _pump(WidgetTester tester, User user) async {
         ChangeNotifierProvider.value(value: linkedVm),
       ],
       child: MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         home: const Scaffold(body: AccountHeaderCard()),
       ),
     ),
@@ -108,6 +108,18 @@ Future<void> _pump(WidgetTester tester, User user) async {
 }
 
 void main() {
+  testWidgets('Facebook without email uses the name and linked method', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _User(isAnonymous: false, displayName: 'An', providers: ['facebook.com']),
+    );
+    expect(find.text('An'), findsOneWidget);
+    expect(find.text('Đã liên kết: Facebook'), findsOneWidget);
+    expect(find.textContaining('Khách'), findsNothing);
+  });
+
   testWidgets('a guest is labelled "Khách"', (tester) async {
     await _pump(tester, _User(isAnonymous: true));
 

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../services/review_reminder_service.dart';
 import '../services/share_intent_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -216,14 +216,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     required IconData icon,
     required IconData activeIcon,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isSelected = _currentIndex == index;
 
-    final selectedColor = isDark ? AppColors.primary : AppColors.onPrimary;
-    final unselectedColor = isDark
-        ? const Color(0xFF64748B)
-        : AppColors.navInactive;
+    final selectedColor = AppSemanticColors.of(context).emphasis;
+    final unselectedColor = AppSemanticColors.of(context).navInactive;
 
     return Expanded(
       child: InkWell(

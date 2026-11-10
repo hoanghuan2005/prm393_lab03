@@ -7,6 +7,7 @@ import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -25,7 +26,6 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final purchaseVm = context.watch<PurchaseViewModel>();
     final purchases = purchaseVm.filteredPurchases;
     final selectedMonth = purchaseVm.selectedMonth;
@@ -41,9 +41,7 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -296,9 +294,8 @@ class HistoryScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? AppColors.primary
-                                          : AppColors.accentNeutral,
+                                      color: AppSemanticColors.of(context)
+                                          .accent,
                                     ),
                                   ),
                                 ],
@@ -361,7 +358,6 @@ class HistoryScreen extends StatelessWidget {
   // ==================== BUDGET METER CARD (Figma 31) ====================
   Widget _buildBudgetMeterCard(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final budgetVm = context.watch<BudgetViewModel>();
     final spent = budgetVm.limitedSpent;
     final budget = budgetVm.totalLimit;
@@ -400,13 +396,13 @@ class HistoryScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isExceeded
-              ? (isDark ? const Color(0xFFEF4444) : AppColors.outline)
+              ? (AppSemanticColors.of(context).secondaryActionBorder)
               : theme.dividerColor,
           width: isExceeded ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            color: AppSemanticColors.of(context).budgetCardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -425,9 +421,7 @@ class HistoryScreen extends StatelessWidget {
                     Icon(
                       Icons.account_balance_wallet_outlined,
                       size: 18,
-                      color: isDark
-                          ? AppColors.primary
-                          : AppColors.accentNeutral,
+                      color: AppSemanticColors.of(context).accent,
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -450,12 +444,8 @@ class HistoryScreen extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isExceeded
-                            ? (isDark
-                                  ? const Color(0xFF451A1A)
-                                  : AppColors.surfaceVariant)
-                            : (isDark
-                                  ? const Color(0xFF064E3B)
-                                  : AppColors.successContainer),
+                            ? (AppSemanticColors.of(context).mutedSurface)
+                            : (AppSemanticColors.of(context).successContainer),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -464,12 +454,9 @@ class HistoryScreen extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isExceeded
-                              ? (isDark
-                                    ? const Color(0xFFFCA5A5)
-                                    : AppColors.accentNeutral)
-                              : (isDark
-                                    ? const Color(0xFF6EE7B7)
-                                    : AppColors.onSuccessContainer),
+                              ? (AppSemanticColors.of(context).accent)
+                              : (AppSemanticColors.of(context)
+                                    .onSuccessContainer),
                         ),
                       ),
                     ),
@@ -494,9 +481,7 @@ class HistoryScreen extends StatelessWidget {
                       Icon(
                         Icons.tune_rounded,
                         size: 14,
-                        color: isDark
-                            ? AppColors.primary
-                            : AppColors.accentNeutral,
+                        color: AppSemanticColors.of(context).accent,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -504,9 +489,7 @@ class HistoryScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.primary
-                              : AppColors.accentNeutral,
+                          color: AppSemanticColors.of(context).accent,
                         ),
                       ),
                     ],
@@ -528,7 +511,7 @@ class HistoryScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.primary : AppColors.accentNeutral,
+                    color: AppSemanticColors.of(context).accent,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -557,11 +540,9 @@ class HistoryScreen extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 7,
-              backgroundColor: isDark
-                  ? const Color(0xFF262D3B)
-                  : AppColors.surfaceVariant,
+              backgroundColor: AppSemanticColors.of(context).mutedSurface,
               color: isExceeded
-                  ? (isDark ? const Color(0xFFEF4444) : AppColors.accentNeutral)
+                  ? (AppSemanticColors.of(context).accent)
                   : AppColors.primary,
             ),
           ),
@@ -591,20 +572,17 @@ class HistoryScreen extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     final bgColor = isSelected
-        ? (isDark ? AppColors.primary : AppColors.onPrimary)
-        : (isDark ? const Color(0xFF252D3C) : AppColors.surfaceVariant);
+        ? (AppSemanticColors.of(context).selectedChip)
+        : (AppSemanticColors.of(context).mutedSurface);
 
     final textColor = isSelected
-        ? (isDark ? AppColors.onPrimary : Colors.white)
-        : (isDark ? const Color(0xFFCBD5E1) : AppColors.accentNeutral);
+        ? (AppSemanticColors.of(context).onSelectedChip)
+        : (AppSemanticColors.of(context).mutedText);
 
     final iconColor = isSelected
-        ? (isDark ? AppColors.onPrimary : Colors.white)
-        : (isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary);
+        ? (AppSemanticColors.of(context).onSelectedChip)
+        : (AppSemanticColors.of(context).textSecondary);
 
     return InkWell(
       key: key,
@@ -643,80 +621,77 @@ class HistoryScreen extends StatelessWidget {
     PurchaseViewModel vm,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final motivePalette = MotiveColors.of(context).paletteOf(item.motive);
 
     // Read as one item by TalkBack, including rows that have a note
     return MergeSemantics(
       child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.purchaseDetail,
-          arguments: PurchaseDetailArgs(item),
-        );
-      },
-      leading: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: motivePalette.background,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          item.motive.icon,
-          size: 20,
-          color: motivePalette.foreground,
-        ),
-      ),
-      title: Text(
-        item.title,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: theme.colorScheme.onSurface,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 2),
-          Text(
-            '${item.motive.label} • ${formatTime(item.occurredAt)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.purchaseDetail,
+            arguments: PurchaseDetailArgs(item),
+          );
+        },
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: motivePalette.background,
+            borderRadius: BorderRadius.circular(10),
           ),
-          if (item.note != null && item.note!.isNotEmpty) ...[
+          child: Icon(
+            item.motive.icon,
+            size: 20,
+            color: motivePalette.foreground,
+          ),
+        ),
+        title: Text(
+          item.title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             const SizedBox(height: 2),
             Text(
-              '"${item.note}"',
+              '${item.motive.label} • ${formatTime(item.occurredAt)}',
               style: TextStyle(
-                fontSize: 11.5,
-                fontStyle: FontStyle.italic,
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.8,
-                ),
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
+            if (item.note != null && item.note!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                '"${item.note}"',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontStyle: FontStyle.italic,
+                  color: AppSemanticColors.of(context).captionText,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
-        ],
-      ),
-      trailing: Text(
-        formatVnd(item.amountVnd),
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: isDark ? AppColors.primary : AppColors.accentNeutral,
+        ),
+        trailing: Text(
+          formatVnd(item.amountVnd),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppSemanticColors.of(context).accent,
+          ),
         ),
       ),
-    ),
     );
   }
 

@@ -14,7 +14,6 @@ import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/demo_price_history_service.dart';
 import 'package:prm393_lab03/services/price_history_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/price_history_demo_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_history_chart.dart';
 import 'package:prm393_lab03/widgets/price_history_demo_section.dart';
@@ -22,6 +21,7 @@ import 'package:prm393_lab03/widgets/price_history_entry_card.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
+import 'support/test_theme.dart';
 
 class _Analytics extends Fake implements AppAnalyticsService {
   final views = <(String, int, bool)>[];
@@ -56,7 +56,7 @@ Future<_Analytics> _open(
         Provider<CrashlyticsService>.value(value: CountingCrashlytics()),
       ],
       child: MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         onGenerateRoute: AppRoutes.onGenerateRoute,
         home:
             home ??
@@ -138,7 +138,7 @@ void main() {
           Provider<CrashlyticsService>.value(value: CountingCrashlytics()),
         ],
         child: MaterialApp(
-          theme: AppTheme.lightTheme,
+          theme: testAppTheme,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context)
                 .copyWith(textScaler: const TextScaler.linear(1.5)),

@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 
 /// Screen 27 / A-16: "Bạn thấy thế nào?" 1–5 stars with "Bỏ qua" (27.1), then thanks (27.2).
@@ -66,10 +67,10 @@ class _SatisfactionDialogState extends State<_SatisfactionDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(p.title, style: AppTextStyles.titleMedium),
+          Text(p.title, style: AppTextStyles.titleMedium.themed(context)),
           Text(
             '${formatDate(p.occurredAt)} · ${formatVnd(p.amountVnd)} · ${p.motive.label}',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space12),
           Row(
@@ -85,14 +86,16 @@ class _SatisfactionDialogState extends State<_SatisfactionDialog> {
                     _stars != null && i <= _stars!
                         ? Icons.star_rounded
                         : Icons.star_outline_rounded,
-                    color: AppColors.motiveSale,
+                    color: MotiveColors.of(context)
+                        .paletteOf(BuyingMotive.sale)
+                        .foreground,
                   ),
                 ),
             ],
           ),
           Text(
             'Câu trả lời chỉ dùng để Góc nhìn cho bạn thấy mức hài lòng theo động cơ.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
         ],
       ),

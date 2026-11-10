@@ -5,6 +5,7 @@ import '../models/owned_item.dart';
 import '../models/ui_state.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/shopping_profile_viewmodel.dart';
@@ -53,14 +54,11 @@ class ShoppingProfileScreen extends StatelessWidget {
         groups.where((g) => g.id == id).firstOrNull?.name;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -100,7 +98,7 @@ class ShoppingProfileScreen extends StatelessWidget {
           Text(
             'Tất cả đều tùy chọn. App không lấy lịch sử mua Shopee: bạn tự ghi đồ '
             'đang dùng để Thẻ Quyết Định nhắc khi có món cùng nhóm hoặc cùng thẻ.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           SectionCard(
@@ -134,7 +132,7 @@ class ShoppingProfileScreen extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           item.label,
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.themed(context),
                         ),
                         subtitle: Text(
                           [
@@ -364,7 +362,9 @@ class _OwnedItemFormState extends State<_OwnedItemForm> {
             const SizedBox(height: AppDimens.space12),
             Text(
               _error!,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodyMedium
+                  .themed(context)
+                  .copyWith(color: AppSemanticColors.of(context).error),
             ),
           ],
           const SizedBox(height: AppDimens.space16),

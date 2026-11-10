@@ -28,14 +28,11 @@ class CompareItemsScreen extends StatelessWidget {
     final now = vm.now;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -77,7 +74,7 @@ class CompareItemsScreen extends StatelessWidget {
                 ? 'Món chưa có nhóm ngân sách nên chưa có món cùng nhóm để so.'
                 : 'Các món đang cân nhắc trong nhóm $group, đặt cạnh nhau để bạn '
                       'tự so. App không xếp hạng hay chọn giúp.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           SingleChildScrollView(
@@ -139,7 +136,7 @@ class CompareItemsScreen extends StatelessWidget {
           const SizedBox(height: AppDimens.space8),
           Text(
             'Dòng được chọn là món bạn đang xem. Chạm dòng khác để mở món đó.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
         ],
       ),

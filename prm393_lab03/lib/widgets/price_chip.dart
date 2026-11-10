@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/formatters/money_format.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Latest price of a wishlist item; "Cần giá" when the price is not known (null)
@@ -21,9 +22,11 @@ class PriceChip extends StatelessWidget {
         vertical: AppDimens.space4,
       ),
       decoration: BoxDecoration(
-        color: missing ? AppColors.surfaceVariant : AppColors.primaryContainer,
+        color: missing
+            ? AppSemanticColors.of(context).mutedSurface
+            : AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderPill,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppSemanticColors.of(context).cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -31,15 +34,21 @@ class PriceChip extends StatelessWidget {
           Icon(
             missing ? Icons.sell_outlined : Icons.sell_rounded,
             size: 14,
-            color: missing ? AppColors.accentNeutral : AppColors.onPrimary,
+            color: missing
+                ? AppSemanticColors.of(context).accent
+                : AppColors.onPrimary,
           ),
           const SizedBox(width: AppDimens.space4),
           Text(
             missing ? 'Cần giá' : formatVnd(price),
-            style: AppTextStyles.labelMedium.copyWith(
-              color: missing ? AppColors.accentNeutral : AppColors.onPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(
+                  color: missing
+                      ? AppSemanticColors.of(context).accent
+                      : AppColors.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

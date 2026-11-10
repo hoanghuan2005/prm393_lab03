@@ -8,6 +8,7 @@ import '../models/pre_purchase_facts.dart';
 import '../models/ui_state.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/pre_purchase_viewmodel.dart';
@@ -116,14 +117,11 @@ class _PrePurchaseResultScreenState extends State<PrePurchaseResultScreen> {
     final state = context.watch<PrePurchaseViewModel>().state;
     final insight = state is UiSuccess<PrePurchaseInsight> ? state.data : null;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -198,14 +196,14 @@ class _Analyzing extends StatelessWidget {
           child: Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryContainer,
+            decoration: BoxDecoration(
+              color: AppSemanticColors.of(context).primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lightbulb_outline,
               size: 32,
-              color: AppColors.textPrimary,
+              color: AppSemanticColors.of(context).textPrimary,
             ),
           ),
         ),
@@ -213,28 +211,28 @@ class _Analyzing extends StatelessWidget {
         Text(
           'Đang xem kỹ hơn',
           textAlign: TextAlign.center,
-          style: AppTextStyles.headlineMedium,
+          style: AppTextStyles.headlineMedium.themed(context),
         ),
         const SizedBox(height: AppDimens.space8),
         Text(
           'Đang nhìn lại $looked$extra.',
           textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.bodyMedium.themed(context),
         ),
         const SizedBox(height: AppDimens.space24),
         Container(
           padding: const EdgeInsets.all(AppDimens.space16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppSemanticColors.of(context).cardSurface,
             borderRadius: AppDimens.borderLarge,
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: AppSemanticColors.of(context).divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 [answers.title, ?answers.priceText].join(' · '),
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
               const ClipRRect(
@@ -244,7 +242,7 @@ class _Analyzing extends StatelessWidget {
               const SizedBox(height: AppDimens.space12),
               Text(
                 'Đang kết nối các câu trả lời của bạn...',
-                style: AppTextStyles.caption,
+                style: AppTextStyles.caption.themed(context),
               ),
             ],
           ),
@@ -253,7 +251,7 @@ class _Analyzing extends StatelessWidget {
         Text(
           'Hiểu trước khi thay đổi.',
           textAlign: TextAlign.center,
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.themed(context),
         ),
       ],
     );
@@ -287,17 +285,20 @@ class _Result extends StatelessWidget {
             children: [
               Text(
                 'Rõ hơn một chút trước khi mua',
-                style: AppTextStyles.headlineMedium,
+                style: AppTextStyles.headlineMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space16),
-              Text(answers.title, style: AppTextStyles.titleLarge),
+              Text(
+                answers.title,
+                style: AppTextStyles.titleLarge.themed(context),
+              ),
               const SizedBox(height: AppDimens.space4),
               Text(
                 [
                   ?answers.priceText,
                   'Dựa trên câu trả lời của bạn',
                 ].join(' · '),
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
               // The summary and the open question come first: they are the point of
               // this screen; the observation cards below explain where they come from
@@ -305,9 +306,9 @@ class _Result extends StatelessWidget {
               Text(
                 '${insight.summary} Đây là gợi ý từ điều bạn chia sẻ, không phải '
                 'dự đoán việc bạn sẽ làm.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textBody,
-                ),
+                style: AppTextStyles.bodyMedium
+                    .themed(context)
+                    .copyWith(color: AppSemanticColors.of(context).textBody),
               ),
               const SizedBox(height: AppDimens.space8),
               Align(
@@ -315,12 +316,12 @@ class _Result extends StatelessWidget {
                 child: InsightSourceChip(fromAi: insight.usesAi),
               ),
               const SizedBox(height: AppDimens.space16),
-              Text('Gợi mở', style: AppTextStyles.titleLarge),
+              Text('Gợi mở', style: AppTextStyles.titleLarge.themed(context)),
               const SizedBox(height: AppDimens.space8),
               Text(
                 insight.question,
                 key: const ValueKey('pre-purchase-question'),
-                style: AppTextStyles.bodyLarge,
+                style: AppTextStyles.bodyLarge.themed(context),
               ),
               const SizedBox(height: AppDimens.space24),
               for (final o in insight.observations) ...[
@@ -335,7 +336,7 @@ class _Result extends StatelessWidget {
               const SizedBox(height: AppDimens.space12),
               Text(
                 'Không có lựa chọn đúng hay sai. Quyết định là của bạn.',
-                style: AppTextStyles.caption,
+                style: AppTextStyles.caption.themed(context),
               ),
             ],
           ),
@@ -387,27 +388,36 @@ class _FactsPanel extends StatelessWidget {
       key: const ValueKey('pre-purchase-facts'),
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space16),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryContainer,
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderLarge,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Từ dữ liệu của bạn', style: AppTextStyles.titleMedium),
+          Text(
+            'Từ dữ liệu của bạn',
+            style: AppTextStyles.titleMedium.themed(context),
+          ),
           for (final f in facts) ...[
             const SizedBox(height: AppDimens.space12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(f.icon, size: 20, color: AppColors.textPrimary),
+                Icon(
+                  f.icon,
+                  size: 20,
+                  color: AppSemanticColors.of(context).textPrimary,
+                ),
                 const SizedBox(width: AppDimens.space12),
                 Expanded(
                   child: Text(
                     f.text,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(
+                          color: AppSemanticColors.of(context).textPrimary,
+                        ),
                   ),
                 ),
               ],
@@ -429,9 +439,9 @@ class _ObservationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,11 +449,14 @@ class _ObservationCard extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceVariant,
+            decoration: BoxDecoration(
+              color: AppSemanticColors.of(context).mutedSurface,
               borderRadius: AppDimens.borderMedium,
             ),
-            child: Icon(observation.icon, color: AppColors.textPrimary),
+            child: Icon(
+              observation.icon,
+              color: AppSemanticColors.of(context).textPrimary,
+            ),
           ),
           const SizedBox(width: AppDimens.space12),
           Expanded(
@@ -452,9 +465,11 @@ class _ObservationCard extends StatelessWidget {
               children: [
                 Text(
                   observation.text,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(
+                        color: AppSemanticColors.of(context).textPrimary,
+                      ),
                 ),
                 const SizedBox(height: AppDimens.space8),
                 Container(
@@ -462,11 +477,14 @@ class _ObservationCard extends StatelessWidget {
                     horizontal: AppDimens.space8,
                     vertical: AppDimens.space4,
                   ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                  decoration: BoxDecoration(
+                    color: AppSemanticColors.of(context).mutedSurface,
                     borderRadius: AppDimens.borderPill,
                   ),
-                  child: Text(observation.chip, style: AppTextStyles.caption),
+                  child: Text(
+                    observation.chip,
+                    style: AppTextStyles.caption.themed(context),
+                  ),
                 ),
               ],
             ),

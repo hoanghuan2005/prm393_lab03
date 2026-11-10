@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/formatters/money_format.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 
 enum MoneyTextSize { small, medium, large }
@@ -41,9 +41,15 @@ class MoneyText extends StatelessWidget {
       excludeSemantics: true,
       child: Text(
         formatVnd(amount, empty: emptyLabel),
-        style: _style.copyWith(
-          color: color ?? (amount == null ? AppColors.textSecondary : null),
-        ),
+        style: _style
+            .themed(context)
+            .copyWith(
+              color:
+                  color ??
+                  (amount == null
+                      ? AppSemanticColors.of(context).textSecondary
+                      : null),
+            ),
       ),
     );
   }

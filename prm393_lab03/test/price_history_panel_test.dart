@@ -10,7 +10,6 @@ import 'package:prm393_lab03/screens/price_history_screen.dart';
 import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/price_history_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/own_price_view.dart';
 import 'package:prm393_lab03/viewmodels/price_history_viewmodel.dart';
@@ -19,6 +18,7 @@ import 'package:prm393_lab03/widgets/price_history_panel.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
+import 'support/test_theme.dart';
 
 /// Lịch sử giá of any item: [snapshots]
 class _Decision extends ChangeNotifier implements DecisionSupportViewModel {
@@ -95,7 +95,7 @@ Future<void> _pump(
         Provider<CrashlyticsService>.value(value: CountingCrashlytics()),
       ],
       child: MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: testAppTheme,
         onGenerateRoute: AppRoutes.onGenerateRoute,
         home: Scaffold(
           body: SingleChildScrollView(

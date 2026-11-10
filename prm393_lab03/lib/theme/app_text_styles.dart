@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_semantic_colors.dart';
 
 /// Centralized Typography using 'Be Vietnam Pro'
 /// Strictly complies with the >= 14sp body text accessibility rule
@@ -94,17 +95,22 @@ extension ThemedTextStyle on TextStyle {
   TextStyle themed(BuildContext context) {
     final theme = Theme.of(context);
     if (theme.brightness == Brightness.light) return this;
-    final scheme = theme.colorScheme;
+    final colors = AppSemanticColors.fromTheme(theme);
     final c = color;
-    if (c == AppColors.textPrimary ||
-        c == AppColors.textBody ||
-        c == AppColors.onPrimary) {
-      return copyWith(color: scheme.onSurface);
+    if (c == AppColors.textPrimary || c == AppColors.onPrimary) {
+      return copyWith(color: colors.textPrimary);
     }
-    if (c == AppColors.textSecondary ||
-        c == AppColors.textHint ||
-        c == AppColors.accentNeutral) {
-      return copyWith(color: scheme.onSurfaceVariant);
+    if (c == AppColors.textBody) {
+      return copyWith(color: colors.textBody);
+    }
+    if (c == AppColors.textSecondary) {
+      return copyWith(color: colors.textSecondary);
+    }
+    if (c == AppColors.textHint) {
+      return copyWith(color: colors.hint);
+    }
+    if (c == AppColors.accentNeutral) {
+      return copyWith(color: colors.accent);
     }
     return this;
   }

@@ -10,12 +10,12 @@ import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/hidden_match_service.dart';
 import 'package:prm393_lab03/services/price_history_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/same_product_viewmodel.dart';
 import 'package:prm393_lab03/widgets/same_product_card.dart';
 import 'package:provider/provider.dart';
 
 import 'support/linked_auth_fakes.dart';
+import 'support/test_theme.dart';
 
 /// The user's own listing and four other shops
 const _own = 'shopee:1:10';
@@ -366,7 +366,7 @@ void main() {
             ChangeNotifierProvider<SameProductViewModel>.value(value: vm),
           ],
           child: MaterialApp(
-            theme: AppTheme.lightTheme,
+            theme: testAppTheme,
             onGenerateRoute: AppRoutes.onGenerateRoute,
             builder: size.width < 400
                 ? (context, child) => MediaQuery(
@@ -489,7 +489,7 @@ void main() {
           Provider<CrashlyticsService>.value(value: CountingCrashlytics()),
         ],
         child: MaterialApp(
-          theme: AppTheme.lightTheme,
+          theme: testAppTheme,
           home: PriceHistoryScreen.withViewModel(productKey: _own),
         ),
       ),

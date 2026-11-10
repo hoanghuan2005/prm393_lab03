@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../models/decision_rules.dart';
 import '../models/wishlist_item.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import 'insight_source_chip.dart';
@@ -76,9 +76,9 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
       margin: const EdgeInsets.only(bottom: AppDimens.space16),
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +86,10 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
           Row(
             children: [
               Expanded(
-                child: Text('Nhận định', style: AppTextStyles.labelLarge),
+                child: Text(
+                  'Nhận định',
+                  style: AppTextStyles.labelLarge.themed(context),
+                ),
               ),
               Container(
                 key: const ValueKey('decision-label'),
@@ -95,15 +98,19 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
                   vertical: AppDimens.space4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: AppSemanticColors.of(context).mutedSurface,
                   borderRadius: AppDimens.borderPill,
-                  border: Border.all(color: AppColors.outline),
+                  border: Border.all(
+                    color: AppSemanticColors.of(context).inputBorder,
+                  ),
                 ),
                 child: Text(
                   assessment.label.text,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTextStyles.labelLarge
+                      .themed(context)
+                      .copyWith(
+                        color: AppSemanticColors.of(context).textPrimary,
+                      ),
                 ),
               ),
             ],
@@ -111,7 +118,10 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
           const SizedBox(height: AppDimens.space12),
           Semantics(
             liveRegion: true,
-            child: Text(reason.text, style: AppTextStyles.bodyLarge),
+            child: Text(
+              reason.text,
+              style: AppTextStyles.bodyLarge.themed(context),
+            ),
           ),
           const SizedBox(height: AppDimens.space4),
           InsightSourceChip(fromAi: reason.fromAi),
@@ -120,7 +130,10 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
             for (final signal in assessment.signals)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppDimens.space4),
-                child: Text('• $signal', style: AppTextStyles.bodyMedium),
+                child: Text(
+                  '• $signal',
+                  style: AppTextStyles.bodyMedium.themed(context),
+                ),
               ),
           ],
           Wrap(
@@ -187,7 +200,7 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
           ),
           Text(
             'Nhãn chỉ là quan sát từ số liệu; quyết định vẫn là của bạn.',
-            style: AppTextStyles.labelMedium,
+            style: AppTextStyles.labelMedium.themed(context),
           ),
         ],
       ),

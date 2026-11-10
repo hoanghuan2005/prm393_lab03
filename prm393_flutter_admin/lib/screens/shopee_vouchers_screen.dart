@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:why_i_buy_core/why_i_buy_core.dart';
 
 import '../models/shopee_voucher.dart';
@@ -193,6 +194,10 @@ class _VoucherCard extends StatelessWidget {
     final v = voucher;
     final t = context.tokens;
     final condition = v.conditionLabel;
+    // "Dùng được tại shop X" with a known shop page → clickable shop chip
+    final showShop =
+        v.shopUrl != null &&
+        (v.usableAt?.startsWith('Dùng được tại shop') ?? false);
     final scopeTone = switch (v.scope) {
       VoucherScope.shop => BadgeTone.primary,
       VoucherScope.platform => BadgeTone.info,
@@ -231,6 +236,10 @@ class _VoucherCard extends StatelessWidget {
               const SizedBox(height: AppDimens.space4),
               Text(condition, style: t.text(AppTextStyles.bodyMedium)),
             ],
+            if (showShop) ...[
+              const SizedBox(height: AppDimens.space12),
+              _ShopChip(name: v.shopName!, url: v.shopUrl!),
+            ],
             const SizedBox(height: AppDimens.space12),
             MessageBox(message: v.raw),
             const SizedBox(height: AppDimens.space12),
@@ -238,7 +247,7 @@ class _VoucherCard extends StatelessWidget {
               spacing: AppDimens.space16,
               runSpacing: AppDimens.space4,
               children: [
-                if (v.usableAt != null)
+                if (v.usableAt != null && !showShop)
                   _Fact(icon: Icons.storefront_outlined, text: v.usableAt!),
                 if (v.appliesText != null && v.usableAt != v.appliesText)
                   _Fact(icon: Icons.rule, text: v.appliesText!),
@@ -294,6 +303,102 @@ class _VoucherCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shop the voucher can be used at, as a pill that opens the shop on Shopee
+/// in a new tab
+class _ShopChip extends StatefulWidget {
+  final String name;
+  final String url;
+
+  const _ShopChip({required this.name, required this.url});
+
+  @override
+  State<_ShopChip> createState() => _ShopChipState();
+}
+
+class _ShopChipState extends State<_ShopChip> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Tooltip(
+      message: 'Mở shop trên Shopee',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: GestureDetector(
+          onTap: () =>
+              launchUrl(Uri.parse(widget.url), webOnlyWindowName: '_blank'),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.fromLTRB(
+              AppDimens.space4,
+              AppDimens.space4,
+              AppDimens.space12,
+              AppDimens.space4,
+            ),
+            decoration: BoxDecoration(
+              color: _hover ? t.primaryContainer : t.surfaceMuted,
+              borderRadius: AppDimens.borderPill,
+              border: Border.all(color: _hover ? t.outline : t.divider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDimens.space4),
+                  decoration: BoxDecoration(
+                    color: t.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.storefront_outlined,
+                    size: 16,
+                    color: t.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: AppDimens.space8),
+                Text(
+                  'Dùng tại ',
+                  style: t.text(AppTextStyles.bodyMedium).copyWith(
+                    color: t.textSecondary,
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    widget.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.text(AppTextStyles.labelLarge).copyWith(
+                      color: t.textPrimary,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 16,
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.space8,
+                  ),
+                  color: t.divider,
+                ),
+                Text(
+                  'Xem shop',
+                  style: t.text(AppTextStyles.labelMedium).copyWith(
+                    color: t.textBody,
+                  ),
+                ),
+                const SizedBox(width: AppDimens.space4),
+                Icon(Icons.north_east, size: 14, color: t.textBody),
+              ],
+            ),
+          ),
         ),
       ),
     );

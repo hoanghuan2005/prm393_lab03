@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/routes.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
+import '../models/buying_motive.dart';
 import '../models/item_suggestion.dart';
 import '../models/price_snapshot.dart';
 import '../models/purchase_item.dart';
@@ -11,7 +12,9 @@ import '../models/wishlist_item.dart';
 import '../models/wishlist_status.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/motive_colors.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -321,14 +324,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         item.status == WishlistStatus.purchased && item.purchaseId == null;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark
-            ? AppColors.darkSurface
-            : theme.colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -412,7 +412,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                     const SizedBox(height: AppDimens.space16),
                   ],
-                  Text(item.title, style: AppTextStyles.headlineMedium.themed(context)),
+                  Text(
+                    item.title,
+                    style: AppTextStyles.headlineMedium.themed(context),
+                  ),
                   if (item.variantLabel != null) ...[
                     const SizedBox(height: AppDimens.space4),
                     Text(
@@ -439,7 +442,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       style: AppTextStyles.bodyMedium.themed(context),
                     ),
                   ],
-                  if (item.vouchers case final vouchers? when vouchers.isNotEmpty) ...[
+                  if (item.vouchers case final vouchers?
+                      when vouchers.isNotEmpty) ...[
                     const SizedBox(height: AppDimens.space8),
                     Text(
                       'Voucher đã lưu'
@@ -447,7 +451,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       style: AppTextStyles.bodyMedium.themed(context),
                     ),
                     for (final v in vouchers)
-                      Text('• $v', style: AppTextStyles.caption.themed(context)),
+                      Text(
+                        '• $v',
+                        style: AppTextStyles.caption.themed(context),
+                      ),
                   ],
                   const SizedBox(height: AppDimens.space12),
                   Wrap(
@@ -462,20 +469,27 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           Text(
                             formatVnd(item.latestPriceVnd),
                             style: item.hasPrice
-                                ? AppTextStyles.displayMedium.copyWith(
-                                    color: theme.colorScheme.onSurface,
-                                    fontWeight: FontWeight.w700,
-                                  )
-                                : AppTextStyles.titleLarge.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                ? AppTextStyles.displayMedium
+                                      .themed(context)
+                                      .copyWith(
+                                        color: theme.colorScheme.onSurface,
+                                        fontWeight: FontWeight.w700,
+                                      )
+                                : AppTextStyles.titleLarge
+                                      .themed(context)
+                                      .copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             _priceNote(item),
-                            style: AppTextStyles.caption.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: AppTextStyles.caption
+                                .themed(context)
+                                .copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
@@ -484,7 +498,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           color: Colors.transparent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
-                            side: const BorderSide(color: AppColors.outline),
+                            side: BorderSide(
+                              color: AppSemanticColors.of(context).inputBorder,
+                            ),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
@@ -502,19 +518,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   Icon(
                                     Icons.edit_outlined,
                                     size: 14,
-                                    color: isDark
-                                        ? theme.colorScheme.onSurfaceVariant
-                                        : AppColors.accentNeutral,
+                                    color: AppSemanticColors.of(context)
+                                        .mutedText,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     item.hasPrice ? 'Cập nhật giá' : 'Nhập giá',
-                                    style: AppTextStyles.labelMedium.copyWith(
-                                      color: isDark
-                                        ? theme.colorScheme.onSurfaceVariant
-                                        : AppColors.accentNeutral,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AppTextStyles.labelMedium
+                                        .themed(context)
+                                        .copyWith(
+                                          color: AppSemanticColors.of(context)
+                                              .mutedText,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -532,19 +548,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       MotiveChip(motive: item.displayMotive),
-                      if (item.isDemo) ...[
-                        const DemoDataBadge(),
-                      ],
-                      if (item.shopName != null && item.shopName!.isNotEmpty) ...[
+                      if (item.isDemo) ...[const DemoDataBadge()],
+                      if (item.shopName != null &&
+                          item.shopName!.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: AppSemanticColors.of(context).cardSurface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.divider),
+                            border: Border.all(
+                              color: AppSemanticColors.of(context).divider,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -560,9 +577,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   item.shopName!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.labelMedium.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTextStyles.labelMedium
+                                      .themed(context)
+                                      .copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -570,7 +587,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ),
                       ],
                       if (item.isFromExtension) ...[
-                        WishlistCard.fromExtensionChip(),
+                        WishlistCard.fromExtensionChip(context),
                       ],
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -583,9 +600,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           const SizedBox(width: 4),
                           Text(
                             'Lưu ngày: ${formatDate(item.createdAt)}',
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: AppTextStyles.labelMedium
+                                .themed(context)
+                                .copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
@@ -631,17 +650,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(AppDimens.space16),
                 decoration: BoxDecoration(
-                  color: AppColors.motiveEmotionBg,
+                  color: MotiveColors.of(context)
+                      .paletteOf(BuyingMotive.emotion)
+                      .background,
                   borderRadius: AppDimens.borderMedium,
                   border: Border.all(
-                    color: AppColors.motiveEmotion.withValues(alpha: 0.3),
+                    color: MotiveColors.of(context)
+                        .paletteOf(BuyingMotive.emotion)
+                        .foreground
+                        .withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.hourglass_top,
-                      color: AppColors.motiveEmotion,
+                      color: MotiveColors.of(context)
+                          .paletteOf(BuyingMotive.emotion)
+                          .foreground,
                       size: 28,
                     ),
                     const SizedBox(width: AppDimens.space12),
@@ -651,13 +677,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         children: [
                           Text(
                             'Đang trong thời gian cân nhắc',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: AppColors.motiveEmotion,
-                            ),
+                            style: AppTextStyles.labelLarge
+                                .themed(context)
+                                .copyWith(
+                                  color: MotiveColors.of(context)
+                                      .paletteOf(BuyingMotive.emotion)
+                                      .foreground,
+                                ),
                           ),
                           Text(
                             'Còn khoảng ${item.remainingCooldownLabel} để bạn cân nhắc lý do mua.',
-                            style: AppTextStyles.bodyMedium,
+                            style: AppTextStyles.bodyMedium.themed(context),
                           ),
                         ],
                       ),
@@ -681,12 +711,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             // Decision Card (Why I Buy Core)
             Text(
               'Thẻ Quyết Định',
-              style: AppTextStyles.titleLarge,
+              style: AppTextStyles.titleLarge.themed(context),
             ),
             const SizedBox(height: AppDimens.space8),
             Text(
               'Sau khi suy ngẫm, bạn lựa chọn hành động nào cho món đồ này?',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),
             if (canDecide)
@@ -698,7 +728,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             if (needsPurchase) ...[
               Text(
                 'Món đã được đánh dấu mua nhưng chưa có khoản thực chi. Bạn có thể bổ sung khoản mua.',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
             ],
@@ -714,8 +744,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     child: _DecisionButton(
                       title: 'Mua',
                       icon: Icons.shopping_bag_outlined,
-                      backgroundColor: const Color(0xFF10B981), // Emerald green
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppSemanticColors.of(context)
+                          .success, // Filled purchase action
+                      foregroundColor: AppSemanticColors.of(context)
+                          .onStatusFill,
                       isLoading: _isProcessing,
                       onPressed: () => _recordPurchase(item),
                     ),
@@ -736,15 +768,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     child: _DecisionButton(
                       title: 'Bỏ qua',
                       icon: Icons.do_not_disturb_on_outlined,
-                      backgroundColor: isDark
-                          ? const Color(0xFF262D37)
-                          : const Color(0xFFF1F5F9), // Slate neutral
-                      foregroundColor: isDark
-                          ? const Color(0xFFCBD5E1)
-                          : const Color(0xFF64748B),
-                      borderColor: isDark
-                          ? const Color(0xFF3E4856)
-                          : const Color(0xFFCBD5E1),
+                      backgroundColor: AppSemanticColors.of(context)
+                          .mutedSurface, // Slate neutral
+                      foregroundColor: AppSemanticColors.of(context)
+                          .secondaryActionText,
+                      borderColor: AppSemanticColors.of(context)
+                          .secondaryActionBorder,
                       isLoading: _isProcessing,
                       onPressed: () => _skip(item),
                     ),
@@ -763,7 +792,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Text(
                 'Bạn đã quyết định không mua món này'
                 '${item.decidedAt == null ? '' : ' ngày ${formatDate(item.decidedAt!)}'}.',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space12),
               AppButton(
@@ -774,7 +803,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 onPressed: () => _reconsider(item),
               ),
             ] else if (!needsPurchase)
-              Text(item.status.label, style: AppTextStyles.titleMedium),
+              Text(
+                item.status.label,
+                style: AppTextStyles.titleMedium.themed(context),
+              ),
           ],
         ),
       ),
@@ -796,8 +828,8 @@ class _ReviewInfo extends StatelessWidget {
         : 'Bạn hẹn xem lại vào ${formatWeekdayDate(reviewAt)}. Bấm Chờ để đổi ngày.';
     return Container(
       padding: const EdgeInsets.all(AppDimens.space16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceVariant,
+      decoration: BoxDecoration(
+        color: AppSemanticColors.of(context).mutedSurface,
         borderRadius: AppDimens.borderMedium,
       ),
       child: Row(
@@ -806,10 +838,12 @@ class _ReviewInfo extends StatelessWidget {
             item.isReviewDue
                 ? Icons.notifications_active_outlined
                 : Icons.event,
-            color: AppColors.accentNeutral,
+            color: AppSemanticColors.of(context).accent,
           ),
           const SizedBox(width: AppDimens.space12),
-          Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
+          Expanded(
+            child: Text(text, style: AppTextStyles.bodyMedium.themed(context)),
+          ),
         ],
       ),
     );
@@ -858,8 +892,9 @@ class _DecisionButton extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(foregroundColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        foregroundColor,
+                      ),
                     ),
                   )
                 : Row(
@@ -912,9 +947,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppDimens.space20),
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderMedium,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -930,9 +965,9 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   'So sánh giá các cửa hàng (${allOffers.length} shop)',
-                  style: AppTextStyles.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTextStyles.titleMedium
+                      .themed(context)
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -959,14 +994,14 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCurrent
                     ? AppColors.primary.withValues(alpha: 0.08)
-                    : AppColors.background,
+                    : AppSemanticColors.of(context).background,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isLowest
-                      ? const Color(0xFF10B981)
+                      ? AppSemanticColors.of(context).success
                       : (isCurrent
                             ? AppColors.primary.withValues(alpha: 0.4)
-                            : AppColors.divider),
+                            : AppSemanticColors.of(context).divider),
                   width: isLowest ? 1.5 : 1,
                 ),
               ),
@@ -976,8 +1011,8 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                     Icons.storefront_outlined,
                     size: 18,
                     color: isLowest
-                        ? const Color(0xFF10B981)
-                        : AppColors.textSecondary,
+                        ? AppSemanticColors.of(context).success
+                        : AppSemanticColors.of(context).textSecondary,
                   ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
@@ -989,11 +1024,13 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 shopTitle,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: isCurrent || isLowest
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                ),
+                                style: AppTextStyles.bodyMedium
+                                    .themed(context)
+                                    .copyWith(
+                                      fontWeight: isCurrent || isLowest
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1011,11 +1048,12 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                                   ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Đang xem',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.primary,
+                                    color: AppSemanticColors.of(context)
+                                        .brandText,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1029,15 +1067,16 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                                   vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981)
+                                  color: AppSemanticColors.of(context).success
                                       .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Rẻ nhất ⭐',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Color(0xFF10B981),
+                                    color: AppSemanticColors.of(context)
+                                        .success,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1048,9 +1087,12 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                         if (offer.url != null && offer.url!.isNotEmpty)
                           Text(
                             offer.url!,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            style: AppTextStyles.caption
+                                .themed(context)
+                                .copyWith(
+                                  color: AppSemanticColors.of(context)
+                                      .textSecondary,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1060,12 +1102,14 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   const SizedBox(width: AppDimens.space8),
                   Text(
                     formatVnd(offer.latestPriceVnd),
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: isLowest
-                          ? const Color(0xFF10B981)
-                          : AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTextStyles.titleMedium
+                        .themed(context)
+                        .copyWith(
+                          color: isLowest
+                              ? AppSemanticColors.of(context).success
+                              : AppSemanticColors.of(context).textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ],
               ),
@@ -1076,24 +1120,27 @@ class _ShopPriceComparisonSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppDimens.space8),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                color: AppSemanticColors.of(context).success
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.savings_outlined,
-                    color: Color(0xFF10B981),
+                    color: AppSemanticColors.of(context).success,
                     size: 18,
                   ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(
                       'Tiết kiệm ${formatVnd(savings)} nếu mua tại ${lowestItem.shopName ?? 'shop rẻ nhất'}!',
-                      style: AppTextStyles.caption.copyWith(
-                        color: const Color(0xFF047857),
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTextStyles.caption
+                          .themed(context)
+                          .copyWith(
+                            color: AppSemanticColors.of(context).savingsText,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ),
                 ],

@@ -21,7 +21,7 @@ const accountExistsCode = 'account-exists-with-different-credential';
 /// which one (Firebase hides it), so the message names none.
 const accountExistsOtherMethod = AppException(
   accountExistsCode,
-  'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách bạn đã dùng trước đó (Google, GitHub hoặc email), rồi vào Cá nhân → Tài khoản liên kết để thêm cách mới.',
+  'Email này đã có tài khoản với cách đăng nhập khác. Đăng nhập bằng cách bạn đã dùng trước đó (Google, Facebook, GitHub hoặc email), rồi vào Cá nhân → Tài khoản liên kết để thêm cách mới.',
 );
 
 /// Converts errors from Firebase Auth, Firestore and Firebase AI Logic into [AppException]

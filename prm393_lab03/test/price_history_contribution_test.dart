@@ -11,12 +11,13 @@ import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/price_history_contribution_service.dart';
 import 'package:prm393_lab03/services/shared_price_service.dart';
-import 'package:prm393_lab03/theme/app_theme.dart';
 import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/shared_price_viewmodel.dart';
 import 'package:prm393_lab03/widgets/shared_price_section.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/test_theme.dart';
 
 /// 12:00 in Vietnam
 final _now = DateTime.utc(2026, 11, 5, 5);
@@ -320,7 +321,7 @@ void main() {
             ChangeNotifierProvider<SharedPriceViewModel>.value(value: vm),
           ],
           child: MaterialApp(
-            theme: AppTheme.lightTheme,
+            theme: testAppTheme,
             home: Scaffold(
               body: SingleChildScrollView(
                 child: SharedPriceSection(item: _item),

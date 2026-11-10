@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 
 /// Tells the user whether a sentence was written by AI or is the built-in template
 class InsightSourceChip extends StatelessWidget {
@@ -10,7 +10,9 @@ class InsightSourceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = fromAi ? AppColors.onAiContainer : AppColors.textBody;
+    final foreground = fromAi
+        ? AppSemanticColors.of(context).onAiContainer
+        : AppSemanticColors.of(context).textBody;
     // One label for screen readers; the visible "AI"/"Câu mẫu" text is not read again
     return Semantics(
       label: fromAi ? 'Do AI viết' : 'Câu mẫu',
@@ -18,7 +20,9 @@ class InsightSourceChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: fromAi ? AppColors.aiContainer : AppColors.surfaceVariant,
+          color: fromAi
+              ? AppSemanticColors.of(context).aiContainer
+              : AppSemanticColors.of(context).mutedSurface,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(

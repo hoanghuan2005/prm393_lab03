@@ -85,9 +85,9 @@ class _SameProductCardState extends State<SameProductCard> {
       return const SizedBox.shrink();
     }
     final theme = Theme.of(context);
-    final muted = AppTextStyles.labelMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.labelMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
 
     return Padding(
       key: const ValueKey('same-product-card'),
@@ -139,9 +139,9 @@ class _OfferRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = AppTextStyles.labelMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.labelMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
     final people = offer.reporterCount == 1
         ? '1 người ghi'
         : '${offer.reporterCount} người ghi';
@@ -163,7 +163,7 @@ class _OfferRow extends StatelessWidget {
                     children: [
                       Text(
                         offer.shopName ?? 'Shop chưa rõ tên',
-                        style: AppTextStyles.bodyMedium,
+                        style: AppTextStyles.bodyMedium.themed(context),
                       ),
                       const SizedBox(height: AppDimens.space4),
                       Text(
@@ -186,7 +186,7 @@ class _OfferRow extends StatelessWidget {
                     children: [
                       Text(
                         formatVnd(offer.priceVnd),
-                        style: AppTextStyles.labelLarge,
+                        style: AppTextStyles.labelLarge.themed(context),
                         textAlign: TextAlign.end,
                       ),
                       if (offer.onSale)

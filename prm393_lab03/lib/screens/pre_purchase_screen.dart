@@ -6,6 +6,7 @@ import '../core/validators/validators.dart';
 import '../models/pre_purchase_check.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
@@ -138,9 +139,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurface
-              : Theme.of(context).colorScheme.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -225,7 +224,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         children: [
           Text(
             'Bắt đầu với món bạn đang cân nhắc. Bước này không ghi khoản mua.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           _Panel(
@@ -251,18 +250,21 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
             ),
           ),
           const SizedBox(height: AppDimens.space24),
-          Text('Một chút để hiểu mình', style: AppTextStyles.titleLarge),
+          Text(
+            'Một chút để hiểu mình',
+            style: AppTextStyles.titleLarge.themed(context),
+          ),
           const SizedBox(height: AppDimens.space8),
           Text(
             'Tiếp theo, bạn sẽ xem vì sao mình muốn món này, điều gì thu hút bạn '
             'và bạn sẽ dùng nó ra sao. App cũng đối chiếu với dữ liệu bạn đã '
             'ghi. Không có câu trả lời đúng hay sai.',
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.themed(context),
           ),
           const SizedBox(height: AppDimens.space16),
           Text(
             'AI chỉ gợi ý để nhìn lại. Quyết định vẫn là của bạn.',
-            style: AppTextStyles.caption,
+            style: AppTextStyles.caption.themed(context),
           ),
         ],
       ),
@@ -274,7 +276,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_itemLine, style: AppTextStyles.bodyMedium),
+        Text(_itemLine, style: AppTextStyles.bodyMedium.themed(context)),
         const SizedBox(height: AppDimens.space16),
         const _Question(
           title: 'Vì sao bạn muốn món này?',
@@ -318,7 +320,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         const SizedBox(height: AppDimens.space16),
         Text(
           'Không có câu trả lời đúng hay sai.',
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.themed(context),
         ),
       ],
     );
@@ -333,14 +335,14 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title, style: AppTextStyles.titleLarge),
+              Text(_title, style: AppTextStyles.titleLarge.themed(context)),
               const SizedBox(height: AppDimens.space4),
               Text(
                 [
                   if (_price != null) formatVnd(_price!),
                   '${_why?.label} + ${_influence?.label}',
                 ].join(' · '),
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
             ],
           ),
@@ -364,7 +366,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         ),
         Text(
           'Chưa chắc cũng không sao. Câu trả lời giúp gợi ý sát hơn.',
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.themed(context),
         ),
       ],
     );
@@ -375,7 +377,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_itemLine, style: AppTextStyles.bodyMedium),
+        Text(_itemLine, style: AppTextStyles.bodyMedium.themed(context)),
         const SizedBox(height: AppDimens.space16),
         const _Question(
           title: 'Bạn sẽ dùng món này thường xuyên thế nào?',
@@ -432,7 +434,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         ],
         Text(
           'Không có câu trả lời đúng hay sai.',
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.themed(context),
         ),
       ],
     );
@@ -481,13 +483,18 @@ class _StepHeader extends StatelessWidget {
             children: [
               Text(
                 'BƯỚC $step/$total',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.accentNeutral,
-                  letterSpacing: 0.4,
-                ),
+                style: AppTextStyles.labelMedium
+                    .themed(context)
+                    .copyWith(
+                      color: AppSemanticColors.of(context).accent,
+                      letterSpacing: 0.4,
+                    ),
               ),
               const SizedBox(height: AppDimens.space4),
-              Text(heading, style: AppTextStyles.headlineMedium),
+              Text(
+                heading,
+                style: AppTextStyles.headlineMedium.themed(context),
+              ),
             ],
           ),
         ),
@@ -501,7 +508,9 @@ class _StepHeader extends StatelessWidget {
                   width: i == step ? 18 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: i <= step ? AppColors.primary : AppColors.divider,
+                    color: i <= step
+                        ? AppColors.primary
+                        : AppSemanticColors.of(context).divider,
                     borderRadius: AppDimens.borderPill,
                   ),
                 ),
@@ -526,9 +535,9 @@ class _Question extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.titleMedium),
+          Text(title, style: AppTextStyles.titleMedium.themed(context)),
           const SizedBox(height: AppDimens.space4),
-          Text(hint, style: AppTextStyles.bodyMedium),
+          Text(hint, style: AppTextStyles.bodyMedium.themed(context)),
         ],
       ),
     );
@@ -546,9 +555,9 @@ class _Panel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: child,
     );
@@ -608,11 +617,15 @@ class _Option extends StatelessWidget {
       selected: selected,
       button: true,
       child: Material(
-        color: selected ? AppColors.primaryContainer : AppColors.surface,
+        color: selected
+            ? AppSemanticColors.of(context).primaryContainer
+            : AppSemanticColors.of(context).cardSurface,
         shape: RoundedRectangleBorder(
           borderRadius: AppDimens.borderLarge,
           side: BorderSide(
-            color: selected ? AppColors.primary : AppColors.divider,
+            color: selected
+                ? AppColors.primary
+                : AppSemanticColors.of(context).divider,
             width: selected ? 2 : 1,
           ),
         ),
@@ -631,27 +644,33 @@ class _Option extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: selected
                           ? AppColors.primary
-                          : AppColors.surfaceVariant,
+                          : AppSemanticColors.of(context).mutedSurface,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 20, color: AppColors.textPrimary),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: AppSemanticColors.of(context).textPrimary,
+                    ),
                   ),
                   const SizedBox(width: AppDimens.space12),
                   Expanded(
                     child: Text(
                       label,
-                      style: AppTextStyles.labelLarge.copyWith(
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
+                      style: AppTextStyles.labelLarge
+                          .themed(context)
+                          .copyWith(
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
                     ),
                   ),
                   if (selected)
-                    const Icon(
+                    Icon(
                       Icons.check_circle_outline,
                       size: 20,
-                      color: AppColors.textPrimary,
+                      color: AppSemanticColors.of(context).textPrimary,
                     ),
                 ],
               ),

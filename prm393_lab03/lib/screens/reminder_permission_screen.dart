@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
@@ -70,28 +71,30 @@ class _ReminderPermissionScreenState extends State<ReminderPermissionScreen> {
               Container(
                 width: 96,
                 height: 96,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryContainer,
+                decoration: BoxDecoration(
+                  color: AppSemanticColors.of(context).primaryContainer,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_none_rounded,
                   size: 40,
-                  color: AppColors.textPrimary,
+                  color: AppSemanticColors.of(context).textPrimary,
                 ),
               ),
               const SizedBox(height: AppDimens.space24),
               Text(
                 'Để Why I Buy? nhắc bạn mỗi tối?',
-                style: AppTextStyles.displayMedium,
+                style: AppTextStyles.displayMedium.themed(context),
               ),
               const SizedBox(height: AppDimens.space16),
               Text(
                 'Một lời nhắc lúc $time giúp bạn ghi lại khoản mua trong ngày '
                 'khi còn nhớ rõ lý do.',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.bodyLarge
+                    .themed(context)
+                    .copyWith(
+                      color: AppSemanticColors.of(context).textSecondary,
+                    ),
               ),
               const SizedBox(height: AppDimens.space16),
               _NotificationPreview(time: time),
@@ -116,7 +119,7 @@ class _ReminderPermissionScreenState extends State<ReminderPermissionScreen> {
               Center(
                 child: Text(
                   'Bạn có thể đổi giờ nhắc trong Cá nhân.',
-                  style: AppTextStyles.caption,
+                  style: AppTextStyles.caption.themed(context),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -140,9 +143,9 @@ class _NotificationPreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppSemanticColors.of(context).cardSurface,
         borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppSemanticColors.of(context).divider),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,13 +165,18 @@ class _NotificationPreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Why I Buy? · $time', style: AppTextStyles.caption),
+                Text(
+                  'Why I Buy? · $time',
+                  style: AppTextStyles.caption.themed(context),
+                ),
                 const SizedBox(height: AppDimens.space4),
                 Text(
                   'Hôm nay bạn có mua gì không? Ghi lại trong 10 giây.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(
+                        color: AppSemanticColors.of(context).textPrimary,
+                      ),
                 ),
               ],
             ),

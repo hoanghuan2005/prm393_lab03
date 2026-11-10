@@ -23,7 +23,7 @@ class ExtensionApprovalDialog {
         content: Text(
           'Extension Why I Buy? trên máy tính sẽ xem và lưu được danh sách mong muốn '
           'của bạn. Bạn có thể huỷ liên kết bất cứ lúc nào trong Cá nhân.',
-          style: AppTextStyles.bodyMedium.copyWith(height: 1.4),
+          style: AppTextStyles.bodyMedium.themed(context).copyWith(height: 1.4),
         ),
         actions: [
           OutlinedButton(

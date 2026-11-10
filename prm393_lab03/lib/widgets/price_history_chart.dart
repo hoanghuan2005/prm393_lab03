@@ -10,8 +10,8 @@ import '../core/formatters/money_format.dart';
 import '../models/daily_price.dart';
 import '../models/sale_event.dart';
 import '../models/shopee_link.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/price_history_viewmodel.dart';
 import 'demo_data_badge.dart';
@@ -94,14 +94,12 @@ const List<int> _savedDash = [6, 4];
 const double _saleLabelHeight = 18;
 
 /// The lowest-price line and its band: violet, readable on both themes
-Color priceLineColor(ThemeData theme) => theme.brightness == Brightness.dark
-    ? AppColors.purpleLight
-    : AppColors.purple;
+Color priceLineColor(ThemeData theme) =>
+    AppSemanticColors.fromTheme(theme).chartLine;
 
 /// The dot on the lowest point of the period
-Color lowestDotColor(ThemeData theme) => theme.brightness == Brightness.dark
-    ? AppColors.successLight
-    : AppColors.onSuccessContainer;
+Color lowestDotColor(ThemeData theme) =>
+    AppSemanticColors.fromTheme(theme).chartLowest;
 
 /// "11.11" for a double day, else the name when short, else the day
 String saleShortLabel(SaleEvent e) {
@@ -563,9 +561,9 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = AppTextStyles.labelMedium.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.labelMedium
+        .themed(context)
+        .copyWith(color: theme.colorScheme.onSurfaceVariant);
     final band = bandOf(_view);
     final milestones = buildPriceMilestones(
       band,
@@ -615,9 +613,9 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
           Text(
             'Chưa đủ dữ liệu để vẽ biểu đồ ($recordedDays ngày có giá)',
             key: const ValueKey('price-too-few'),
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.bodyMedium
+                .themed(context)
+                .copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         if (_selected case final i? when i < band.length) ...[
           const SizedBox(height: AppDimens.space8),
@@ -707,7 +705,10 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
                                     : (i + 0.5) / days.length * 2 - 1,
                                 0,
                               ),
-                              child: Text(formatDayMonth(days[i]), style: muted),
+                              child: Text(
+                                formatDayMonth(days[i]),
+                                style: muted,
+                              ),
                             ),
                         ],
                       ),
@@ -789,10 +790,12 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
               ringColor: theme.colorScheme.surface,
               radius: 4,
               label: _axisVnd(m.vnd.toDouble()),
-              labelStyle: AppTextStyles.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
+              labelStyle: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
               // Kept inside the plot near the right edge
               labelOnLeft: i > days.length * 0.8,
             ),
@@ -858,7 +861,7 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
           BetweenBarsData(
             fromIndex: 0,
             toIndex: 1,
-            color: line.withValues(alpha: 0.2),
+            color: AppSemanticColors.fromTheme(theme).chartBand,
           ),
         ],
         extraLinesData: ExtraLinesData(
@@ -867,16 +870,14 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
             for (final i in sales.keys)
               VerticalLine(
                 x: i.toDouble(),
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
+                color: AppSemanticColors.fromTheme(theme).chartGuide,
                 strokeWidth: 1,
                 dashArray: [3, 3],
               ),
             if (_selected case final i?)
               VerticalLine(
                 x: i.toDouble(),
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                color: AppSemanticColors.fromTheme(theme).chartSelection,
                 strokeWidth: 1,
               ),
           ],
@@ -1211,9 +1212,9 @@ class _Milestones extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final muted = AppTextStyles.labelMedium.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final muted = AppTextStyles.labelMedium
+        .themed(context)
+        .copyWith(color: scheme.onSurfaceVariant);
     return Column(
       key: const ValueKey('price-milestones'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1236,7 +1237,10 @@ class _Milestones extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(m.kind.label, style: AppTextStyles.labelLarge),
+                        Text(
+                          m.kind.label,
+                          style: AppTextStyles.labelLarge.themed(context),
+                        ),
                         Text(m.detail, style: muted),
                       ],
                     ),
@@ -1244,9 +1248,9 @@ class _Milestones extends StatelessWidget {
                   const SizedBox(width: AppDimens.space8),
                   Text(
                     formatVnd(m.vnd),
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: scheme.onSurface,
-                    ),
+                    style: AppTextStyles.titleMedium
+                        .themed(context)
+                        .copyWith(color: scheme.onSurface),
                   ),
                 ],
               ),
@@ -1291,23 +1295,26 @@ class _DayDetails extends StatelessWidget {
                     border: Border.all(color: theme.colorScheme.outline),
                     borderRadius: AppDimens.borderSmall,
                   ),
-                  child: Text(line.text, style: AppTextStyles.labelMedium),
+                  child: Text(
+                    line.text,
+                    style: AppTextStyles.labelMedium.themed(context),
+                  ),
                 )
               else if (line.shop case final shop?)
                 _ShopLinkText(
                   text: line.text,
                   shop: shop,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(color: theme.colorScheme.onSurface),
                 )
               else
                 Text(
                   line.text,
                   style:
                       (k == 0
-                              ? AppTextStyles.labelLarge
-                              : AppTextStyles.bodyMedium)
+                              ? AppTextStyles.labelLarge.themed(context)
+                              : AppTextStyles.bodyMedium.themed(context))
                           .copyWith(
                             color: line.muted
                                 ? theme.colorScheme.onSurfaceVariant

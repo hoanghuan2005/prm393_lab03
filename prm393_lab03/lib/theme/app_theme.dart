@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 import 'app_dimens.dart';
+import 'app_semantic_colors.dart';
 import 'app_text_styles.dart';
 import 'motive_colors.dart';
 
@@ -55,7 +56,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: 'Be Vietnam Pro',
-      extensions: const [MotiveColors.light],
+      extensions: [MotiveColors.light, AppSemanticColors.light],
 
       // Text Theme
       textTheme: TextTheme(
@@ -195,10 +196,8 @@ class AppTheme {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // DARK THEME
-  // Exactly matches Admin Web Portal Tailwind dark palette:
-  //   bg: slate-950 (#020617)  |  surface: slate-900 (#0F172A)
-  //   cards: slate-900/80      |  border: slate-800 (#1E293B)
-  //   text: slate-50/400       |  primary: amber-400 (#FBBF24)
+  // Shared card surface, readable neutral text, visible input and card borders.
+  // Measurements and the original palette are in docs/dark-mode-audit.md.
   // ═══════════════════════════════════════════════════════════════════════════
   static ThemeData get darkTheme {
     // Web: bg-slate-950 → scaffold
@@ -221,18 +220,18 @@ class AppTheme {
       onPrimary: AppColors.onPrimary,
       // Web: bg-amber-400/20 containers
       primaryContainer: AppColors.darkPrimaryContainer,
-      onPrimaryContainer: AppColors.primary,
+      onPrimaryContainer: AppColors.darkPrimaryContainerText,
       // Secondary: light text
       secondary: darkTextPrimary,
       onSecondary: Color(0xFF0F172A),
       // Web: bg-slate-800/60 secondary containers
-      secondaryContainer: Color(0xFF1E293B),
+      secondaryContainer: AppColors.darkSurfaceMuted,
       onSecondaryContainer: darkTextPrimary,
       // Tertiary: muted blue-gray
       tertiary: AppColors.darkAccentNeutral,
       onTertiary: Color(0xFF0F172A),
       // Error: red-400 for dark (Web: `text-rose-400`)
-      error: AppColors.errorLight, // #F87171
+      error: AppColors.darkOnErrorContainer,
       onError: Color(0xFF450A0A),
       errorContainer: AppColors.darkErrorContainer,
       onErrorContainer: AppColors.darkOnErrorContainer, // red-300
@@ -257,7 +256,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: darkBackground,
       fontFamily: 'Be Vietnam Pro',
-      extensions: const [MotiveColors.dark],
+      extensions: [MotiveColors.dark, AppSemanticColors.dark],
 
       // Text Theme
       textTheme: TextTheme(
@@ -276,7 +275,9 @@ class AppTheme {
         titleLarge: AppTextStyles.titleLarge.copyWith(color: darkTextPrimary),
         titleMedium: AppTextStyles.titleMedium.copyWith(color: darkTextPrimary),
         bodyLarge: AppTextStyles.bodyLarge.copyWith(color: darkTextPrimary),
-        bodyMedium: AppTextStyles.bodyMedium.copyWith(color: darkTextSecondary),
+        bodyMedium: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.darkTextBody,
+        ),
         labelLarge: AppTextStyles.labelLarge.copyWith(color: darkTextPrimary),
         labelMedium: AppTextStyles.labelMedium.copyWith(
           color: darkTextSecondary,
@@ -385,18 +386,18 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: BorderSide(color: darkBorder), // slate-800
+          borderSide: BorderSide(color: AppColors.darkOutline), // slate-800
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
           borderSide: BorderSide(
-            color: AppColors.primary, // amber-400 focus ring
+            color: AppColors.darkPrimaryText, // readable focus ring
             width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppDimens.borderMedium,
-          borderSide: BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.errorLight),
         ),
       ),
 
@@ -404,6 +405,7 @@ class AppTheme {
       // Web: `bg-slate-900/80 border border-slate-800 rounded-2xl`
       cardTheme: const CardThemeData(
         color: darkSurface,
+        surfaceTintColor: Colors.transparent,
         elevation: AppDimens.elevationNone,
         shape: RoundedRectangleBorder(
           borderRadius: AppDimens.borderLarge,
@@ -422,6 +424,7 @@ class AppTheme {
       // Dialog: slate-900 bg
       dialogTheme: const DialogThemeData(
         backgroundColor: darkSurface,
+        surfaceTintColor: Colors.transparent,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: AppDimens.borderLarge),
       ),
@@ -429,6 +432,7 @@ class AppTheme {
       // Bottom Sheet: slate-900 bg
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: darkSurface,
+        surfaceTintColor: Colors.transparent,
         modalBackgroundColor: darkSurface,
       ),
 
@@ -460,16 +464,87 @@ class AppTheme {
 
       // Chip Theme: matches Web filter pills
       // Web: `bg-slate-800/80 text-slate-300 border border-slate-700/60`
-      chipTheme: const ChipThemeData(
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: AppColors.darkSurfaceMuted,
+        contentTextStyle: TextStyle(color: darkTextPrimary),
+        actionTextColor: AppColors.darkPrimaryText,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: darkSurface,
+        selectedItemColor: AppColors.darkPrimaryText,
+        unselectedItemColor: AppColors.darkNavInactive,
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: darkSurface,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor: darkSurface,
+        headerForegroundColor: darkTextPrimary,
+        weekdayStyle: const TextStyle(color: darkTextSecondary),
+        dayForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimary
+              : darkTextPrimary,
+        ),
+        dayBackgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.primary
+              : Colors.transparent,
+        ),
+        todayForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimary
+              : darkTextPrimary,
+        ),
+        todayBorder: const BorderSide(color: AppColors.darkOutline),
+        yearForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimary
+              : darkTextPrimary,
+        ),
+        yearBackgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.primary
+              : Colors.transparent,
+        ),
+        rangePickerBackgroundColor: darkSurface,
+        rangePickerHeaderForegroundColor: darkTextPrimary,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimary
+              : darkTextPrimary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.primary
+              : darkSurfaceVariant,
+        ),
+        trackOutlineColor: const WidgetStatePropertyAll(AppColors.darkOutline),
+      ),
+      sliderTheme: const SliderThemeData(
+        activeTrackColor: AppColors.primary,
+        inactiveTrackColor: AppColors.darkOutline,
+        thumbColor: AppColors.primary,
+        valueIndicatorColor: AppColors.darkSurfaceMuted,
+        valueIndicatorTextStyle: TextStyle(color: darkTextPrimary),
+      ),
+      chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkSurfaceVariant,
         selectedColor: AppColors.primary,
-        side: BorderSide(color: AppColors.darkOutline, width: 0.5),
-        labelStyle: TextStyle(
-          color: AppColors.darkTextPrimary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        side: const BorderSide(color: AppColors.darkOutline, width: 0.5),
+        labelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.onPrimary
+                : AppColors.darkTextPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        shape: RoundedRectangleBorder(borderRadius: AppDimens.borderMedium),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppDimens.borderMedium,
+        ),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
 import '../../theme/app_dimens.dart';
+import '../../theme/app_semantic_colors.dart';
 import '../../theme/app_text_styles.dart';
 
 /// Standard Error View with Retry Button per Lab 3 requirement (Section 5)
@@ -32,26 +32,27 @@ class ErrorView extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
+                  color: AppSemanticColors.of(context).error
+                      .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.error_outline_rounded,
                   size: 38,
-                  color: AppColors.error,
+                  color: AppSemanticColors.of(context).error,
                 ),
               ),
               const SizedBox(height: AppDimens.space20),
               Text(
                 'Đã xảy ra sự cố',
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.themed(context),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppDimens.space8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.themed(context),
               ),
               if (onRetry != null) ...[
                 const SizedBox(height: AppDimens.space24),

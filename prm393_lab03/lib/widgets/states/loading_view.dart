@@ -22,7 +22,7 @@ class LoadingView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(
-                width: 40,
+                width: AppDimens.space40,
                 height: 40,
                 child: CircularProgressIndicator(
                   strokeWidth: 3.5,

@@ -302,7 +302,7 @@ void main() {
       await tester.ensureVisible(find.text('Mong muốn'));
       await tester.tap(find.text('Mong muốn'));
       await tester.pump();
-      await tester.tap(find.text('Lưu vào Wishlist'));
+      await tester.tap(find.text('Lưu vào danh sách'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );

@@ -8,7 +8,9 @@ import '../models/budget_group.dart';
 import '../models/buying_motive.dart';
 import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/confirm_dialog.dart';
@@ -103,7 +105,7 @@ class PurchaseDetailScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -114,13 +116,16 @@ class PurchaseDetailScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Chi tiết khoản mua',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Chi tiết khoản mua',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -141,24 +146,24 @@ class PurchaseDetailScreen extends StatelessWidget {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppDimens.space20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Card 1: Purchase Summary (Figma 05)
                     _buildSummaryCard(context, currentItem),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppDimens.space16),
 
                     // Card 2: Details (Time & Note)
                     _buildDetailsCard(context, currentItem),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppDimens.space16),
 
                     // Card 3: Behavioral Insight
                     _buildBehavioralCard(context, currentItem),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppDimens.space16),
 
                     // A-16: how the purchase turned out, 1–5 stars
                     _SatisfactionCard(purchase: currentItem),
@@ -179,14 +184,14 @@ class PurchaseDetailScreen extends StatelessWidget {
   Widget _buildSummaryCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppDimens.space20),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: AppSemanticColors.of(context).cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppSemanticColors.of(context).summaryCardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -201,8 +206,7 @@ class PurchaseDetailScreen extends StatelessWidget {
             children: [
               Text(
                 'MỤC ĐÃ CHI TIÊU',
-                style: TextStyle(
-                  fontSize: 11,
+                style: AppTextStyles.caption.withInheritedColor.copyWith(
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                   color: AppSemanticColors.of(context).textSecondary,
@@ -228,33 +232,31 @@ class PurchaseDetailScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.space8),
 
           // Title
           Text(
             item.title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.onPrimary,
+            style: AppTextStyles.headlineMedium.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppSemanticColors.of(context).textPrimary,
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: AppDimens.space6),
 
           // Big Amount
           Text(
             item.formattedAmount,
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
+            style: AppTextStyles.displayLarge.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
               color: AppSemanticColors.of(context).accent,
               letterSpacing: -0.5,
             ),
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: AppDimens.space16),
             child: Divider(
               height: 1,
               color: AppSemanticColors.of(context).mutedSurface,
@@ -262,30 +264,30 @@ class PurchaseDetailScreen extends StatelessWidget {
           ),
 
           // Motive Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space8,
+            alignment: WrapAlignment.spaceBetween,
             children: [
               Text(
                 'Động cơ',
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                   fontWeight: FontWeight.w500,
                   color: AppSemanticColors.of(context).textSecondary,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: AppDimens.space12,
+                  vertical: AppDimens.space4,
                 ),
                 decoration: BoxDecoration(
                   color: MotiveColors.of(context)
                       .paletteOf(item.motive)
                       .background,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppDimens.borderPill,
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       item.motive.icon,
@@ -294,16 +296,16 @@ class PurchaseDetailScreen extends StatelessWidget {
                           .paletteOf(item.motive)
                           .foreground,
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: AppDimens.space6),
                     Text(
                       item.motive.label,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: MotiveColors.of(context)
-                            .paletteOf(item.motive)
-                            .foreground,
-                      ),
+                      style: AppTextStyles.labelMedium.withInheritedColor
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: MotiveColors.of(context)
+                                .paletteOf(item.motive)
+                                .foreground,
+                          ),
                     ),
                   ],
                 ),
@@ -319,14 +321,14 @@ class PurchaseDetailScreen extends StatelessWidget {
   Widget _buildDetailsCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppDimens.space20),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: AppSemanticColors.of(context).cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppSemanticColors.of(context).summaryCardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -344,7 +346,7 @@ class PurchaseDetailScreen extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: AppSemanticColors.of(context).mutedSurface,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppDimens.borderMedium,
                 ),
                 child: Icon(
                   Icons.access_time_rounded,
@@ -352,35 +354,35 @@ class PurchaseDetailScreen extends StatelessWidget {
                   color: AppSemanticColors.of(context).accent,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimens.space12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Thời gian ghi nhận',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppSemanticColors.of(context).textSecondary,
-                      ),
+                      style: AppTextStyles.labelMedium.withInheritedColor
+                          .copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppSemanticColors.of(context).textSecondary,
+                          ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppDimens.space2),
                     Text(
                       formatRelativeDateTime(item.occurredAt),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onPrimary,
-                      ),
+                      style: AppTextStyles.bodyLarge.withInheritedColor
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppSemanticColors.of(context).textPrimary,
+                          ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppDimens.space2),
                     Text(
                       formatWeekdayDate(item.occurredAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppSemanticColors.of(context).textSecondary,
-                      ),
+                      style: AppTextStyles.labelMedium.withInheritedColor
+                          .copyWith(
+                            color: AppSemanticColors.of(context).textSecondary,
+                          ),
                     ),
                   ],
                 ),
@@ -389,7 +391,7 @@ class PurchaseDetailScreen extends StatelessWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: AppDimens.space16),
             child: Divider(
               height: 1,
               color: AppSemanticColors.of(context).mutedSurface,
@@ -405,34 +407,34 @@ class PurchaseDetailScreen extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: AppSemanticColors.of(context).primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppDimens.borderMedium,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.edit_note_rounded,
                   size: 20,
-                  color: AppColors.onPrimary,
+                  color: AppSemanticColors.of(context).textPrimary,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimens.space12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Ghi chú của bạn',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppSemanticColors.of(context).textSecondary,
-                      ),
+                      style: AppTextStyles.labelMedium.withInheritedColor
+                          .copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppSemanticColors.of(context).textSecondary,
+                          ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppDimens.space6),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppDimens.space12),
                       decoration: BoxDecoration(
                         color: AppSemanticColors.of(context).background,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppDimens.borderMedium,
                         border: Border.all(
                           color: AppSemanticColors.of(context).cardBorder,
                         ),
@@ -441,20 +443,20 @@ class PurchaseDetailScreen extends StatelessWidget {
                         (item.note != null && item.note!.trim().isNotEmpty)
                             ? '“${item.note!.trim()}”'
                             : 'Không có ghi chú thêm',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontStyle:
-                              (item.note != null &&
-                                  item.note!.trim().isNotEmpty)
-                              ? FontStyle.italic
-                              : FontStyle.normal,
-                          color:
-                              (item.note != null &&
-                                  item.note!.trim().isNotEmpty)
-                              ? AppColors.onPrimary
-                              : AppSemanticColors.of(context).hint,
-                          height: 1.4,
-                        ),
+                        style: AppTextStyles.bodyMedium.withInheritedColor
+                            .copyWith(
+                              fontStyle:
+                                  (item.note != null &&
+                                      item.note!.trim().isNotEmpty)
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
+                              color:
+                                  (item.note != null &&
+                                      item.note!.trim().isNotEmpty)
+                                  ? AppColors.onPrimary
+                                  : AppSemanticColors.of(context).hint,
+                              height: 1.4,
+                            ),
                       ),
                     ),
                   ],
@@ -471,38 +473,36 @@ class PurchaseDetailScreen extends StatelessWidget {
   Widget _buildBehavioralCard(BuildContext context, PurchaseItem item) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).primaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.lightbulb_rounded,
             size: 22,
-            color: AppColors.onPrimary,
+            color: AppSemanticColors.of(context).textPrimary,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppDimens.space12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Góc nhìn Why I Buy',
-                  style: TextStyle(
-                    fontSize: 13.5,
+                  style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                    color: AppSemanticColors.of(context).textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppDimens.space4),
                 Text(
                   _describe(item),
-                  style: TextStyle(
-                    fontSize: 12.5,
+                  style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                     color: AppSemanticColors.of(context).accent,
                     height: 1.4,
                   ),
@@ -518,7 +518,12 @@ class PurchaseDetailScreen extends StatelessWidget {
   // ==================== BOTTOM BAR ====================
   Widget _buildBottomBar(BuildContext context, PurchaseItem item) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.space20,
+        AppDimens.space12,
+        AppDimens.space20,
+        AppDimens.space16,
+      ),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).cardSurface,
         border: Border(
@@ -536,8 +541,8 @@ class PurchaseDetailScreen extends StatelessWidget {
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.onPrimary,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppDimens.borderPill,
             ),
           ),
           onPressed: () {
@@ -547,14 +552,16 @@ class PurchaseDetailScreen extends StatelessWidget {
               arguments: RecordPurchaseArgs(existingPurchase: item),
             );
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.edit_outlined, size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.edit_outlined, size: 18),
+              const SizedBox(width: AppDimens.space8),
               Text(
                 'Sửa khoản mua',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -576,10 +583,10 @@ class _SatisfactionCard extends StatelessWidget {
     return Container(
       key: const ValueKey('purchase-satisfaction'),
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: AppSemanticColors.of(context).cardBorder),
       ),
       child: Row(
@@ -588,11 +595,13 @@ class _SatisfactionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Mức hài lòng',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppDimens.space4),
                 Semantics(
                   label: stars == null ? 'Chưa chấm' : '$stars trên 5 sao',
                   child: ExcludeSemantics(
@@ -602,12 +611,12 @@ class _SatisfactionCard extends StatelessWidget {
                                 ? 'Bạn đã bỏ qua câu hỏi này'
                                 : 'Chưa chấm')
                           : '★' * stars + '☆' * (5 - stars),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: MotiveColors.of(context)
-                            .paletteOf(BuyingMotive.sale)
-                            .foreground,
-                      ),
+                      style: AppTextStyles.bodyLarge.withInheritedColor
+                          .copyWith(
+                            color: MotiveColors.of(context)
+                                .paletteOf(BuyingMotive.sale)
+                                .foreground,
+                          ),
                     ),
                   ),
                 ),

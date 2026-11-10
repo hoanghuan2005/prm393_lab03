@@ -22,7 +22,7 @@ class ErrorView extends StatelessWidget {
     return Semantics(
       label: 'Thông báo lỗi: $message',
       child: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimens.space32),
           child: Column(
             mainAxisSize: MainAxisSize.min,

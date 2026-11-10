@@ -333,7 +333,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -344,13 +344,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppDimens.space4),
             Flexible(
               child: Text(
                 'Chi tiết & Quyết định',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
                 maxLines: 1,
@@ -482,7 +481,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                             theme.colorScheme.onSurfaceVariant,
                                       ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppDimens.space2),
                           Text(
                             _priceNote(item),
                             style: AppTextStyles.caption
@@ -497,7 +496,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         Material(
                           color: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AppDimens.borderXLarge,
                             side: BorderSide(
                               color: AppSemanticColors.of(context).inputBorder,
                             ),
@@ -509,8 +508,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 : () => _updatePrice(item),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                                horizontal: AppDimens.space12,
+                                vertical: AppDimens.space6,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -521,7 +520,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                     color: AppSemanticColors.of(context)
                                         .mutedText,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: AppDimens.space4),
                                   Text(
                                     item.hasPrice ? 'Cập nhật giá' : 'Nhập giá',
                                     style: AppTextStyles.labelMedium
@@ -553,12 +552,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           item.shopName!.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: AppDimens.space8,
+                            vertical: AppDimens.space4,
                           ),
                           decoration: BoxDecoration(
                             color: AppSemanticColors.of(context).cardSurface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppDimens.borderMedium,
                             border: Border.all(
                               color: AppSemanticColors.of(context).divider,
                             ),
@@ -571,7 +570,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 size: 13,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppDimens.space4),
                               Flexible(
                                 child: Text(
                                   item.shopName!,
@@ -589,15 +588,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       if (item.isFromExtension) ...[
                         WishlistCard.fromExtensionChip(context),
                       ],
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: AppDimens.space8,
+                        runSpacing: AppDimens.space8,
+
                         children: [
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 13,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppDimens.space4),
                           Text(
                             'Lưu ngày: ${formatDate(item.createdAt)}',
                             style: AppTextStyles.labelMedium
@@ -873,11 +874,11 @@ class _DecisionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
+      height: AppDimens.space48,
       child: Material(
         color: backgroundColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppDimens.borderLarge,
           side: borderColor != null
               ? BorderSide(color: borderColor!, width: 1.2)
               : BorderSide.none,
@@ -888,7 +889,7 @@ class _DecisionButton extends StatelessWidget {
           child: Center(
             child: isLoading
                 ? SizedBox(
-                    width: 18,
+                    width: AppDimens.space20,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -901,14 +902,15 @@ class _DecisionButton extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(icon, size: 17, color: foregroundColor),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: AppDimens.space6),
                       Text(
                         title,
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTextStyles.bodyMedium.withInheritedColor
+                            .copyWith(
+                              color: foregroundColor,
+
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),
@@ -995,7 +997,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                 color: isCurrent
                     ? AppColors.primary.withValues(alpha: 0.08)
                     : AppSemanticColors.of(context).background,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppDimens.borderSmall,
                 border: Border.all(
                   color: isLowest
                       ? AppSemanticColors.of(context).success
@@ -1019,9 +1021,11 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: AppDimens.space8,
+                          runSpacing: AppDimens.space8,
                           children: [
-                            Flexible(
+                            SizedBox(
                               child: Text(
                                 shopTitle,
                                 style: AppTextStyles.bodyMedium
@@ -1036,49 +1040,53 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                               ),
                             ),
                             if (isCurrent) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: AppDimens.space6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColors.primary.withValues(
                                     alpha: 0.15,
                                   ),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: AppDimens.borderSmall,
                                 ),
                                 child: Text(
                                   'Đang xem',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppSemanticColors.of(context)
-                                        .brandText,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        color: AppSemanticColors.of(context)
+                                            .brandText,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
                             if (isLowest) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: AppDimens.space6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppSemanticColors.of(context).success
                                       .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: AppDimens.borderSmall,
                                 ),
                                 child: Text(
-                                  'Rẻ nhất ⭐',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppSemanticColors.of(context)
-                                        .success,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  'Giá thấp nhất',
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        color: AppSemanticColors.of(context)
+                                            .success,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
@@ -1096,20 +1104,25 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        const SizedBox(height: AppDimens.space4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            formatVnd(offer.latestPriceVnd),
+                            style: AppTextStyles.titleMedium
+                                .themed(context)
+                                .copyWith(
+                                  color: isLowest
+                                      ? AppSemanticColors.of(context).success
+                                      : AppSemanticColors.of(context)
+                                            .textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: AppDimens.space8),
-                  Text(
-                    formatVnd(offer.latestPriceVnd),
-                    style: AppTextStyles.titleMedium
-                        .themed(context)
-                        .copyWith(
-                          color: isLowest
-                              ? AppSemanticColors.of(context).success
-                              : AppSemanticColors.of(context).textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
                   ),
                 ],
               ),
@@ -1122,7 +1135,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppSemanticColors.of(context).success
                     .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppDimens.borderSmall,
               ),
               child: Row(
                 children: [
@@ -1134,7 +1147,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(
-                      'Tiết kiệm ${formatVnd(savings)} nếu mua tại ${lowestItem.shopName ?? 'shop rẻ nhất'}!',
+                      'Chênh lệch giá ghi nhận: ${formatVnd(savings)} so với ${lowestItem.shopName ?? 'cửa hàng khác'}.',
                       style: AppTextStyles.caption
                           .themed(context)
                           .copyWith(

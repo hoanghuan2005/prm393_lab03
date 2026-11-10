@@ -63,7 +63,7 @@ class ShoppingProfileScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -74,13 +74,16 @@ class ShoppingProfileScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Hồ sơ mua sắm',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Hồ sơ mua sắm',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

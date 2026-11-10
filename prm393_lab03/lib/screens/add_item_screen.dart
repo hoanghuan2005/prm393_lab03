@@ -269,7 +269,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -280,13 +280,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              titleText,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                titleText,
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -322,7 +325,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   child: Row(
                     children: [
                       const SizedBox(
-                        width: 18,
+                        width: AppDimens.space20,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
@@ -357,7 +360,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   child: Row(
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppDimens.borderSmall,
                         child: Image.network(
                           _imageUrl!,
                           width: 68,
@@ -382,22 +385,22 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: AppDimens.space6,
+                                vertical: AppDimens.space2,
                               ),
                               decoration: BoxDecoration(
                                 color: AppSemanticColors.of(context).shopeeBrand
                                     .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: AppDimens.borderSmall,
                               ),
                               child: Text(
                                 'Shopee',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppSemanticColors.of(context)
-                                      .shopeeBrand,
-                                ),
+                                style: AppTextStyles.caption.withInheritedColor
+                                    .copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppSemanticColors.of(context)
+                                          .shopeeBrand,
+                                    ),
                               ),
                             ),
                             ValueListenableBuilder<TextEditingValue>(
@@ -410,7 +413,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                   return const SizedBox.shrink();
                                 }
                                 return Padding(
-                                  padding: const EdgeInsets.only(top: 4),
+                                  padding: const EdgeInsets.only(
+                                    top: AppDimens.space4,
+                                  ),
                                   child: Text(
                                     'Shop: $name',
                                     style: AppTextStyles.caption
@@ -638,7 +643,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
               // Save Button
               AppButton(
-                title: _isEdit ? 'Lưu thay đổi' : 'Lưu vào Wishlist',
+                title: _isEdit ? 'Lưu thay đổi' : 'Lưu vào danh sách',
                 icon: Icons.check,
                 isLoading: _isSaving,
                 onPressed: _handleSave,

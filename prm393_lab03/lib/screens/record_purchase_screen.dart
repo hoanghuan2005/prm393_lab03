@@ -317,7 +317,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
-          leadingWidth: 42,
+          leadingWidth: AppDimens.minTouchTarget,
           leading: IconButton(
             padding: EdgeInsets.zero,
             tooltip: 'Quay lại',
@@ -328,16 +328,15 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           title: Row(
             children: [
               const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Expanded(
                 child: Text(
                   widget.existingPurchase == null
                       ? 'Ghi khoản mua'
                       : 'Chỉnh sửa khoản mua',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),

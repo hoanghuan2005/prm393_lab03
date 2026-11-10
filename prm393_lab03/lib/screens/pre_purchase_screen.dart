@@ -144,7 +144,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
-          leadingWidth: 42,
+          leadingWidth: AppDimens.minTouchTarget,
           leading: IconButton(
             padding: EdgeInsets.zero,
             icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -155,14 +155,13 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           title: Row(
             children: [
               const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Expanded(
                 child: Text(
                   appBarTitle,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -350,7 +349,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         const SizedBox(height: AppDimens.space24),
         const _Question(
           title: 'Không có khuyến mãi, bạn vẫn muốn món này chứ?',
-          hint: 'Hãy nghĩ về món đó, tách khỏi ưu đãi.',
+          hint: 'Cân nhắc món đồ khi không có ưu đãi.',
         ),
         _OptionList(
           options: [

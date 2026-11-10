@@ -39,15 +39,17 @@ class BuyIntentSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.computer_rounded,
                 size: 18,
-                color: AppColors.onPrimary,
+                color: AppSemanticColors.of(context).onPrimaryContainer,
               ),
               const SizedBox(width: AppDimens.space8),
-              Text(
-                'Định mua từ máy tính (${items.length})',
-                style: AppTextStyles.labelLarge.themed(context),
+              Expanded(
+                child: Text(
+                  'Định mua từ máy tính (${items.length})',
+                  style: AppTextStyles.labelLarge.themed(context),
+                ),
               ),
             ],
           ),
@@ -73,30 +75,35 @@ class _BuyIntentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: AppDimens.space8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              item.variantLabel == null
-                  ? item.title
-                  : '${item.title} · ${item.variantLabel}',
-              style: AppTextStyles.bodyMedium.themed(context),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+          Text(
+            item.variantLabel == null
+                ? item.title
+                : '${item.title} · ${item.variantLabel}',
+            style: AppTextStyles.bodyMedium.themed(context),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          TextButton(
-            onPressed: () => _notBought(context),
-            child: const Text('Chưa mua'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, AppDimens.minTouchTarget),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-            ),
-            onPressed: () => _record(context),
-            child: const Text('Ghi khoản mua'),
+          Wrap(
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space4,
+            children: [
+              TextButton(
+                onPressed: () => _notBought(context),
+                child: const Text('Chưa mua'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, AppDimens.minTouchTarget),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                ),
+                onPressed: () => _record(context),
+                child: const Text('Ghi khoản mua'),
+              ),
+            ],
           ),
         ],
       ),

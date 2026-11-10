@@ -180,7 +180,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -191,13 +191,16 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Chụp để tìm',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Chụp để tìm',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -689,20 +692,19 @@ class _ConfidencePill extends StatelessWidget {
         horizontal: AppDimens.space8,
         vertical: AppDimens.space2,
       ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: AppDimens.borderPill),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.auto_awesome, size: 12, color: fg),
           const SizedBox(width: AppDimens.space4),
-          Text(
-            'AI · ${confidence.label}',
-            style: AppTextStyles.labelMedium
-                .themed(context)
-                .copyWith(color: fg),
+          Flexible(
+            child: Text(
+              'AI · ${confidence.label}',
+              style: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(color: fg),
+            ),
           ),
         ],
       ),
@@ -740,7 +742,7 @@ class _PriceRange extends StatelessWidget {
             '${formatVnd(min)} – ${formatVnd(max)}',
             style: AppTextStyles.titleLarge
                 .themed(context)
-                .copyWith(color: AppColors.onPrimary),
+                .copyWith(color: AppSemanticColors.of(context).textPrimary),
           ),
           const SizedBox(height: AppDimens.space2),
           Text(
@@ -788,7 +790,9 @@ class _NameOption extends StatelessWidget {
           customBorder: const StadiumBorder(),
           child: ConstrainedBox(
             // Touch target ≥ 48dp tall without looking bulky
-            constraints: const BoxConstraints(minHeight: 40),
+            constraints: const BoxConstraints(
+              minHeight: AppDimens.minTouchTarget,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDimens.space12,
@@ -798,10 +802,10 @@ class _NameOption extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (selected) ...[
-                    const Icon(
+                    Icon(
                       Icons.check,
                       size: 16,
-                      color: AppColors.onPrimary,
+                      color: AppSemanticColors.of(context).onPrimaryContainer,
                     ),
                     const SizedBox(width: AppDimens.space4),
                   ],
@@ -812,7 +816,8 @@ class _NameOption extends StatelessWidget {
                           .themed(context)
                           .copyWith(
                             color: selected
-                                ? AppColors.onPrimary
+                                ? AppSemanticColors.of(context)
+                                      .onPrimaryContainer
                                 : AppSemanticColors.of(context).textBody,
                             fontWeight: selected ? FontWeight.w600 : null,
                           ),
@@ -906,7 +911,7 @@ class _AiPriceSearch extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(
-                  width: 18,
+                  width: AppDimens.space20,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
@@ -950,7 +955,7 @@ class _AiPriceSearch extends StatelessWidget {
               _ListRow(
                 leading: offer == cheapest
                     ? const _Badge(label: 'Rẻ nhất')
-                    : const SizedBox(width: 20),
+                    : const SizedBox(width: AppDimens.space20),
                 title: offer.shop,
                 trailingText: formatVnd(offer.priceVnd),
                 trailingBold: true,
@@ -1135,25 +1140,33 @@ class _ListRow extends StatelessWidget {
                 leading,
                 const SizedBox(width: AppDimens.space12),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.bodyLarge
-                        .themed(context)
-                        .copyWith(color: theme.colorScheme.onSurface),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppDimens.space8),
-                Text(
-                  trailingText,
-                  style: trailingBold
-                      ? AppTextStyles.titleMedium.themed(context)
-                      : AppTextStyles.caption
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.bodyLarge
                             .themed(context)
-                            .copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            .copyWith(color: theme.colorScheme.onSurface),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          trailingText,
+                          style: trailingBold
+                              ? AppTextStyles.titleMedium.themed(context)
+                              : AppTextStyles.caption
+                                    .themed(context)
+                                    .copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: AppDimens.space4),
                 Icon(
@@ -1184,7 +1197,7 @@ class _Badge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).photoStatusContainer,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppDimens.borderPill,
       ),
       child: Text(
         label,

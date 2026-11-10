@@ -151,7 +151,8 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
         data,
       _ => null,
     };
-    final communityLoaded = communityState is UiSuccess || communityState is UiEmpty;
+    final communityLoaded =
+        communityState is UiSuccess || communityState is UiEmpty;
     final own = ownPriceView(
       history,
       range: _range,
@@ -191,7 +192,10 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
                 const Icon(Icons.timeline_outlined),
                 const SizedBox(width: AppDimens.space8),
                 Expanded(
-                  child: Text('Lịch sử giá', style: AppTextStyles.titleMedium.themed(context)),
+                  child: Text(
+                    'Lịch sử giá',
+                    style: AppTextStyles.titleMedium.themed(context),
+                  ),
                 ),
               ],
             ),
@@ -236,7 +240,10 @@ class _PriceHistoryPanelState extends State<PriceHistoryPanel> {
               for (final note in notes)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppDimens.space4),
-                  child: Text('• $note', style: AppTextStyles.bodyMedium.themed(context)),
+                  child: Text(
+                    '• $note',
+                    style: AppTextStyles.bodyMedium.themed(context),
+                  ),
                 ),
             ],
             if (history.isNotEmpty)

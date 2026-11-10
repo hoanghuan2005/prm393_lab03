@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../services/review_reminder_service.dart';
 import '../services/share_intent_service.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
@@ -161,7 +163,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           child: SafeArea(
             child: SizedBox(
-              height: 60,
+              height:
+                  AppDimens.space48 +
+                  AppDimens.space24 +
+                  (MediaQuery.textScalerOf(context).scale(32) - 32).clamp(
+                    0,
+                    48,
+                  ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -233,11 +241,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               size: 24,
               color: isSelected ? selectedColor : unselectedColor,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: AppDimens.space4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 11,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.withInheritedColor.copyWith(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? selectedColor : unselectedColor,
               ),

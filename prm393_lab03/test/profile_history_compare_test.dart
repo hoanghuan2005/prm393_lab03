@@ -505,7 +505,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Cảm ơn bạn! Góc nhìn sẽ dùng câu trả lời này.'),
+        find.text('Đã ghi nhận. Góc nhìn sẽ dùng câu trả lời này.'),
         findsOneWidget,
       );
       final data = (await tester.runAsync(

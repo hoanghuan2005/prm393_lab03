@@ -92,6 +92,17 @@ class AppTextStyles {
 /// `themed` keeps a style unchanged in light mode and, in dark mode, swaps those
 /// colours for the theme's text colours. Styles with any other colour stay as they are.
 extension ThemedTextStyle on TextStyle {
+  /// Typography token that inherits the surrounding foreground (e.g. a button).
+  /// Explicit semantic colours can still be supplied with copyWith.
+  TextStyle get withInheritedColor => TextStyle(
+    fontFamily: fontFamily,
+    fontFamilyFallback: fontFamilyFallback,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+
   TextStyle themed(BuildContext context) {
     final theme = Theme.of(context);
     if (theme.brightness == Brightness.light) return this;

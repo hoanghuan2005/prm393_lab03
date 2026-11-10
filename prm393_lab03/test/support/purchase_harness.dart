@@ -8,6 +8,7 @@ import 'package:prm393_lab03/core/errors/app_exception.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
 import 'package:prm393_lab03/models/purchase_draft.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
+import 'package:prm393_lab03/models/sale_event.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/services/analytics_service.dart';
 import 'package:prm393_lab03/services/budget_service.dart';
@@ -15,6 +16,7 @@ import 'package:prm393_lab03/services/purchase_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/budget_viewmodel.dart';
+import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/wishlist_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -132,6 +134,24 @@ class SignedInAuthViewModel extends ChangeNotifier implements AuthViewModel {
   String? get userId => PurchaseHarness.uid;
 
   @override
+  bool get isAnonymous => false;
+
+  @override
+  String get displayName => 'Bạn';
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class TestDecisionSupport extends ChangeNotifier
+    implements DecisionSupportViewModel {
+  @override
+  List<SaleEvent> get upcomingSales => const [];
+
+  @override
+  DateTime get now => DateTime.now();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -151,6 +171,7 @@ class PurchaseHarness {
   late final budgetService = FirestoreBudgetService(db);
   late final budget = BudgetViewModel(budgetService: budgetService);
   final auth = SignedInAuthViewModel();
+  final decisions = TestDecisionSupport();
 
   Future<void> initialize({WishlistItem? item, PurchaseItem? purchase}) async {
     await budgetService.ensureDefaultGroups(uid);
@@ -165,9 +186,18 @@ class PurchaseHarness {
     budget.updateUid(uid);
   }
 
-  Widget app(Widget home, {double textScale = 1}) => MultiProvider(
+  Widget app(
+    Widget home, {
+    double textScale = 1,
+    ThemeData? theme,
+    bool withDecisions = false,
+  }) => MultiProvider(
     providers: [
       ChangeNotifierProvider<AuthViewModel>.value(value: auth),
+      if (withDecisions)
+        ChangeNotifierProvider<DecisionSupportViewModel>.value(
+          value: decisions,
+        ),
       ChangeNotifierProvider.value(value: purchases),
       ChangeNotifierProvider.value(value: wishlist),
       ChangeNotifierProxyProvider<PurchaseViewModel, BudgetViewModel>(
@@ -177,7 +207,7 @@ class PurchaseHarness {
       ),
     ],
     child: MaterialApp(
-      theme: testAppTheme,
+      theme: theme ?? testAppTheme,
       home: home,
       onGenerateRoute: AppRoutes.onGenerateRoute,
       builder: (context, child) => MediaQuery(
@@ -192,6 +222,7 @@ class PurchaseHarness {
     purchases.dispose();
     wishlist.dispose();
     auth.dispose();
+    decisions.dispose();
     // The ChangeNotifierProxyProvider owns budget when app() has been mounted.
   }
 }

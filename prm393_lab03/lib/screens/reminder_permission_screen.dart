@@ -58,7 +58,7 @@ class _ReminderPermissionScreenState extends State<ReminderPermissionScreen> {
     );
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppDimens.space24,
             AppDimens.space48,
@@ -98,7 +98,7 @@ class _ReminderPermissionScreenState extends State<ReminderPermissionScreen> {
               ),
               const SizedBox(height: AppDimens.space16),
               _NotificationPreview(time: time),
-              const Spacer(),
+              const SizedBox(height: AppDimens.space24),
               AppButton(
                 key: const ValueKey('enable-daily-reminder'),
                 title: 'Bật nhắc nhở',

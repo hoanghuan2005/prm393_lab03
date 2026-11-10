@@ -104,7 +104,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
             automaticallyImplyLeading: false,
-            leadingWidth: 42,
+            leadingWidth: AppDimens.minTouchTarget,
             leading: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -115,14 +115,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
             title: Row(
               children: [
                 const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppDimens.space4),
                 Flexible(
                   child: Text(
                     'Danh sách mong muốn',
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                    style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                      fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
@@ -195,7 +194,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
               // Horizontal 8 Motive Filters
               SizedBox(
-                height: 48,
+                height: AppDimens.space48,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
@@ -459,23 +458,23 @@ class _SaleTooltipPopup extends StatelessWidget {
           ),
           Material(
             elevation: 8,
-            shadowColor: Colors.black45,
-            borderRadius: BorderRadius.circular(12),
+            shadowColor: AppSemanticColors.of(context).illustrationShadow,
+            borderRadius: AppDimens.borderMedium,
             color: AppSemanticColors.of(context).comparisonSurface,
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimens.borderMedium,
               onTap: onTap,
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 290),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
+                  horizontal: AppDimens.space12,
+                  vertical: AppDimens.space8,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(AppDimens.space4),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
@@ -486,66 +485,71 @@ class _SaleTooltipPopup extends StatelessWidget {
                         size: 16,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.space8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
+                          Wrap(
+                            spacing: AppDimens.space8,
+                            runSpacing: AppDimens.space8,
                             children: [
                               Text(
                                 'Lịch sale: $saleName',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: AppTextStyles
+                                    .bodyMedium
+                                    .withInheritedColor
+                                    .copyWith(
+                                      color: AppColors.textOnDark,
+
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppDimens.space4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
                                 ),
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: AppDimens.borderSmall,
                                 ),
                                 child: Text(
                                   timeStr,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        color: AppColors.onPrimary,
+
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppDimens.space2),
                           Text(
                             'Bấm để xem danh sách & kế hoạch mua',
-                            style: TextStyle(
-                              color: AppSemanticColors.of(context)
-                                  .comparisonHint,
-                              fontSize: 11,
-                            ),
+                            style: AppTextStyles.caption.withInheritedColor
+                                .copyWith(
+                                  color: AppSemanticColors.of(context)
+                                      .comparisonHint,
+                                ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: onClose,
-                      child: Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 16,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
+                    const SizedBox(width: AppDimens.space6),
+                    IconButton(
+                      tooltip: 'Đóng gợi ý',
+                      onPressed: onClose,
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppSemanticColors.of(context).comparisonHint,
                       ),
                     ),
                   ],

@@ -83,13 +83,14 @@ class _DecisionCardPanelState extends State<DecisionCardPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  'Nhận định',
-                  style: AppTextStyles.labelLarge.themed(context),
-                ),
+              Text(
+                'Nhận định',
+                style: AppTextStyles.labelLarge.themed(context),
               ),
               Container(
                 key: const ValueKey('decision-label'),

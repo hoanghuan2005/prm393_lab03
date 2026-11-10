@@ -47,7 +47,7 @@ class MonthlyReflectionScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -58,13 +58,16 @@ class MonthlyReflectionScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Chiêm nghiệm tháng',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Chiêm nghiệm tháng',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -115,7 +118,8 @@ class MonthlyReflectionScreen extends StatelessWidget {
                     style: AppTextStyles.headlineLarge
                         .themed(context)
                         .copyWith(
-                          color: AppColors.onPrimary,
+                          color: AppSemanticColors.of(context)
+                              .onPrimaryContainer,
                           fontWeight: FontWeight.w800,
                         ),
                   ),
@@ -366,13 +370,19 @@ class _ReflectionFormState extends State<_ReflectionForm> {
                           .mutedSurface,
                       labelStyle: AppTextStyles.labelLarge
                           .themed(context)
-                          .copyWith(color: AppColors.onPrimary),
+                          .copyWith(
+                            color: vm.rating == i
+                                ? AppColors.onPrimary
+                                : AppSemanticColors.of(context).textPrimary,
+                          ),
                     ),
                 ],
               ),
               const SizedBox(height: AppDimens.space8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                spacing: AppDimens.space16,
+                runSpacing: AppDimens.space8,
+                alignment: WrapAlignment.spaceBetween,
                 children: [
                   Text(
                     'Không hài lòng',

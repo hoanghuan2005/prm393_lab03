@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../models/extension_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -88,7 +89,7 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -99,13 +100,16 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Quét mã QR liên kết',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Quét mã QR liên kết',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -119,11 +123,11 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
               onDetect: _onDetect,
               errorBuilder: (context, error) => Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppDimens.space24),
                   child: Text(
                     error.errorCode == MobileScannerErrorCode.permissionDenied
-                        ? 'App cần quyền camera để quét mã. Hãy cho phép trong Cài đặt của điện thoại.'
-                        : 'Không mở được camera. Hãy thử lại.',
+                        ? 'App cần quyền camera để quét mã. Bạn có thể cấp quyền trong Cài đặt của điện thoại.'
+                        : 'Không mở được camera. Bạn có thể thử lại.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyMedium.themed(context),
                   ),
@@ -132,12 +136,17 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppDimens.space20,
+              AppDimens.space20,
+              AppDimens.space20,
+              AppDimens.space8,
+            ),
             child: Text(
               _noCodeInImage
-                  ? 'Không tìm thấy mã QR trong ảnh. Hãy chọn ảnh chụp rõ mã QR của extension.'
+                  ? 'Không tìm thấy mã QR trong ảnh. Chọn ảnh chụp rõ mã QR của tiện ích trình duyệt.'
                   : _wrongCode
-                  ? 'Đây không phải mã liên kết Why I Buy?. Hãy quét mã QR trong extension.'
+                  ? 'Đây không phải mã liên kết Why I Buy?. Mã liên kết nằm trong tiện ích trình duyệt.'
                   : 'Trên máy tính: mở extension Why I Buy? → Liên kết thiết bị → Tạo mã QR, rồi hướng camera vào mã.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.themed(context),
@@ -145,12 +154,17 @@ class _ExtensionQrScanScreenState extends State<ExtensionQrScanScreen> {
           ),
           SafeArea(
             top: false,
-            minimum: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            minimum: const EdgeInsets.fromLTRB(
+              AppDimens.space20,
+              0,
+              AppDimens.space20,
+              AppDimens.space20,
+            ),
             child: OutlinedButton.icon(
               onPressed: _picking ? null : _pickImage,
               icon: _picking
                   ? const SizedBox(
-                      width: 18,
+                      width: AppDimens.space20,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )

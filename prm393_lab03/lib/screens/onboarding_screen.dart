@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -62,8 +64,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             // Top Bar: Logo & Skip Button
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 12.0,
+                horizontal: AppDimens.space20,
+                vertical: AppDimens.space12,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -71,15 +73,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Row(
                     children: [
                       const WhyIBuyLogo(size: 36, color: AppColors.onPrimary),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppDimens.space8),
                       Text(
                         'Why I Buy?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                          color: theme.colorScheme.onSurface,
-                        ),
+                        style: AppTextStyles.bodyLarge.withInheritedColor
+                            .copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              color: theme.colorScheme.onSurface,
+                            ),
                       ),
                     ],
                   ),
@@ -88,16 +90,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.onSurfaceVariant,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                        horizontal: AppDimens.space16,
+                        vertical: AppDimens.space6,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Bỏ qua',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.bodyMedium.withInheritedColor
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -120,41 +120,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // Bottom Navigation & Actions Area
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              padding: const EdgeInsets.fromLTRB(
+                AppDimens.space24,
+                AppDimens.space8,
+                AppDimens.space24,
+                AppDimens.space20,
+              ),
               child: Column(
                 children: [
                   // Action Button
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onPrimary,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppDimens.borderPill,
                         ),
                       ),
                       onPressed: _nextPage,
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Bắt đầu trải nghiệm',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              'Bắt đầu trải nghiệm',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodyLarge.withInheritedColor
+                                  .copyWith(fontWeight: FontWeight.w700),
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded, size: 20),
+                          const SizedBox(width: AppDimens.space8),
+                          const Icon(Icons.arrow_forward_rounded, size: 20),
                         ],
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppDimens.space16),
 
                   // Privacy / Local Data note
                   Row(
@@ -165,12 +170,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         size: 14,
                         color: AppSemanticColors.of(context).subtleText,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Dữ liệu an toàn • Không phán xét chi tiêu',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppSemanticColors.of(context).subtleText,
+                      const SizedBox(width: AppDimens.space6),
+                      Flexible(
+                        child: Text(
+                          'Dữ liệu an toàn • Không phán xét chi tiêu',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.labelMedium.withInheritedColor
+                              .copyWith(
+                                color: AppSemanticColors.of(context).subtleText,
+                              ),
                         ),
                       ),
                     ],
@@ -190,10 +198,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.space8),
 
           // Visual illustration card
           Container(
@@ -208,7 +216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: AppDimens.borderXLarge,
               border: Border.all(
                 color: theme.dividerColor.withValues(alpha: 0.55),
               ),
@@ -288,67 +296,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: AppDimens.space20),
 
           // Overline Tag
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space12,
+              vertical: AppDimens.space4,
+            ),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppDimens.borderSmall,
             ),
             child: Text(
               'DÀNH RIÊNG CHO BẠN',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+              style: AppTextStyles.caption.withInheritedColor.copyWith(
+                fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
                 color: AppSemanticColors.of(context).emphasis,
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
 
           // Slide Title
           Text(
             'Why I Buy?',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+            style: AppTextStyles.displayMedium.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
               color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: AppDimens.space12),
 
           // Description
           Text(
             'Tiền bạc không chỉ là những con số. Quan sát động cơ tiêu dùng của chính mình để thay đổi nhẹ nhàng hơn.',
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
               height: 1.45,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppDimens.space20),
           _buildOnboardingBenefit(
             context,
             icon: Icons.schedule_rounded,
             title: 'Ghi lại lý do mua',
             description: 'Ghi lại món đồ và lý do khiến bạn mua.',
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.space8),
           _buildOnboardingBenefit(
             context,
             icon: Icons.insights_outlined,
             title: 'Nhận ra mô hình chi tiêu',
             description: 'Nhìn lại động cơ và thời điểm ghi khoản mua.',
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.space8),
           _buildOnboardingBenefit(
             context,
             icon: Icons.psychology_alt_outlined,
@@ -369,10 +377,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space12,
+        vertical: AppDimens.space16,
+      ),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).cardSurface,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: AppDimens.borderMedium,
         border: Border.all(
           color: AppSemanticColors.of(context).onboardingBorder,
         ),
@@ -399,24 +410,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: AppSemanticColors.of(context).emphasis,
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: AppDimens.space12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppDimens.space2),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 11.5,
+                  style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                     height: 1.3,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -435,19 +444,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimens.space16),
 
           // Visual illustration card
           Container(
             height: 240,
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppDimens.space20),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).cardSurface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: AppDimens.borderXLarge,
               border: Border.all(color: theme.dividerColor),
               boxShadow: [
                 BoxShadow(
@@ -463,20 +472,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Wishlist sample item
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: AppDimens.space16,
+                    vertical: AppDimens.space12,
                   ),
                   decoration: BoxDecoration(
                     color: AppSemanticColors.of(context).mutedSurface,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppDimens.borderLarge,
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.all(AppDimens.space8),
+                        decoration: const BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppDimens.borderMedium,
                         ),
                         child: const Icon(
                           Icons.hourglass_top_rounded,
@@ -484,55 +493,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           color: AppColors.onPrimary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppDimens.space12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Tai nghe chống ồn',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: theme.colorScheme.onSurface,
-                              ),
+                              style: AppTextStyles.bodyMedium.withInheritedColor
+                                  .copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppDimens.space2),
                             Text(
                               'Đang làm nguội · 3 ngày',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppSemanticColors.of(context).infoText,
-                              ),
+                              style: AppTextStyles.caption.withInheritedColor
+                                  .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppSemanticColors.of(context)
+                                        .infoText,
+                                  ),
                             ),
                           ],
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: AppDimens.space8,
+                          vertical: AppDimens.space4,
                         ),
                         decoration: BoxDecoration(
                           color: AppSemanticColors.of(context).infoContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppDimens.borderSmall,
                         ),
                         child: Text(
                           '1.200.000 đ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppSemanticColors.of(context)
-                                .onInfoContainer,
-                          ),
+                          style: AppTextStyles.labelMedium.withInheritedColor
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppSemanticColors.of(context)
+                                    .onInfoContainer,
+                              ),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
 
                 // Decision pills
                 Row(
@@ -544,7 +554,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       label: 'Mua khi cần',
                       color: AppSemanticColors.of(context).success,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppDimens.space12),
                     _buildDecisionBadge(
                       context: context,
                       icon: Icons.remove_circle_outline,
@@ -557,47 +567,47 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: AppDimens.space32),
 
           // Overline Tag
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space12,
+              vertical: AppDimens.space4,
+            ),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).infoContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppDimens.borderSmall,
             ),
             child: Text(
               'LÀM NGUỘI CẢM XÚC (72 GIỜ)',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+              style: AppTextStyles.caption.withInheritedColor.copyWith(
+                fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
                 color: AppSemanticColors.of(context).onInfoContainer,
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
 
           // Slide Title
           Text(
             'Hoãn mua để suy ngẫm',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+            style: AppTextStyles.displayMedium.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
               color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: AppDimens.space12),
 
           // Description
           Text(
-            'Khi muốn mua một món đồ, hãy đưa vào danh sách chờ. Sau vài ngày hạ nhiệt, bạn sẽ bất ngờ nhận ra mình thực sự cần hay chỉ là cảm xúc nhất thời.',
-            style: TextStyle(
-              fontSize: 14,
+            'Ghi lại món đang cân nhắc, đặt thời gian chờ và xem lại lý do mua sau vài ngày.',
+            style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
               height: 1.5,
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -614,19 +624,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.space24),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimens.space16),
 
           // Visual illustration card
           Container(
             height: 240,
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppDimens.space20),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).cardSurface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: AppDimens.borderXLarge,
               border: Border.all(color: theme.dividerColor),
               boxShadow: [
                 BoxShadow(
@@ -651,43 +661,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           size: 18,
                           color: AppSemanticColors.of(context).accent,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppDimens.space8),
                         Text(
                           'Ngân sách tháng',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                          style: AppTextStyles.bodyMedium.withInheritedColor
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
+                              ),
                         ),
                       ],
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: AppDimens.space8,
+                        vertical: AppDimens.space4,
                       ),
                       decoration: BoxDecoration(
                         color: AppSemanticColors.of(context).successContainer,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: AppDimens.borderSmall,
                       ),
                       child: Text(
                         'Trong hạn mức',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: AppSemanticColors.of(context)
-                              .onSuccessContainer,
-                        ),
+                        style: AppTextStyles.caption.withInheritedColor
+                            .copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppSemanticColors.of(context)
+                                  .onSuccessContainer,
+                            ),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: AppDimens.space12),
 
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppDimens.borderSmall,
                   child: LinearProgressIndicator(
                     value: 0.38,
                     minHeight: 6,
@@ -696,14 +706,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
 
                 // AI Insight card
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppDimens.space12),
                   decoration: BoxDecoration(
                     color: AppSemanticColors.of(context).aiContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppDimens.borderMedium,
                   ),
                   child: Row(
                     children: [
@@ -712,16 +722,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         size: 18,
                         color: AppSemanticColors.of(context).aiAccent,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppDimens.space8),
                       Expanded(
                         child: Text(
                           'Tuần này bạn tiết kiệm được 35% nhờ trì hoãn mua sắm bốc đồng lúc đêm muộn.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            height: 1.35,
-                            color: AppSemanticColors.of(context).onAiContainer,
-                          ),
+                          style: AppTextStyles.labelMedium.withInheritedColor
+                              .copyWith(
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                                color: AppSemanticColors.of(context)
+                                    .onAiContainer,
+                              ),
                         ),
                       ),
                     ],
@@ -731,47 +742,47 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: AppDimens.space32),
 
           // Overline Tag
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space12,
+              vertical: AppDimens.space4,
+            ),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).successContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppDimens.borderSmall,
             ),
             child: Text(
               'LÀM CHỦ DÒNG TIỀN',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+              style: AppTextStyles.caption.withInheritedColor.copyWith(
+                fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
                 color: AppSemanticColors.of(context).onSuccessContainer,
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
 
           // Slide Title
           Text(
             'Chiêm nghiệm & Tự do',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+            style: AppTextStyles.displayMedium.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
               color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: AppDimens.space12),
 
           // Description
           Text(
             'Theo dõi mô hình chi tiêu theo thời gian và động cơ. Rút ra quy luật từ chính số liệu của bạn để kiểm soát chi tiêu mà vẫn tận hưởng trọn vẹn cuộc sống.',
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
               height: 1.5,
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -790,22 +801,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required BuildContext context,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space12,
+        vertical: AppDimens.space6,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(
           alpha: AppSemanticColors.of(context).statusOverlay.a,
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppDimens.borderMedium,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppDimens.space6),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11.5,
+            style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
               fontWeight: FontWeight.w600,
               color: color,
             ),

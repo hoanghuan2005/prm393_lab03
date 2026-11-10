@@ -66,23 +66,28 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            padding: const EdgeInsets.fromLTRB(
+              AppDimens.space24,
+              AppDimens.space20,
+              AppDimens.space24,
+              AppDimens.space24,
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 430),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildBackButton(context),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppDimens.space20),
                   _buildBrandHeader(theme),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: AppDimens.space24),
                   Text(
                     _title,
                     style: AppTextStyles.headlineLarge
                         .themed(context)
                         .copyWith(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppDimens.space6),
                   Text(
                     _subtitle,
                     style: AppTextStyles.bodyMedium
@@ -92,10 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 1.45,
                         ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: AppDimens.space24),
                   if (authVm.errorMessage != null) ...[
                     _buildError(authVm.errorMessage!),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppDimens.space16),
                   ],
                   Form(
                     key: _formKey,
@@ -109,10 +114,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             icon: Icons.person_outline_rounded,
                             validator: (value) =>
                                 value == null || value.trim().isEmpty
-                                ? 'Hãy nhập tên của bạn.'
+                                ? 'Tên đang trống.'
                                 : null,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppDimens.space16),
                         ],
                         _buildField(
                           controller: _emailController,
@@ -122,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Hãy nhập email.';
+                              return 'Email đang trống.';
                             }
                             if (!value.contains('@')) {
                               return 'Email chưa đúng định dạng.';
@@ -131,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         if (!isForgotPassword) ...[
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppDimens.space16),
                           _buildField(
                             controller: _passwordController,
                             label: 'Mật khẩu',
@@ -151,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Hãy nhập mật khẩu.';
+                                return 'Mật khẩu đang trống.';
                               }
                               if (value.length < 6) {
                                 return 'Mật khẩu cần ít nhất 6 ký tự.';
@@ -161,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                         if (isSignup) ...[
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppDimens.space16),
                           _buildField(
                             controller: _confirmPasswordController,
                             label: 'Xác nhận mật khẩu',
@@ -189,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppDimens.space12),
                   if (widget.mode == AuthMode.login)
                     Align(
                       alignment: Alignment.centerRight,
@@ -211,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     isLoading: _loadingAction == _AuthAction.email,
                     onPressed: _submit,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppDimens.space16),
                   if (isForgotPassword)
                     TextButton(
                       onPressed: () => Navigator.pushReplacementNamed(
@@ -223,9 +228,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   else ...[
                     _buildSwitchMode(context),
                     if (!isSignup) ...[
-                      const SizedBox(height: 22),
+                      const SizedBox(height: AppDimens.space24),
                       _buildDivider(theme),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppDimens.space16),
                       AppButton(
                         title: 'Đăng nhập với Google',
                         icon: Icons.g_mobiledata,
@@ -236,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       if (PlatformSupport.supportsFacebookSignIn) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppDimens.space12),
                         AppButton(
                           title: 'Đăng nhập với Facebook',
                           icon: Icons.facebook,
@@ -248,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppDimens.space12),
                       AppButton(
                         title: 'Đăng nhập với GitHub',
                         icon: Icons.code_rounded,
@@ -259,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           authVm.signInWithGithub,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppDimens.space12),
                       AppButton(
                         title: 'Dùng thử chế độ Khách',
                         icon: Icons.person_outline_rounded,
@@ -272,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ],
-                  const SizedBox(height: 22),
+                  const SizedBox(height: AppDimens.space24),
                   _buildTrustNote(theme),
                 ],
               ),
@@ -313,7 +318,8 @@ class _LoginScreenState extends State<LoginScreen> {
         style: TextButton.styleFrom(
           foregroundColor: AppSemanticColors.of(context).textPrimary,
           padding: EdgeInsets.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size(0, AppDimens.minTouchTarget),
+          tapTargetSize: MaterialTapTargetSize.padded,
         ),
       ),
     );
@@ -323,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       children: [
         const WhyIBuyLogo(size: 38),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppDimens.space12),
         Text(
           'Why I Buy?',
           style: AppTextStyles.titleLarge
@@ -378,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildError(String message) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).error.withValues(alpha: 0.1),
         borderRadius: AppDimens.borderMedium,
@@ -393,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppSemanticColors.of(context).error,
             size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppDimens.space8),
           Expanded(
             child: Text(
               message,
@@ -409,8 +415,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildSwitchMode(BuildContext context) {
     final isLogin = widget.mode == AuthMode.login;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'),
         TextButton(
@@ -429,7 +436,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Expanded(child: Divider(color: theme.dividerColor)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12),
           child: Text(
             'hoặc',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
@@ -442,7 +449,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildTrustNote(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderMedium,
@@ -454,13 +461,13 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppColors.onPrimary,
             size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppDimens.space8),
           Expanded(
             child: Text(
               'Hiểu mình, không phán xét\nMỗi khoản mua là một dịp để lắng nghe chính bạn.',
-              style: TextStyle(
+              style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                 color: theme.colorScheme.onSurface,
-                fontSize: 12,
+
                 height: 1.35,
               ),
             ),
@@ -504,7 +511,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.',
+              'Đã gửi email đặt lại mật khẩu. Bạn có thể kiểm tra hộp thư.',
             ),
           ),
         );

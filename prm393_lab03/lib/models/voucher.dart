@@ -1,5 +1,7 @@
 import '../core/utils/vietnamese_text.dart';
 
+/// A Shopee voucher the team entered on the web admin ("Mã giảm giá"), read
+/// from `vouchers/{id}`. Only real codes: the app has no built-in sample list.
 class Voucher {
   final String id;
   final String code;
@@ -7,10 +9,18 @@ class Voucher {
   final int discountAmount; // VND (e.g. 50000)
   final int minOrder; // VND (e.g. 250000)
   final String validUntil;
-  final String affiliateUrl;
+
+  /// Where the team saw the voucher announced (Shopee page); may be empty
+  final String sourceUrl;
   final bool isActive;
   final String category;
-  final String? shopName; // Tên shop cụ thể (nếu là voucher riêng của shop)
+
+  /// Shopee shop id (`shopee:<shopId>:<itemId>`): a shop voucher matches by it
+  final String? shopId;
+
+  /// Shop name, shown as "Mã của shop …"; matches only when it is exactly the
+  /// item's shop name and the voucher has no [shopId]
+  final String? shopName;
 
   /// [typeDiscount] (giảm vào giá món) hoặc [typeFreeship] (miễn phí vận chuyển,
   /// không trừ vào giá món)
@@ -26,18 +36,26 @@ class Voucher {
     required this.discountAmount,
     required this.minOrder,
     required this.validUntil,
-    this.affiliateUrl = '',
+    this.sourceUrl = '',
     this.isActive = true,
     this.category = 'Tất cả',
+    this.shopId,
     this.shopName,
     this.type = typeDiscount,
   });
 
-  bool get isShopVoucher => shopName != null && shopName!.trim().isNotEmpty;
+  bool get isShopVoucher =>
+      (shopId != null && shopId!.trim().isNotEmpty) ||
+      (shopName != null && shopName!.trim().isNotEmpty);
 
   bool get isFreeship => type == typeFreeship;
 
   factory Voucher.fromFirestore(Map<String, dynamic> data, String id) {
+    String? text(Object? v) {
+      final s = v?.toString().trim();
+      return s == null || s.isEmpty ? null : s;
+    }
+
     return Voucher(
       id: id,
       code: data['code']?.toString() ?? '',
@@ -45,10 +63,12 @@ class Voucher {
       discountAmount: (data['discountAmount'] as num?)?.toInt() ?? 0,
       minOrder: (data['minOrder'] as num?)?.toInt() ?? 0,
       validUntil: data['validUntil']?.toString() ?? '',
-      affiliateUrl: data['affiliateUrl']?.toString() ?? '',
+      // `affiliateUrl`: documents written by the old admin screen
+      sourceUrl: text(data['sourceUrl']) ?? text(data['affiliateUrl']) ?? '',
       isActive: data['isActive'] == true || data['isActive'] == null,
       category: data['category']?.toString() ?? 'Tất cả',
-      shopName: data['shopName']?.toString(),
+      shopId: text(data['shopId']),
+      shopName: text(data['shopName']),
       type: _readType(data),
     );
   }

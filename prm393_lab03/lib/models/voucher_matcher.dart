@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/vietnamese_text.dart';
 import 'price_snapshot.dart';
+import 'shopee_link.dart';
 import 'voucher.dart';
 import 'wishlist_item.dart';
 
@@ -73,6 +75,23 @@ class VoucherMatcher {
     );
   }
 
+  /// List price for a wishlist card, which never loads the price history itself:
+  /// [listPriceFor] when the history is loaded, otherwise the saved
+  /// [WishlistItem.latestPriceVnd]. That field is never a "sau voucher" price: the
+  /// app saves list prices only and the extension skips them (`latestPriceOf` in
+  /// `chrome_extension/lib/firebaseMap.ts`), so no voucher is taken off twice.
+  /// Whether it is a range is unknown here, so isRange is false.
+  static ListPrice? cardListPrice(
+    WishlistItem item, {
+    List<PriceSnapshot>? history,
+  }) {
+    if (history != null) return listPriceFor(item, history: history);
+    final price = item.latestPriceVnd;
+    return price == null || price <= 0
+        ? null
+        : (amountVnd: price, isRange: false);
+  }
+
   /// Price after [voucher] on [listPriceVnd], never below 0
   static int priceAfter(int listPriceVnd, Voucher voucher) {
     final after = listPriceVnd - voucher.discountAmount;
@@ -85,10 +104,11 @@ class VoucherMatcher {
     int priceVnd,
     DateTime now,
   ) {
-    // Shopee vouchers only fit items saved from a Shopee product
-    // (`shopee:<shopId>:<itemId>`); typed-in items and Tiki/TikTok/Lazada links
-    // have no such key. Demo items never get vouchers.
-    if (!(item.productKey?.startsWith('shopee:') ?? false)) return false;
+    // Shopee vouchers only fit items saved from a Shopee product: a well-formed
+    // `shopee:<shopId>:<itemId>` key. Typed-in items, Tiki/TikTok/Lazada links
+    // and malformed keys never match. Demo items never get vouchers.
+    final link = ShopeeLink.fromProductKey(item.productKey);
+    if (link == null) return false;
     if (item.isDemo) return false;
     if (!v.isActive) return false;
     final endsAt = _endsAt(v.validUntil);
@@ -96,18 +116,32 @@ class VoucherMatcher {
     if (priceVnd < v.minOrder) return false;
     if (!_categoryFits(v.category, item.budgetGroupId)) return false;
 
-    // Shop name check (unchanged from the old Voucher.canApplyTo): a shop voucher
-    // needs the item's shop to match
-    if (v.isShopVoucher) {
-      final itemShopName = item.shopName;
-      if (itemShopName == null || itemShopName.trim().isEmpty) return false;
-      final s1 = v.shopName!.toLowerCase().trim();
-      final s2 = itemShopName.toLowerCase().trim();
-      if (!s1.contains(s2) && !s2.contains(s1)) return false;
+    if (v.isShopVoucher && !_shopFits(v, link.shopId, item.shopName)) {
+      return false;
     }
 
     return true;
   }
+
+  /// A shop voucher fits only its own shop: the same Shopee shop id when the
+  /// voucher has one, otherwise exactly the same shop name (after
+  /// [normalizeShopName]). Never a partial name: "Perseper" is not
+  /// "Perseper Official".
+  static bool _shopFits(Voucher v, String itemShopId, String? itemShopName) {
+    final shopId = v.shopId?.trim();
+    if (shopId != null && shopId.isNotEmpty) return shopId == itemShopId;
+    final wanted = normalizeShopName(v.shopName ?? '');
+    final actual = normalizeShopName(itemShopName ?? '');
+    return wanted.isNotEmpty && wanted == actual;
+  }
+
+  /// Lowercase, no Vietnamese diacritics, single spaces, trimmed:
+  /// " Mây  Decor " → "may decor"
+  static String normalizeShopName(String name) => removeVietnameseDiacritics(
+    name,
+  ).toLowerCase().trim().replaceAll(_spaces, ' ');
+
+  static final RegExp _spaces = RegExp(r'\s+');
 
   /// Discount vouchers that apply, shop vouchers first, then the biggest discount.
   /// Free-shipping vouchers never change the item's price, so they are left out

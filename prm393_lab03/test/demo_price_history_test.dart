@@ -863,15 +863,15 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('admin: voucher source line, sample vouchers', (tester) async {
-      // Empty "vouchers" collection: the service keeps its 6 sample vouchers
+    testWidgets('admin: voucher source line, empty collection', (tester) async {
+      // D-3: real vouchers only, no built-in sample list
       final vs = VoucherService(firestore: FakeFirebaseFirestore());
       addTearDown(vs.dispose);
       await pumpWithVouchers(tester, vs);
 
-      expect(vs.source, VoucherService.sourceSample);
-      expect(vs.count, 6);
-      expect(find.text('Voucher: mẫu · 6 mã'), findsOneWidget);
+      expect(vs.source, VoucherService.sourceFirestore);
+      expect(vs.count, 0);
+      expect(find.text('Voucher: firestore · 0 mã'), findsOneWidget);
     });
 
     testWidgets('admin: voucher source line, Firestore vouchers', (

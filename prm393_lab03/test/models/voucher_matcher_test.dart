@@ -40,7 +40,7 @@ Voucher _voucher(
   category: category,
 );
 
-// Same values as PERSEPER15K in VoucherService.defaultVouchers
+// Same values as PERSEPER15K in _fixtureVouchers
 final _perseper = _voucher(
   'PERSEPER15K',
   discount: 15000,
@@ -89,6 +89,66 @@ class _ShopeeAuditHarness extends UiAuditHarness {
   @override
   WishlistItem get item => _shopeeItem;
 }
+
+/// Test-only vouchers (same values as the sample list the app used to ship;
+/// the app now reads only real vouchers from Firestore, decision D-3)
+final List<Voucher> _fixtureVouchers = [
+  const Voucher(
+    id: 'v1',
+    code: 'SHOPEE1111',
+    title: 'Giảm 50K cho đơn từ 250K',
+    discountAmount: 50000,
+    minOrder: 250000,
+    validUntil: '2026-11-12',
+  ),
+  const Voucher(
+    id: 'v2',
+    code: 'FREESHIP0D',
+    title: 'Miễn phí vận chuyển đơn từ 0Đ',
+    discountAmount: 25000,
+    minOrder: 0,
+    validUntil: '2026-11-12',
+    type: Voucher.typeFreeship,
+  ),
+  const Voucher(
+    id: 'v3',
+    code: 'TECH1111',
+    title: 'Công nghệ giảm 100K đơn 500K',
+    discountAmount: 100000,
+    minOrder: 500000,
+    validUntil: '2026-11-15',
+    category: 'Công nghệ',
+  ),
+  const Voucher(
+    id: 'v4',
+    code: 'FASHION30K',
+    title: 'Thời trang giảm 30K',
+    discountAmount: 30000,
+    minOrder: 100000,
+    validUntil: '2026-11-20',
+    category: 'Thời trang',
+  ),
+  const Voucher(
+    id: 'v5',
+    code: 'PERSEPER15K',
+    title: 'Shop Perseper giảm 15K',
+    discountAmount: 15000,
+    minOrder: 50000,
+    validUntil: '2026-11-30',
+    category: 'Thời trang',
+    shopName: 'Perseper',
+  ),
+  const Voucher(
+    id: 'v6',
+    code: 'XMMN20K',
+    title: 'Shop XMMN giảm 20K',
+    discountAmount: 20000,
+    minOrder: 100000,
+    validUntil: '2026-11-30',
+    category: 'Thời trang',
+    shopName: 'XMMN',
+  ),
+];
 
 void main() {
   group('VoucherMatcher.canApply: hạn dùng', () {
@@ -258,7 +318,7 @@ void main() {
     // Sample codes: TECH1111 'Công nghệ' (đơn từ 500K, hạn 15/11),
     // FASHION30K 'Thời trang' (đơn từ 100K, hạn 20/11); _now is 15/11
     Voucher sample(String code) =>
-        VoucherService.defaultVouchers.firstWhere((v) => v.code == code);
+        _fixtureVouchers.firstWhere((v) => v.code == code);
     final tech = sample('TECH1111');
     final fashion = sample('FASHION30K');
     final everyone = _voucher('ALL20', discount: 20000);
@@ -325,12 +385,16 @@ void main() {
     });
   });
 
-  test('danh sách mẫu không còn LAZADA1111', () {
-    expect(
-      VoucherService.defaultVouchers.map((v) => v.code),
-      isNot(contains('LAZADA1111')),
-    );
-  });
+  test(
+    'D-3: app không có danh sách voucher mẫu, collection rỗng thì không có mã',
+    () async {
+      final vs = VoucherService(firestore: FakeFirebaseFirestore());
+      await Future<void>.delayed(Duration.zero);
+      expect(vs.allVouchers, isEmpty);
+      expect(vs.source, VoucherService.sourceFirestore);
+      vs.dispose();
+    },
+  );
 
   group('VoucherMatcher.listPriceFor / priceAfter', () {
     PriceSnapshot snap(
@@ -429,7 +493,7 @@ void main() {
     // The sample codes expire on 12/11/2026: check on 11/11/2026, 10:00 Vietnam time
     final nov11 = DateTime.utc(2026, 11, 11, 3);
     Voucher sample(String code) =>
-        VoucherService.defaultVouchers.firstWhere((v) => v.code == code);
+        _fixtureVouchers.firstWhere((v) => v.code == code);
 
     test('FREESHIP0D trong danh sách mẫu là freeship', () {
       expect(sample('FREESHIP0D').isFreeship, isTrue);
@@ -491,6 +555,77 @@ void main() {
     });
   });
 
+  group('V4: ghép voucher của shop bằng shopId, tên trùng hoàn toàn', () {
+    WishlistItem shopItem(String? shopName, {String key = 'shopee:111:222'}) =>
+        WishlistItem(
+          id: 'v4',
+          title: 'Áo',
+          productKey: key,
+          saveChannel: SaveChannel.share,
+          shopName: shopName,
+          latestPriceVnd: 120000,
+          createdAt: DateTime(2026, 11, 1),
+        );
+    Voucher byName(String name) => _voucher('SHOP10', shopName: name);
+    const byId = Voucher(
+      id: 'id',
+      code: 'SHOPID10',
+      title: 'Mã shop 111',
+      discountAmount: 10000,
+      minOrder: 0,
+      validUntil: '2026-12-31',
+      shopId: '111',
+      shopName: 'Tên khác',
+    );
+    bool fits(Voucher v, WishlistItem item) =>
+        VoucherMatcher.canApply(v, item, 120000, _now);
+
+    test('tên: không khớp một phần, khớp khi chỉ khác hoa thường, dấu, khoảng trắng', () {
+      expect(fits(byName('Perseper'), shopItem('Perseper Official')), isFalse);
+      expect(fits(byName('perseper '), shopItem('Perseper')), isTrue);
+      expect(fits(byName('Mây'), shopItem('May')), isTrue);
+      expect(fits(byName('Mây'), shopItem('Mây Decor')), isFalse);
+      expect(fits(byName('Mây  Decor'), shopItem('mây decor')), isTrue);
+    });
+
+    test('shopId: trùng id thì khớp dù tên khác; khác id thì không khớp dù tên trùng', () {
+      expect(fits(byId, shopItem('Shop bất kỳ')), isTrue);
+      expect(fits(byId, shopItem('Tên khác', key: 'shopee:999:222')), isFalse);
+    });
+
+    test('món không có tên shop và voucher chỉ có tên: không áp', () {
+      expect(fits(byName('Perseper'), shopItem(null)), isFalse);
+    });
+
+    test('productKey sai dạng: không áp voucher nào', () {
+      final all = _voucher('ALL5');
+      for (final key in [
+        'shopee:abc',
+        'shopee:123',
+        'shopee:1:x',
+        'tiki:1:2',
+      ]) {
+        expect(fits(all, shopItem('Perseper', key: key)), isFalse, reason: key);
+      }
+    });
+
+    test('V6c: cardListPrice dùng giá đã lưu khi chưa nạp lịch sử', () {
+      final item = shopItem('Perseper');
+      expect(VoucherMatcher.cardListPrice(item)?.amountVnd, 120000);
+      expect(
+        VoucherMatcher.cardListPrice(item, history: const [])?.amountVnd,
+        120000,
+      );
+      final noPrice = WishlistItem(
+        id: 'x',
+        title: 'x',
+        productKey: 'shopee:1:2',
+        createdAt: DateTime(2026, 11, 1),
+      );
+      expect(VoucherMatcher.cardListPrice(noPrice), isNull);
+    });
+  });
+
   group('wishlist_card và voucher_suggestion_card', () {
     // Far-future dates: the widgets use the real DateTime.now()
     Future<VoucherService> service(List<Map<String, Object?>> vouchers) async {
@@ -511,7 +646,6 @@ void main() {
     }) => {
       'code': code,
       'title': 'Voucher $code',
-      'platform': 'Shopee',
       'discountAmount': discount,
       'minOrder': minOrder,
       'validUntil': validUntil,
@@ -568,6 +702,22 @@ void main() {
       matching: find.text(text),
     );
 
+    Finder cardLine() => find.byKey(const ValueKey('card-voucher-line'));
+    Finder estimate() => find.byKey(const ValueKey('voucher-estimate'));
+    Finder inEstimate(String text) =>
+        find.descendant(of: estimate(), matching: find.text(text));
+    String cardLineText(WidgetTester tester) => tester
+        .widget<Text>(
+          find.descendant(of: cardLine(), matching: find.byType(Text)),
+        )
+        .data!;
+    bool mainPriceStruck(WidgetTester tester) =>
+        tester
+            .widget<Text>(find.byKey(const ValueKey('card-price')))
+            .style
+            ?.decoration ==
+        TextDecoration.lineThrough;
+
     testWidgets('cùng voucher tốt nhất khi có voucher của shop', (
       tester,
     ) async {
@@ -584,15 +734,15 @@ void main() {
       )!;
       expect(best.code, 'PERSEPER15K');
       expect(inSuggestionCard('Đủ điều kiện'), findsOneWidget);
+      // V8: the card keeps its list price and adds one quiet line
       expect(
-        inWishlistCard('Voucher Shop -${formatVnd(best.discountAmount)}'),
-        findsOneWidget,
+        cardLineText(tester),
+        'Có mã của shop −${formatVnd(15000)} · đơn từ ${formatVnd(50000)}',
       );
-      expect(inSuggestionCard(best.code), findsOneWidget);
-      expect(
-        inSuggestionCard('Tiết kiệm ${formatVnd(best.discountAmount)}'),
-        findsOneWidget,
-      );
+      expect(mainPriceStruck(tester), isFalse);
+      expect(inSuggestionCard('Nếu dùng mã PERSEPER15K'), findsOneWidget);
+      expect(find.textContaining('Tiết kiệm'), findsNothing);
+      expect(find.textContaining('Giá hời'), findsNothing);
     });
 
     testWidgets('cùng voucher tốt nhất, bỏ voucher hết hạn', (tester) async {
@@ -601,22 +751,16 @@ void main() {
       final item = _item(shopName: null);
       await pumpBoth(tester, vs, item);
 
-      final best = VoucherMatcher.best(
-        vs.allVouchers,
-        item,
-        item.latestPriceVnd!,
-        DateTime.now(),
-      )!;
-      expect(best.code, 'BIG50');
       expect(
-        inWishlistCard('Mã ${best.code} -${formatVnd(best.discountAmount)}'),
+        cardLineText(tester),
+        'Có mã −${formatVnd(50000)} · đơn từ ${formatVnd(100000)}',
+      );
+      expect(inSuggestionCard('Nếu dùng mã BIG50'), findsOneWidget);
+      expect(
+        inEstimate('→ ước tính ${formatVnd(120000 - 50000)}'),
         findsOneWidget,
       );
-      expect(inSuggestionCard(best.code), findsOneWidget);
-      expect(
-        inSuggestionCard('Tiết kiệm ${formatVnd(best.discountAmount)}'),
-        findsOneWidget,
-      );
+      expect(find.text('Điều kiện mã do Shopee quyết định.'), findsOneWidget);
       expect(find.textContaining('EXPIRED99'), findsNothing);
     });
 
@@ -630,24 +774,31 @@ void main() {
       for (final v in vouchers) {
         expect(find.textContaining(v['code'] as String), findsNothing);
       }
-      expect(find.textContaining('Voucher Shop'), findsNothing);
+      expect(cardLine(), findsNothing);
       expect(find.text('Đủ điều kiện'), findsNothing);
-      expect(find.text('Giá sau áp voucher:'), findsNothing);
+      expect(estimate(), findsNothing);
       expect(
         inSuggestionCard('Thêm giá của món để xem mã áp được'),
         findsOneWidget,
       );
     });
 
-    testWidgets('không có mã nào áp được thì không có nhãn "Đủ điều kiện"', (
+    testWidgets('chưa đủ đơn tối thiểu: câu trung tính, không "cần thêm"', (
       tester,
     ) async {
       final vs = await service([doc('BIG50', 50000, minOrder: 100000)]);
       addTearDown(vs.dispose);
       await pumpBoth(tester, vs, _item(price: 40000));
 
-      expect(find.textContaining('Mã BIG50 cần thêm'), findsOneWidget);
+      expect(
+        find.text(
+          'Mã BIG50 áp cho đơn từ ${formatVnd(100000)} (giảm ${formatVnd(50000)}).',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('cần thêm'), findsNothing);
       expect(find.text('Đủ điều kiện'), findsNothing);
+      expect(cardLine(), findsNothing);
     });
 
     testWidgets('mã freeship không vào giá, Chi tiết món chỉ hiện một dòng', (
@@ -657,19 +808,9 @@ void main() {
       addTearDown(vs.dispose);
       await pumpBoth(tester, vs, _item(price: 89000));
 
-      // Thẻ món: giá không bị gạch, không có giá sau voucher
-      final price = tester.widget<Text>(inWishlistCard(formatVnd(89000)));
-      expect(price.style?.decoration, isNot(TextDecoration.lineThrough));
-      expect(find.text(formatVnd(89000 - 25000)), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byType(WishlistCard),
-          matching: find.textContaining('SHIP25'),
-        ),
-        findsNothing,
-      );
-      // Chi tiết món: không có khung giá, chỉ một dòng freeship kèm mã
-      expect(find.text('Giá sau áp voucher:'), findsNothing);
+      expect(mainPriceStruck(tester), isFalse);
+      expect(cardLine(), findsNothing);
+      expect(estimate(), findsNothing);
       expect(find.text('Đủ điều kiện'), findsNothing);
       expect(
         inSuggestionCard('Có mã miễn phí vận chuyển: SHIP25'),
@@ -677,7 +818,7 @@ void main() {
       );
     });
 
-    group('thẻ món chỉ hiện giá sau voucher khi biết giá niêm yết', () {
+    group('V6c: thẻ món hiện mã ngay, không cần lịch sử giá', () {
       // BIG50: giảm 50.000đ cho đơn từ 100.000đ; món 120.000đ
       PriceSnapshot snap(int amount, int daysAgo, PriceType type) =>
           PriceSnapshot(
@@ -698,62 +839,50 @@ void main() {
         await pumpBoth(tester, vs, _item(price: 120000), decisions: decisions);
       }
 
-      bool mainPriceStruck(WidgetTester tester) =>
-          tester
-              .widget<Text>(inWishlistCard(formatVnd(120000)))
-              .style
-              ?.decoration ==
-          TextDecoration.lineThrough;
-
-      testWidgets('lịch sử chưa nạp: không có giá sau voucher', (tester) async {
+      testWidgets('lịch sử chưa nạp: thẻ món dùng giá đã lưu', (tester) async {
         await pumpCard(tester, null);
-        expect(inWishlistCard(formatVnd(70000)), findsNothing);
+        expect(cardLine(), findsOneWidget);
         expect(mainPriceStruck(tester), isFalse);
-        // Chi tiết món waits for the history too: no voucher, no "Thêm giá…"
-        expect(find.byType(VoucherSuggestionCard), findsOneWidget);
-        expect(find.textContaining('BIG50'), findsNothing);
-        expect(find.textContaining('Thêm giá của món'), findsNothing);
+        // Chi tiết món waits for the history: no voucher, no "Thêm giá…"
+        expect(estimate(), findsNothing);
+        expect(find.textContaining('Thêm giá'), findsNothing);
       });
 
-      testWidgets('lịch sử đã nạp và rỗng: dùng latestPriceVnd ở cả hai chỗ', (
+      testWidgets('lịch sử đã nạp và rỗng: cả hai chỗ dùng giá đã lưu', (
         tester,
       ) async {
         await pumpCard(tester, const []);
-        expect(inWishlistCard(formatVnd(70000)), findsOneWidget);
-        expect(mainPriceStruck(tester), isTrue);
-        expect(inSuggestionCard(formatVnd(70000)), findsOneWidget);
+        expect(cardLine(), findsOneWidget);
+        expect(inEstimate('→ ước tính ${formatVnd(70000)}'), findsOneWidget);
       });
 
-      testWidgets('đã nạp, giá mới nhất là giá niêm yết: có', (tester) async {
-        await pumpCard(tester, [
-          snap(120000, 0, PriceType.single),
-          snap(130000, 3, PriceType.single),
-        ]);
-        expect(inWishlistCard(formatVnd(70000)), findsOneWidget);
-        expect(mainPriceStruck(tester), isTrue);
-      });
-
-      testWidgets('đã nạp, chỉ có giá afterVoucher: không', (tester) async {
+      testWidgets('đã nạp, chỉ có giá afterVoucher: không có mã', (
+        tester,
+      ) async {
         await pumpCard(tester, [snap(95000, 0, PriceType.afterVoucher)]);
-        expect(inWishlistCard(formatVnd(70000)), findsNothing);
-        expect(inWishlistCard(formatVnd(45000)), findsNothing);
-        expect(mainPriceStruck(tester), isFalse);
+        expect(cardLine(), findsNothing);
+        expect(estimate(), findsNothing);
+        expect(
+          inSuggestionCard('Thêm giá niêm yết của món để xem mã áp được'),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('đã nạp, mới nhất afterVoucher nhưng có giá niêm yết trước '
-          'đó: tính trên giá niêm yết (như V6)', (tester) async {
+      testWidgets('mới nhất afterVoucher, có giá niêm yết trước đó: tính trên '
+          'giá niêm yết', (tester) async {
         await pumpCard(tester, [
           snap(95000, 0, PriceType.afterVoucher),
           snap(110000, 2, PriceType.single),
         ]);
-        expect(inWishlistCard(formatVnd(110000 - 50000)), findsOneWidget);
-        expect(inWishlistCard(formatVnd(95000 - 50000)), findsNothing);
+        expect(
+          inEstimate('→ ước tính ${formatVnd(110000 - 50000)}'),
+          findsOneWidget,
+        );
+        expect(find.textContaining(formatVnd(95000 - 50000)), findsNothing);
       });
     });
 
-    testWidgets('khoảng giá: giá sau voucher ghi "từ …" ở cả hai chỗ', (
-      tester,
-    ) async {
+    testWidgets('khoảng giá: ước tính ghi "từ …"', (tester) async {
       final vs = await service([doc('BIG50', 50000, minOrder: 100000)]);
       addTearDown(vs.dispose);
       final decisions = _HistoryDecisions([
@@ -769,12 +898,16 @@ void main() {
       addTearDown(decisions.dispose);
       await pumpBoth(tester, vs, _item(price: 120000), decisions: decisions);
 
-      final after = 'từ ${formatVnd(120000 - 50000)}';
-      expect(inWishlistCard(after), findsOneWidget);
-      expect(inSuggestionCard(after), findsOneWidget);
+      expect(inEstimate('Giá đã ghi từ ${formatVnd(120000)}'), findsOneWidget);
+      expect(
+        inEstimate('→ ước tính từ ${formatVnd(120000 - 50000)}'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('dòng freeship có nút Lưu mã sao chép đúng mã', (tester) async {
+    testWidgets('nút Sao chép mã sao chép đúng mã, cả dòng freeship', (
+      tester,
+    ) async {
       String? copied;
       final messenger = tester.binding.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -793,12 +926,12 @@ void main() {
       addTearDown(vs.dispose);
       await pumpBoth(tester, vs, _item(price: 89000));
 
-      // Two "Lưu mã" buttons: MID30 and the free-shipping line
-      expect(find.text('Lưu mã'), findsNWidgets(2));
+      // Two buttons: MID30 and the free-shipping line
+      expect(find.text('Sao chép mã'), findsNWidgets(2));
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('voucher-freeship')),
-          matching: find.text('Lưu mã'),
+          matching: find.text('Sao chép mã'),
         ),
       );
       await tester.pump();
@@ -851,7 +984,7 @@ void main() {
           await decisions.loadPriceHistory(h.item);
           await tester.pump();
           await tester.scrollUntilVisible(
-            find.text('Giá sau áp voucher:'),
+            find.byKey(const ValueKey('voucher-estimate')),
             200,
             scrollable: find
                 .byWidgetPredicate(
@@ -863,9 +996,11 @@ void main() {
           await tester.pump();
 
           expect(inSuggestionCard('BIG50'), findsOneWidget);
-          expect(inSuggestionCard(formatVnd(999999999)), findsOneWidget);
           expect(
-            inSuggestionCard(formatVnd(999999999 - 50000)),
+            find.descendant(
+              of: find.byKey(const ValueKey('voucher-estimate')),
+              matching: find.textContaining(formatVnd(999999999 - 50000)),
+            ),
             findsOneWidget,
           );
           final exception = tester.takeException();

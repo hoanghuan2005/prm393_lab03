@@ -110,7 +110,8 @@ class PriceHistoryDemoSection extends StatelessWidget {
           if (vouchers != null) ...[
             const SizedBox(height: AppDimens.space16),
             Text(
-              'Voucher: ${vouchers.source} · ${vouchers.count} mã',
+              'Voucher: ${vouchers.source}'
+              '${vouchers.isStale ? ' (mất kết nối)' : ''} · ${vouchers.count} mã',
               key: const ValueKey('voucher-source'),
               style: muted,
             ),

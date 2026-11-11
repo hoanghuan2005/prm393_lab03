@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
+import '../models/voucher.dart';
 import '../models/voucher_matcher.dart';
 import '../models/wishlist_item.dart';
 import '../services/voucher_service.dart';
@@ -34,10 +35,10 @@ class WishlistCard extends StatelessWidget {
 
     // Check for voucher price suggestion
     final voucherService = context.watch<VoucherService?>();
-    // Latest list price, never an "after voucher" price; lowest of a range.
-    // Null until the price history is loaded: the card never loads it itself
-    // (no extra Firestore reads), so no voucher is shown before that.
-    final listPrice = VoucherMatcher.listPriceFor(
+    // V8: the list price stays the card's main price; a voucher that applies only
+    // adds a small "Có mã …" line. V6c: the saved latest price is a list price
+    // (never "sau voucher"), so the card needs no price history of its own.
+    final listPrice = VoucherMatcher.cardListPrice(
       item,
       history: insights?.history,
     );
@@ -48,10 +49,11 @@ class WishlistCard extends StatelessWidget {
             now: DateTime.now(),
           )
         : null;
-    final priceAfterVoucher = (bestVoucher != null && listPrice != null)
-        ? VoucherMatcher.priceAfter(listPrice.amountVnd, bestVoucher)
+    // "Thấp hơn lúc lưu N%": compared with the price recorded when saving
+    final savedPrice = insights?.saved?.amountVnd;
+    final dealPercent = (hasDeal && savedPrice != null && savedPrice > 0)
+        ? (dealSavings * 100 / savedPrice).round()
         : null;
-    final afterVoucherPrefix = (listPrice?.isRange ?? false) ? 'từ ' : '';
 
     return Semantics(
       button: true,
@@ -105,67 +107,29 @@ class WishlistCard extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: AppDimens.space8),
-                          // Price; with a voucher the list price is struck through
-                          // and the price after voucher shows next to it
-                          Wrap(
-                            spacing: AppDimens.space8,
-                            runSpacing: AppDimens.space4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                formatVnd(item.latestPriceVnd),
-                                style: item.hasPrice
-                                    ? AppTextStyles.titleMedium
-                                          .themed(context)
-                                          .copyWith(
-                                            color: priceAfterVoucher != null
-                                                ? AppSemanticColors.of(context)
-                                                      .textSecondary
-                                                : AppColors.onPrimary,
-                                            fontWeight:
-                                                priceAfterVoucher != null
-                                                ? FontWeight.w500
-                                                : FontWeight.w700,
-                                            decoration:
-                                                priceAfterVoucher != null
-                                                ? TextDecoration.lineThrough
-                                                : null,
-                                          )
-                                          .themed(context)
-                                    : AppTextStyles.labelMedium
-                                          .themed(context)
-                                          .copyWith(
-                                            color: AppSemanticColors.of(context)
-                                                .textSecondary,
-                                            fontStyle: FontStyle.italic,
-                                          )
-                                          .themed(context),
-                              ),
-                              if (priceAfterVoucher != null)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.auto_awesome_rounded,
-                                      size: 12,
-                                      color: AppSemanticColors.of(context)
-                                          .success,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      '$afterVoucherPrefix${formatVnd(priceAfterVoucher)}',
-                                      style: AppTextStyles.titleMedium
-                                          .themed(context)
-                                          .copyWith(
-                                            color: AppSemanticColors.of(context)
-                                                .success,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                            ],
+                          Text(
+                            formatVnd(item.latestPriceVnd),
+                            key: const ValueKey('card-price'),
+                            style: item.hasPrice
+                                ? AppTextStyles.titleMedium
+                                      .copyWith(
+                                        color: AppColors.onPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      )
+                                      .themed(context)
+                                : AppTextStyles.labelMedium
+                                      .themed(context)
+                                      .copyWith(
+                                        color: AppSemanticColors.of(
+                                          context,
+                                        ).textSecondary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
                           ),
+                          if (bestVoucher != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _voucherLine(context, bestVoucher),
+                          ],
                         ],
                       ),
                     ),
@@ -183,76 +147,7 @@ class WishlistCard extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
-                    if (hasDeal)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).error
-                              .withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppSemanticColors.of(context).error
-                                .withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥', style: TextStyle(fontSize: 12)),
-                            const SizedBox(width: 4),
-                            Text(
-                              dealSavings > 0
-                                  ? 'Giá hời · Tiết kiệm ${formatVnd(dealSavings)}'
-                                  : 'Giá hời',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppSemanticColors.of(context).error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (bestVoucher != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).success
-                              .withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppSemanticColors.of(context).success
-                                .withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_offer_rounded,
-                              size: 11,
-                              color: AppSemanticColors.of(context).success,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              bestVoucher.isShopVoucher
-                                  ? 'Voucher Shop -${formatVnd(bestVoucher.discountAmount)}'
-                                  : 'Mã ${bestVoucher.code} -${formatVnd(bestVoucher.discountAmount)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppSemanticColors.of(context).success,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    if (hasDeal) _lowerThanSavedBadge(context, dealPercent, dealSavings),
                     if (item.isDemo) const DemoDataBadge(),
                     if (item.isFromExtension) fromExtensionChip(context),
                     _buildStatusBadge(context),
@@ -262,6 +157,60 @@ class WishlistCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// "Có mã −15.000 ₫ · đơn từ 50.000 ₫": a voucher that applies, in the quiet
+  /// secondary style; the list price above stays the main price (V8)
+  Widget _voucherLine(BuildContext context, Voucher voucher) {
+    final color = AppSemanticColors.of(context).textSecondary;
+    final owner = voucher.isShopVoucher ? 'Có mã của shop' : 'Có mã';
+    final minOrder = voucher.minOrder > 0
+        ? ' · đơn từ ${formatVnd(voucher.minOrder)}'
+        : '';
+    return Row(
+      key: const ValueKey('card-voucher-line'),
+      children: [
+        Icon(Icons.local_offer_outlined, size: 14, color: color),
+        const SizedBox(width: AppDimens.space4),
+        Expanded(
+          child: Text(
+            '$owner −${formatVnd(voucher.discountAmount)}$minOrder',
+            style: AppTextStyles.caption.themed(context).copyWith(color: color),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Neutral observation, never "giá hời" / "tiết kiệm" (no red, no emoji)
+  Widget _lowerThanSavedBadge(BuildContext context, int? percent, int savings) {
+    final colors = AppSemanticColors.of(context);
+    final amount = savings > 0 ? formatVnd(savings) : null;
+    return Container(
+      key: const ValueKey('card-lower-than-saved'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space8,
+        vertical: AppDimens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: colors.mutedSurface,
+        borderRadius: AppDimens.borderPill,
+        border: Border.all(color: colors.divider),
+      ),
+      child: Text(
+        percent != null && amount != null
+            ? 'Thấp hơn lúc lưu $percent% (−$amount)'
+            : 'Thấp hơn lúc lưu',
+        style: AppTextStyles.caption
+            .themed(context)
+            .copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
       ),
     );
   }

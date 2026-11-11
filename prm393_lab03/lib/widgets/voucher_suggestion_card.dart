@@ -26,15 +26,8 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
 
   @override
   Widget build(BuildContext context) {
-    List<Voucher> allVouchers = VoucherService.defaultVouchers;
-    try {
-      final vs = Provider.of<VoucherService?>(context);
-      if (vs != null) {
-        allVouchers = vs.allVouchers;
-      }
-    } catch (_) {
-      // In case Provider is not mounted or during hot reload without full restart
-    }
+    final allVouchers =
+        Provider.of<VoucherService?>(context)?.allVouchers ?? const <Voucher>[];
 
     // Latest list price (never an "after voucher" price, lowest of a range);
     // null when the item has no such price yet: never treated as 0 ₫
@@ -167,8 +160,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                           vertical: AppDimens.space2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).success
-                              .withValues(alpha: 0.15),
+                          color: AppSemanticColors.of(context).mutedSurface,
                           borderRadius: AppDimens.borderSmall,
                         ),
                         child: Text(
@@ -176,8 +168,9 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                           style: AppTextStyles.caption
                               .themed(context)
                               .copyWith(
-                                color: AppSemanticColors.of(context).success,
-                                fontWeight: FontWeight.bold,
+                                color: AppSemanticColors.of(context)
+                                    .textPrimary,
+                                fontWeight: FontWeight.w600,
                               ),
                         ),
                       ),
@@ -211,102 +204,69 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
 
           // Main Voucher Showcase
           if (bestVoucher != null) ...[
-            // Banner gợi ý giá sau khi áp voucher
+            // Estimate on the recorded list price; the code's conditions are Shopee's
             if (price != null && price > 0) ...[
               Container(
+                key: const ValueKey('voucher-estimate'),
+                width: double.infinity,
                 margin: const EdgeInsets.only(bottom: AppDimens.space12),
                 padding: const EdgeInsets.all(AppDimens.space12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      brandColor.withValues(alpha: 0.12),
-                      AppSemanticColors.of(context).success
-                          .withValues(alpha: 0.1),
-                    ],
-                  ),
+                  color: AppSemanticColors.of(context).mutedSurface,
                   borderRadius: AppDimens.borderMedium,
-                  border: Border.all(color: brandColor.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppSemanticColors.of(context).divider,
+                  ),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      color: brandColor,
-                      size: 22,
+                    Text(
+                      'Nếu dùng mã ${bestVoucher.code}',
+                      style: AppTextStyles.labelLarge
+                          .themed(context)
+                          .copyWith(
+                            color: AppSemanticColors.of(context).textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
-                    const SizedBox(width: AppDimens.space8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Wrap: the prices move to the next line instead of
-                          // overflowing on narrow screens or large text
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                'Giá sau áp voucher:',
-                                style: AppTextStyles.caption
-                                    .themed(context)
-                                    .copyWith(
-                                      color: AppSemanticColors.of(context)
-                                          .textSecondary,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: AppDimens.space4),
+                    // Wrap: the prices move to the next line instead of
+                    // overflowing on narrow screens or large text
+                    Wrap(
+                      spacing: AppDimens.space8,
+                      runSpacing: AppDimens.space4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'Giá đã ghi $afterVoucherPrefix${formatVnd(price)}',
+                          style: AppTextStyles.bodyMedium
+                              .themed(context)
+                              .copyWith(
+                                color: AppSemanticColors.of(context)
+                                    .textSecondary,
                               ),
-                              Text(
-                                formatVnd(price),
-                                style: AppTextStyles.caption
-                                    .themed(context)
-                                    .copyWith(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: AppSemanticColors.of(context)
-                                          .textSecondary,
-                                    ),
+                        ),
+                        Text(
+                          '→ ước tính $afterVoucherPrefix${formatVnd(VoucherMatcher.priceAfter(price, bestVoucher))}',
+                          style: AppTextStyles.titleMedium
+                              .themed(context)
+                              .copyWith(
+                                color: AppSemanticColors.of(context)
+                                    .textPrimary,
+                                fontWeight: FontWeight.w700,
                               ),
-                            ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimens.space4),
+                    Text(
+                      'Điều kiện mã do Shopee quyết định.',
+                      style: AppTextStyles.caption
+                          .themed(context)
+                          .copyWith(
+                            color: AppSemanticColors.of(context).textSecondary,
                           ),
-                          const SizedBox(height: 2),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                '$afterVoucherPrefix${formatVnd(VoucherMatcher.priceAfter(price, bestVoucher))}',
-                                style: AppTextStyles.titleMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: AppSemanticColors.of(context)
-                                          .success,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppSemanticColors.of(context).success,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Tiết kiệm ${formatVnd(bestVoucher.discountAmount)}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -315,7 +275,10 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
             _buildVoucherRow(context, bestVoucher, brandColor),
           ] else if (price == null || price <= 0)
             Text(
-              'Thêm giá của món để xem mã áp được',
+              // Only a "sau voucher" price recorded: a list price is needed
+              (widget.item.latestPriceVnd ?? 0) > 0
+                  ? 'Thêm giá niêm yết của món để xem mã áp được'
+                  : 'Thêm giá của món để xem mã áp được',
               style: AppTextStyles.bodyMedium
                   .themed(context)
                   .copyWith(color: AppSemanticColors.of(context).textSecondary),
@@ -333,12 +296,12 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                   Icon(
                     Icons.info_outline_rounded,
                     size: 20,
-                    color: AppSemanticColors.of(context).warning,
+                    color: AppSemanticColors.of(context).textSecondary,
                   ),
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(
-                      'Mã ${nextTargetVoucher.code} cần thêm ${formatVnd(nextTargetVoucher.minOrder - price)} để đạt mức đơn tối thiểu (giảm ${formatVnd(nextTargetVoucher.discountAmount)}).',
+                      'Mã ${nextTargetVoucher.code} áp cho đơn từ ${formatVnd(nextTargetVoucher.minOrder)} (giảm ${formatVnd(nextTargetVoucher.discountAmount)}).',
                       style: AppTextStyles.bodyMedium
                           .themed(context)
                           .copyWith(
@@ -452,20 +415,22 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                     if (voucher.isShopVoucher)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: AppDimens.space6,
+                          vertical: AppDimens.space2,
                         ),
                         decoration: BoxDecoration(
                           color: brandColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppDimens.borderSmall,
                         ),
                         child: Text(
-                          'Mã Shop: ${voucher.shopName}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: brandColor,
-                          ),
+                          voucher.shopName == null
+                              ? 'Mã của shop'
+                              : 'Mã của shop ${voucher.shopName}',
+                          style: AppTextStyles.caption.withInheritedColor
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: brandColor,
+                              ),
                         ),
                       ),
                     Text(
@@ -473,7 +438,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                       style: AppTextStyles.labelLarge
                           .themed(context)
                           .copyWith(
-                            color: AppSemanticColors.of(context).success,
+                            color: AppSemanticColors.of(context).textPrimary,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -493,7 +458,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                 ),
                 const SizedBox(height: AppDimens.space4),
                 Text(
-                  'Đơn tối thiểu ${formatVnd(voucher.minOrder)} · Hạn đến ${voucher.validUntil}',
+                  'Đơn tối thiểu ${formatVnd(voucher.minOrder)} · Hạn đến ${_dayMonthYear(voucher.validUntil)}',
                   style: AppTextStyles.caption
                       .themed(context)
                       .copyWith(
@@ -510,7 +475,13 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
     );
   }
 
-  /// "Lưu mã": copies the code (discount and free-shipping vouchers alike)
+  /// "yyyy-MM-dd" → "dd/MM/yyyy" (unchanged when not that shape)
+  static String _dayMonthYear(String date) {
+    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(date.trim());
+    return m == null ? date : '${m.group(3)}/${m.group(2)}/${m.group(1)}';
+  }
+
+  /// "Sao chép mã": copies the code (discount and free-shipping vouchers alike)
   Widget _buildSaveButton(
     BuildContext context,
     Voucher voucher,
@@ -524,7 +495,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
           SnackBar(
             content: Text(
               'Đã sao chép mã ${voucher.code} để dùng trên Shopee.',
-              style: TextStyle(
+              style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                 color: AppSemanticColors.of(context).onBrandButton,
               ),
             ),
@@ -556,7 +527,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
             ),
             const SizedBox(width: AppDimens.space4),
             Text(
-              'Lưu mã',
+              'Sao chép mã',
               style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppSemanticColors.of(context).onBrandButton,

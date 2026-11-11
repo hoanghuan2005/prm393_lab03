@@ -18,6 +18,7 @@ import '../viewmodels/sale_events_viewmodel.dart';
 import '../viewmodels/shell_viewmodel.dart';
 import '../viewmodels/shopee_vouchers_viewmodel.dart';
 import '../viewmodels/users_viewmodel.dart';
+import '../viewmodels/vouchers_admin_viewmodel.dart';
 import '../widgets/brand_mark.dart';
 import 'ai_assistant_screen.dart';
 import 'announcements_screen.dart';
@@ -26,6 +27,7 @@ import 'review_queue_screen.dart';
 import 'sale_events_screen.dart';
 import 'shopee_vouchers_screen.dart';
 import 'users_screen.dart';
+import 'vouchers_admin_screen.dart';
 
 /// Signed-in area (staff and admins). The ViewModels live here so they are
 /// created with the account's uid and role, and disposed on sign-out.
@@ -74,6 +76,12 @@ class AdminShell extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(
+          create: (c) => VouchersAdminViewModel(
+            c.read<VoucherRecordService>(),
+            byUid: account.uid,
+          ),
+        ),
+        ChangeNotifierProvider(
           create: (c) =>
               ShopeeVouchersViewModel(c.read<ShopeeVoucherService>()),
         ),
@@ -101,6 +109,7 @@ class _ShellBody extends StatelessWidget {
     AdminSection.saleEvents: SaleEventsScreen(),
     AdminSection.reviews: ReviewQueueScreen(),
     AdminSection.announcements: AnnouncementsScreen(),
+    AdminSection.codes: VouchersAdminScreen(),
     AdminSection.vouchers: ShopeeVouchersScreen(),
     AdminSection.assistant: AiAssistantScreen(),
   };

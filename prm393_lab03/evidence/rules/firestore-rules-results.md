@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-11T00:36:46.274Z.
-Tổng: 298 ca · Qua: 298 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-11T21:49:11.770Z.
+Tổng: 310 ca · Qua: 310 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 Ngoại lệ có chủ đích: `shopeeVouchers|user` chỉ có ca từ chối (vouchers captured by staff; users never read or write them).
 
@@ -289,19 +289,31 @@ Ngoại lệ có chủ đích: `shopeeVouchers|user` chỉ có ca từ chối (v
 | R-280 | reports | user | delete own (Xoá toàn bộ dữ liệu) | Allowed | Pass |
 | R-281 | reports | staff | write into alice's reports | Denied | Pass |
 | R-282 | vouchers | user | read | Allowed | Pass |
-| R-283 | vouchers | user | write a voucher | Denied | Pass |
-| R-284 | vouchers | staff | read | Allowed | Pass |
-| R-285 | vouchers | staff | write a voucher | Denied | Pass |
-| R-286 | vouchers | admin | read | Allowed | Pass |
-| R-287 | vouchers | admin | write a voucher | Denied | Pass |
-| R-288 | vouchers | signed out | read | Denied | Pass |
-| R-289 | shopeeVouchers | user | read | Denied | Pass |
-| R-290 | shopeeVouchers | user | capture a voucher | Denied | Pass |
-| R-291 | shopeeVouchers | staff | read | Allowed | Pass |
-| R-292 | shopeeVouchers | staff | capture a voucher as self | Allowed | Pass |
-| R-293 | shopeeVouchers | staff | capture in the name of another account | Denied | Pass |
-| R-294 | shopeeVouchers | admin | read | Allowed | Pass |
-| R-295 | shopeeVouchers | admin | source outside shopee.vn | Denied | Pass |
-| R-296 | shopeeVouchers | guest | capture without a linked staff account | Denied | Pass |
-| R-297 | (collection group) purchases | user | count every purchase | Denied | Pass |
-| R-298 | (collection group) purchases | admin | list the documents (not only count) | Allowed | Pass |
+| R-283 | vouchers | staff | read | Allowed | Pass |
+| R-284 | vouchers | admin | read | Allowed | Pass |
+| R-285 | vouchers | signed out | read | Denied | Pass |
+| R-286 | vouchers | user | create a voucher | Denied | Pass |
+| R-287 | vouchers | staff | create a voucher | Allowed | Pass |
+| R-288 | vouchers | staff | create in the name of someone else | Denied | Pass |
+| R-289 | vouchers | staff | lower-case code with a dash | Denied | Pass |
+| R-290 | vouchers | staff | discount of 0 ₫ | Denied | Pass |
+| R-291 | vouchers | staff | free shipping with amount 0 | Allowed | Pass |
+| R-292 | vouchers | staff | unknown category | Denied | Pass |
+| R-293 | vouchers | staff | source outside shopee.vn | Denied | Pass |
+| R-294 | vouchers | staff | extra field (platform) | Denied | Pass |
+| R-295 | vouchers | staff | shop id with letters | Denied | Pass |
+| R-296 | vouchers | staff | archive a legacy voucher | Allowed | Pass |
+| R-297 | vouchers | staff | reactivate a legacy voucher without fixing it | Denied | Pass |
+| R-298 | vouchers | staff | delete a voucher | Denied | Pass |
+| R-299 | vouchers | admin | edit a voucher | Allowed | Pass |
+| R-300 | vouchers | admin | delete a voucher | Denied | Pass |
+| R-301 | shopeeVouchers | user | read | Denied | Pass |
+| R-302 | shopeeVouchers | user | capture a voucher | Denied | Pass |
+| R-303 | shopeeVouchers | staff | read | Allowed | Pass |
+| R-304 | shopeeVouchers | staff | capture a voucher as self | Allowed | Pass |
+| R-305 | shopeeVouchers | staff | capture in the name of another account | Denied | Pass |
+| R-306 | shopeeVouchers | admin | read | Allowed | Pass |
+| R-307 | shopeeVouchers | admin | source outside shopee.vn | Denied | Pass |
+| R-308 | shopeeVouchers | guest | capture without a linked staff account | Denied | Pass |
+| R-309 | (collection group) purchases | user | count every purchase | Denied | Pass |
+| R-310 | (collection group) purchases | admin | list the documents (not only count) | Allowed | Pass |

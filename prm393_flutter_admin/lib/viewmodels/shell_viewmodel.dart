@@ -8,6 +8,7 @@ enum AdminSection {
   saleEvents('Sự kiện sale', Icons.event_outlined, Icons.event),
   reviews('Duyệt đề xuất', Icons.fact_check_outlined, Icons.fact_check),
   announcements('Thông báo', Icons.campaign_outlined, Icons.campaign),
+  codes('Mã giảm giá', Icons.sell_outlined, Icons.sell),
   vouchers('Voucher Shopee', Icons.local_offer_outlined, Icons.local_offer),
   assistant('Trợ lý AI', Icons.auto_awesome_outlined, Icons.auto_awesome);
 

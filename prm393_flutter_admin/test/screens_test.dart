@@ -26,6 +26,7 @@ void main() {
   late FakeAnnouncementService announcements;
   late FakeUserDirectory directory;
   late FakeShopeeVoucherService vouchers;
+  late FakeVoucherRecordService codes;
   late FakeAuthService auth;
   late ShellViewModel shell;
 
@@ -36,6 +37,7 @@ void main() {
     directory = FakeUserDirectory()
       ..activity['u1'] = const UserActivity(wishlistItems: 3, purchases: 1);
     vouchers = FakeShopeeVoucherService();
+    codes = FakeVoucherRecordService();
     auth = FakeAuthService();
     shell = ShellViewModel();
   });
@@ -55,6 +57,7 @@ void main() {
       ),
       Provider<PushService>.value(value: FakePushService(isConfigured: true)),
       Provider<ShopeeVoucherService>.value(value: vouchers),
+      Provider<VoucherRecordService>.value(value: codes),
       ChangeNotifierProvider(
         create: (_) => AuthViewModel(auth, FakeRoleService({})),
       ),
@@ -123,6 +126,37 @@ void main() {
         createdAt: DateTime(2026, 11, 5, 9),
       ),
     ]);
+    codes.controller.add([
+      VoucherRecord(
+        id: 'c1',
+        isActive: true,
+        draft: VoucherDraft(
+          code: 'SHOPEE50KDAIDETHUTRAN',
+          title: 'Giảm 50K cho đơn từ 250K, mô tả rất dài để thử tràn trên màn hẹp',
+          kind: VoucherKind.discount,
+          discountVnd: 50000,
+          minOrderVnd: 250000,
+          category: VoucherCategory.fashion,
+          validUntil: DateTime(2099, 12, 31),
+          shopId: '123456',
+          shopName: 'Cửa hàng chính hãng với một cái tên rất dài để thử tràn',
+        ),
+      ),
+      VoucherRecord(
+        id: 'c2',
+        isActive: false,
+        isLegacy: true,
+        draft: VoucherDraft(
+          code: 'FREESHIP',
+          title: 'Miễn phí vận chuyển',
+          kind: VoucherKind.freeship,
+          discountVnd: 15000,
+          minOrderVnd: 0,
+          category: VoucherCategory.all,
+          validUntil: DateTime(2020, 1, 1),
+        ),
+      ),
+    ]);
     vouchers.controller.add([
       ShopeeVoucher(
         id: 'v1',
@@ -158,6 +192,7 @@ void main() {
     AdminSection.saleEvents: 'Thêm sự kiện',
     AdminSection.reviews: 'Siêu sale 12.12',
     AdminSection.announcements: 'Lịch sale tháng 12 đã cập nhật',
+    AdminSection.codes: 'SHOPEE50KDAIDETHUTRAN',
     AdminSection.vouchers: 'Giảm 10% tối đa 50.000 ₫',
     AdminSection.assistant: 'Tạo Gợi Ý Thông Minh',
   };

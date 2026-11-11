@@ -26,4 +26,8 @@ class SharedPaths {
   CollectionReference<JsonMap> announcements() =>
       db.collection('announcements');
   DocumentReference<JsonMap> announcement(String id) => announcements().doc(id);
+
+  /// Real Shopee vouchers entered on the web admin; the app reads active ones
+  CollectionReference<JsonMap> vouchers() => db.collection('vouchers');
+  DocumentReference<JsonMap> voucher(String id) => vouchers().doc(id);
 }

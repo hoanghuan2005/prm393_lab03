@@ -53,7 +53,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
     title: 'Chào bạn', body: 'Cảm ơn góp ý', kind: 'message', createdAt: now(), createdBy: 'sam', readAt: null,
   });
   await setDoc(doc(db, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 1, observedAt: now() });
-  await setDoc(doc(db, 'vouchers/v1'), { code: 'MAU', isActive: true });
+  await setDoc(doc(db, 'vouchers/v1'), { ...voucher('sam'), updatedAt: now() });
+  await setDoc(doc(db, 'vouchers/legacy'), { code: 'SHOPEE50K', title: 'Mẫu cũ', platform: 'Shopee', discountAmount: 50000, isActive: true });
   await setDoc(doc(db, 'shopeeVouchers/sv1'), { ...shopeeVoucher('sam'), lastSeenAt: now() });
   await setDoc(doc(db, 'announcements/a-pub'), announcement('sam', 'published', now()));
   await setDoc(doc(db, 'announcements/a-old'), announcement('sam', 'archived', now()));
@@ -100,6 +101,14 @@ function privateDocs(uid) {
     [`${u}/reports/r1`, pdfReport()],
     [`${u}/hiddenMatches/shopee:3:4`, { hiddenAt: now() }],
   ];
+}
+/** A real Shopee voucher as the web admin "Mã giảm giá" form writes it (D-3) */
+function voucher(by, extra = {}) {
+  return {
+    code: 'SHOPEE50K', title: 'Giảm 50K đơn từ 250K', type: 'discount', discountAmount: 50000,
+    minOrder: 250000, category: 'Tất cả', validUntil: '2026-11-30', sourceUrl: 'https://shopee.vn/m/sale',
+    isActive: true, updatedAt: serverTimestamp(), updatedBy: by, ...extra,
+  };
 }
 /** Metadata of a PDF report shared from the device (R-4) */
 function pdfReport(extra = {}) {
@@ -431,12 +440,26 @@ add('reports', 'user', 'edit a saved report', false, () => updateDoc(doc(alice, 
 add('reports', 'user', 'delete own (Xoá toàn bộ dữ liệu)', true, () => deleteDoc(doc(alice, 'users/alice/reports/r1')));
 add('reports', 'staff', "write into alice's reports", false, () => setDoc(doc(sam, 'users/alice/reports/r9'), pdfReport()));
 
-// vouchers: old sample data, read-only since CR-09 (plan mục 4)
+// vouchers: real Shopee vouchers entered by staff (D-3); the app only reads
 for (const [role, [, db]] of Object.entries(actors)) {
   add('vouchers', role, 'read', true, () => getDoc(doc(db, 'vouchers/v1')));
-  add('vouchers', role, 'write a voucher', false, () => setDoc(doc(db, 'vouchers/v2'), { code: 'X', isActive: true }));
 }
 add('vouchers', 'signed out', 'read', false, () => getDoc(doc(nobody, 'vouchers/v1')));
+add('vouchers', 'user', 'create a voucher', false, () => setDoc(doc(alice, 'vouchers/u1'), voucher('alice')));
+add('vouchers', 'staff', 'create a voucher', true, () => setDoc(doc(sam, 'vouchers/s1'), voucher('sam', { shopId: '123456', shopName: 'Perseper' })));
+add('vouchers', 'staff', 'create in the name of someone else', false, () => setDoc(doc(sam, 'vouchers/s2'), voucher('ada')));
+add('vouchers', 'staff', 'lower-case code with a dash', false, () => setDoc(doc(sam, 'vouchers/s3'), voucher('sam', { code: 'sale-50k' })));
+add('vouchers', 'staff', 'discount of 0 ₫', false, () => setDoc(doc(sam, 'vouchers/s4'), voucher('sam', { discountAmount: 0 })));
+add('vouchers', 'staff', 'free shipping with amount 0', true, () => setDoc(doc(sam, 'vouchers/s5'), voucher('sam', { type: 'freeship', discountAmount: 0, minOrder: 0 })));
+add('vouchers', 'staff', 'unknown category', false, () => setDoc(doc(sam, 'vouchers/s6'), voucher('sam', { category: 'Đồ chơi' })));
+add('vouchers', 'staff', 'source outside shopee.vn', false, () => setDoc(doc(sam, 'vouchers/s7'), voucher('sam', { sourceUrl: 'https://example.com/x' })));
+add('vouchers', 'staff', 'extra field (platform)', false, () => setDoc(doc(sam, 'vouchers/s8'), voucher('sam', { platform: 'Lazada' })));
+add('vouchers', 'staff', 'shop id with letters', false, () => setDoc(doc(sam, 'vouchers/s9'), voucher('sam', { shopId: 'abc' })));
+add('vouchers', 'staff', 'archive a legacy voucher', true, () => updateDoc(doc(sam, 'vouchers/legacy'), { isActive: false, updatedAt: serverTimestamp(), updatedBy: 'sam' }));
+add('vouchers', 'staff', 'reactivate a legacy voucher without fixing it', false, () => updateDoc(doc(sam, 'vouchers/legacy'), { isActive: true, updatedAt: serverTimestamp(), updatedBy: 'sam' }));
+add('vouchers', 'staff', 'delete a voucher', false, () => deleteDoc(doc(sam, 'vouchers/v1')));
+add('vouchers', 'admin', 'edit a voucher', true, () => setDoc(doc(ada, 'vouchers/v1'), voucher('ada', { discountAmount: 30000 })));
+add('vouchers', 'admin', 'delete a voucher', false, () => deleteDoc(doc(ada, 'vouchers/v1')));
 
 // shopeeVouchers: captured by staff with the extension; users never read them
 add('shopeeVouchers', 'user', 'read', false, () => getDoc(doc(alice, 'shopeeVouchers/sv1')));

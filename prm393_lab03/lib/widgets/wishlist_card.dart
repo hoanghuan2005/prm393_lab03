@@ -245,8 +245,8 @@ class WishlistCard extends StatelessWidget {
     if (item.isInCooldown) {
       // Theme palette of "Cảm xúc" (purple): light and dark variants
       final palette = MotiveColors.of(context).paletteOf(BuyingMotive.emotion);
-      // Same wording as the detail screen: time left to think it over
-      final timeText = 'Còn ${item.remainingCooldownLabel}';
+      final timeText =
+          'Mốc ${formatDayMonth(item.cooldownUntil!)} · ${formatTime(item.cooldownUntil!)}';
 
       return Container(
         padding: const EdgeInsets.symmetric(

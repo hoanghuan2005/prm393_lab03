@@ -69,7 +69,7 @@ void main() {
         await h.initialize(item: sampleWishlist());
         final tabChanges = <int>[];
         await tester.pumpWidget(
-          h.app(HomeScreen(onNavigateTab: tabChanges.add)),
+          h.app(HomeScreen(onNavigateTab: tabChanges.add), withDecisions: true),
         );
         await tester.pumpAndSettle();
         final target = icon
@@ -80,7 +80,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(WishlistScreen), findsOneWidget);
         expect(tabChanges, isEmpty);
-        await tester.tap(find.byTooltip('Back'));
+        await tester.tap(find.byTooltip('Quay lại'));
         await tester.pumpAndSettle();
         expect(find.byType(HomeScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -161,6 +161,9 @@ void main() {
         '389.000',
       );
       await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsOneWidget);
+      await tester.tap(find.text('Bỏ thay đổi'));
       await tester.pumpAndSettle();
       expect(find.byType(ItemDetailScreen), findsOneWidget);
       expect(h.service.buyCalls, 0);

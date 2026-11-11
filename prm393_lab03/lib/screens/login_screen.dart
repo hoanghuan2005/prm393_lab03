@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app/app.dart';
 import '../app/routes.dart';
 import '../firebase/platform_support.dart';
 import '../theme/app_colors.dart';
@@ -9,6 +10,7 @@ import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 enum AuthMode { login, signup, forgotPassword }
@@ -34,6 +36,44 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
   _AuthAction? _loadingAction;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  bool get _hasChanges => [
+    _nameController,
+    _emailController,
+    _passwordController,
+    _confirmPasswordController,
+  ].any((c) => c.text.isNotEmpty);
+
+  void _draftChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _goBack() async {
+    if (_loadingAction != null || _confirmingExit) return;
+    _confirmingExit = true;
+    final discard =
+        !_hasChanges ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ thay đổi?',
+          message: 'Thông tin đang nhập sẽ không được giữ khi rời màn này.',
+          confirmLabel: 'Bỏ thay đổi',
+          isDanger: true,
+        );
+    _confirmingExit = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.onboarding);
+    }
+  }
 
   bool get isSignup => widget.mode == AuthMode.signup;
   bool get isForgotPassword => widget.mode == AuthMode.forgotPassword;
@@ -45,6 +85,14 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
+    for (final controller in [
+      _nameController,
+      _emailController,
+      _passwordController,
+      _confirmPasswordController,
+    ]) {
+      controller.addListener(_draftChanged);
+    }
   }
 
   @override
@@ -61,220 +109,231 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final authVm = context.watch<AuthViewModel>();
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildBackButton(context),
-                  const SizedBox(height: 18),
-                  _buildBrandHeader(theme),
-                  const SizedBox(height: 26),
-                  Text(
-                    _title,
-                    style: AppTextStyles.headlineLarge
-                        .themed(context)
-                        .copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _subtitle,
-                    style: AppTextStyles.bodyMedium
-                        .themed(context)
-                        .copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.45,
-                        ),
-                  ),
-                  const SizedBox(height: 22),
-                  if (authVm.errorMessage != null) ...[
-                    _buildError(authVm.errorMessage!),
-                    const SizedBox(height: 16),
-                  ],
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        if (isSignup) ...[
-                          _buildField(
-                            controller: _nameController,
-                            label: 'Họ tên',
-                            hint: 'Tên bạn muốn được gọi',
-                            icon: Icons.person_outline_rounded,
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Hãy nhập tên của bạn.'
-                                : null,
+    return PopScope(
+      canPop: _allowExit || (_loadingAction == null && !_hasChanges),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack();
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimens.space24,
+                AppDimens.space20,
+                AppDimens.space24,
+                AppDimens.space24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildBackButton(context),
+                    const SizedBox(height: AppDimens.space20),
+                    _buildBrandHeader(theme),
+                    const SizedBox(height: AppDimens.space24),
+                    Text(
+                      _title,
+                      style: AppTextStyles.headlineLarge
+                          .themed(context)
+                          .copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: AppDimens.space6),
+                    Text(
+                      _subtitle,
+                      style: AppTextStyles.bodyMedium
+                          .themed(context)
+                          .copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.45,
                           ),
-                          const SizedBox(height: 14),
-                        ],
-                        _buildField(
-                          controller: _emailController,
-                          label: 'Email',
-                          hint: 'Nhập email của bạn',
-                          icon: Icons.mail_outline_rounded,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Hãy nhập email.';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Email chưa đúng định dạng.';
-                            }
-                            return null;
-                          },
-                        ),
-                        if (!isForgotPassword) ...[
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _passwordController,
-                            label: 'Mật khẩu',
-                            hint: isSignup ? 'Tạo mật khẩu' : 'Nhập mật khẩu',
-                            icon: Icons.lock_outline_rounded,
-                            obscureText: _obscurePassword,
-                            suffixIcon: IconButton(
-                              tooltip: 'Hiện hoặc ẩn mật khẩu',
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
+                    ),
+                    const SizedBox(height: AppDimens.space24),
+                    if (authVm.errorMessage != null) ...[
+                      _buildError(authVm.errorMessage!),
+                      const SizedBox(height: AppDimens.space16),
+                    ],
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          if (isSignup) ...[
+                            _buildField(
+                              controller: _nameController,
+                              label: 'Họ tên',
+                              hint: 'Tên bạn muốn được gọi',
+                              icon: Icons.person_outline_rounded,
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'Tên đang trống.'
+                                  : null,
                             ),
+                            const SizedBox(height: AppDimens.space16),
+                          ],
+                          _buildField(
+                            controller: _emailController,
+                            label: 'Email',
+                            hint: 'Nhập email của bạn',
+                            icon: Icons.mail_outline_rounded,
+                            keyboardType: TextInputType.emailAddress,
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Hãy nhập mật khẩu.';
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Email đang trống.';
                               }
-                              if (value.length < 6) {
-                                return 'Mật khẩu cần ít nhất 6 ký tự.';
+                              if (!value.contains('@')) {
+                                return 'Email chưa đúng định dạng.';
                               }
                               return null;
                             },
                           ),
-                        ],
-                        if (isSignup) ...[
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _confirmPasswordController,
-                            label: 'Xác nhận mật khẩu',
-                            hint: 'Nhập lại mật khẩu',
-                            icon: Icons.lock_reset_outlined,
-                            obscureText: _obscureConfirmation,
-                            suffixIcon: IconButton(
-                              tooltip: 'Hiện hoặc ẩn mật khẩu',
-                              icon: Icon(
-                                _obscureConfirmation
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                          if (!isForgotPassword) ...[
+                            const SizedBox(height: AppDimens.space16),
+                            _buildField(
+                              controller: _passwordController,
+                              label: 'Mật khẩu',
+                              hint: isSignup ? 'Tạo mật khẩu' : 'Nhập mật khẩu',
+                              icon: Icons.lock_outline_rounded,
+                              obscureText: _obscurePassword,
+                              suffixIcon: IconButton(
+                                tooltip: 'Hiện hoặc ẩn mật khẩu',
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
-                              onPressed: () => setState(
-                                () => _obscureConfirmation =
-                                    !_obscureConfirmation,
-                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Mật khẩu đang trống.';
+                                }
+                                if (value.length < 6) {
+                                  return 'Mật khẩu cần ít nhất 6 ký tự.';
+                                }
+                                return null;
+                              },
                             ),
-                            validator: (value) =>
-                                value != _passwordController.text
-                                ? 'Mật khẩu xác nhận chưa khớp.'
-                                : null,
+                          ],
+                          if (isSignup) ...[
+                            const SizedBox(height: AppDimens.space16),
+                            _buildField(
+                              controller: _confirmPasswordController,
+                              label: 'Xác nhận mật khẩu',
+                              hint: 'Nhập lại mật khẩu',
+                              icon: Icons.lock_reset_outlined,
+                              obscureText: _obscureConfirmation,
+                              suffixIcon: IconButton(
+                                tooltip: 'Hiện hoặc ẩn mật khẩu',
+                                icon: Icon(
+                                  _obscureConfirmation
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscureConfirmation =
+                                      !_obscureConfirmation,
+                                ),
+                              ),
+                              validator: (value) =>
+                                  value != _passwordController.text
+                                  ? 'Mật khẩu xác nhận chưa khớp.'
+                                  : null,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppDimens.space12),
+                    if (widget.mode == AuthMode.login)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.pushNamed(
+                            context,
+                            AppRoutes.forgotPassword,
+                          ),
+                          child: const Text('Quên mật khẩu?'),
+                        ),
+                      ),
+                    AppButton(
+                      title: _actionLabel,
+                      icon: isForgotPassword
+                          ? Icons.mark_email_read_outlined
+                          : isSignup
+                          ? Icons.person_add_alt_1_rounded
+                          : Icons.login_rounded,
+                      isLoading: _loadingAction == _AuthAction.email,
+                      onPressed: _submit,
+                    ),
+                    const SizedBox(height: AppDimens.space16),
+                    if (isForgotPassword)
+                      TextButton(
+                        onPressed: () => Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.login,
+                        ),
+                        child: const Text('Quay lại Đăng nhập'),
+                      )
+                    else ...[
+                      _buildSwitchMode(context),
+                      if (!isSignup) ...[
+                        const SizedBox(height: AppDimens.space24),
+                        _buildDivider(theme),
+                        const SizedBox(height: AppDimens.space16),
+                        AppButton(
+                          title: 'Đăng nhập với Google',
+                          icon: Icons.g_mobiledata,
+                          isLoading: _loadingAction == _AuthAction.google,
+                          onPressed: () => _runAuthAction(
+                            _AuthAction.google,
+                            authVm.signInWithGoogle,
+                          ),
+                        ),
+                        if (PlatformSupport.supportsFacebookSignIn) ...[
+                          const SizedBox(height: AppDimens.space12),
+                          AppButton(
+                            title: 'Đăng nhập với Facebook',
+                            icon: Icons.facebook,
+                            variant: AppButtonVariant.secondary,
+                            isLoading: _loadingAction == _AuthAction.facebook,
+                            onPressed: () => _runAuthAction(
+                              _AuthAction.facebook,
+                              authVm.signInWithFacebook,
+                            ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (widget.mode == AuthMode.login)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.forgotPassword,
-                        ),
-                        child: const Text('Quên mật khẩu?'),
-                      ),
-                    ),
-                  AppButton(
-                    title: _actionLabel,
-                    icon: isForgotPassword
-                        ? Icons.mark_email_read_outlined
-                        : isSignup
-                        ? Icons.person_add_alt_1_rounded
-                        : Icons.login_rounded,
-                    isLoading: _loadingAction == _AuthAction.email,
-                    onPressed: _submit,
-                  ),
-                  const SizedBox(height: 16),
-                  if (isForgotPassword)
-                    TextButton(
-                      onPressed: () => Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.login,
-                      ),
-                      child: const Text('Quay lại Đăng nhập'),
-                    )
-                  else ...[
-                    _buildSwitchMode(context),
-                    if (!isSignup) ...[
-                      const SizedBox(height: 22),
-                      _buildDivider(theme),
-                      const SizedBox(height: 16),
-                      AppButton(
-                        title: 'Đăng nhập với Google',
-                        icon: Icons.g_mobiledata,
-                        isLoading: _loadingAction == _AuthAction.google,
-                        onPressed: () => _runAuthAction(
-                          _AuthAction.google,
-                          authVm.signInWithGoogle,
-                        ),
-                      ),
-                      if (PlatformSupport.supportsFacebookSignIn) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppDimens.space12),
                         AppButton(
-                          title: 'Đăng nhập với Facebook',
-                          icon: Icons.facebook,
+                          title: 'Đăng nhập với GitHub',
+                          icon: Icons.code_rounded,
                           variant: AppButtonVariant.secondary,
-                          isLoading: _loadingAction == _AuthAction.facebook,
+                          isLoading: _loadingAction == _AuthAction.github,
                           onPressed: () => _runAuthAction(
-                            _AuthAction.facebook,
-                            authVm.signInWithFacebook,
+                            _AuthAction.github,
+                            authVm.signInWithGithub,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimens.space12),
+                        AppButton(
+                          title: 'Dùng thử chế độ Khách',
+                          icon: Icons.person_outline_rounded,
+                          variant: AppButtonVariant.secondary,
+                          isLoading: _loadingAction == _AuthAction.guest,
+                          onPressed: () => _runAuthAction(
+                            _AuthAction.guest,
+                            authVm.signInAnonymously,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 10),
-                      AppButton(
-                        title: 'Đăng nhập với GitHub',
-                        icon: Icons.code_rounded,
-                        variant: AppButtonVariant.secondary,
-                        isLoading: _loadingAction == _AuthAction.github,
-                        onPressed: () => _runAuthAction(
-                          _AuthAction.github,
-                          authVm.signInWithGithub,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      AppButton(
-                        title: 'Dùng thử chế độ Khách',
-                        icon: Icons.person_outline_rounded,
-                        variant: AppButtonVariant.secondary,
-                        isLoading: _loadingAction == _AuthAction.guest,
-                        onPressed: () => _runAuthAction(
-                          _AuthAction.guest,
-                          authVm.signInAnonymously,
-                        ),
-                      ),
                     ],
+                    const SizedBox(height: AppDimens.space24),
+                    _buildTrustNote(theme),
                   ],
-                  const SizedBox(height: 22),
-                  _buildTrustNote(theme),
-                ],
+                ),
               ),
             ),
           ),
@@ -306,14 +365,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () =>
-            Navigator.pushReplacementNamed(context, AppRoutes.onboarding),
+        onPressed: _loadingAction == null ? _goBack : null,
         icon: const Icon(Icons.chevron_left_rounded, size: 24),
         label: const Text('Quay lại'),
         style: TextButton.styleFrom(
           foregroundColor: AppSemanticColors.of(context).textPrimary,
           padding: EdgeInsets.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size(0, AppDimens.minTouchTarget),
+          tapTargetSize: MaterialTapTargetSize.padded,
         ),
       ),
     );
@@ -323,7 +382,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       children: [
         const WhyIBuyLogo(size: 38),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppDimens.space12),
         Text(
           'Why I Buy?',
           style: AppTextStyles.titleLarge
@@ -378,7 +437,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildError(String message) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).error.withValues(alpha: 0.1),
         borderRadius: AppDimens.borderMedium,
@@ -393,7 +452,7 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppSemanticColors.of(context).error,
             size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppDimens.space8),
           Expanded(
             child: Text(
               message,
@@ -409,8 +468,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildSwitchMode(BuildContext context) {
     final isLogin = widget.mode == AuthMode.login;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'),
         TextButton(
@@ -429,7 +489,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Expanded(child: Divider(color: theme.dividerColor)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.space12),
           child: Text(
             'hoặc',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
@@ -442,7 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildTrustNote(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).primaryContainer,
         borderRadius: AppDimens.borderMedium,
@@ -454,13 +514,13 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppColors.onPrimary,
             size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppDimens.space8),
           Expanded(
             child: Text(
               'Hiểu mình, không phán xét\nMỗi khoản mua là một dịp để lắng nghe chính bạn.',
-              style: TextStyle(
+              style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                 color: theme.colorScheme.onSurface,
-                fontSize: 12,
+
                 height: 1.35,
               ),
             ),
@@ -504,11 +564,18 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.',
+              'Đã gửi email đặt lại mật khẩu. Bạn có thể kiểm tra hộp thư.',
             ),
           ),
         );
         Navigator.pushReplacementNamed(context, AppRoutes.login);
+      } else {
+        // Named login/signup routes are above AuthGate, so rebuilding the gate
+        // underneath alone cannot close them. Re-enter it, including verification.
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const AuthGate()),
+          (_) => false,
+        );
       }
     } finally {
       if (mounted) setState(() => _loadingAction = null);

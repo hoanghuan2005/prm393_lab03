@@ -49,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -60,13 +60,16 @@ class ProfileScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Cá nhân',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Cá nhân',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -158,6 +161,7 @@ class ProfileScreen extends StatelessWidget {
             _SettingsGroup(
               children: [
                 _DailyReminderTile(settingsVm: settingsVm),
+                _ReflectionReminderTile(settingsVm: settingsVm),
                 const _FloatingBubbleTile(),
               ],
             ),
@@ -273,12 +277,11 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   'Đặt mốc tham chiếu cho từng nhóm hàng mỗi tháng để so với số đã chi. App không chặn mua.',
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
                 AppButton(
                   title: 'Quản lý ngân sách theo nhóm',
                   variant: AppButtonVariant.primary,
@@ -301,7 +304,7 @@ class ProfileScreen extends StatelessWidget {
                   'Quyết Định nhắc khi bạn cân nhắc món cùng loại. Tất cả tùy chọn.',
                   style: AppTextStyles.bodyMedium.themed(context),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
                 AppButton(
                   key: const ValueKey('open-shopping-profile'),
                   title: 'Mở hồ sơ mua sắm',
@@ -368,7 +371,7 @@ class ProfileScreen extends StatelessWidget {
 
                   if (kDebugMode) ...[
                     AppButton(
-                      title: 'Widget Gallery (debug)',
+                      title: 'Bộ mẫu giao diện (bản thử nghiệm)',
                       icon: Icons.widgets_outlined,
                       variant: AppButtonVariant.secondary,
                       onPressed: () =>
@@ -800,7 +803,7 @@ class _SettingsTile extends StatelessWidget {
             ),
       trailing: busy
           ? const SizedBox(
-              width: 20,
+              width: AppDimens.space20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
@@ -891,6 +894,69 @@ class _DailyReminderTile extends StatelessWidget {
   }
 }
 
+/// "Nhắc chiêm nghiệm": 20:00 on the last day of each month (Lab 2 Flow 3)
+class _ReflectionReminderTile extends StatelessWidget {
+  final SettingsViewModel settingsVm;
+
+  const _ReflectionReminderTile({required this.settingsVm});
+
+  Future<void> _toggle(BuildContext context, bool on) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!on) {
+      await settingsVm.disableReflectionReminder();
+      return;
+    }
+    if (await settingsVm.enableReflectionReminder()) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Chưa được phép gửi thông báo. Bạn có thể bật lại trong cài đặt của máy.',
+        ),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Mở cài đặt',
+          onPressed: settingsVm.openNotificationSettings,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final supported = settingsVm.supportsDailyReminder;
+    return ListTile(
+      key: const ValueKey('reflection-reminder-tile'),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space16,
+        vertical: AppDimens.space4,
+      ),
+      title: Text(
+        'Nhắc chiêm nghiệm tháng',
+        style: AppTextStyles.titleMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurface),
+      ),
+      subtitle: Text(
+        supported
+            ? 'Lúc 20:00 ngày cuối tháng, mời bạn nhìn lại tháng và đặt mục tiêu.'
+            : 'Chỉ có trên ứng dụng Android.',
+        style: AppTextStyles.bodyMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      trailing: Semantics(
+        label: 'Nhắc chiêm nghiệm tháng',
+        child: Switch(
+          key: const ValueKey('reflection-reminder-switch'),
+          value: supported && settingsVm.reflectionReminderEnabled,
+          onChanged: supported ? (on) => _toggle(context, on) : null,
+        ),
+      ),
+    );
+  }
+}
+
 /// Floating shopping assistant bubble tile (Option A: Shopping Guardian Bubble)
 class _FloatingBubbleTile extends StatefulWidget {
   const _FloatingBubbleTile();
@@ -956,19 +1022,25 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
         final grant = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.layers_outlined, color: AppColors.primary),
-                SizedBox(width: 8),
-                Text(
-                  'Cấp quyền hiển thị',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const Icon(Icons.layers_outlined, color: AppColors.primary),
+                const SizedBox(width: AppDimens.space8),
+                Expanded(
+                  child: Text(
+                    'Cấp quyền hiển thị',
+                    style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
-            content: const Text(
-              'Để hiển thị bong bóng hỗ trợ săn sale và cảnh báo không mua vội khi bạn xem món đồ, ứng dụng cần quyền "Xuất hiện trên cùng" (Display over other apps).\n\nBấm Tiếp tục để mở cài đặt cấp quyền.',
-              style: TextStyle(fontSize: 14),
+            content: Text(
+              'Để hiển thị bong bóng hỗ trợ săn sale và cảnh báo không mua vội khi bạn xem món đồ, ứng dụng cần quyền "Xuất hiện trên cùng".\n\nBấm Tiếp tục để mở cài đặt cấp quyền.',
+              style: AppTextStyles.bodyMedium.withInheritedColor,
             ),
             actions: [
               TextButton(
@@ -978,7 +1050,7 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.black,
+                  foregroundColor: AppColors.onPrimary,
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Tiếp tục'),
@@ -1005,7 +1077,7 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
         messenger.clearSnackBars();
         messenger.showSnackBar(
           SnackBar(
-            content: const Text('✨ Đã bật bong bóng trợ lý mua sắm!'),
+            content: const Text('Đã bật bong bóng hỗ trợ mua sắm.'),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             action: SnackBarAction(
@@ -1053,7 +1125,7 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
           ),
           trailing: _isLoading
               ? const SizedBox(
-                  width: 24,
+                  width: AppDimens.space24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
@@ -1080,7 +1152,9 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppDimens.space8,
+                          ),
                           side: BorderSide(
                             color: AppColors.primary.withValues(alpha: 0.6),
                           ),
@@ -1089,28 +1163,30 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                           Icons.notifications_active_outlined,
                           size: 15,
                         ),
-                        label: const Text(
+                        label: Text(
                           'Thử thông báo',
-                          style: TextStyle(fontSize: 11),
+                          style: AppTextStyles.caption.withInheritedColor,
                         ),
                         onPressed: () {
                           FloatingBubbleService.showTestAlert();
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.space8),
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppDimens.space8,
+                          ),
                           side: BorderSide(
                             color: AppColors.primary.withValues(alpha: 0.6),
                           ),
                         ),
                         icon: const Icon(Icons.air_rounded, size: 15),
-                        label: const Text(
+                        label: Text(
                           'Thử Pulse xem lâu',
-                          style: TextStyle(fontSize: 11),
+                          style: AppTextStyles.caption.withInheritedColor,
                         ),
                         onPressed: () {
                           FloatingBubbleService.showTestLingeringAlert();
@@ -1119,7 +1195,7 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppDimens.space8),
                 if (!_isA11yEnabled)
                   InkWell(
                     onTap: () async {
@@ -1128,8 +1204,8 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                     borderRadius: BorderRadius.circular(AppDimens.radiusSmall),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                        horizontal: AppDimens.space12,
+                        vertical: AppDimens.space8,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
@@ -1147,15 +1223,17 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                             size: 16,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppDimens.space8),
                           Expanded(
                             child: Text(
                               'Bật tự động nhận diện khi xem lâu (Hỗ trợ tiếp cận)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.onSurface,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTextStyles
+                                  .labelMedium
+                                  .withInheritedColor
+                                  .copyWith(
+                                    color: theme.colorScheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                           ),
                           const Icon(Icons.arrow_forward_ios_rounded, size: 12),
@@ -1166,8 +1244,8 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                 else
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                      horizontal: AppDimens.space12,
+                      vertical: AppDimens.space6,
                     ),
                     decoration: BoxDecoration(
                       color: AppSemanticColors.of(context).linkedAccountAccent
@@ -1188,16 +1266,16 @@ class _FloatingBubbleTileState extends State<_FloatingBubbleTile>
                           color: AppSemanticColors.of(context)
                               .linkedAccountAccent,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: AppDimens.space6),
                         Expanded(
                           child: Text(
                             'Tự động thức tỉnh khi xem lâu đang hoạt động',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppSemanticColors.of(context)
-                                  .linkedAccountText,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.labelMedium.withInheritedColor
+                                .copyWith(
+                                  color: AppSemanticColors.of(context)
+                                      .linkedAccountText,
+                                  fontWeight: FontWeight.w500,
+                                ),
                           ),
                         ),
                       ],
@@ -1232,7 +1310,7 @@ class FirebaseDemoTools extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimens.space16),
       child: SectionCard(
-        title: 'Khu trình diễn (chỉ bản debug)',
+        title: 'Khu trình diễn (chỉ bản thử nghiệm)',
         icon: Icons.bug_report_outlined,
         children: [
           Text(
@@ -1475,7 +1553,7 @@ class _LinkedAccountTile extends StatelessWidget {
           : null,
       trailing: switch (row.state) {
         LinkState.busy => const SizedBox(
-          width: 20,
+          width: AppDimens.space20,
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),

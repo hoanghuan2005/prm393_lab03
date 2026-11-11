@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 import '../app/app.dart';
 import '../app/routes.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
+import '../viewmodels/inbox_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
@@ -32,16 +35,19 @@ class AppHeaderActions extends StatelessWidget {
             onPressed: () => Navigator.pushNamed(context, AppRoutes.wishlist),
           ),
         Padding(
-          padding: const EdgeInsets.only(right: 12, left: 2),
+          padding: const EdgeInsets.only(
+            right: AppDimens.space12,
+            left: AppDimens.space2,
+          ),
           // Icon-only button: the tooltip also names it for TalkBack
           child: Tooltip(
             message: 'Cá nhân',
             child: InkWell(
               onTap: onProfileTap,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppDimens.borderPill,
               child: Container(
-                width: 34,
-                height: 34,
+                width: AppDimens.minTouchTarget,
+                height: AppDimens.minTouchTarget,
                 decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
@@ -68,7 +74,9 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = settingsVm.notifications.length;
+    // Hộp thư (Firestore) is provided in the app; a screen tested alone may skip it
+    final inboxVm = context.watch<InboxViewModel?>();
+    final count = settingsVm.notifications.length + (inboxVm?.unreadCount ?? 0);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -81,7 +89,7 @@ class _NotificationButton extends StatelessWidget {
             size: 24,
           ),
           tooltip: 'Thông báo',
-          onPressed: () => _showNotifications(context),
+          onPressed: () => _showNotifications(context, inboxVm),
         ),
         if (count > 0)
           Positioned(
@@ -89,16 +97,16 @@ class _NotificationButton extends StatelessWidget {
             top: 7,
             child: IgnorePointer(
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(AppDimens.space4),
                 decoration: BoxDecoration(
                   color: AppSemanticColors.of(context).notificationBadge,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$count',
-                  style: TextStyle(
+                  style: AppTextStyles.caption.withInheritedColor.copyWith(
                     color: AppSemanticColors.of(context).onNotificationBadge,
-                    fontSize: 10,
+
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -109,25 +117,61 @@ class _NotificationButton extends StatelessWidget {
     );
   }
 
-  void _showNotifications(BuildContext context) {
+  void _showNotifications(BuildContext context, InboxViewModel? inboxVm) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimens.space20,
+            0,
+            AppDimens.space20,
+            AppDimens.space20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Thông báo',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style: AppTextStyles.headlineMedium.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppDimens.space12),
+              if (inboxVm != null) ...[
+                ListTile(
+                  key: const ValueKey('open-inbox'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: AppSemanticColors.of(context)
+                        .primaryContainer,
+                    child: Icon(
+                      Icons.mail_outline,
+                      color: AppSemanticColors.of(context).onPrimaryContainer,
+                    ),
+                  ),
+                  title: const Text(
+                    'Hộp thư',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    inboxVm.unreadCount == 0
+                        ? 'Thông báo của nhóm và tin trả lời cho bạn'
+                        : '${inboxVm.unreadCount} tin chưa đọc',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.pushNamed(context, AppRoutes.inbox);
+                  },
+                ),
+                const Divider(),
+              ],
               if (settingsVm.notifications.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: EdgeInsets.symmetric(vertical: AppDimens.space24),
                   child: Center(child: Text('Chưa có thông báo mới.')),
                 )
               else
@@ -139,9 +183,10 @@ class _NotificationButton extends StatelessWidget {
                         leading: CircleAvatar(
                           backgroundColor: AppSemanticColors.of(context)
                               .primaryContainer,
-                          child: const Icon(
+                          child: Icon(
                             Icons.notifications_active_outlined,
-                            color: AppColors.onPrimary,
+                            color: AppSemanticColors.of(context)
+                                .onPrimaryContainer,
                           ),
                         ),
                         title: Text(
@@ -220,16 +265,16 @@ class _WishlistButton extends StatelessWidget {
             top: 7,
             child: IgnorePointer(
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(AppDimens.space4),
                 decoration: BoxDecoration(
                   color: AppSemanticColors.of(context).notificationBadge,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$count',
-                  style: TextStyle(
+                  style: AppTextStyles.caption.withInheritedColor.copyWith(
                     color: AppSemanticColors.of(context).onNotificationBadge,
-                    fontSize: 10,
+
                     fontWeight: FontWeight.bold,
                   ),
                 ),

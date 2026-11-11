@@ -37,8 +37,8 @@ class PhotoSearchScreen extends StatefulWidget {
 class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
   final _picker = ImagePicker();
 
-  /// Photos are scaled down before upload: enough detail for the model, fewer tokens
-  static const double _maxSide = 1024;
+  /// Scaled down before upload; large enough to read model numbers on the item
+  static const double _maxSide = 1536;
 
   bool _cameraAvailable = false;
 
@@ -180,7 +180,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -191,27 +191,32 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Chụp để tìm',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Chụp để tìm',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
         actions: [
           if (hasPhoto && state is! UiLoading<ItemRecognition>)
-            TextButton(
+            TextButton.icon(
               key: const ValueKey('photo-search-retake'),
               onPressed: vm.reset,
               style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: theme.colorScheme.onSurface,
               ),
-              child: const Text('Chọn ảnh khác'),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Ảnh khác'),
             ),
+          const SizedBox(width: AppDimens.space4),
         ],
       ),
       body: SafeArea(
@@ -291,29 +296,44 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
               'Chụp rõ một món đồ. AI đoán tên để bạn tìm, rồi bạn có thể '
               'thêm vào danh sách cân nhắc trước khi quyết định mua.',
         ),
-        const SizedBox(height: AppDimens.space16),
+        const SizedBox(height: AppDimens.space20),
         _DashedFrame(
           onTap: () => _pick(_mainSource),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.add_a_photo_outlined,
-                size: 36,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: AppDimens.space12),
-              Text(
-                'Chưa chọn ảnh',
-                style: AppTextStyles.bodyLarge
-                    .themed(context)
-                    .copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
                     ),
+                  ],
+                ),
+                child: Icon(
+                  _cameraAvailable
+                      ? Icons.photo_camera_outlined
+                      : Icons.add_photo_alternate_outlined,
+                  size: 32,
+                  color: AppColors.onPrimary,
+                ),
+              ),
+              const SizedBox(height: AppDimens.space16),
+              Text(
+                _cameraAvailable ? 'Chạm để chụp ảnh' : 'Chạm để chọn ảnh',
+                style: AppTextStyles.titleMedium
+                    .themed(context)
+                    .copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: AppDimens.space4),
               Text(
-                'Đủ sáng · một món · chụp gần',
+                'AI sẽ đoán tên món đồ trong vài giây',
                 style: AppTextStyles.caption
                     .themed(context)
                     .copyWith(
@@ -322,6 +342,32 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
               ),
             ],
           ),
+        ),
+        const SizedBox(height: AppDimens.space20),
+        Text(
+          'Mẹo để AI nhận đúng',
+          style: AppTextStyles.labelLarge
+              .themed(context)
+              .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: AppDimens.space8),
+        const Row(
+          children: [
+            Expanded(
+              child: _Tip(icon: Icons.wb_sunny_outlined, label: 'Đủ sáng'),
+            ),
+            SizedBox(width: AppDimens.space8),
+            Expanded(
+              child: _Tip(
+                icon: Icons.center_focus_strong_outlined,
+                label: 'Một món',
+              ),
+            ),
+            SizedBox(width: AppDimens.space8),
+            Expanded(
+              child: _Tip(icon: Icons.zoom_in_rounded, label: 'Chụp gần'),
+            ),
+          ],
         ),
       ],
     );
@@ -338,27 +384,20 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
           subtitle: 'Thường mất vài giây.',
         ),
         const SizedBox(height: AppDimens.space16),
-        _ProductCard(
+        _HeroPhoto(
           image: vm.imageBytes,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'AI đang xem ảnh',
-                style: AppTextStyles.titleMedium.themed(context),
-              ),
-              const SizedBox(height: AppDimens.space12),
-              ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(4)),
-                child: LinearProgressIndicator(
-                  minHeight: 6,
-                  color: AppColors.primary,
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest,
-                ),
-              ),
-            ],
+          dimmed: true,
+          overlay: const Center(child: _ScanningBadge()),
+        ),
+        const SizedBox(height: AppDimens.space16),
+        ClipRRect(
+          borderRadius: AppDimens.borderPill,
+          child: LinearProgressIndicator(
+            minHeight: 6,
+            color: AppColors.primary,
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest,
           ),
         ),
       ],
@@ -373,7 +412,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         const _StepHeader(step: 'Bước 2/2', title: 'Kiểm tra kết quả'),
         const SizedBox(height: AppDimens.space16),
         if (vm.imageBytes != null)
-          Center(child: _Thumb(bytes: vm.imageBytes!, size: 120)),
+          Center(child: _Thumb(bytes: vm.imageBytes!, size: 160)),
         view,
       ],
     );
@@ -385,43 +424,41 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
     final names = [data.name, ...data.alternatives];
     final meta = [?data.category, ?data.brand].join(' · ');
     final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _StepHeader(
-          step: 'Bước 2/2',
-          title: 'Kiểm tra món AI nhận ra',
-          subtitle: 'Chọn lại tên nếu AI đoán chưa đúng.',
+        const _StepHeader(step: 'Bước 2/2', title: 'Kiểm tra món AI nhận ra'),
+        const SizedBox(height: AppDimens.space16),
+        _HeroPhoto(
+          image: vm.imageBytes,
+          overlay: Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimens.space12),
+              child: _ConfidencePill(data.confidence),
+            ),
+          ),
         ),
         const SizedBox(height: AppDimens.space16),
-        _ProductCard(
-          image: vm.imageBytes,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                selected,
-                key: const ValueKey('photo-search-name'),
-                style: AppTextStyles.titleMedium.themed(context),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppDimens.space6),
-              _ConfidencePill(data.confidence),
-              if (meta.isNotEmpty) ...[
-                const SizedBox(height: AppDimens.space6),
-                Text(
-                  meta,
-                  style: AppTextStyles.caption
-                      .themed(context)
-                      .copyWith(
-                        color: AppSemanticColors.of(context).textSecondary,
-                      ),
-                ),
-              ],
-            ],
+        if (meta.isNotEmpty) ...[
+          Text(
+            meta.toUpperCase(),
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.6),
           ),
+          const SizedBox(height: AppDimens.space4),
+        ],
+        Text(
+          selected,
+          key: const ValueKey('photo-search-name'),
+          style: AppTextStyles.titleLarge
+              .themed(context)
+              .copyWith(color: scheme.onSurface),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
         ),
         if (data.hasPriceRange) ...[
           const SizedBox(height: AppDimens.space12),
@@ -430,10 +467,10 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
         if (names.length > 1) ...[
           const SizedBox(height: AppDimens.space20),
           Text(
-            'Tên khác · chạm để chọn lại',
+            'AI đoán chưa đúng? Chọn tên khác',
             style: AppTextStyles.labelLarge
                 .themed(context)
-                .copyWith(color: AppSemanticColors.of(context).textSecondary),
+                .copyWith(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppDimens.space8),
           Wrap(
@@ -461,27 +498,32 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
           ),
         ],
         const SizedBox(height: AppDimens.space20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.hourglass_empty_rounded,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: AppDimens.space8),
-            Expanded(
-              child: Text(
-                'Thêm vào danh sách cân nhắc để món này qua $coolingOffDays '
-                'ngày chờ rồi hẵng quyết định mua.',
-                style: AppTextStyles.caption
-                    .themed(context)
-                    .copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+        Container(
+          padding: const EdgeInsets.all(AppDimens.space12),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: AppDimens.borderMedium,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.hourglass_empty_rounded,
+                size: 18,
+                color: scheme.onSurfaceVariant,
               ),
-            ),
-          ],
+              const SizedBox(width: AppDimens.space8),
+              Expanded(
+                child: Text(
+                  'Thêm vào danh sách cân nhắc để món này qua $coolingOffDays '
+                  'ngày chờ rồi hẵng quyết định mua.',
+                  style: AppTextStyles.bodyMedium
+                      .themed(context)
+                      .copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -610,32 +652,131 @@ class _DashedBorderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
-/// Photo on the left, details on the right (Figma 20a product card)
-class _ProductCard extends StatelessWidget {
-  final Uint8List? image;
-  final Widget child;
+/// One hint under the photo frame ("Đủ sáng", "Một món", "Chụp gần")
+class _Tip extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
-  const _ProductCard({required this.image, required this.child});
+  const _Tip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(AppDimens.space12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space8,
+        vertical: AppDimens.space12,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: AppDimens.borderLarge,
-        border: Border.all(color: theme.dividerColor),
+        color: scheme.surface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 22, color: scheme.onSurface),
+          const SizedBox(height: AppDimens.space6),
+          Text(
+            label,
+            style: AppTextStyles.labelMedium
+                .themed(context)
+                .copyWith(color: scheme.onSurface),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The user's photo, full width with rounded corners; [overlay] sits on top
+class _HeroPhoto extends StatelessWidget {
+  final Uint8List? image;
+  final Widget? overlay;
+
+  /// Darkens the photo so a badge on top stays readable (while analysing)
+  final bool dimmed;
+
+  const _HeroPhoto({required this.image, this.overlay, this.dimmed = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: AppDimens.borderLarge,
+      child: SizedBox(
+        height: 240,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: scheme.surfaceContainerHighest),
+            if (image != null)
+              Image.memory(image!, fit: BoxFit.cover, gaplessPlayback: true),
+            if (dimmed)
+              ColoredBox(
+                color: AppSemanticColors.of(context).statusOverlay
+                    .withValues(alpha: 0.4),
+              )
+            else
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      AppSemanticColors.of(context).statusOverlay
+                          .withValues(alpha: 64 / 255),
+                    ],
+                  ),
+                ),
+              ),
+            ?overlay,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "AI đang xem ảnh" pill shown on the photo while it is analysed
+class _ScanningBadge extends StatelessWidget {
+  const _ScanningBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space16,
+        vertical: AppDimens.space8,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: AppDimens.borderPill,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (image != null) _Thumb(bytes: image!, size: 104),
-          const SizedBox(width: AppDimens.space12),
-          Expanded(child: child),
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.onPrimary,
+            ),
+          ),
+          const SizedBox(width: AppDimens.space8),
+          Text(
+            'AI đang xem ảnh…',
+            style: AppTextStyles.labelLarge
+                .themed(context)
+                .copyWith(color: AppColors.onPrimary),
+          ),
         ],
       ),
     );
@@ -689,20 +830,19 @@ class _ConfidencePill extends StatelessWidget {
         horizontal: AppDimens.space8,
         vertical: AppDimens.space2,
       ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: AppDimens.borderPill),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.auto_awesome, size: 12, color: fg),
           const SizedBox(width: AppDimens.space4),
-          Text(
-            'AI · ${confidence.label}',
-            style: AppTextStyles.labelMedium
-                .themed(context)
-                .copyWith(color: fg),
+          Flexible(
+            child: Text(
+              'AI · ${confidence.label}',
+              style: AppTextStyles.labelMedium
+                  .themed(context)
+                  .copyWith(color: fg),
+            ),
           ),
         ],
       ),
@@ -719,36 +859,47 @@ class _PriceRange extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final semantic = AppSemanticColors.of(context);
+    final fg = semantic.onPrimaryContainer;
+    final muted = semantic.textSecondary;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space12),
       decoration: BoxDecoration(
-        color: AppSemanticColors.of(context).primaryContainer,
+        color: semantic.primaryContainer,
         borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: semantic.primaryContainerBorder),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'Giá tham khảo',
-            style: AppTextStyles.labelMedium
-                .themed(context)
-                .copyWith(color: AppSemanticColors.of(context).textSecondary),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Giá tham khảo',
+                  style: AppTextStyles.labelMedium
+                      .themed(context)
+                      .copyWith(color: muted),
+                ),
+                const SizedBox(height: AppDimens.space2),
+                Text(
+                  '${formatVnd(min)} – ${formatVnd(max)}',
+                  style: AppTextStyles.titleLarge
+                      .themed(context)
+                      .copyWith(color: fg),
+                ),
+                const SizedBox(height: AppDimens.space2),
+                Text(
+                  'AI ước lượng, giá thật ở mỗi shop có thể khác.',
+                  style: AppTextStyles.caption
+                      .themed(context)
+                      .copyWith(color: muted),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppDimens.space2),
-          Text(
-            '${formatVnd(min)} – ${formatVnd(max)}',
-            style: AppTextStyles.titleLarge
-                .themed(context)
-                .copyWith(color: AppColors.onPrimary),
-          ),
-          const SizedBox(height: AppDimens.space2),
-          Text(
-            'AI ước lượng, giá thật ở mỗi shop có thể khác.',
-            style: AppTextStyles.caption
-                .themed(context)
-                .copyWith(color: AppSemanticColors.of(context).textSecondary),
-          ),
+          Icon(Icons.sell_outlined, color: fg, size: 22),
         ],
       ),
     );
@@ -768,19 +919,16 @@ class _NameOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final unselectedText = theme.colorScheme.onSurface;
     return Semantics(
       selected: selected,
       button: true,
       child: Material(
-        color: selected
-            ? AppSemanticColors.of(context).primaryContainer
-            : AppSemanticColors.of(context).cardSurface,
+        color: selected ? AppColors.primary : theme.colorScheme.surface,
         shape: StadiumBorder(
           side: BorderSide(
-            color: selected
-                ? AppColors.primary
-                : AppSemanticColors.of(context).cardBorder,
-            width: selected ? 1.5 : 1,
+            color: selected ? AppColors.primary : theme.dividerColor,
           ),
         ),
         child: InkWell(
@@ -788,7 +936,9 @@ class _NameOption extends StatelessWidget {
           customBorder: const StadiumBorder(),
           child: ConstrainedBox(
             // Touch target ≥ 48dp tall without looking bulky
-            constraints: const BoxConstraints(minHeight: 40),
+            constraints: const BoxConstraints(
+              minHeight: AppDimens.minTouchTarget,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDimens.space12,
@@ -813,7 +963,7 @@ class _NameOption extends StatelessWidget {
                           .copyWith(
                             color: selected
                                 ? AppColors.onPrimary
-                                : AppSemanticColors.of(context).textBody,
+                                : unselectedText,
                             fontWeight: selected ? FontWeight.w600 : null,
                           ),
                     ),
@@ -828,7 +978,7 @@ class _NameOption extends StatelessWidget {
   }
 }
 
-/// Free price comparison: each shop's own search, already sorted cheapest first
+/// Free price comparison: each shop's own search for the keyword, best match first
 class _WhereToBuy extends StatelessWidget {
   final String query;
   final void Function(Uri url) onOpen;
@@ -837,21 +987,22 @@ class _WhereToBuy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Xem giá thấp nhất ở từng nơi',
-          style: AppTextStyles.labelLarge
+          'Tìm trên các sàn',
+          style: AppTextStyles.titleMedium
               .themed(context)
-              .copyWith(color: AppSemanticColors.of(context).textSecondary),
+              .copyWith(color: scheme.onSurface),
         ),
         const SizedBox(height: AppDimens.space2),
         Text(
-          'Mỗi trang đã sắp xếp giá từ thấp đến cao cho "$query".',
+          'Tìm "$query" · trên sàn có thể lọc theo giá.',
           style: AppTextStyles.caption
               .themed(context)
-              .copyWith(color: AppSemanticColors.of(context).hint),
+              .copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: AppDimens.space8),
         _ListCard(
@@ -859,18 +1010,41 @@ class _WhereToBuy extends StatelessWidget {
             for (final site in ShopSite.values)
               _ListRow(
                 key: ValueKey('photo-search-shop-${site.name}'),
-                leading: Icon(
-                  Icons.storefront_outlined,
-                  size: 20,
-                  color: AppSemanticColors.of(context).accent,
-                ),
+                leading: _ShopAvatar(label: site.label),
                 title: site.label,
-                trailingText: 'Giá thấp → cao',
-                onTap: () => onOpen(site.cheapestFirstUrl(query)),
+                trailingText: '',
+                onTap: () => onOpen(site.searchUrl(query)),
               ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// First letter of the shop in a soft circle (no shop logos)
+class _ShopAvatar extends StatelessWidget {
+  final String label;
+
+  const _ShopAvatar({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 32,
+      height: 32,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        label.characters.first,
+        style: AppTextStyles.labelLarge
+            .themed(context)
+            .copyWith(color: scheme.onSurface),
+      ),
     );
   }
 }
@@ -906,7 +1080,7 @@ class _AiPriceSearch extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(
-                  width: 18,
+                  width: AppDimens.space20,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
@@ -914,7 +1088,11 @@ class _AiPriceSearch extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'AI đang tìm giá trên Google…',
-                    style: AppTextStyles.bodyMedium.themed(context),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                   ),
                 ),
               ],
@@ -950,7 +1128,7 @@ class _AiPriceSearch extends StatelessWidget {
               _ListRow(
                 leading: offer == cheapest
                     ? const _Badge(label: 'Rẻ nhất')
-                    : const SizedBox(width: 20),
+                    : const SizedBox(width: AppDimens.space20),
                 title: offer.shop,
                 trailingText: formatVnd(offer.priceVnd),
                 trailingBold: true,
@@ -981,9 +1159,7 @@ class _AiPriceSearch extends StatelessWidget {
                 'Nguồn:',
                 style: AppTextStyles.caption
                     .themed(context)
-                    .copyWith(
-                      color: AppSemanticColors.of(context).textSecondary,
-                    ),
+                    .copyWith(color: AppSemanticColors.of(context).textSecondary),
               ),
               for (final s in data.sources.take(4))
                 InkWell(
@@ -1135,27 +1311,41 @@ class _ListRow extends StatelessWidget {
                 leading,
                 const SizedBox(width: AppDimens.space12),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.bodyLarge
-                        .themed(context)
-                        .copyWith(color: theme.colorScheme.onSurface),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.bodyLarge
+                            .themed(context)
+                            .copyWith(color: theme.colorScheme.onSurface),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (trailingText.isNotEmpty)
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            trailingText,
+                            style: trailingBold
+                                ? AppTextStyles.titleMedium
+                                      .themed(context)
+                                      .copyWith(
+                                        color: theme.colorScheme.onSurface,
+                                      )
+                                : AppTextStyles.caption
+                                      .themed(context)
+                                      .copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: AppDimens.space8),
-                Text(
-                  trailingText,
-                  style: trailingBold
-                      ? AppTextStyles.titleMedium.themed(context)
-                      : AppTextStyles.caption
-                            .themed(context)
-                            .copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                ),
-                const SizedBox(width: AppDimens.space4),
                 Icon(
                   Icons.open_in_new,
                   size: 16,
@@ -1177,6 +1367,7 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.space6,
@@ -1184,13 +1375,13 @@ class _Badge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).photoStatusContainer,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppDimens.borderPill,
       ),
       child: Text(
         label,
         style: AppTextStyles.labelMedium
             .themed(context)
-            .copyWith(color: AppSemanticColors.of(context).brandText),
+            .copyWith(color: theme.colorScheme.primary),
       ),
     );
   }
@@ -1252,14 +1443,15 @@ class _LinkButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return TextButton(
+    return TextButton.icon(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onSurface,
         minimumSize: const Size.fromHeight(48),
         textStyle: AppTextStyles.labelLarge.themed(context),
       ),
-      child: Text(label),
+      icon: const Icon(Icons.photo_library_outlined, size: 18),
+      label: Text(label),
     );
   }
 }

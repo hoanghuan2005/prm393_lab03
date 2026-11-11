@@ -6,10 +6,13 @@ import '../core/formatters/date_format.dart';
 import '../models/buying_motive.dart';
 import '../models/spending_insight.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../viewmodels/reflection_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
 import '../widgets/insight_source_chip.dart';
 import '../widgets/month_picker_sheet.dart';
@@ -30,6 +33,7 @@ class InsightsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final insightsVm = context.watch<InsightsViewModel>();
     final purchaseVm = context.watch<PurchaseViewModel>();
+    final reflectionVm = context.watch<ReflectionViewModel>();
     final stats = insightsVm.stats;
     final report = insightsVm.report;
 
@@ -39,7 +43,7 @@ class InsightsScreen extends StatelessWidget {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -50,13 +54,16 @@ class InsightsScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Góc nhìn',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Góc nhìn',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -71,41 +78,56 @@ class InsightsScreen extends StatelessWidget {
             color: AppSemanticColors.of(context).emphasis,
             onRefresh: () => insightsVm.refresh(force: true),
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppDimens.space16),
               children: [
                 _buildMonthSelector(context, purchaseVm),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
+                if (reflectionVm.goalForMonth case final goal?) ...[
+                  _GoalCard(
+                    goal: goal,
+                    month: reflectionVm.month,
+                    onEdit: () {
+                      purchaseVm.setSelectedMonth(reflectionVm.previousMonth);
+                      Navigator.pushNamed(context, AppRoutes.reflection);
+                    },
+                  ),
+                  const SizedBox(height: AppDimens.space12),
+                ],
                 _buildAiStatusCard(context, insightsVm),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppDimens.space20),
                 if (stats == null || report == null || !stats.hasPurchases)
                   const Padding(
-                    padding: EdgeInsets.only(top: 24),
+                    padding: EdgeInsets.only(top: AppDimens.space24),
                     child: EmptyView(
                       title: 'Chưa có khoản mua nào trong tháng',
                       subtitle: 'Khi bạn ghi khoản mua kèm động cơ, Góc nhìn sẽ tổng hợp lại ở đây.',
                       icon: Icons.lightbulb_outline_rounded,
                     ),
                   )
-                else ...[
+                else
                   for (final card in report.cards) ...[
                     _InsightCardView(card: card),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppDimens.space16),
                   ],
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.reflection),
-                    icon: const Icon(Icons.auto_stories_outlined, size: 18),
-                    label: const Text('Xem chiêm nghiệm tháng'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppSemanticColors.of(context).emphasis,
-                      minimumSize: const Size.fromHeight(48),
-                      side: BorderSide(color: theme.dividerColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+                // Also for a month without purchases: the user may still have
+                // skipped items to look back on and a goal to set
+                if (stats == null || report == null || !stats.hasPurchases)
+                  const SizedBox(height: AppDimens.space24),
+                OutlinedButton.icon(
+                  key: const ValueKey('open-reflection'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.reflection),
+                  icon: const Icon(Icons.auto_stories_outlined, size: 18),
+                  label: const Text('Xem chiêm nghiệm tháng'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppSemanticColors.of(context).emphasis,
+                    minimumSize: const Size.fromHeight(48),
+                    side: BorderSide(color: theme.dividerColor),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppDimens.borderPill,
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -118,10 +140,13 @@ class InsightsScreen extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space8,
+        vertical: AppDimens.space2,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
@@ -145,11 +170,11 @@ class InsightsScreen extends StatelessWidget {
                 );
                 if (picked != null) purchaseVm.setSelectedMonth(picked);
               },
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppDimens.borderSmall,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 12,
+                  horizontal: AppDimens.space8,
+                  vertical: AppDimens.space12,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -159,16 +184,16 @@ class InsightsScreen extends StatelessWidget {
                       size: 16,
                       color: theme.colorScheme.onSurface,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.space8),
                     Flexible(
                       child: Text(
                         formatMonthLabel(purchaseVm.selectedMonth),
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface,
-                        ),
+                        style: AppTextStyles.bodyMedium.withInheritedColor
+                            .copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSurface,
+                            ),
                       ),
                     ),
                   ],
@@ -205,10 +230,15 @@ class InsightsScreen extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.space16,
+        AppDimens.space12,
+        AppDimens.space8,
+        AppDimens.space12,
+      ),
       decoration: BoxDecoration(
         color: AppSemanticColors.of(context).primaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(
           color: AppSemanticColors.of(context).primaryContainerBorder,
         ),
@@ -223,12 +253,11 @@ class InsightsScreen extends StatelessWidget {
                 color: AppSemanticColors.of(context).aiAccent,
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimens.space12),
               Expanded(
                 child: Text(
                   'Dùng AI',
-                  style: TextStyle(
-                    fontSize: 15,
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppSemanticColors.of(context).emphasis,
                   ),
@@ -244,18 +273,20 @@ class InsightsScreen extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 36, right: 8),
+            padding: const EdgeInsets.only(
+              left: AppDimens.space40,
+              right: AppDimens.space8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (vm.isGenerating) ...[
                   const LinearProgressIndicator(minHeight: 3),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppDimens.space8),
                 ],
                 Text(
                   status,
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                     height: 1.4,
                     color: AppSemanticColors.of(context).aiBody,
                   ),
@@ -272,11 +303,10 @@ class InsightsScreen extends StatelessWidget {
                       minimumSize: const Size(48, 48),
                     ),
                   ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppDimens.space4),
                 Text(
                   'Chỉ gửi số liệu đã tổng hợp, động cơ và tên khoản lớn nhất. Không gửi ghi chú hay link.',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                     height: 1.35,
                     color: AppSemanticColors.of(context).accent,
                   ),
@@ -305,6 +335,72 @@ class InsightsScreen extends StatelessWidget {
   }
 }
 
+/// The goal the user wrote in last month's reflection, shown during this month
+class _GoalCard extends StatelessWidget {
+  final String goal;
+  final DateTime month;
+  final VoidCallback onEdit;
+
+  const _GoalCard({
+    required this.goal,
+    required this.month,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final semantic = AppSemanticColors.of(context);
+    return Container(
+      key: const ValueKey('reflection-goal-card'),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.space16,
+        AppDimens.space12,
+        AppDimens.space8,
+        AppDimens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: semantic.cardSurface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: semantic.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.flag_outlined, size: 18, color: semantic.emphasis),
+              const SizedBox(width: AppDimens.space8),
+              Expanded(
+                child: Text(
+                  'Mục tiêu bạn đặt cho tháng ${month.month}',
+                  style: AppTextStyles.titleMedium.themed(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.space8),
+          Padding(
+            padding: const EdgeInsets.only(right: AppDimens.space8),
+            child: Text(goal, style: AppTextStyles.bodyLarge.themed(context)),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                foregroundColor: semantic.emphasis,
+                minimumSize: const Size(48, 48),
+              ),
+              child: const Text('Sửa mục tiêu'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InsightCardView extends StatelessWidget {
   final InsightCard card;
 
@@ -323,10 +419,10 @@ class _InsightCardView extends StatelessWidget {
     }).foreground;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
@@ -342,30 +438,28 @@ class _InsightCardView extends StatelessWidget {
                   color: color.withValues(
                     alpha: AppSemanticColors.of(context).insightOverlay.a,
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppDimens.borderMedium,
                 ),
                 child: Icon(card.kind.icon, size: 20, color: color),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppDimens.space12),
               Expanded(
                 child: Text(
                   card.title,
-                  style: TextStyle(
-                    fontSize: 15,
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppDimens.space8),
               InsightSourceChip(fromAi: card.fromAi),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
           Text(
             card.body,
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
               height: 1.45,
               color: theme.colorScheme.onSurfaceVariant,
             ),

@@ -214,4 +214,8 @@ AppTextStyles giữ Be Vietnam Pro và các kích thước/độ đậm hiện t
 
 AppDimens không đổi: spacing 2/4/6/8/12/16/20/24/32/40/48, radius 8/12/16/24/999; vùng chạm tối thiểu 48dp.
 
+Trong U1–U4, các cỡ chữ/spacing/bo góc viết trực tiếp ở screens/widgets được đưa về token hiện có. Dùng `AppTextStyles.*.themed(context)` cho màu chữ theo theme; dùng `AppTextStyles.*.withInheritedColor` khi chữ cần kế thừa foreground của nút hoặc ngữ cảnh, rồi `copyWith` nếu cần màu semantic cụ thể. Getter này giữ font, cỡ, weight, height và letterSpacing của token, bỏ màu cố định. Không dùng `onPrimary` cho chữ trên `primaryContainer`; dùng `onPrimaryContainer`.
+
+Chi tiết ma trận render, vị trí lỗi, ngoại lệ hình học và kiểm tra trên máy thật: [ui-audit.md](ui-audit.md).
+
 Các giới hạn tương phản đã tồn tại ở light (hint, success badge, vài motive palette) chưa sửa để bảo toàn light mode; không áp dụng chúng cho dark.

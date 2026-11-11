@@ -113,6 +113,12 @@ class _FakeReminders implements ReviewReminderService {
   @override
   Future<void> cancelDaily() async => daily = null;
 
+  List<DateTime>? reflectionReminders;
+
+  @override
+  Future<void> scheduleReflectionReminders(List<DateTime> at) async =>
+      reflectionReminders = at;
+
   @override
   Future<void> showImmediateNotification({
     required int id,
@@ -191,21 +197,24 @@ void main() {
       );
     });
 
-    test('quotes commas, quotes and line breaks; unknown group keeps its id', () {
-      final csv = PurchaseCsv.build([
-        _purchase(
-          'a',
-          'Áo, size M',
-          DateTime(2026, 10, 1),
-          group: 'gone',
-          note: 'Nói "đẹp"\nmua luôn',
-        ),
-      ], _groups);
-      final row = csv.substring(1).split('\r\n').skip(1).join('\r\n');
-      expect(row, contains('"Áo, size M"'));
-      expect(row, contains('"Nói ""đẹp""\nmua luôn"'));
-      expect(row, contains(',gone,'));
-    });
+    test(
+      'quotes commas, quotes and line breaks; unknown group keeps its id',
+      () {
+        final csv = PurchaseCsv.build([
+          _purchase(
+            'a',
+            'Áo, size M',
+            DateTime(2026, 10, 1),
+            group: 'gone',
+            note: 'Nói "đẹp"\nmua luôn',
+          ),
+        ], _groups);
+        final row = csv.substring(1).split('\r\n').skip(1).join('\r\n');
+        expect(row, contains('"Áo, size M"'));
+        expect(row, contains('"Nói ""đẹp""\nmua luôn"'));
+        expect(row, contains(',gone,'));
+      },
+    );
 
     test('text that looks like a formula is neutralised, numbers are kept', () {
       expect(PurchaseCsv.escape('=HYPERLINK("x")'), '"\'=HYPERLINK(""x"")"');
@@ -289,16 +298,19 @@ void main() {
       expect(vm.notifications.map((n) => n.id), ['s1']);
     });
 
-    test('05a is offered once, and not when the reminder is already on', () async {
-      final vm = build();
-      await settle();
-      expect(vm.dailyReminderEnabled, isFalse);
-      expect(vm.dailyReminderTimeText, '21:00');
-      expect(await vm.shouldOfferDailyReminder(), isTrue);
+    test(
+      '05a is offered once, and not when the reminder is already on',
+      () async {
+        final vm = build();
+        await settle();
+        expect(vm.dailyReminderEnabled, isFalse);
+        expect(vm.dailyReminderTimeText, '21:00');
+        expect(await vm.shouldOfferDailyReminder(), isTrue);
 
-      await vm.markDailyReminderOffered();
-      expect(await vm.shouldOfferDailyReminder(), isFalse);
-    });
+        await vm.markDailyReminderOffered();
+        expect(await vm.shouldOfferDailyReminder(), isFalse);
+      },
+    );
 
     test('"Bật nhắc nhở" asks permission and schedules 21:00 daily', () async {
       final vm = build();
@@ -414,7 +426,7 @@ void main() {
       );
       expect(
         reminders.immediate.last.body,
-        'Lỗi thử đã được gửi lên Firebase Crashlytics.',
+        'Lỗi thử đã được gửi lên Firebase Crashlytics & Admin Web.',
       );
       for (final n in reminders.immediate) {
         expect('${n.title}${n.body}', isNot(contains('uid-123')));
@@ -446,7 +458,7 @@ void main() {
       await tester.runAsync(settle);
       await tester.pumpWidget(demoTools(vm, visible: false));
 
-      expect(find.text('Khu trình diễn (chỉ bản debug)'), findsNothing);
+      expect(find.text('Khu trình diễn (chỉ bản thử nghiệm)'), findsNothing);
       for (final title in demoButtons) {
         expect(find.text(title), findsNothing);
       }
@@ -459,7 +471,7 @@ void main() {
       await tester.runAsync(settle);
       await tester.pumpWidget(demoTools(vm, visible: true));
 
-      expect(find.text('Khu trình diễn (chỉ bản debug)'), findsOneWidget);
+      expect(find.text('Khu trình diễn (chỉ bản thử nghiệm)'), findsOneWidget);
       for (final title in demoButtons) {
         expect(find.text(title), findsOneWidget);
       }

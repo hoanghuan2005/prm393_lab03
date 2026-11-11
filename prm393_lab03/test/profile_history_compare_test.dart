@@ -505,7 +505,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Cảm ơn bạn! Góc nhìn sẽ dùng câu trả lời này.'),
+        find.text('Đã ghi nhận. Góc nhìn sẽ dùng câu trả lời này.'),
         findsOneWidget,
       );
       final data = (await tester.runAsync(
@@ -550,6 +550,12 @@ void main() {
     await tester.enterText(fields.at(0), 'AirPods');
     await tester.enterText(fields.at(1), 'tai nghe, hệ Apple');
     await tester.enterText(fields.at(2), 'dùng 2 năm');
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Bỏ thay đổi đồ đang dùng?'), findsOneWidget);
+    await tester.tap(find.text('Huỷ'));
+    await tester.pumpAndSettle();
+    expect(find.text('AirPods'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('owned-save')));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),

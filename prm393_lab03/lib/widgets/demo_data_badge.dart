@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_dimens.dart';
+
 import '../theme/app_text_styles.dart';
 
 /// "Dữ liệu mẫu": shown next to every sample product, price or chart (isDemo /
@@ -16,10 +18,13 @@ class DemoDataBadge extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space8,
+          vertical: AppDimens.space4,
+        ),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppDimens.borderPill,
           border: Border.all(color: scheme.outline),
         ),
         child: Row(
@@ -30,7 +35,7 @@ class DemoDataBadge extends StatelessWidget {
               size: 12,
               color: scheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppDimens.space4),
             Text(
               label,
               style: AppTextStyles.caption

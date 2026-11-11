@@ -14,6 +14,7 @@ import '../screens/compare_items_screen.dart';
 import '../screens/dev/widget_gallery_screen.dart';
 import '../screens/feedback_screen.dart';
 import '../screens/history_screen.dart';
+import '../screens/inbox_screen.dart';
 import '../screens/info_text_screen.dart';
 import '../screens/insights_screen.dart';
 import '../screens/item_detail_screen.dart';
@@ -31,6 +32,7 @@ import '../screens/purchase_detail_screen.dart';
 import '../screens/record_purchase_screen.dart';
 import '../screens/reminder_permission_screen.dart';
 import '../screens/sale_screens.dart';
+import '../screens/sale_suggestion_screen.dart';
 import '../screens/shopping_profile_screen.dart';
 import '../screens/wishlist_screen.dart';
 import '../widgets/price_history_chart.dart' show SavedPrice;
@@ -166,6 +168,10 @@ class AppRoutes {
   static const saleList = '/sales/list';
   static const salePlan = '/sales/plan';
 
+  /// Cross-role flow: report an announced sale; Hộp thư (bell in the header)
+  static const saleSuggestion = '/sales/suggest';
+  static const inbox = '/inbox';
+
   /// Flow 9 "Trước khi mua": questions (14–16), then AI analysis and result (17–18)
   static const prePurchase = '/before-buy';
   static const prePurchaseResult = '/before-buy/result';
@@ -253,6 +259,8 @@ class AppRoutes {
           savedPrice: args.savedPrice,
         ),
       sales => const SaleCalendarScreen(),
+      saleSuggestion => const SaleSuggestionScreen(),
+      inbox => const InboxScreen(),
       saleList when args is SaleArgs => SaleListScreen(sale: args.sale),
       salePlan when args is SaleArgs => SalePlanScreen(sale: args.sale),
       prePurchase => const PrePurchaseScreen(),

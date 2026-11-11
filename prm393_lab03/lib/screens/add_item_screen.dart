@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +19,7 @@ import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_dropdown_field.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/motive_chip.dart';
 import '../widgets/why_i_buy_logo.dart';
@@ -67,6 +69,43 @@ class _AddItemScreenState extends State<AddItemScreen> {
   String? _shopName;
   String? _productDescription;
   bool _isLoadingMetadata = false;
+  late List<Object?> _initialDraft;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  List<Object?> get _draft => [
+    _titleController.text,
+    _priceController.text,
+    _urlController.text,
+    _shopController.text,
+    _selectedMotive,
+    _budgetGroupId,
+    _priority,
+  ];
+  bool get _hasChanges => !listEquals(_initialDraft, _draft);
+
+  void _draftChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _requestExit() async {
+    if (_isSaving || _confirmingExit) return;
+    _confirmingExit = true;
+    final discard =
+        !_hasChanges ||
+        await ConfirmDialog.show(
+          context,
+          title: 'Bỏ thay đổi?',
+          message: 'Thông tin đang nhập chưa được lưu.',
+          confirmLabel: 'Bỏ thay đổi',
+          isDanger: true,
+        );
+    _confirmingExit = false;
+    if (!mounted || !discard) return;
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   bool get _isEdit => widget.existing != null;
 
@@ -105,6 +144,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
         _loadMetadata(url);
       }
     }
+    _initialDraft = _draft;
+    for (final controller in [
+      _titleController,
+      _priceController,
+      _urlController,
+      _shopController,
+    ]) {
+      controller.addListener(_draftChanged);
+    }
   }
 
   Future<void> _loadMetadata(String url) async {
@@ -122,6 +170,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
       if (!mounted) return;
 
+      final hadChanges = _hasChanges;
       setState(() {
         _isLoadingMetadata = false;
         final currentTitle = _titleController.text.trim();
@@ -163,6 +212,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         if (meta.url.isNotEmpty && meta.url != _urlController.text.trim()) {
           _urlController.text = meta.url;
         }
+        if (!hadChanges) _initialDraft = _draft;
       });
     } catch (e) {
       debugPrint('AddItemScreen metadata load error: $e');
@@ -228,12 +278,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
               _isEdit
                   ? 'Đã lưu thay đổi.'
                   : !motive.skipsCooldown
-                  ? 'Đã lưu vào danh sách cân nhắc (Wishlist). Thời gian cân nhắc: ${wishlistVm.coolingOffDays} ngày.'
-                  : 'Đã lưu vào danh sách cân nhắc (Wishlist).',
+                  ? 'Đã lưu vào danh sách cân nhắc. Mốc cân nhắc sau ${wishlistVm.coolingOffDays} ngày.'
+                  : 'Đã lưu vào danh sách cân nhắc.',
             ),
             behavior: SnackBarBehavior.floating,
             action: SnackBarAction(
-              label: 'Xem Wishlist',
+              label: 'Xem danh sách',
               textColor: AppColors.primary,
               onPressed: () {
                 Navigator.of(context).pushNamed(AppRoutes.wishlist);
@@ -241,6 +291,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             ),
           ),
         );
+        setState(() => _allowExit = true);
         Navigator.of(context).pop();
       } else {
         // The form stays open with everything the user typed
@@ -269,389 +320,412 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
     final titleText = _isEdit ? 'Sửa thông tin món' : 'Thêm món cân nhắc';
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        leadingWidth: 42,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              titleText,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        // The save button is the last child: keep it above the system navigation bar
-        padding: EdgeInsets.fromLTRB(
-          AppDimens.space16,
-          AppDimens.space16,
-          AppDimens.space16,
-          AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return PopScope(
+      canPop: _allowExit || (!_isSaving && !_hasChanges),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: theme.colorScheme.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          automaticallyImplyLeading: false,
+          leadingWidth: AppDimens.minTouchTarget,
+          leading: IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+            tooltip: 'Quay lại',
+            onPressed: _isSaving ? null : _requestExit,
+          ),
+          titleSpacing: 0,
+          title: Row(
             children: [
-              if (_isLoadingMetadata) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: AppDimens.space16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.space16,
-                    vertical: AppDimens.space12,
+              const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
+              const SizedBox(width: AppDimens.space4),
+              Expanded(
+                child: Text(
+                  titleText,
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
                   ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: AppDimens.borderMedium,
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      const SizedBox(width: AppDimens.space12),
-                      Expanded(
-                        child: Text(
-                          'Đang tự động lấy thông tin từ Shopee...',
-                          style: AppTextStyles.bodyMedium
-                              .themed(context)
-                              .copyWith(
-                                color: AppSemanticColors.of(context).brandText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-              if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: AppDimens.space16),
-                  padding: const EdgeInsets.all(AppDimens.space12),
-                  decoration: BoxDecoration(
-                    color: AppSemanticColors.of(context).cardSurface,
-                    borderRadius: AppDimens.borderMedium,
-                    border: Border.all(
-                      color: AppSemanticColors.of(context).cardBorder
-                          .withValues(alpha: 0.6),
+              ),
+            ],
+          ),
+        ),
+        body: SingleChildScrollView(
+          // The save button is the last child: keep it above the system navigation bar
+          padding: EdgeInsets.fromLTRB(
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space16 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_isLoadingMetadata) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: AppDimens.space16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimens.space16,
+                      vertical: AppDimens.space12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: AppDimens.borderMedium,
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: AppDimens.space20,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: AppDimens.space12),
+                        Expanded(
+                          child: Text(
+                            'Đang tự động lấy thông tin từ Shopee...',
+                            style: AppTextStyles.bodyMedium
+                                .themed(context)
+                                .copyWith(
+                                  color: AppSemanticColors.of(context)
+                                      .brandText,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          _imageUrl!,
-                          width: 68,
-                          height: 68,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
+                ],
+                if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: AppDimens.space16),
+                    padding: const EdgeInsets.all(AppDimens.space12),
+                    decoration: BoxDecoration(
+                      color: AppSemanticColors.of(context).cardSurface,
+                      borderRadius: AppDimens.borderMedium,
+                      border: Border.all(
+                        color: AppSemanticColors.of(context).cardBorder
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: AppDimens.borderSmall,
+                          child: Image.network(
+                            _imageUrl!,
                             width: 68,
                             height: 68,
-                            color: AppSemanticColors.of(context).background,
-                            child: Icon(
-                              Icons.shopping_bag_outlined,
-                              color: AppSemanticColors.of(context)
-                                  .textSecondary,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Container(
+                              width: 68,
+                              height: 68,
+                              color: AppSemanticColors.of(context).background,
+                              child: Icon(
+                                Icons.shopping_bag_outlined,
+                                color: AppSemanticColors.of(context)
+                                    .textSecondary,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppDimens.space12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppSemanticColors.of(context).shopeeBrand
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Shopee',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                        const SizedBox(width: AppDimens.space12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
+                                ),
+                                decoration: BoxDecoration(
                                   color: AppSemanticColors.of(context)
-                                      .shopeeBrand,
+                                      .shopeeBrand
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: AppDimens.borderSmall,
+                                ),
+                                child: Text(
+                                  'Shopee',
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppSemanticColors.of(context)
+                                            .shopeeBrand,
+                                      ),
                                 ),
                               ),
-                            ),
-                            ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _shopController,
-                              builder: (_, val, _) {
-                                final name = val.text.trim().isNotEmpty
-                                    ? val.text.trim()
-                                    : _shopName;
-                                if (name == null || name.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    'Shop: $name',
-                                    style: AppTextStyles.caption
-                                        .themed(context)
-                                        .copyWith(
-                                          color: AppSemanticColors.of(context)
-                                              .textSecondary,
-                                        ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _shopController,
+                                builder: (_, val, _) {
+                                  final name = val.text.trim().isNotEmpty
+                                      ? val.text.trim()
+                                      : _shopName;
+                                  if (name == null || name.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: AppDimens.space4,
+                                    ),
+                                    child: Text(
+                                      'Shop: $name',
+                                      style: AppTextStyles.caption
+                                          .themed(context)
+                                          .copyWith(
+                                            color: AppSemanticColors.of(context)
+                                                .textSecondary,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-              // Product Title Input
-              AppTextField(
-                label: 'Tên sản phẩm *',
-                hint: 'Ví dụ: Tai nghe chống ồn Sony...',
-                controller: _titleController,
-                validator: Validators.validateTitle,
-              ),
-              const SizedBox(height: AppDimens.space16),
-              if (!_isEdit)
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _titleController,
-                  builder: (_, value, _) => DuplicateHint(
-                    title: value.text,
-                    budgetGroupId: _budgetGroupId,
-                  ),
-                ),
-
-              // Price Input (new items only; an edit changes the price via "Cập nhật giá")
-              if (!_isEdit) ...[
-                // Same VND field as Ghi khoản mua: "389.000" grouping, "₫", empty = unknown price
-                AmountField(
-                  key: const ValueKey('wishlist-price'),
-                  label: 'Giá dự kiến (không bắt buộc)',
-                  hint: 'Để trống nếu chưa biết giá',
-                  controller: _priceController,
-                  optional: true,
-                  enabled: !_isSaving,
+                ],
+                // Product Title Input
+                AppTextField(
+                  label: 'Tên sản phẩm *',
+                  hint: 'Ví dụ: Tai nghe chống ồn Sony...',
+                  controller: _titleController,
+                  validator: Validators.validateTitle,
                 ),
                 const SizedBox(height: AppDimens.space16),
-              ],
-
-              // Product URL Input
-              AppTextField(
-                label: 'Link Shopee / Lazada (Tùy chọn)',
-                hint: 'https://shopee.vn/...',
-                controller: _urlController,
-                keyboardType: TextInputType.url,
-                prefixIcon: Icons.link,
-                validator: Validators.validateOptionalUrl,
-              ),
-              const SizedBox(height: AppDimens.space16),
-
-              // Shop Name Input
-              AppTextField(
-                label: 'Tên cửa hàng / Shop (Tùy chọn)',
-                hint: 'Ví dụ: Shopee Mall, Shop Thời Trang...',
-                controller: _shopController,
-                prefixIcon: Icons.storefront_outlined,
-              ),
-              const SizedBox(height: AppDimens.space16),
-
-              // Budget group: prefilled when the item is bought later. Re-keyed by value
-              // so an applied suggestion shows in the field.
-              KeyedSubtree(
-                key: const ValueKey('wishlist-budget-group'),
-                child: AppDropdownField<String?>(
-                  key: ValueKey('wishlist-budget-group-$_budgetGroupId'),
-                  value: groups.any((g) => g.id == _budgetGroupId)
-                      ? _budgetGroupId
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Nhóm ngân sách (không bắt buộc)',
-                  ),
-                  items: [
-                    const AppDropdownItem<String?>(
-                      value: null,
-                      label: 'Chưa chọn',
+                if (!_isEdit)
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _titleController,
+                    builder: (_, value, _) => DuplicateHint(
+                      title: value.text,
+                      budgetGroupId: _budgetGroupId,
                     ),
-                    for (final group in groups)
-                      AppDropdownItem<String?>(
-                        value: group.id,
-                        label: group.name,
-                      ),
-                  ],
-                  enabled: !_isSaving,
-                  onChanged: _isSaving
-                      ? null
-                      : (value) => setState(() => _budgetGroupId = value),
-                ),
-              ),
-              // Only while no group is chosen; the user's own choice is never second-guessed
-              if (_budgetGroupId == null)
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _titleController,
-                  builder: (_, value, _) => BudgetGroupSuggestion(
-                    title: value.text,
-                    groups: groups,
-                    selectedGroupId: _budgetGroupId,
+                  ),
+
+                // Price Input (new items only; an edit changes the price via "Cập nhật giá")
+                if (!_isEdit) ...[
+                  // Same VND field as Ghi khoản mua: "389.000" grouping, "₫", empty = unknown price
+                  AmountField(
+                    key: const ValueKey('wishlist-price'),
+                    label: 'Giá dự kiến (không bắt buộc)',
+                    hint: 'Để trống nếu chưa biết giá',
+                    controller: _priceController,
+                    optional: true,
                     enabled: !_isSaving,
-                    onApply: (id) => setState(() => _budgetGroupId = id),
                   ),
-                ),
-              const SizedBox(height: AppDimens.space24),
-
-              // Priority (1–5 stars): used by "So sánh" and the sale plan (spec 7.5)
-              Text(
-                'Mức ưu tiên',
-                style: AppTextStyles.titleMedium.themed(context),
-              ),
-              Row(
-                children: [
-                  for (var i = 1; i <= 5; i++)
-                    IconButton(
-                      key: ValueKey('priority-$i'),
-                      tooltip: '$i sao',
-                      onPressed: _isSaving
-                          ? null
-                          : () => setState(() => _priority = i),
-                      icon: Icon(
-                        i <= _priority
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: MotiveColors.of(context)
-                            .paletteOf(BuyingMotive.sale)
-                            .foreground,
-                      ),
-                    ),
+                  const SizedBox(height: AppDimens.space16),
                 ],
-              ),
-              const SizedBox(height: AppDimens.space16),
 
-              // Motive Selection Header
-              Text(
-                'Tại sao bạn muốn mua món này? *',
-                style: AppTextStyles.titleMedium.themed(context),
-              ),
-              const SizedBox(height: AppDimens.space4),
-              Text(
-                'Chọn thật lòng động cơ thúc đẩy quyết định của bạn:',
-                style: AppTextStyles.bodyMedium.themed(context),
-              ),
-              const SizedBox(height: AppDimens.space12),
-
-              // 8 Motives Wrap
-              Wrap(
-                spacing: AppDimens.space8,
-                runSpacing: AppDimens.space8,
-                children: BuyingMotive.values.map((motive) {
-                  final isSelected = _selectedMotive == motive;
-                  return MotiveChip(
-                    motive: motive,
-                    isSelected: isSelected,
-                    onSelected: (m) => setState(() {
-                      _selectedMotive = m;
-                      _showMotiveError = false;
-                    }),
-                  );
-                }).toList(),
-              ),
-              if (_showMotiveError) ...[
-                const SizedBox(height: AppDimens.space8),
-                Text(
-                  'Chọn một động cơ gần nhất với lý do bạn muốn mua.',
-                  key: const ValueKey('wishlist-motive-error'),
-                  style: AppTextStyles.bodyMedium
-                      .themed(context)
-                      .copyWith(color: Theme.of(context).colorScheme.error),
+                // Product URL Input
+                AppTextField(
+                  label: 'Link Shopee / Lazada (Tùy chọn)',
+                  hint: 'https://shopee.vn/...',
+                  controller: _urlController,
+                  keyboardType: TextInputType.url,
+                  prefixIcon: Icons.link,
+                  validator: Validators.validateOptionalUrl,
                 ),
-              ],
-              const SizedBox(height: AppDimens.space20),
+                const SizedBox(height: AppDimens.space16),
 
-              // Cooldown Hint if Emotion/Social is selected
-              if (!_isEdit && !(_selectedMotive?.skipsCooldown ?? true))
-                Container(
-                  padding: const EdgeInsets.all(AppDimens.space16),
-                  decoration: BoxDecoration(
-                    color: MotiveColors.of(context)
-                        .paletteOf(BuyingMotive.emotion)
-                        .background,
-                    borderRadius: AppDimens.borderMedium,
-                    border: Border.all(
-                      color: MotiveColors.of(context)
-                          .paletteOf(BuyingMotive.emotion)
-                          .foreground
-                          .withValues(alpha: 0.3),
+                // Shop Name Input
+                AppTextField(
+                  label: 'Tên cửa hàng / Shop (Tùy chọn)',
+                  hint: 'Ví dụ: Shopee Mall, Shop Thời Trang...',
+                  controller: _shopController,
+                  prefixIcon: Icons.storefront_outlined,
+                  readOnly: _isEdit,
+                ),
+                if (_isEdit) ...[
+                  const SizedBox(height: AppDimens.space8),
+                  Text(
+                    'Tên cửa hàng hiện chỉ có thể nhập khi thêm món.',
+                    style: AppTextStyles.labelMedium.themed(context),
+                  ),
+                ],
+                const SizedBox(height: AppDimens.space16),
+
+                // Budget group: prefilled when the item is bought later. Re-keyed by value
+                // so an applied suggestion shows in the field.
+                KeyedSubtree(
+                  key: const ValueKey('wishlist-budget-group'),
+                  child: AppDropdownField<String?>(
+                    key: ValueKey('wishlist-budget-group-$_budgetGroupId'),
+                    value: groups.any((g) => g.id == _budgetGroupId)
+                        ? _budgetGroupId
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Nhóm ngân sách (không bắt buộc)',
+                    ),
+                    items: [
+                      const AppDropdownItem<String?>(
+                        value: null,
+                        label: 'Chưa chọn',
+                      ),
+                      for (final group in groups)
+                        AppDropdownItem<String?>(
+                          value: group.id,
+                          label: group.name,
+                        ),
+                    ],
+                    enabled: !_isSaving,
+                    onChanged: _isSaving
+                        ? null
+                        : (value) => setState(() => _budgetGroupId = value),
+                  ),
+                ),
+                // Only while no group is chosen; the user's own choice is never second-guessed
+                if (_budgetGroupId == null)
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _titleController,
+                    builder: (_, value, _) => BudgetGroupSuggestion(
+                      title: value.text,
+                      groups: groups,
+                      selectedGroupId: _budgetGroupId,
+                      enabled: !_isSaving,
+                      onApply: (id) => setState(() => _budgetGroupId = id),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.psychology,
-                        color: MotiveColors.of(context)
-                            .paletteOf(BuyingMotive.emotion)
-                            .foreground,
-                      ),
-                      const SizedBox(width: AppDimens.space12),
-                      Expanded(
-                        child: Text(
-                          'Món này có $coolingOffDays ngày cân nhắc trước khi quyết định (mọi động cơ trừ Nhu cầu).',
-                          style: AppTextStyles.bodyMedium
-                              .themed(context)
-                              .copyWith(
-                                color: MotiveColors.of(context)
-                                    .paletteOf(BuyingMotive.emotion)
-                                    .foreground,
-                              ),
+                const SizedBox(height: AppDimens.space24),
+
+                // Priority (1–5 stars): used by "So sánh" and the sale plan (spec 7.5)
+                Text(
+                  'Mức ưu tiên',
+                  style: AppTextStyles.titleMedium.themed(context),
+                ),
+                Row(
+                  children: [
+                    for (var i = 1; i <= 5; i++)
+                      IconButton(
+                        key: ValueKey('priority-$i'),
+                        tooltip: '$i sao',
+                        onPressed: _isSaving
+                            ? null
+                            : () => setState(() => _priority = i),
+                        icon: Icon(
+                          i <= _priority
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: MotiveColors.of(context)
+                              .paletteOf(BuyingMotive.sale)
+                              .foreground,
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+                const SizedBox(height: AppDimens.space16),
 
-              const SizedBox(height: AppDimens.space32),
+                // Motive Selection Header
+                Text(
+                  'Tại sao bạn muốn mua món này? *',
+                  style: AppTextStyles.titleMedium.themed(context),
+                ),
+                const SizedBox(height: AppDimens.space4),
+                Text(
+                  'Chọn thật lòng động cơ thúc đẩy quyết định của bạn:',
+                  style: AppTextStyles.bodyMedium.themed(context),
+                ),
+                const SizedBox(height: AppDimens.space12),
 
-              // Save Button
-              AppButton(
-                title: _isEdit ? 'Lưu thay đổi' : 'Lưu vào Wishlist',
-                icon: Icons.check,
-                isLoading: _isSaving,
-                onPressed: _handleSave,
-              ),
-            ],
+                // 8 Motives Wrap
+                Wrap(
+                  spacing: AppDimens.space8,
+                  runSpacing: AppDimens.space8,
+                  children: BuyingMotive.values.map((motive) {
+                    final isSelected = _selectedMotive == motive;
+                    return MotiveChip(
+                      motive: motive,
+                      isSelected: isSelected,
+                      onSelected: (m) => setState(() {
+                        _selectedMotive = m;
+                        _showMotiveError = false;
+                      }),
+                    );
+                  }).toList(),
+                ),
+                if (_showMotiveError) ...[
+                  const SizedBox(height: AppDimens.space8),
+                  Text(
+                    'Chọn một động cơ gần nhất với lý do bạn muốn mua.',
+                    key: const ValueKey('wishlist-motive-error'),
+                    style: AppTextStyles.bodyMedium
+                        .themed(context)
+                        .copyWith(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: AppDimens.space20),
+
+                // Cooldown Hint if Emotion/Social is selected
+                if (!_isEdit && !(_selectedMotive?.skipsCooldown ?? true))
+                  Container(
+                    padding: const EdgeInsets.all(AppDimens.space16),
+                    decoration: BoxDecoration(
+                      color: MotiveColors.of(context)
+                          .paletteOf(BuyingMotive.emotion)
+                          .background,
+                      borderRadius: AppDimens.borderMedium,
+                      border: Border.all(
+                        color: MotiveColors.of(context)
+                            .paletteOf(BuyingMotive.emotion)
+                            .foreground
+                            .withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.psychology,
+                          color: MotiveColors.of(context)
+                              .paletteOf(BuyingMotive.emotion)
+                              .foreground,
+                        ),
+                        const SizedBox(width: AppDimens.space12),
+                        Expanded(
+                          child: Text(
+                            'Món này có $coolingOffDays ngày cân nhắc trước khi quyết định (mọi động cơ trừ Nhu cầu).',
+                            style: AppTextStyles.bodyMedium
+                                .themed(context)
+                                .copyWith(
+                                  color: MotiveColors.of(context)
+                                      .paletteOf(BuyingMotive.emotion)
+                                      .foreground,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: AppDimens.space32),
+
+                // Save Button
+                AppButton(
+                  title: _isEdit ? 'Lưu thay đổi' : 'Lưu vào danh sách',
+                  icon: Icons.check,
+                  isLoading: _isSaving,
+                  onPressed: _handleSave,
+                ),
+              ],
+            ),
           ),
         ),
       ),

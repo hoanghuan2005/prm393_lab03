@@ -156,6 +156,19 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) && month.matches('^[0-9]{4}-[0-9]{2}$')
           && d().rating is int && d().rating >= 1 && d().rating <= 5;
       }
+
+      // Metadata of a PDF report shared from the device (Final 4); the file is never
+      // uploaded (D7). Written once, never edited; deleted with "Xoá toàn bộ dữ liệu".
+      match /reports/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && d().keys().hasOnly(['month', 'itemCount', 'sizeKb', 'shared', 'createdAt'])
+          && d().month is string && d().month.matches('^[0-9]{4}-[0-9]{2}$')
+          && d().itemCount is int && d().itemCount >= 0 && d().itemCount <= 10000
+          && d().sizeKb is int && d().sizeKb > 0 && d().sizeKb <= 102400
+          && d().shared is bool
+          && d().createdAt == request.time;
+      }
     }
 
     // "Giá người khác ghi" (spec 8.3): anonymous prices shared between users. A report holds
@@ -380,9 +393,12 @@ service cloud.firestore {
 
 
 
+    // Old sample vouchers (plan mục 4, D-3). The web screen that wrote them is kept in the
+    // repo but not wired into the admin app (code review CR-09), so nothing writes here:
+    // read-only until D-3 decides whether the collection goes.
     match /vouchers/{id} {
       allow read: if request.auth != null;
-      allow write: if isStaff() || isAdmin();
+      allow write: if false;
     }
     // Đề xuất đợt sale (cross-role flow): a user proposes a sale on the app (pending);
     // staff approve it (the same batch publishes the saleEvent and writes the user's

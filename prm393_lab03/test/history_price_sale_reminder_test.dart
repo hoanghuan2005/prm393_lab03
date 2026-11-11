@@ -120,6 +120,9 @@ class _Reminders implements ReviewReminderService {
   Future<void> cancelDaily() async {}
 
   @override
+  Future<void> scheduleReflectionReminders(List<DateTime> at) async {}
+
+  @override
   Future<void> showImmediateNotification({
     required int id,
     required String title,

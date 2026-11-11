@@ -11,6 +11,7 @@ import '../theme/app_text_styles.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Steps of "Trước khi mua"; [sale] only after "Khuyến mãi"
@@ -38,6 +39,18 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
   UsageAnswer? _usage;
   SimilarOwnedAnswer? _similar;
   MoodAnswer? _mood;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  bool get _hasChanges =>
+      _titleController.text.trim().isNotEmpty ||
+      _priceController.text.trim().isNotEmpty ||
+      _why != null ||
+      _influence != null ||
+      _withoutSale != null ||
+      _usage != null ||
+      _similar != null ||
+      _mood != null;
 
   @override
   void dispose() {
@@ -73,12 +86,26 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
   String get _itemLine =>
       _price == null ? _title : '$_title · ${formatVnd(_price!)}';
 
-  void _back() {
+  Future<void> _back() async {
     final index = _steps.indexOf(_step);
     if (index > 0) {
       setState(() => _step = _steps[index - 1]);
     } else {
-      Navigator.maybePop(context);
+      if (_confirmingExit) return;
+      if (_hasChanges) {
+        _confirmingExit = true;
+        final discard = await ConfirmDialog.show(
+          context,
+          title: 'Bỏ câu trả lời?',
+          message: 'Những câu trả lời bạn vừa nhập chưa được lưu.',
+          confirmLabel: 'Bỏ câu trả lời',
+        );
+        _confirmingExit = false;
+        if (!mounted || !discard) return;
+      }
+      setState(() => _allowExit = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) Navigator.maybePop(context);
     }
   }
 
@@ -132,7 +159,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
       _Step.usage => ('Câu hỏi nhanh', 'Bạn sẽ dùng nó ra sao?'),
     };
     return PopScope(
-      canPop: _step == _Step.item,
+      canPop: _allowExit,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
@@ -144,7 +171,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
-          leadingWidth: 42,
+          leadingWidth: AppDimens.minTouchTarget,
           leading: IconButton(
             padding: EdgeInsets.zero,
             icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -155,14 +182,13 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
           title: Row(
             children: [
               const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Expanded(
                 child: Text(
                   appBarTitle,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -350,7 +376,7 @@ class _PrePurchaseScreenState extends State<PrePurchaseScreen> {
         const SizedBox(height: AppDimens.space24),
         const _Question(
           title: 'Không có khuyến mãi, bạn vẫn muốn món này chứ?',
-          hint: 'Hãy nghĩ về món đó, tách khỏi ưu đãi.',
+          hint: 'Cân nhắc món đồ khi không có ưu đãi.',
         ),
         _OptionList(
           options: [

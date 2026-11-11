@@ -891,7 +891,10 @@ class _PriceHistoryChartState extends State<PriceHistoryChart> {
                 label: HorizontalLineLabel(
                   show: true,
                   alignment: Alignment.topRight,
-                  padding: const EdgeInsets.only(right: 2, bottom: 2),
+                  padding: const EdgeInsets.only(
+                    right: AppDimens.space2,
+                    bottom: AppDimens.space2,
+                  ),
                   style: muted,
                   labelResolver: (_) => 'giá lúc bạn lưu',
                 ),
@@ -1288,8 +1291,8 @@ class _DayDetails extends StatelessWidget {
               if (line.tag)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppDimens.space8,
+                    vertical: AppDimens.space2,
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(color: theme.colorScheme.outline),

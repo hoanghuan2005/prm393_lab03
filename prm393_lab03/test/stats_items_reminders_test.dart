@@ -67,6 +67,9 @@ class FakeReminders implements ReviewReminderService {
   Future<void> cancelDaily() async => daily = null;
 
   @override
+  Future<void> scheduleReflectionReminders(List<DateTime> at) async {}
+
+  @override
   Future<bool> requestPermission() async => grant;
 
   @override

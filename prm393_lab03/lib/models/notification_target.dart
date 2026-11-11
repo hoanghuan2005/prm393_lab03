@@ -28,6 +28,9 @@ class NotificationRoute {
   static const String saleIdKey = 'sale_id';
   static const String itemIdKey = 'item_id';
 
+  /// `yyyy-MM` of the month a reflection notification is about (optional)
+  static const String monthKey = 'month';
+
   static const String typeSale = 'sale';
   static const String typeReview = 'review';
   static const String typeReflection = 'reflection';
@@ -37,6 +40,17 @@ class NotificationRoute {
   static const List<String> saleTypes = ['double_day', 'mid_month', 'payday'];
 
   static bool isSale(Map<String, dynamic> data) => data[typeKey] == typeSale;
+
+  /// The month in `month` (`yyyy-MM`), or null when missing or malformed
+  static DateTime? monthOf(Map<String, dynamic> data) {
+    final value = data[monthKey];
+    if (value is! String) return null;
+    final match = RegExp(r'^(\d{4})-(\d{2})$').firstMatch(value);
+    if (match == null) return null;
+    final month = int.parse(match.group(2)!);
+    if (month < 1 || month > 12) return null;
+    return DateTime(int.parse(match.group(1)!), month);
+  }
 
   static NotificationTarget targetFor(
     Map<String, dynamic> data, {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 
 /// Month Picker Bottom Sheet matching Figma "Month picker sheet"
 class MonthPickerSheet extends StatefulWidget {
@@ -83,21 +85,22 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             height: 4,
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).inputBorder,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: AppDimens.borderSmall,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimens.space16),
 
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Chọn kỳ tháng',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.onPrimary,
+              Expanded(
+                child: Text(
+                  'Chọn kỳ tháng',
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppSemanticColors.of(context).textPrimary,
+                  ),
                 ),
               ),
               IconButton(
@@ -112,42 +115,47 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
 
           // Year Selector Row
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.space12,
+              vertical: AppDimens.space4,
+            ),
             decoration: BoxDecoration(
               color: AppSemanticColors.of(context).mutedSurface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimens.borderMedium,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_left_rounded,
                     size: 22,
-                    color: AppColors.onPrimary,
+                    color: AppSemanticColors.of(context).textPrimary,
                   ),
                   tooltip: 'Năm trước',
                   onPressed: () {
                     setState(() => _selectedYear--);
                   },
                 ),
-                Text(
-                  'Năm $_selectedYear',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                Flexible(
+                  child: Text(
+                    'Năm $_selectedYear',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppSemanticColors.of(context).textPrimary,
+                    ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_right_rounded,
                     size: 22,
-                    color: AppColors.onPrimary,
+                    color: AppSemanticColors.of(context).textPrimary,
                   ),
                   tooltip: 'Năm sau',
                   onPressed:
@@ -162,18 +170,21 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimens.space16),
 
-          // 12 Months Grid (4 columns x 3 rows)
+          // Fewer columns leave room for larger system text.
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: 12,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.6,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.textScalerOf(context).scale(14) > 16
+                  ? 3
+                  : 4,
+              mainAxisSpacing: AppDimens.space8,
+              crossAxisSpacing: AppDimens.space8,
+              mainAxisExtent: MediaQuery.textScalerOf(context)
+                  .scale(AppDimens.minTouchTarget),
             ),
             itemBuilder: (context, index) {
               final month = index + 1;
@@ -197,14 +208,14 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                           final newDate = DateTime(_selectedYear, month, 1);
                           Navigator.pop(context, newDate);
                         },
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppDimens.borderMedium,
                   child: Container(
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primary
                           : AppSemanticColors.of(context).background,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimens.borderMedium,
                       border: Border.all(
                         color: isSelected
                             ? AppColors.onPrimary
@@ -214,15 +225,16 @@ class _MonthPickerSheetState extends State<MonthPickerSheet> {
                     ),
                     child: Text(
                       monthNames[index],
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isSelected
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: isSelected
-                            ? AppColors.onPrimary
-                            : AppSemanticColors.of(context).accent,
-                      ),
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium.withInheritedColor
+                          .copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? AppColors.onPrimary
+                                : AppSemanticColors.of(context).accent,
+                          ),
                     ),
                   ),
                 ),

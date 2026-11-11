@@ -111,9 +111,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          verified
-              ? 'Email đã được xác minh.'
-              : 'Email chưa được xác minh. Hãy mở đường dẫn trong email.',
+          verified ? 'Email đã được xác minh.' : 'Email chưa được xác minh. Mở đường dẫn trong email để xác minh.',
         ),
       ),
     );

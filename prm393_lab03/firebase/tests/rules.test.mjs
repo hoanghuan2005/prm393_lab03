@@ -53,6 +53,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
     title: 'Chào bạn', body: 'Cảm ơn góp ý', kind: 'message', createdAt: now(), createdBy: 'sam', readAt: null,
   });
   await setDoc(doc(db, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 1, observedAt: now() });
+  await setDoc(doc(db, 'vouchers/v1'), { code: 'MAU', isActive: true });
+  await setDoc(doc(db, 'shopeeVouchers/sv1'), { ...shopeeVoucher('sam'), lastSeenAt: now() });
   await setDoc(doc(db, 'announcements/a-pub'), announcement('sam', 'published', now()));
   await setDoc(doc(db, 'announcements/a-old'), announcement('sam', 'archived', now()));
   await setDoc(doc(db, 'saleEvents/s-pub'), saleEvent('sam', 'published', now()));
@@ -95,8 +97,20 @@ function privateDocs(uid) {
     [`${u}/ownedItems/o1`, { name: 'Tai nghe cũ', tags: [] }],
     [`${u}/budgets/2026-11`, { limit: 1000000 }],
     [`${u}/reflections/2026-11`, { rating: 4 }],
+    [`${u}/reports/r1`, pdfReport()],
     [`${u}/hiddenMatches/shopee:3:4`, { hiddenAt: now() }],
   ];
+}
+/** Metadata of a PDF report shared from the device (R-4) */
+function pdfReport(extra = {}) {
+  return { month: '2026-11', itemCount: 12, sizeKb: 48, shared: true, createdAt: serverTimestamp(), ...extra };
+}
+function shopeeVoucher(capturedBy, extra = {}) {
+  return {
+    raw: 'Giảm 20k đơn từ 199k', kind: 'amount', scope: 'shop', unavailable: false, source: 'extension',
+    sourceUrl: 'https://shopee.vn/product/1/2', capturedBy, lastSeenAt: serverTimestamp(),
+    amountVnd: 20000, minSpendVnd: 199000, expiresDate: '2026-11-30', ...extra,
+  };
 }
 function announcement(by, status, createdAt) {
   return { title: 'Bảo trì', body: 'App bảo trì tối nay', status, createdAt, createdBy: by, updatedAt: createdAt };
@@ -408,6 +422,37 @@ add('extensionPairings', 'user', 'approve the pairing for self', true, () => upd
 // Anything not matched above is denied by default
 add('(unmatched path)', 'admin', 'write admin_broadcasts (removed, unused)', false, () => setDoc(doc(ada, 'admin_broadcasts/b1'), { title: 'x' }));
 
+// users/{uid}/reports: PDF metadata (R-4). Written once by the owner, never edited
+add('reports', 'user', 'extra field (file name)', false, () => setDoc(doc(alice, 'users/alice/reports/r2'), pdfReport({ fileName: 'a.pdf' })));
+add('reports', 'user', 'size 0 kB', false, () => setDoc(doc(alice, 'users/alice/reports/r3'), pdfReport({ sizeKb: 0 })));
+add('reports', 'user', 'month "11/2026"', false, () => setDoc(doc(alice, 'users/alice/reports/r4'), pdfReport({ month: '11/2026' })));
+add('reports', 'user', 'createdAt from the client clock', false, () => setDoc(doc(alice, 'users/alice/reports/r5'), pdfReport({ createdAt: Timestamp.fromDate(new Date('2026-01-01')) })));
+add('reports', 'user', 'edit a saved report', false, () => updateDoc(doc(alice, 'users/alice/reports/r1'), { shared: false }));
+add('reports', 'user', 'delete own (Xoá toàn bộ dữ liệu)', true, () => deleteDoc(doc(alice, 'users/alice/reports/r1')));
+add('reports', 'staff', "write into alice's reports", false, () => setDoc(doc(sam, 'users/alice/reports/r9'), pdfReport()));
+
+// vouchers: old sample data, read-only since CR-09 (plan mục 4)
+for (const [role, [, db]] of Object.entries(actors)) {
+  add('vouchers', role, 'read', true, () => getDoc(doc(db, 'vouchers/v1')));
+  add('vouchers', role, 'write a voucher', false, () => setDoc(doc(db, 'vouchers/v2'), { code: 'X', isActive: true }));
+}
+add('vouchers', 'signed out', 'read', false, () => getDoc(doc(nobody, 'vouchers/v1')));
+
+// shopeeVouchers: captured by staff with the extension; users never read them
+add('shopeeVouchers', 'user', 'read', false, () => getDoc(doc(alice, 'shopeeVouchers/sv1')));
+add('shopeeVouchers', 'user', 'capture a voucher', false, () => setDoc(doc(alice, 'shopeeVouchers/sv2'), shopeeVoucher('alice')));
+add('shopeeVouchers', 'staff', 'read', true, () => getDoc(doc(sam, 'shopeeVouchers/sv1')));
+add('shopeeVouchers', 'staff', 'capture a voucher as self', true, () => setDoc(doc(sam, 'shopeeVouchers/sv3'), shopeeVoucher('sam')));
+add('shopeeVouchers', 'staff', 'capture in the name of another account', false, () => setDoc(doc(sam, 'shopeeVouchers/sv4'), shopeeVoucher('ada')));
+add('shopeeVouchers', 'admin', 'read', true, () => getDoc(doc(ada, 'shopeeVouchers/sv1')));
+add('shopeeVouchers', 'admin', 'source outside shopee.vn', false, () => setDoc(doc(ada, 'shopeeVouchers/sv5'), shopeeVoucher('ada', { sourceUrl: 'https://example.com/x' })));
+add('shopeeVouchers', 'guest', 'capture without a linked staff account', false, () => setDoc(doc(guest, 'shopeeVouchers/sv6'), shopeeVoucher('guest-1')));
+
+// Collection group purchases: only admins, for the dashboard. The rules cannot limit a
+// list to count()/sum(), so an admin can also list the documents (data-model.md, S-1)
+add('(collection group) purchases', 'user', 'count every purchase', false, () => getCountFromServer(collectionGroup(alice, 'purchases')));
+add('(collection group) purchases', 'admin', 'list the documents (not only count)', true, () => getDocs(query(collectionGroup(ada, 'purchases'))));
+
 // ---------- Run ----------
 const rows = [];
 let failed = 0;
@@ -431,9 +476,14 @@ for (const c of cases) {
   const k = `${c.collectionName}|${c.role}`;
   coverage.set(k, (coverage.get(k) ?? new Set()).add(c.allowed));
 }
+// Collections a role may not touch at all: only denied cases exist, by design
+const noAccess = {
+  'shopeeVouchers|user': 'vouchers captured by staff; users never read or write them',
+};
 const gaps = [...coverage]
   .filter(([k, s]) => !k.startsWith('(') && ['user', 'staff', 'admin'].includes(k.split('|')[1]) && s.size < 2)
-  .map(([k]) => k);
+  .map(([k]) => k)
+  .filter((k) => !(k in noAccess));
 
 const out = new URL('../../evidence/rules/', here);
 mkdirSync(out, { recursive: true });
@@ -443,6 +493,7 @@ writeFileSync(new URL('firestore-rules-results.md', out), [
   `Sinh tự động bởi \`firebase/tests/rules.test.mjs\` lúc ${new Date().toISOString()}.`,
   `Tổng: ${cases.length} ca · Qua: ${cases.length - failed} · Lỗi: ${failed}.`,
   gaps.length ? `Thiếu ca cho phép/từ chối: ${gaps.join(', ')}` : 'Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.',
+  ...Object.entries(noAccess).map(([k, why]) => `Ngoại lệ có chủ đích: \`${k}\` chỉ có ca từ chối (${why}).`),
   '',
   '| ID | Collection | Role | Operation | Expected | Result |',
   '|:---|:---|:---|:---|:---|:---|',

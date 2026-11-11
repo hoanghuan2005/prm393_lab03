@@ -199,6 +199,9 @@ class PhotoSearchViewModel extends ChangeNotifier {
     final s = _state;
     final name = _selectedName;
     if (s is! UiSuccess<ItemRecognition> || name == null) return null;
+    // The main guess comes with a keyword written for shop search boxes
+    final keyword = s.data.searchKeyword;
+    if (name == s.data.name && keyword != null) return keyword;
     // The brand only belongs to the main guess, not to the alternatives
     final brand = name == s.data.name ? s.data.brand : null;
     return ItemRecognition.searchQuery(name, brand: brand);

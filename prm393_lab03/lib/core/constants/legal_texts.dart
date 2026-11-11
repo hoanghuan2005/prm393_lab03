@@ -69,7 +69,7 @@ class LegalTexts {
 
   static const InfoDocument privacy = InfoDocument(
     title: 'Chính sách quyền riêng tư',
-    updated: '10/11/2026',
+    updated: '11/11/2026',
     intro:
         'Trang này nói rõ app lưu gì, gửi gì đi và bạn kiểm soát dữ liệu của mình '
         'thế nào.',
@@ -88,7 +88,10 @@ class LegalTexts {
       InfoSection(
         'Dữ liệu app lưu',
         'Khoản mua, món mong muốn, quyết định Mua/Chờ/Bỏ qua, lịch sử giá, ngân '
-            'sách, chiêm nghiệm tháng, hồ sơ mua sắm và góp ý bạn gửi. Dữ liệu được '
+            'sách, chiêm nghiệm tháng, hồ sơ mua sắm và góp ý bạn gửi. Mỗi lần chia '
+            'sẻ báo cáo PDF, app chỉ lưu tháng, số mục và dung lượng file; file không '
+            'được tải lên. Đợt sale bạn báo (tên, ngày, nơi công bố) được lưu kèm mã '
+            'tài khoản để nhóm kiểm tra và trả lời trong Hộp thư. Dữ liệu được '
             'lưu trên máy và đồng bộ với tài khoản của bạn trên Cloud Firestore khi có '
             'mạng. Quyền truy cập được kiểm soát bằng Firebase Authentication và '
             'Firestore Rules; quản trị viên có quyền theo chức năng quản trị. Giá '
@@ -112,7 +115,8 @@ class LegalTexts {
       ),
       InfoSection(
         'Thông báo',
-        'Nhắc ghi khoản mua và nhắc xem lại món là thông báo tạo ngay trên máy. '
+        'Nhắc ghi khoản mua, nhắc xem lại món và nhắc chiêm nghiệm cuối tháng là '
+            'thông báo tạo ngay trên máy. Thông báo chung đã đọc được ghi nhớ trên máy. '
             'App cũng dùng Firebase Cloud Messaging để nhận thông báo từ hệ thống; '
             'mã thiết bị được lưu để gửi thông báo. '
             'Bạn bật hoặc tắt chúng trong Cá nhân hoặc cài đặt của máy.',
@@ -127,10 +131,11 @@ class LegalTexts {
         'Xuất và xoá dữ liệu',
         'File CSV và báo cáo PDF được tạo trên máy. Nút "Xoá toàn bộ dữ liệu" '
             'trong Cá nhân xoá các khoản mua, món mong muốn cùng lịch sử giá của '
-            'chúng, quyết định, ngân sách, chiêm nghiệm và đồ đã sở hữu; không '
-            'thể hoàn tác. Nút này vẫn giữ tài khoản đăng nhập, hồ sơ và nhóm ngân '
-            'sách; không phải chức năng xoá tài khoản. Dữ liệu khác như góp ý, phiên '
-            'extension hoặc giá đã chia sẻ không nằm trong thao tác này. Để yêu '
+            'chúng, quyết định, ngân sách, chiêm nghiệm, thông tin báo cáo PDF đã '
+            'chia sẻ và đồ đã sở hữu; không thể hoàn tác. Nút này vẫn giữ tài khoản '
+            'đăng nhập, hồ sơ và nhóm ngân sách; không phải chức năng xoá tài khoản. '
+            'Dữ liệu khác như góp ý, phiên extension, giá đã chia sẻ, đợt sale bạn đã '
+            'báo và tin trong Hộp thư không nằm trong thao tác này. Để yêu '
             'cầu xoá tài khoản và dữ liệu còn lại, liên hệ nhóm theo mục dưới.',
       ),
       _deletionContact,
@@ -150,17 +155,18 @@ class LegalTexts {
 
   static const InfoDocument dataDeletion = InfoDocument(
     title: 'Hướng dẫn xoá dữ liệu',
-    updated: '10/11/2026',
+    updated: '11/11/2026',
     intro: 'Áp dụng cho tài khoản Why I Buy?, bao gồm đăng nhập Facebook.',
     sections: [
       InfoSection(
         'Xoá dữ liệu chi tiêu trong app',
         'Đăng nhập đúng tài khoản → Cá nhân → Xoá toàn bộ dữ liệu của tôi → '
             'đọc hộp thoại và xác nhận. Thao tác xoá khoản mua, món mong muốn '
-            'và lịch sử giá của chúng, quyết định, ngân sách, chiêm nghiệm và '
-            'đồ đã sở hữu. Dữ liệu đã xoá không thể hoàn tác. Tài khoản đăng '
-            'nhập, hồ sơ và nhóm ngân sách vẫn được giữ lại; góp ý, phiên '
-            'extension và giá đã chia sẻ không được xoá bằng nút này.',
+            'và lịch sử giá của chúng, quyết định, ngân sách, chiêm nghiệm, '
+            'thông tin báo cáo PDF đã chia sẻ và đồ đã sở hữu. Dữ liệu đã xoá '
+            'không thể hoàn tác. Tài khoản đăng nhập, hồ sơ và nhóm ngân sách '
+            'vẫn được giữ lại; góp ý, phiên extension, giá đã chia sẻ, đợt sale '
+            'bạn đã báo và tin trong Hộp thư không được xoá bằng nút này.',
       ),
       InfoSection(
         'Yêu cầu xoá tài khoản và dữ liệu còn lại',

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/amount_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_dropdown_field.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/item_suggestions.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -68,6 +70,24 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   bool _isSaving = false;
   bool _didSave = false;
   String? _saveError;
+  late final List<Object?> _initialDraft;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  List<Object?> get _draft => [
+    _amountController.text,
+    _titleController.text,
+    _noteController.text,
+    _occurredAt,
+    _motive,
+    _budgetGroupId,
+    _usedDiscountCode,
+  ];
+  bool get _hasChanges => !listEquals(_initialDraft, _draft);
+
+  void _draftChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
@@ -93,6 +113,14 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
     _groupChosen = purchase != null || item?.budgetGroupId != null;
     _usedDiscountCode = purchase?.usedDiscountCode ?? false;
+    _initialDraft = _draft;
+    for (final controller in [
+      _amountController,
+      _titleController,
+      _noteController,
+    ]) {
+      controller.addListener(_draftChanged);
+    }
   }
 
   @override
@@ -103,12 +131,26 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     super.dispose();
   }
 
-  void _back() {
-    if (_isSaving || _didSave) return;
+  Future<void> _back() async {
+    if (_isSaving || _didSave || _confirmingExit) return;
     if (_step == 2) {
       setState(() => _step = 1);
     } else {
-      Navigator.maybePop(context);
+      _confirmingExit = true;
+      final discard =
+          !_hasChanges ||
+          await ConfirmDialog.show(
+            context,
+            title: 'Bỏ thay đổi?',
+            message: 'Thông tin khoản mua đang nhập chưa được lưu.',
+            confirmLabel: 'Bỏ thay đổi',
+            isDanger: true,
+          );
+      _confirmingExit = false;
+      if (!mounted || !discard) return;
+      setState(() => _allowExit = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) Navigator.maybePop(context);
     }
   }
 
@@ -305,7 +347,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     final activeSession = _sessionUid != null && vm.uid == _sessionUid;
     final busy = _isSaving || _didSave || vm.isSaving;
     return PopScope<PurchaseItem>(
-      canPop: !busy && _step == 1,
+      canPop: !busy && (_allowExit || (_step == 1 && !_hasChanges)),
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && !busy) _back();
       },
@@ -317,7 +359,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
-          leadingWidth: 42,
+          leadingWidth: AppDimens.minTouchTarget,
           leading: IconButton(
             padding: EdgeInsets.zero,
             tooltip: 'Quay lại',
@@ -328,16 +370,15 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           title: Row(
             children: [
               const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppDimens.space4),
               Expanded(
                 child: Text(
                   widget.existingPurchase == null
                       ? 'Ghi khoản mua'
                       : 'Chỉnh sửa khoản mua',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),

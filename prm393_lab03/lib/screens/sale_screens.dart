@@ -17,9 +17,8 @@ import '../widgets/states/empty_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 import '../widgets/wishlist_card.dart';
 
-String _countdown(SaleEvent sale, DateTime now) {
-  final days = sale.daysUntil(now);
-  return days == 0 ? 'Hôm nay' : 'Còn $days ngày';
+String _saleDateLabel(SaleEvent sale, DateTime now) {
+  return sale.daysUntil(now) == 0 ? 'Hôm nay' : formatWeekdayDate(sale.date);
 }
 
 /// "Đã xác nhận" (Shopee announced it) or "Dự kiến" (public pattern)
@@ -32,7 +31,7 @@ class _SaleStatusChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(
       horizontal: AppDimens.space8,
-      vertical: 2,
+      vertical: AppDimens.space2,
     ),
     decoration: BoxDecoration(
       color: confirmed
@@ -67,7 +66,7 @@ class SaleCalendarScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -78,13 +77,16 @@ class SaleCalendarScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Lịch sale',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Lịch sale',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -105,6 +107,19 @@ class SaleCalendarScreen extends StatelessWidget {
             '(ngày đôi, ngày 15, ngày 25). App không dự đoán giá.',
             style: AppTextStyles.bodyMedium.themed(context),
           ),
+          const SizedBox(height: AppDimens.space12),
+          // Cross-role flow: a user reports a sale a marketplace announced; staff
+          // check it on the web admin and publish it here for everyone
+          OutlinedButton.icon(
+            key: const ValueKey('report-sale'),
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.saleSuggestion),
+            icon: const Icon(Icons.campaign_outlined),
+            label: const Text('Báo đợt sale sàn đã công bố'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+          ),
           const SizedBox(height: AppDimens.space16),
           const _SaleReminderSetting(),
           const SizedBox(height: AppDimens.space16),
@@ -124,9 +139,7 @@ class SaleCalendarScreen extends StatelessWidget {
                   sale.name,
                   style: AppTextStyles.titleMedium.themed(context),
                 ),
-                subtitle: Text(
-                  '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
-                ),
+                subtitle: Text(_saleDateLabel(sale, vm.now)),
                 trailing: _SaleStatusChip(confirmed: sale.confirmed),
                 onTap: () => Navigator.pushNamed(
                   context,
@@ -161,7 +174,7 @@ class SaleListScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -172,14 +185,13 @@ class SaleListScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppDimens.space4),
             Expanded(
               child: Text(
                 'Danh sách cho ${sale.name}',
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -195,7 +207,7 @@ class SaleListScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${formatWeekdayDate(sale.date)} · ${_countdown(sale, vm.now)}',
+                    _saleDateLabel(sale, vm.now),
                     style: AppTextStyles.titleMedium.themed(context),
                   ),
                 ),
@@ -297,7 +309,7 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -308,14 +320,13 @@ class _SalePlanScreenState extends State<SalePlanScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppDimens.space4),
             Expanded(
               child: Text(
                 'Kế hoạch cho ${widget.sale.name}',
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),

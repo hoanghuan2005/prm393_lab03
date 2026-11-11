@@ -6,7 +6,9 @@ import '../core/formatters/money_format.dart';
 import '../core/utils/time_slot.dart';
 import '../models/buying_motive.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
@@ -97,7 +99,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -108,13 +110,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Mô hình',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Mô hình',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -126,16 +131,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
             purchaseVm.state,
           ], loadingMessage: 'Đang tải khoản mua...') ??
           SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimens.space16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Period Segmented Switcher: Tuần | Tháng
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(AppDimens.space4),
                   decoration: BoxDecoration(
                     color: AppSemanticColors.of(context).divider,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppDimens.borderMedium,
                   ),
                   child: Row(
                     children: [
@@ -157,17 +162,17 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
 
                 // Period Selector (Interactive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+                    horizontal: AppDimens.space16,
+                    vertical: AppDimens.space4,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppDimens.borderLarge,
                     border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
@@ -196,11 +201,14 @@ class _PatternsScreenState extends State<PatternsScreen> {
                               purchaseVm.setSelectedMonth(picked);
                             }
                           },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
+                          borderRadius: AppDimens.borderSmall,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minHeight: AppDimens.minTouchTarget,
+                            ),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
+                              horizontal: AppDimens.space8,
+                              vertical: AppDimens.space6,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -210,7 +218,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                   size: 16,
                                   color: theme.colorScheme.onSurface,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppDimens.space8),
                                 Flexible(
                                   child: Text(
                                     isWeek
@@ -219,14 +227,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                             purchaseVm.selectedMonth,
                                           ),
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
+                                    style: AppTextStyles
+                                        .bodyMedium
+                                        .withInheritedColor
+                                        .copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: theme.colorScheme.onSurface,
+                                        ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppDimens.space4),
                                 Icon(
                                   Icons.arrow_drop_down_rounded,
                                   size: 20,
@@ -254,18 +264,20 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimens.space16),
 
                 // Total Summary Card
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppDimens.borderLarge,
                     border: Border.all(color: theme.dividerColor),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Wrap(
+                    spacing: AppDimens.space8,
+                    runSpacing: AppDimens.space8,
+                    alignment: WrapAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,28 +286,30 @@ class _PatternsScreenState extends State<PatternsScreen> {
                             isWeek
                                 ? 'Tổng chi tiêu trong tuần'
                                 : 'Tổng chi tiêu trong tháng',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: AppTextStyles.labelMedium.withInheritedColor
+                                .copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppDimens.space4),
                           Text(
                             formatVnd(totalSpent),
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppSemanticColors.of(context).accent,
-                            ),
+                            style: AppTextStyles
+                                .displayMedium
+                                .withInheritedColor
+                                .copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppSemanticColors.of(context).accent,
+                                ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppDimens.space2),
                           Text(
                             '${stats.count} khoản đã ghi nhận',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                            ),
+                            style: AppTextStyles.labelMedium.withInheritedColor
+                                .copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                ),
                           ),
                         ],
                       ),
@@ -316,38 +330,37 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppDimens.space24),
 
                 // Theo động cơ Header
                 Text(
                   'Theo động cơ',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
 
                 // Motives Breakdown List
                 Container(
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppDimens.borderLarge,
                     border: Border.all(color: theme.dividerColor),
                   ),
                   child: Column(
                     children: [
                       if (stats.motives.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppDimens.space16),
                           child: Text(
                             'Chưa có khoản mua nào trong kỳ này.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: AppTextStyles.bodyMedium.withInheritedColor
+                                .copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ),
                       ...stats.motives.map((m) {
@@ -360,8 +373,8 @@ class _PatternsScreenState extends State<PatternsScreen> {
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            horizontal: AppDimens.space16,
+                            vertical: AppDimens.space12,
                           ),
                           child: Column(
                             children: [
@@ -372,7 +385,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                     height: 32,
                                     decoration: BoxDecoration(
                                       color: motivePalette.background,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppDimens.borderSmall,
                                     ),
                                     child: Icon(
                                       motive.icon,
@@ -380,61 +393,74 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                       color: motivePalette.foreground,
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: AppDimens.space12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                        Wrap(
+                                          spacing: AppDimens.space8,
+                                          runSpacing: AppDimens.space8,
+                                          alignment: WrapAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               motive.label,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color:
-                                                    theme.colorScheme.onSurface,
-                                              ),
+                                              style: AppTextStyles
+                                                  .bodyMedium
+                                                  .withInheritedColor
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface,
+                                                  ),
                                             ),
                                             Text(
                                               formatVnd(sum),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppSemanticColors.of(
-                                                  context,
-                                                ).accent,
-                                              ),
+                                              style: AppTextStyles
+                                                  .bodyMedium
+                                                  .withInheritedColor
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppSemanticColors.of(
+                                                      context,
+                                                    ).accent,
+                                                  ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                        const SizedBox(
+                                          height: AppDimens.space4,
+                                        ),
+                                        Wrap(
+                                          spacing: AppDimens.space8,
+                                          runSpacing: AppDimens.space8,
+                                          alignment: WrapAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               '$count khoản chi',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant
-                                                    .withValues(alpha: 0.7),
-                                              ),
+                                              style: AppTextStyles
+                                                  .labelMedium
+                                                  .withInheritedColor
+                                                  .copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant
+                                                        .withValues(alpha: 0.7),
+                                                  ),
                                             ),
                                             Text(
                                               '${(percent * 100).toStringAsFixed(0)}%',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
+                                              style: AppTextStyles
+                                                  .labelMedium
+                                                  .withInheritedColor
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -443,10 +469,10 @@ class _PatternsScreenState extends State<PatternsScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: AppDimens.space8),
                               // Track
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: AppDimens.borderSmall,
                                 child: LinearProgressIndicator(
                                   value: percent,
                                   minHeight: 6,
@@ -465,24 +491,23 @@ class _PatternsScreenState extends State<PatternsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppDimens.space24),
 
                 // Khung giờ chi tiêu
                 Text(
                   'Khung giờ mua sắm',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppDimens.space12),
 
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDimens.space16),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppDimens.borderLarge,
                     border: Border.all(color: theme.dividerColor),
                   ),
                   child: Column(
@@ -518,14 +543,16 @@ class _PatternsScreenState extends State<PatternsScreen> {
 
     return InkWell(
       onTap: () => setState(() => _period = period),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppDimens.borderMedium,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        constraints: const BoxConstraints(minHeight: AppDimens.minTouchTarget),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: AppDimens.space8),
         decoration: BoxDecoration(
           color: isSelected
               ? (AppSemanticColors.of(context).cardSurface)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppDimens.borderMedium,
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -539,8 +566,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
                 ? (AppSemanticColors.of(context).emphasis)
@@ -564,31 +590,31 @@ class _PatternsScreenState extends State<PatternsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: AppDimens.space8,
+          runSpacing: AppDimens.space8,
           children: [
             Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppDimens.space8),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const Spacer(),
+
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
+              style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppDimens.space6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppDimens.borderSmall,
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,

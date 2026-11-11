@@ -9,6 +9,7 @@ import '../models/purchase_item.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
@@ -51,13 +52,16 @@ class HomeScreen extends StatelessWidget {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Trang chủ',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Trang chủ',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -65,36 +69,40 @@ class HomeScreen extends StatelessWidget {
         actions: [AppHeaderActions(onProfileTap: () => onNavigateTab?.call(4))],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.space16,
+          AppDimens.space16,
+          AppDimens.space16,
+          80,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Greeting
             Text(
               _greeting(context.watch<AuthViewModel?>()),
-              style: TextStyle(
-                fontSize: 16,
+              style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: AppDimens.space12),
 
             // Card 1: TỔNG QUAN THÁNG (selected month)
             _buildMonthSummaryCard(context, purchaseVm),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.space16),
 
             // Card 2: Danh sách mong muốn entry
             _buildWishlistEntryCard(context, wishlistVm),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppDimens.space24),
 
             // Section: Trước khi mua (Flow 9)
             _buildPrePurchaseEntry(context),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppDimens.space24),
 
             // Section 3: Khoản mua gần đây
             _buildRecentPurchasesSection(context, purchaseVm),
@@ -103,7 +111,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
         child: SizedBox(
           width: double.infinity,
           height: 52,
@@ -112,22 +120,24 @@ class HomeScreen extends StatelessWidget {
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
               elevation: 4,
-              shadowColor: Colors.black.withValues(alpha: 0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+              shadowColor: AppSemanticColors.of(context).illustrationShadow,
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppDimens.borderPill,
               ),
             ),
             onPressed: () {
               Navigator.pushNamed(context, AppRoutes.recordPurchase);
             },
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_circle_outline_rounded, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.add_circle_outline_rounded, size: 20),
+                const SizedBox(width: AppDimens.space8),
                 Text(
                   'Ghi khoản mua',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -154,7 +164,7 @@ class HomeScreen extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     return [
       for (var i = 0; i < entries.length; i++) ...[
-        if (i > 0) const SizedBox(width: 2),
+        if (i > 0) const SizedBox(width: AppDimens.space2),
         Expanded(
           flex: (entries[i].value * 1000).round().clamp(1, 1000),
           child: Container(color: entries[i].key.color),
@@ -173,10 +183,10 @@ class HomeScreen extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.space16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppDimens.borderLarge,
         border: Border.all(color: theme.dividerColor, width: 1),
         boxShadow: [
           BoxShadow(
@@ -203,11 +213,10 @@ class HomeScreen extends StatelessWidget {
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppDimens.space6),
                   Text(
                     'TỔNG QUAN THÁNG',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: AppTextStyles.caption.withInheritedColor.copyWith(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -226,28 +235,28 @@ class HomeScreen extends StatelessWidget {
                     purchaseVm.setSelectedMonth(picked);
                   }
                 },
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppDimens.borderPill,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
+                    horizontal: AppDimens.space12,
+                    vertical: AppDimens.space4,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppDimens.borderPill,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         formatMonthLabel(purchaseVm.selectedMonth),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
+                        style: AppTextStyles.labelMedium.withInheritedColor
+                            .copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: AppDimens.space2),
                       Icon(
                         Icons.arrow_drop_down_rounded,
                         size: 16,
@@ -260,40 +269,37 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimens.space12),
 
           // Big Amount
           Text(
             formatVnd(purchaseVm.monthTotal),
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
+            style: AppTextStyles.displayLarge.withInheritedColor.copyWith(
+              fontWeight: FontWeight.w700,
               color: AppSemanticColors.of(context).accent,
               letterSpacing: -0.5,
             ),
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimens.space4),
 
           // Count text
           Text(
             '${purchaseVm.monthCount} khoản trong tháng'
             '${purchaseVm.isCurrentMonthSelected ? ' · Tuần này: ${purchaseVm.weekCount} khoản (${formatVnd(purchaseVm.weekTotal)})' : ''}',
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
               fontWeight: FontWeight.w400,
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimens.space4),
 
           // Highlight: Nhiều nhất: Khuyến mãi (2/5)
           Text.rich(
             TextSpan(
               text: 'Nhiều nhất: ',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               children: [
@@ -311,7 +317,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: AppDimens.space16),
 
           // Motive bar header
           Wrap(
@@ -321,15 +327,13 @@ class HomeScreen extends StatelessWidget {
             children: [
               Text(
                 'Động cơ chính',
-                style: TextStyle(
-                  fontSize: 12,
+                style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
                 purchaseVm.dominantMotiveText,
-                style: TextStyle(
-                  fontSize: 12,
+                style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                   fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
@@ -337,13 +341,13 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.space8),
 
           // Segmented Progress Bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppDimens.borderSmall,
             child: SizedBox(
-              height: 7,
+              height: AppDimens.space8,
               child: Row(
                 children: _motiveSegments(
                   context,
@@ -354,7 +358,7 @@ class HomeScreen extends StatelessWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: AppDimens.space12),
             child: Divider(height: 1, color: theme.dividerColor),
           ),
 
@@ -363,9 +367,9 @@ class HomeScreen extends StatelessWidget {
             onTap: () {
               Navigator.pushNamed(context, AppRoutes.budget);
             },
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppDimens.borderSmall,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.symmetric(vertical: AppDimens.space2),
               child: Row(
                 children: [
                   Icon(
@@ -373,15 +377,15 @@ class HomeScreen extends StatelessWidget {
                     size: 15,
                     color: AppSemanticColors.of(context).accent,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppDimens.space6),
                   Expanded(
                     child: Text.rich(
                       TextSpan(
                         text: 'Ngân sách tháng: ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: AppTextStyles.labelMedium.withInheritedColor
+                            .copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                         children: [
                           TextSpan(
                             text: budgetVm.totalLimit > 0
@@ -399,28 +403,28 @@ class HomeScreen extends StatelessWidget {
                   if (budgetVm.totalLimit > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1.5,
+                        horizontal: AppDimens.space6,
+                        vertical: AppDimens.space2,
                       ),
                       decoration: BoxDecoration(
                         color: budgetVm.isExceeded
                             ? (AppSemanticColors.of(context).mutedSurface)
                             : (AppSemanticColors.of(context).successContainer),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppDimens.borderSmall,
                       ),
                       child: Text(
                         '${(budgetVm.progress * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: budgetVm.isExceeded
-                              ? (AppSemanticColors.of(context).accent)
-                              : (AppSemanticColors.of(context)
-                                    .onSuccessContainer),
-                        ),
+                        style: AppTextStyles.caption.withInheritedColor
+                            .copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: budgetVm.isExceeded
+                                  ? (AppSemanticColors.of(context).accent)
+                                  : (AppSemanticColors.of(context)
+                                        .onSuccessContainer),
+                            ),
                       ),
                     ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppDimens.space4),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 16,
@@ -446,12 +450,15 @@ class HomeScreen extends StatelessWidget {
       onTap: () {
         Navigator.pushNamed(context, AppRoutes.wishlist);
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppDimens.borderLarge,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space16,
+          vertical: AppDimens.space16,
+        ),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppDimens.borderLarge,
           border: Border.all(color: theme.dividerColor, width: 1),
         ),
         child: Row(
@@ -461,27 +468,24 @@ class HomeScreen extends StatelessWidget {
               color: AppSemanticColors.of(context).emphasis,
               size: 22,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppDimens.space16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Danh sách mong muốn',
-                    style: TextStyle(
-                      fontSize: 15,
+                    style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppDimens.space2),
                   Text(
                     '${wishlistVm.consideringCount} món đang cân nhắc'
                     '${wishlistVm.reviewDueCount > 0 ? ' · ${wishlistVm.reviewDueCount} cần xem lại' : ''}',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: AppTextStyles.labelMedium.withInheritedColor
+                        .copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -505,30 +509,27 @@ class HomeScreen extends StatelessWidget {
       children: [
         Text(
           'Trước khi mua',
-          style: TextStyle(
-            fontSize: 16,
+          style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
             fontWeight: FontWeight.w700,
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppDimens.space6),
         Text(
           'Dừng lại một chút. Vài câu hỏi nhanh giúp bạn hiểu điều gì đang '
           'thu hút mình.',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: AppDimens.space2),
         Text(
           'Hiểu trước khi thay đổi.',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppDimens.space12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -540,12 +541,14 @@ class HomeScreen extends StatelessWidget {
               backgroundColor: AppColors.primary,
               elevation: 1,
               pressElevation: 2,
-              shadowColor: Colors.black26,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              labelStyle: const TextStyle(
+              shadowColor: AppSemanticColors.of(context).illustrationShadow,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space6,
+                vertical: AppDimens.space4,
+              ),
+              labelStyle: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                 color: AppColors.onPrimary,
                 fontWeight: FontWeight.w700,
-                fontSize: 13,
               ),
               side: BorderSide(
                 color: AppSemanticColors.of(context).budgetActionBorder,
@@ -564,12 +567,14 @@ class HomeScreen extends StatelessWidget {
               backgroundColor: AppColors.primary,
               elevation: 1,
               pressElevation: 2,
-              shadowColor: Colors.black26,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              labelStyle: const TextStyle(
+              shadowColor: AppSemanticColors.of(context).illustrationShadow,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space6,
+                vertical: AppDimens.space4,
+              ),
+              labelStyle: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                 color: AppColors.onPrimary,
                 fontWeight: FontWeight.w700,
-                fontSize: 13,
               ),
               side: BorderSide(
                 color: AppSemanticColors.of(context).budgetActionBorder,
@@ -603,24 +608,25 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 'Khoản mua gần đây',
-                style: TextStyle(
-                  fontSize: 16,
+                style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                   fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppDimens.space8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.space8,
+                vertical: AppDimens.space2,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppDimens.borderPill,
               ),
               child: Text(
                 '${recentList.length}',
-                style: TextStyle(
-                  fontSize: 12,
+                style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
                   fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -632,15 +638,17 @@ class HomeScreen extends StatelessWidget {
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                minimumSize: const Size(
+                  AppDimens.minTouchTarget,
+                  AppDimens.minTouchTarget,
+                ),
+                tapTargetSize: MaterialTapTargetSize.padded,
               ),
               child: Row(
                 children: [
                   Text(
                     'Xem tất cả',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppSemanticColors.of(context).accent,
                     ),
@@ -656,22 +664,21 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: AppDimens.space12),
 
         // Purchases Card Container
         Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppDimens.borderLarge,
             border: Border.all(color: theme.dividerColor, width: 1),
           ),
           child: recentList.isEmpty
               ? Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDimens.space16),
                   child: Text(
                     'Chưa có khoản mua nào trong tháng này. Bấm "Ghi khoản mua" để bắt đầu.',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodyMedium.withInheritedColor.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -707,7 +714,10 @@ class HomeScreen extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space16,
+          vertical: AppDimens.space16,
+        ),
         child: Row(
           children: [
             // Circular Motive Icon
@@ -716,7 +726,7 @@ class HomeScreen extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: motivePalette.background,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppDimens.borderMedium,
               ),
               child: Icon(
                 item.motive.icon,
@@ -724,7 +734,7 @@ class HomeScreen extends StatelessWidget {
                 color: motivePalette.foreground,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppDimens.space12),
 
             // Content: Title + Chip + Date
             Expanded(
@@ -733,26 +743,28 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: TextStyle(
-                      fontSize: 15,
+                    style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  const SizedBox(height: AppDimens.space4),
+                  Wrap(
+                    spacing: AppDimens.space8,
+                    runSpacing: AppDimens.space4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       // Motive Tag
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: AppDimens.space6,
+                          vertical: AppDimens.space2,
                         ),
                         decoration: BoxDecoration(
                           color: motivePalette.background,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppDimens.borderSmall,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -762,40 +774,37 @@ class HomeScreen extends StatelessWidget {
                               size: 11,
                               color: motivePalette.foreground,
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: AppDimens.space4),
                             Text(
                               item.motive.label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: motivePalette.foreground,
-                              ),
+                              style: AppTextStyles.caption.withInheritedColor
+                                  .copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: motivePalette.foreground,
+                                  ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
                       // Timestamp
                       Text(
                         item.formattedTime,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppSemanticColors.of(context).subtleText,
-                        ),
+                        style: AppTextStyles.labelMedium.withInheritedColor
+                            .copyWith(
+                              color: AppSemanticColors.of(context).subtleText,
+                            ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppDimens.space4),
+                  Text(
+                    formatVnd(item.amountVnd),
+                    style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppSemanticColors.of(context).accent,
+                    ),
+                  ),
                 ],
-              ),
-            ),
-
-            // Trailing Amount: e.g. 40.000 ₫
-            Text(
-              formatVnd(item.amountVnd),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppSemanticColors.of(context).accent,
               ),
             ),
           ],

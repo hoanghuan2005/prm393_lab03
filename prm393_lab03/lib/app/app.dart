@@ -18,6 +18,7 @@ import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
@@ -48,10 +49,9 @@ void openAddItemWithSharedData(SharedItemData data) {
     _pendingSharedData.add(data);
     return;
   }
-  // Clear any existing sub-routes (e.g. recordPurchase) so the user directly enters Wishlist Add
-  appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+  // Keep an in-progress form underneath the shared item so Back can restore it.
+  appNavigatorKey.currentState?.pushNamed(
     AppRoutes.wishlistAdd,
-    (route) => route.isFirst,
     arguments: AddItemArgs(
       initialTitle: data.title.isNotEmpty ? data.title : null,
       initialUrl: data.url.isNotEmpty ? data.url : null,
@@ -110,6 +110,11 @@ void openFromNotification(Map<String, dynamic> data) {
     case NotificationTarget.reviewDue:
       openReviewDueList();
     case NotificationTarget.reflection:
+      // A month-end reminder opens the month it is about
+      final month = NotificationRoute.monthOf(data);
+      if (month != null) {
+        context.read<PurchaseViewModel>().setSelectedMonth(month);
+      }
       appNavigatorKey.currentState?.pushNamed(AppRoutes.reflection);
     case NotificationTarget.itemDetail:
       final itemId = data[NotificationRoute.itemIdKey] as String?;
@@ -244,8 +249,15 @@ class _PendingWritesFrame extends StatelessWidget {
 }
 
 /// Authentication State Router Gate
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _hasShownLogin = false;
 
   @override
   Widget build(BuildContext context) {
@@ -253,12 +265,20 @@ class AuthGate extends StatelessWidget {
 
     switch (authVm.status) {
       case AuthStatus.initial:
-      case AuthStatus.loading:
         return const Scaffold(
           body: LoadingView(
             message: 'Đang kiểm tra trạng thái phiên đăng nhập...',
           ),
         );
+      case AuthStatus.loading:
+        if (!_hasShownLogin) {
+          return const Scaffold(
+            body: LoadingView(
+              message: 'Đang kiểm tra trạng thái phiên đăng nhập...',
+            ),
+          );
+        }
+        return _login(isLoading: true);
       case AuthStatus.authenticated:
         if (authVm.requiresEmailVerification) {
           return const EmailVerificationScreen();
@@ -266,9 +286,24 @@ class AuthGate extends StatelessWidget {
         return const _AuthenticatedHome();
       case AuthStatus.unauthenticated:
       case AuthStatus.error:
-        return const LoginScreen();
+        _hasShownLogin = true;
+        return _login(isLoading: false);
     }
   }
+
+  Widget _login({required bool isLoading}) => Stack(
+    children: [
+      const LoginScreen(),
+      if (isLoading)
+        Positioned.fill(
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface
+                .withValues(alpha: 0.85),
+            child: const LoadingView(message: 'Đang đăng nhập...'),
+          ),
+        ),
+    ],
+  );
 }
 
 class _AuthenticatedHome extends StatefulWidget {

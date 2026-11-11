@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:why_i_buy_core/why_i_buy_core.dart'
+    as core
+    show SaleEvent, SaleEventService;
 
 import '../core/errors/describe_error.dart';
 import '../core/utils/month_key.dart';
@@ -44,6 +47,11 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
 
   /// Local "Nhắc đợt sale" notifications (Android/iOS); null in tests that skip them
   final ReviewReminderService? reminderService;
+
+  /// Published `saleEvents` (web admin, packages/core); null in tests that skip them
+  final core.SaleEventService? saleEventService;
+  StreamSubscription<List<core.SaleEvent>>? _saleEventSubscription;
+  List<SaleEvent> _publishedSales = const [];
   final bool Function() _platformSupportsAi;
   final DateTime Function() _now;
 
@@ -65,6 +73,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     required this.remoteConfigService,
     required this.preferencesService,
     this.reminderService,
+    this.saleEventService,
     bool Function()? platformSupportsAi,
     DateTime Function()? now,
   }) : _platformSupportsAi =
@@ -80,6 +89,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
     _uid = uid;
     _histories.clear();
     _subscribeBudget();
+    _subscribeSaleEvents();
     // Signed out: the previous account's sale reminders must not fire
     if (uid == null) _syncSaleReminders();
   }
@@ -204,8 +214,43 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
 
   // ---------- Lịch sale ----------
 
+  /// Sales the team published on the web admin (`saleEvents`, status published),
+  /// including approved user reports. Signed-in users only (firestore.rules).
+  void _subscribeSaleEvents() {
+    _saleEventSubscription?.cancel();
+    _saleEventSubscription = null;
+    _publishedSales = const [];
+    final service = saleEventService;
+    if (_uid == null || service == null) return;
+    _saleEventSubscription = service.watchPublished().listen(
+      (events) {
+        _publishedSales = [
+          for (final e in events)
+            SaleEvent(
+              id: e.id,
+              name: e.name,
+              date: e.date,
+              type: SaleType.fromKey(e.type.key),
+              confirmed: e.confirmed,
+            ),
+        ];
+        _syncSaleReminders();
+        notifyListeners();
+      },
+      // Remote Config and the public pattern still fill Lịch sale
+      onError: (Object e) => debugPrint(
+        'Lịch sale from Firestore unavailable: ${describeError(e)}',
+      ),
+    );
+  }
+
+  /// Firestore first; Remote Config `sale_calendar` is only the fallback, so an
+  /// event published on the web wins on its day
   List<SaleEvent> get upcomingSales => SaleCalendar.upcoming(
-    configured: SaleCalendar.parse(remoteConfigService.saleCalendarJson),
+    configured: [
+      ...SaleCalendar.parse(remoteConfigService.saleCalendarJson),
+      ..._publishedSales,
+    ],
     now: now,
   );
 
@@ -385,6 +430,7 @@ class DecisionSupportViewModel extends ChangeNotifier with DeferredNotify {
   @override
   void dispose() {
     _budgetSubscription?.cancel();
+    _saleEventSubscription?.cancel();
     super.dispose();
   }
 }

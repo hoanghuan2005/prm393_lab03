@@ -57,8 +57,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   /// Runs one decision write; success and failure are only reported after the write returns
-  Future<bool> _run(Future<bool> Function(WishlistViewModel vm) action) async {
-    if (_isProcessing) return false;
+  Future<bool> _run(
+    Future<bool> Function(WishlistViewModel vm) action, {
+    required VoidCallback onRetry,
+  }) async {
+    if (!mounted || _isProcessing) return false;
     setState(() => _isProcessing = true);
     final vm = context.read<WishlistViewModel>();
     final ok = await action(vm);
@@ -68,7 +71,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       _showRetry(
         ScaffoldMessenger.of(context),
         vm.actionError ?? 'Chưa lưu được quyết định.',
-        () => _run(action),
+        onRetry,
       );
     }
     return ok;
@@ -102,7 +105,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       sale: context.read<DecisionSupportViewModel?>()?.nextConfirmedSale,
     );
     if (reviewAt == null || !mounted) return;
-    final ok = await _run((vm) => vm.wait(item, reviewAt));
+    await _saveReviewDate(item, reviewAt);
+  }
+
+  Future<void> _saveReviewDate(WishlistItem item, DateTime reviewAt) async {
+    if (!mounted) return;
+    final vm = context.read<WishlistViewModel>();
+    final ok = await _run(
+      (vm) => vm.wait(item, reviewAt),
+      onRetry: () => _saveReviewDate(item, reviewAt),
+    );
     if (!ok || !mounted) return;
     // Permission is asked here, right after the user chose to be reminded (spec 4.1 A-09)
     final permission = await vm.requestReminderPermission();
@@ -125,7 +137,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// "Bỏ qua": back to the list with a 5-second "Hoàn tác"
   Future<void> _skip(WishlistItem item) async {
-    final ok = await _run((vm) => vm.skip(item));
+    final ok = await _run((vm) => vm.skip(item), onRetry: () => _skip(item));
     if (!ok || !mounted) return;
     final vm = context.read<WishlistViewModel>();
     final messenger = ScaffoldMessenger.of(context);
@@ -165,7 +177,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// Decision Card label 5 (spec 7.4): the user marks the item as (not) a duplicate
   Future<void> _setDuplicate(WishlistItem item, bool value) async {
-    final ok = await _run((vm) => vm.setConfirmedDuplicate(item, value));
+    final ok = await _run(
+      (vm) => vm.setConfirmedDuplicate(item, value),
+      onRetry: () => _setDuplicate(item, value),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -183,7 +198,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   /// A skipped item can be considered again later
   Future<void> _reconsider(WishlistItem item) async {
-    final ok = await _run((vm) => vm.reconsider(item));
+    final ok = await _run(
+      (vm) => vm.reconsider(item),
+      onRetry: () => _reconsider(item),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -214,8 +232,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       currentPriceAt: item.latestPriceAt,
     );
     if (amount == null || !mounted) return;
+    await _savePrice(item, amount);
+  }
+
+  Future<void> _savePrice(WishlistItem item, int amount) async {
     final confirmed = amount == item.latestPriceVnd;
-    final ok = await _run((vm) => vm.updatePrice(item, amount));
+    final ok = await _run(
+      (vm) => vm.updatePrice(item, amount),
+      onRetry: () => _savePrice(item, amount),
+    );
     if (!ok || !mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -243,8 +268,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       confirmLabel: 'Dùng giá này',
     );
     if (!ok || !mounted) return;
+    await _saveSharedPrice(item, amount);
+  }
+
+  Future<void> _saveSharedPrice(WishlistItem item, int amount) async {
     final saved = await _run(
       (vm) => vm.updatePrice(item, amount, source: PriceSource.community),
+      onRetry: () => _saveSharedPrice(item, amount),
     );
     if (!saved || !mounted) return;
     ScaffoldMessenger.of(context)
@@ -270,7 +300,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       isDanger: true,
     );
     if (!confirmed || !mounted) return;
-    final ok = await _run((vm) => vm.deleteItem(item));
+    await _deleteItem(item);
+  }
+
+  Future<void> _deleteItem(WishlistItem item) async {
+    final ok = await _run(
+      (vm) => vm.deleteItem(item),
+      onRetry: () => _deleteItem(item),
+    );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
@@ -333,7 +370,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
+        leadingWidth: AppDimens.minTouchTarget,
         leading: IconButton(
           padding: EdgeInsets.zero,
           icon: const Icon(Icons.chevron_left_rounded, size: 30),
@@ -344,13 +381,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppDimens.space4),
             Flexible(
               child: Text(
                 'Chi tiết & Quyết định',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
                 maxLines: 1,
@@ -482,7 +518,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                             theme.colorScheme.onSurfaceVariant,
                                       ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppDimens.space2),
                           Text(
                             _priceNote(item),
                             style: AppTextStyles.caption
@@ -497,7 +533,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         Material(
                           color: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AppDimens.borderXLarge,
                             side: BorderSide(
                               color: AppSemanticColors.of(context).inputBorder,
                             ),
@@ -509,8 +545,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 : () => _updatePrice(item),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                                horizontal: AppDimens.space12,
+                                vertical: AppDimens.space6,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -521,7 +557,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                     color: AppSemanticColors.of(context)
                                         .mutedText,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: AppDimens.space4),
                                   Text(
                                     item.hasPrice ? 'Cập nhật giá' : 'Nhập giá',
                                     style: AppTextStyles.labelMedium
@@ -597,12 +633,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           item.shopName!.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: AppDimens.space8,
+                            vertical: AppDimens.space4,
                           ),
                           decoration: BoxDecoration(
                             color: AppSemanticColors.of(context).cardSurface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppDimens.borderMedium,
                             border: Border.all(
                               color: AppSemanticColors.of(context).divider,
                             ),
@@ -615,7 +651,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 size: 13,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppDimens.space4),
                               Flexible(
                                 child: Text(
                                   item.shopName!,
@@ -633,15 +669,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       if (item.isFromExtension) ...[
                         WishlistCard.fromExtensionChip(context),
                       ],
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: AppDimens.space8,
+                        runSpacing: AppDimens.space8,
+
                         children: [
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 13,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppDimens.space4),
                           Text(
                             'Lưu ngày: ${formatDate(item.createdAt)}',
                             style: AppTextStyles.labelMedium
@@ -730,7 +768,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 ),
                           ),
                           Text(
-                            'Còn khoảng ${item.remainingCooldownLabel} để bạn cân nhắc lý do mua.',
+                            'Mốc cân nhắc: ${formatTime(item.cooldownUntil!)} ngày ${formatDate(item.cooldownUntil!)}. Bạn có thể chọn hành động bất cứ lúc nào.',
                             style: AppTextStyles.bodyMedium.themed(context),
                           ),
                         ],
@@ -754,12 +792,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // Decision Card (Why I Buy Core)
             Text(
-              'Thẻ Quyết Định',
+              'Thẻ quyết định',
               style: AppTextStyles.titleLarge.themed(context),
             ),
             const SizedBox(height: AppDimens.space8),
             Text(
-              'Sau khi suy ngẫm, bạn lựa chọn hành động nào cho món đồ này?',
+              'Mua mở form ghi khoản đã mua. Chờ đặt ngày xem lại. Bỏ qua có thể hoàn tác.',
               style: AppTextStyles.bodyMedium.themed(context),
             ),
             const SizedBox(height: AppDimens.space16),
@@ -917,11 +955,11 @@ class _DecisionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
+      height: AppDimens.space48,
       child: Material(
         color: backgroundColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppDimens.borderLarge,
           side: borderColor != null
               ? BorderSide(color: borderColor!, width: 1.2)
               : BorderSide.none,
@@ -932,7 +970,7 @@ class _DecisionButton extends StatelessWidget {
           child: Center(
             child: isLoading
                 ? SizedBox(
-                    width: 18,
+                    width: AppDimens.space20,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
@@ -945,14 +983,15 @@ class _DecisionButton extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(icon, size: 17, color: foregroundColor),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: AppDimens.space6),
                       Text(
                         title,
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTextStyles.bodyMedium.withInheritedColor
+                            .copyWith(
+                              color: foregroundColor,
+
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),
@@ -1039,7 +1078,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                 color: isCurrent
                     ? AppColors.primary.withValues(alpha: 0.08)
                     : AppSemanticColors.of(context).background,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppDimens.borderSmall,
                 border: Border.all(
                   color: isLowest
                       ? AppSemanticColors.of(context).success
@@ -1063,9 +1102,11 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: AppDimens.space8,
+                          runSpacing: AppDimens.space8,
                           children: [
-                            Flexible(
+                            SizedBox(
                               child: Text(
                                 shopTitle,
                                 style: AppTextStyles.bodyMedium
@@ -1080,49 +1121,53 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                               ),
                             ),
                             if (isCurrent) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: AppDimens.space6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColors.primary.withValues(
                                     alpha: 0.15,
                                   ),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: AppDimens.borderSmall,
                                 ),
                                 child: Text(
                                   'Đang xem',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppSemanticColors.of(context)
-                                        .brandText,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        color: AppSemanticColors.of(context)
+                                            .brandText,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
                             if (isLowest) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: AppDimens.space6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
+                                  horizontal: AppDimens.space6,
+                                  vertical: AppDimens.space2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppSemanticColors.of(context).success
                                       .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: AppDimens.borderSmall,
                                 ),
                                 child: Text(
-                                  'Rẻ nhất ⭐',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppSemanticColors.of(context)
-                                        .success,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  'Giá thấp nhất',
+                                  style: AppTextStyles
+                                      .caption
+                                      .withInheritedColor
+                                      .copyWith(
+                                        color: AppSemanticColors.of(context)
+                                            .success,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
@@ -1140,20 +1185,25 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        const SizedBox(height: AppDimens.space4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            formatVnd(offer.latestPriceVnd),
+                            style: AppTextStyles.titleMedium
+                                .themed(context)
+                                .copyWith(
+                                  color: isLowest
+                                      ? AppSemanticColors.of(context).success
+                                      : AppSemanticColors.of(context)
+                                            .textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: AppDimens.space8),
-                  Text(
-                    formatVnd(offer.latestPriceVnd),
-                    style: AppTextStyles.titleMedium
-                        .themed(context)
-                        .copyWith(
-                          color: isLowest
-                              ? AppSemanticColors.of(context).success
-                              : AppSemanticColors.of(context).textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
                   ),
                 ],
               ),
@@ -1166,7 +1216,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppSemanticColors.of(context).success
                     .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppDimens.borderSmall,
               ),
               child: Row(
                 children: [
@@ -1178,7 +1228,7 @@ class _ShopPriceComparisonSection extends StatelessWidget {
                   const SizedBox(width: AppDimens.space8),
                   Expanded(
                     child: Text(
-                      'Tiết kiệm ${formatVnd(savings)} nếu mua tại ${lowestItem.shopName ?? 'shop rẻ nhất'}!',
+                      'Chênh lệch giá ghi nhận: ${formatVnd(savings)} so với ${lowestItem.shopName ?? 'cửa hàng khác'}.',
                       style: AppTextStyles.caption
                           .themed(context)
                           .copyWith(

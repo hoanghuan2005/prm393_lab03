@@ -8,6 +8,7 @@ import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../widgets/app_button.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Cá nhân → Hỗ trợ & thông tin → "Gửi góp ý": báo lỗi hoặc đề xuất tính năng mới
@@ -21,6 +22,29 @@ class FeedbackScreen extends StatefulWidget {
 class _FeedbackScreenState extends State<FeedbackScreen> {
   final _controller = TextEditingController();
   String? _error;
+  bool _allowExit = false;
+  bool _confirmingExit = false;
+
+  Future<void> _back() async {
+    if (_confirmingExit ||
+        context.read<SettingsViewModel>().isSendingFeedback) {
+      return;
+    }
+    if (_controller.text.trim().isNotEmpty) {
+      _confirmingExit = true;
+      final discard = await ConfirmDialog.show(
+        context,
+        title: 'Bỏ góp ý?',
+        message: 'Nội dung bạn đang viết chưa được gửi.',
+        confirmLabel: 'Bỏ góp ý',
+      );
+      _confirmingExit = false;
+      if (!mounted || !discard) return;
+    }
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.maybePop(context);
+  }
 
   @override
   void dispose() {
@@ -40,10 +64,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     }
     messenger.showSnackBar(
       const SnackBar(
-        content: Text('Đã gửi góp ý. Cảm ơn bạn!'),
+        content: Text('Đã gửi góp ý.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
@@ -62,24 +89,33 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        leadingWidth: 42,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
+        leadingWidth: AppDimens.minTouchTarget,
+        leading: PopScope(
+          canPop: _allowExit,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _back();
+          },
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+            tooltip: 'Quay lại',
+            onPressed: _back,
+          ),
         ),
         titleSpacing: 0,
         title: Row(
           children: [
             const WhyIBuyLogo(size: 26, color: AppColors.onPrimary),
-            const SizedBox(width: 4),
-            Text(
-              'Gửi góp ý',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+            const SizedBox(width: AppDimens.space4),
+            Expanded(
+              child: Text(
+                'Gửi góp ý',
+                style: AppTextStyles.titleLarge.withInheritedColor.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

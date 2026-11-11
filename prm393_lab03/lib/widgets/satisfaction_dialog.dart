@@ -37,7 +37,7 @@ class SatisfactionDialog {
                 ? vm.actionError ?? 'Chưa lưu được. Vui lòng thử lại.'
                 : answer.stars == null
                 ? 'Đã bỏ qua. App sẽ không hỏi lại về khoản này.'
-                : 'Cảm ơn bạn! Góc nhìn sẽ dùng câu trả lời này.',
+                : 'Đã ghi nhận. Góc nhìn sẽ dùng câu trả lời này.',
           ),
           behavior: SnackBarBehavior.floating,
         ),

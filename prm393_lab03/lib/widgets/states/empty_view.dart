@@ -25,7 +25,7 @@ class EmptyView extends StatelessWidget {
     return Semantics(
       label: 'Danh sách trống: $title',
       child: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimens.space32),
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -87,7 +87,8 @@ Tất cả đều đi qua một client duy nhất: `FirebaseAiService` (`lib/ser
 
 | Khoá | Kiểu / mặc định | Tác dụng |
 |:---|:---|:---|
-| `ai_insight_model` | string · `gemini-3.5-flash-lite` | Model cho **mọi** tính năng AI; đổi trên Console, không cần build lại |
+| `ai_insight_model` | string · `gemini-3.5-flash-lite` | Model cho mọi tính năng AI (trừ nhận diện ảnh); đổi trên Console, không cần build lại |
+| `ai_photo_search_model` | string · `gemini-3.5-flash` | Model riêng cho "Chụp để tìm" (đọc logo, mã model). Hết quota hoặc model không dùng được thì app tự thử lại một lần bằng `ai_insight_model` |
 | `ai_prompts` | JSON string · `{}` | Thay system instruction của từng tính năng, khoá là `ai_feature` ở mục 3, ví dụ `{"decision_reason": "…"}`. Giá trị rỗng hoặc JSON sai → app dùng prompt có sẵn |
 | `enable_ai_insight` | bool · true | Bật/tắt AI 1 |
 | `enable_ai_suggestions` | bool · true | Bật/tắt AI 2–7 |

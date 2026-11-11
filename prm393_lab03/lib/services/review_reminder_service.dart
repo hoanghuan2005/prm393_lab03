@@ -4,13 +4,16 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../core/utils/month_key.dart';
 import '../firebase/platform_support.dart';
 
 /// Local notifications of the app:
 /// * on the review date chosen with "Chờ" (spec A-09, E12). When notifications are
 ///   unavailable or denied, the "Cần xem lại" list in the app is the fallback;
 /// * the daily "Nhắc ghi khoản mua" (screen 05a, Cá nhân), off until the user turns it on;
-/// * "Nhắc đợt sale" at 20:00 the evening before a confirmed sale (spec 8.2, A-13).
+/// * "Nhắc đợt sale" at 20:00 the evening before a confirmed sale (spec 8.2, A-13);
+/// * "Nhắc chiêm nghiệm" at 20:00 on the last day of the month, off until the user
+///   turns it on (Lab 2 Flow 3).
 /// Every method here may silently do nothing.
 abstract interface class ReviewReminderService {
   /// Android/iOS only. flutter_local_notifications is pinned to 18.0.1, the last version
@@ -19,7 +22,8 @@ abstract interface class ReviewReminderService {
 
   /// [onOpen] runs when the user taps a review reminder while the app is running,
   /// [onOpenDaily] when they tap the daily reminder. [onOpenSale] gets the same data
-  /// as a sale push (`type`, `sale_type`, `sale_id`), also when the tap started the app.
+  /// as a push (`type`, `sale_type`, `sale_id`; or `type: reflection` and `month`
+  /// for a reflection reminder), also when the tap started the app.
   Future<void> initialize({
     VoidCallback? onOpen,
     VoidCallback? onOpenDaily,
@@ -58,6 +62,10 @@ abstract interface class ReviewReminderService {
     reminders,
   );
 
+  /// Replaces every scheduled reflection reminder with one at each of [at];
+  /// empty cancels them all
+  Future<void> scheduleReflectionReminders(List<DateTime> at);
+
   /// Displays an immediate system notification (test buttons in Cá nhân only)
   Future<void> showImmediateNotification({
     required int id,
@@ -87,6 +95,27 @@ class LocalReviewReminderService implements ReviewReminderService {
 
   static String salePayload(String saleId, String saleType) =>
       '$salePayloadPrefix$saleId|$saleType';
+
+  static const String _reflectionChannelId = 'reflection_reminders';
+  static const String _reflectionChannelName = 'Nhắc chiêm nghiệm';
+
+  /// Payload of a reflection reminder: `reflection:<yyyy-MM>`
+  static const String reflectionPayloadPrefix = 'reflection:';
+
+  /// The data a reflection push would carry: opens that month's reflection
+  static Map<String, dynamic>? reflectionDataFrom(String? payload) {
+    if (payload == null || !payload.startsWith(reflectionPayloadPrefix)) {
+      return null;
+    }
+    return {
+      'type': 'reflection',
+      'month': payload.substring(reflectionPayloadPrefix.length),
+    };
+  }
+
+  /// Push-like data of a payload, or null for review and daily reminders
+  static Map<String, dynamic>? _dataFrom(String? payload) =>
+      saleDataFrom(payload) ?? reflectionDataFrom(payload);
 
   /// The data a sale push carries, so both open the same screen
   static Map<String, dynamic>? saleDataFrom(String? payload) {
@@ -145,7 +174,7 @@ class LocalReviewReminderService implements ReviewReminderService {
           ),
         ),
         onDidReceiveNotificationResponse: (response) {
-          final sale = saleDataFrom(response.payload);
+          final sale = _dataFrom(response.payload);
           if (sale != null) {
             onOpenSale?.call(sale);
           } else if (response.payload == dailyPayload) {
@@ -158,7 +187,7 @@ class LocalReviewReminderService implements ReviewReminderService {
       final launch = await _plugin.getNotificationAppLaunchDetails();
       if (launch?.didNotificationLaunchApp ?? false) {
         final payload = launch?.notificationResponse?.payload;
-        final sale = saleDataFrom(payload);
+        final sale = _dataFrom(payload);
         if (sale != null) {
           // Kept until the signed-in shell is shown (openFromNotification)
           onOpenSale?.call(sale);
@@ -259,9 +288,11 @@ class LocalReviewReminderService implements ReviewReminderService {
     try {
       final pending = await _plugin.pendingNotificationRequests();
       for (final request in pending) {
-        // Daily and sale reminders are not review reminders
+        // Daily, sale and reflection reminders are not review reminders
+        final payload = request.payload ?? '';
         if (request.id == dailyId ||
-            (request.payload?.startsWith(salePayloadPrefix) ?? false)) {
+            payload.startsWith(salePayloadPrefix) ||
+            payload.startsWith(reflectionPayloadPrefix)) {
           continue;
         }
         await _plugin.cancel(request.id);
@@ -356,6 +387,46 @@ class LocalReviewReminderService implements ReviewReminderService {
       }
     } catch (e) {
       debugPrint('ReviewReminder scheduleSaleReminders error: $e');
+    }
+  }
+
+  @override
+  Future<void> scheduleReflectionReminders(List<DateTime> at) async {
+    if (!_initialized) return;
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.payload?.startsWith(reflectionPayloadPrefix) ?? false) {
+          await _plugin.cancel(request.id);
+        }
+      }
+      for (final time in at) {
+        if (!time.isAfter(DateTime.now())) continue;
+        final month = monthKey(time);
+        await _plugin.zonedSchedule(
+          idFor('$reflectionPayloadPrefix$month'),
+          'Chiêm nghiệm tháng ${time.month}',
+          // Neutral (spec 4.3): an invitation to look back, no judgement
+          'Tháng ${time.month} sắp hết. Dành 2 phút nhìn lại các khoản mua và '
+              'đặt một mục tiêu nhỏ cho tháng sau nhé.',
+          tz.TZDateTime.from(time, tz.local),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              _reflectionChannelId,
+              _reflectionChannelName,
+              channelDescription:
+                  '20:00 ngày cuối tháng, nhắc chiêm nghiệm tháng',
+            ),
+            iOS: DarwinNotificationDetails(),
+          ),
+          payload: '$reflectionPayloadPrefix$month',
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (e) {
+      debugPrint('ReviewReminder scheduleReflectionReminders error: $e');
     }
   }
 

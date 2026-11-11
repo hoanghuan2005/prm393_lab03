@@ -10,6 +10,7 @@ import 'package:prm393_lab03/models/same_product.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
 import 'package:prm393_lab03/services/demo_price_history_service.dart';
 import 'package:prm393_lab03/services/user_service.dart';
+import 'package:prm393_lab03/services/voucher_service.dart';
 import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/viewmodels/price_history_demo_viewmodel.dart';
 import 'package:prm393_lab03/widgets/price_history_demo_section.dart';
@@ -837,6 +838,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(demo.clearCalls, 0);
+    });
+
+    Future<void> pumpWithVouchers(
+      WidgetTester tester,
+      VoucherService vs,
+    ) async {
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: vm),
+            ChangeNotifierProvider<VoucherService>.value(value: vs),
+          ],
+          child: MaterialApp(
+            theme: testAppTheme,
+            home: const Scaffold(
+              body: SingleChildScrollView(child: PriceHistoryDemoSection()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      users.roles.add('admin');
+      await tester.pump();
+    }
+
+    testWidgets('admin: voucher source line, sample vouchers', (tester) async {
+      // Empty "vouchers" collection: the service keeps its 6 sample vouchers
+      final vs = VoucherService(firestore: FakeFirebaseFirestore());
+      addTearDown(vs.dispose);
+      await pumpWithVouchers(tester, vs);
+
+      expect(vs.source, VoucherService.sourceSample);
+      expect(vs.count, 6);
+      expect(find.text('Voucher: mẫu · 6 mã'), findsOneWidget);
+    });
+
+    testWidgets('admin: voucher source line, Firestore vouchers', (
+      tester,
+    ) async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('vouchers').doc('v1').set({
+        'code': 'LIVE10',
+        'discountAmount': 10000,
+        'validUntil': '2099-12-31',
+      });
+      final vs = VoucherService(firestore: db);
+      addTearDown(vs.dispose);
+      await pumpWithVouchers(tester, vs);
+
+      expect(find.text('Voucher: firestore · 1 mã'), findsOneWidget);
+    });
+
+    testWidgets('users never see the voucher source line', (tester) async {
+      final vs = VoucherService(firestore: FakeFirebaseFirestore());
+      addTearDown(vs.dispose);
+      await pumpWithVouchers(tester, vs);
+      users.roles.add('user');
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('voucher-source')), findsNothing);
     });
   });
 }

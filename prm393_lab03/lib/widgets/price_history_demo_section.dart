@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
+import '../services/voucher_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/price_history_demo_viewmodel.dart';
@@ -18,6 +19,7 @@ class PriceHistoryDemoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<PriceHistoryDemoViewModel?>();
     if (vm == null || !vm.isAdmin) return const SizedBox.shrink();
+    final vouchers = context.watch<VoucherService?>();
     final theme = Theme.of(context);
     final muted = AppTextStyles.bodyMedium
         .themed(context)
@@ -103,6 +105,15 @@ class PriceHistoryDemoSection extends StatelessWidget {
                   arguments: PriceHistoryArgs(groupId: g.id),
                 ),
               ),
+          ],
+          // For testers: where the voucher suggestions come from
+          if (vouchers != null) ...[
+            const SizedBox(height: AppDimens.space16),
+            Text(
+              'Voucher: ${vouchers.source} · ${vouchers.count} mã',
+              key: const ValueKey('voucher-source'),
+              style: muted,
+            ),
           ],
         ],
       ),

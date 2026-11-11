@@ -20,6 +20,17 @@ class VoucherService extends ChangeNotifier {
 
   List<Voucher> get allVouchers => List.unmodifiable(_vouchers);
 
+  static const String sourceFirestore = 'firestore';
+  static const String sourceSample = 'mẫu';
+
+  /// Where [allVouchers] comes from, for testers: [sourceFirestore] once the
+  /// listener got active vouchers, otherwise [sourceSample] ([defaultVouchers])
+  String get source =>
+      identical(_vouchers, defaultVouchers) ? sourceSample : sourceFirestore;
+
+  /// Number of vouchers in use
+  int get count => _vouchers.length;
+
   void _initFirestoreListener() {
     try {
       _subscription = _firestore

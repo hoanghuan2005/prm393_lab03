@@ -266,7 +266,8 @@ void main() {
       await tester.pumpAndSettle();
       expect((await item())['latestPriceVnd'], 350000);
       await _deliverFirestore(tester);
-      expect(find.text('350.000 ₫'), findsOneWidget);
+      // The voucher suggestion card repeats the list price (struck through)
+      expect(find.text('350.000 ₫'), findsWidgets);
       expect(find.textContaining('Giá ghi ngày'), findsOneWidget);
     });
 

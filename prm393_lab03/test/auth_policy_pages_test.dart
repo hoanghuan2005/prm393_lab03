@@ -14,7 +14,10 @@ void main() {
     test('${entry.key} matches app source and contains all sections', () {
       final html = renderPolicyPage(entry.value);
       expect(
-        File('../prm393_flutter_admin/web/${entry.key}').readAsStringSync(),
+        // Git on Windows (core.autocrlf) checks the page out with CRLF line endings
+        File(
+          '../prm393_flutter_admin/web/${entry.key}',
+        ).readAsStringSync().replaceAll('\r\n', '\n'),
         html,
       );
       for (final section in entry.value.sections) {

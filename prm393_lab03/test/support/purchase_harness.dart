@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/app/routes.dart';
 import 'package:prm393_lab03/core/errors/app_exception.dart';
 import 'package:prm393_lab03/models/buying_motive.dart';
+import 'package:prm393_lab03/models/price_insights.dart';
 import 'package:prm393_lab03/models/purchase_draft.dart';
 import 'package:prm393_lab03/models/purchase_item.dart';
 import 'package:prm393_lab03/models/sale_event.dart';
@@ -150,6 +151,10 @@ class TestDecisionSupport extends ChangeNotifier
 
   @override
   DateTime get now => DateTime.now();
+
+  /// Wishlist cards ask for a "Giá hời" insight; the harness has no price history
+  @override
+  PriceInsights? priceInsightsFor(WishlistItem item) => null;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

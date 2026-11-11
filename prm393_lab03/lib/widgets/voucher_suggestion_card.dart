@@ -226,7 +226,9 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          // Wrap: narrow screens / large text move the price to a new line
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 'Giá sau áp voucher:',
@@ -245,7 +247,9 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                             ],
                           ),
                           const SizedBox(height: 2),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            runSpacing: AppDimens.space4,
                             children: [
                               Text(
                                 formatVnd(

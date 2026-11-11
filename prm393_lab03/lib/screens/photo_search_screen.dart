@@ -6,10 +6,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app/routes.dart';
+import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/item_recognition.dart';
 import '../models/price_offer.dart';
 import '../models/ui_state.dart';
+import '../models/wishlist_status.dart';
+import '../services/ai_photo_search_service.dart';
 import '../services/analytics_events.dart';
 import '../services/cloudinary_service.dart';
 import '../theme/app_colors.dart';
@@ -17,6 +20,7 @@ import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/photo_search_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/app_button.dart';
 import '../widgets/states/empty_view.dart';
@@ -181,8 +185,54 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
     }
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.wishlistAdd,
-      arguments: AddItemArgs(initialTitle: name, initialImageUrl: imageUrl),
+      arguments: AddItemArgs(
+        initialTitle: name,
+        initialImageUrl: imageUrl,
+        // Cheapest shop the AI found, else the AI's estimate; editable in the form
+        initialPrice: vm.suggestedPriceVnd,
+        shopName: vm.bestOffer?.shop,
+      ),
     );
+  }
+
+  /// "Không đúng?": the user says what the item is and the AI looks again
+  Future<void> _askHint() async {
+    final vm = context.read<PhotoSearchViewModel>();
+    final hint = await showDialog<String>(
+      context: context,
+      builder: (_) => _HintDialog(initial: vm.hint),
+    );
+    if (hint == null || hint.trim().isEmpty || !mounted) return;
+    await vm.identifyWithHint(hint);
+  }
+
+  /// Wishlist items still being considered and past purchases that look like
+  /// [query], so the user notices before buying the same thing twice
+  List<String> _similarNotes(String query) {
+    final wishlist = context
+        .watch<WishlistViewModel>()
+        .realItems
+        .where(
+          (i) =>
+              i.status == WishlistStatus.considering &&
+              PhotoSearchViewModel.similarTitle(query, i.title),
+        )
+        .toList();
+    final purchases =
+        context
+            .watch<PurchaseViewModel>()
+            .allPurchases
+            .where((p) => PhotoSearchViewModel.similarTitle(query, p.title))
+            .toList()
+          ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    return [
+      if (wishlist.isNotEmpty)
+        'Đã có trong danh sách cân nhắc: "${wishlist.first.title}"'
+            '${wishlist.length > 1 ? ' và ${wishlist.length - 1} món khác' : ''}.',
+      if (purchases.isNotEmpty)
+        'Bạn đã mua món tương tự: "${purchases.first.title}" '
+            '(${formatDate(purchases.first.occurredAt)}).',
+    ];
   }
 
   @override
@@ -299,6 +349,12 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
             variant: AppButtonVariant.secondary,
             onPressed: vm.reset,
           ),
+          if (state is UiEmpty<ItemRecognition>)
+            _LinkButton(
+              key: const ValueKey('photo-search-hint-empty'),
+              label: 'Tôi biết đây là gì, gợi ý cho AI',
+              onPressed: _askHint,
+            ),
         ]),
         UiLoading() => null,
       },
@@ -445,6 +501,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
     final names = [data.name, ...data.alternatives];
     final meta = [?data.category, ?data.brand].join(' · ');
     final coolingOffDays = context.watch<WishlistViewModel>().coolingOffDays;
+    final similar = _similarNotes(vm.searchQuery ?? data.name);
     final scheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -485,6 +542,10 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
           const SizedBox(height: AppDimens.space12),
           _PriceRange(min: data.priceMinVnd!, max: data.priceMaxVnd!),
         ],
+        for (final (i, note) in similar.indexed) ...[
+          const SizedBox(height: AppDimens.space12),
+          _Notice(key: ValueKey('photo-search-similar-$i'), message: note),
+        ],
         if (names.length > 1) ...[
           const SizedBox(height: AppDimens.space20),
           Text(
@@ -507,6 +568,15 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
             ],
           ),
         ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const ValueKey('photo-search-hint'),
+            onPressed: _askHint,
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            label: const Text('Không đúng? Gợi ý cho AI'),
+          ),
+        ),
         const SizedBox(height: AppDimens.space24),
         _WhereToBuy(query: vm.searchQuery ?? data.name, onOpen: _openLink),
         if (vm.canSearchPrices) ...[
@@ -1180,7 +1250,9 @@ class _AiPriceSearch extends StatelessWidget {
                 'Nguồn:',
                 style: AppTextStyles.caption
                     .themed(context)
-                    .copyWith(color: AppSemanticColors.of(context).textSecondary),
+                    .copyWith(
+                      color: AppSemanticColors.of(context).textSecondary,
+                    ),
               ),
               for (final s in data.sources.take(4))
                 InkWell(
@@ -1413,7 +1485,12 @@ class _Notice extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  const _Notice({required this.message, this.actionLabel, this.onAction});
+  const _Notice({
+    super.key,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1504,6 +1581,58 @@ class _PrivacyNote extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Asks what the item is ("tai nghe Sony WH-1000XM5") so the AI can look again
+class _HintDialog extends StatefulWidget {
+  final String? initial;
+
+  const _HintDialog({this.initial});
+
+  @override
+  State<_HintDialog> createState() => _HintDialogState();
+}
+
+class _HintDialogState extends State<_HintDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(_controller.text.trim());
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Đây là món gì?'),
+      content: TextField(
+        key: const ValueKey('photo-search-hint-field'),
+        controller: _controller,
+        autofocus: true,
+        maxLength: AiPhotoSearchService.maxTextLength,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => _submit(),
+        decoration: const InputDecoration(
+          hintText: 'Ví dụ: tai nghe Sony, bình giữ nhiệt Lock&Lock',
+          helperText: 'AI sẽ xem lại ảnh cùng gợi ý của bạn',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Huỷ'),
+        ),
+        TextButton(
+          key: const ValueKey('photo-search-hint-submit'),
+          onPressed: _submit,
+          child: const Text('Nhận diện lại'),
+        ),
+      ],
     );
   }
 }

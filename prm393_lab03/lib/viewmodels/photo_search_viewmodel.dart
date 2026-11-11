@@ -70,6 +70,10 @@ class PhotoSearchViewModel extends ChangeNotifier {
   Uint8List? get imageBytes => _imageBytes;
   String _mimeType = 'image/jpeg';
 
+  /// What the user told the AI after a wrong guess; kept for [retry]
+  String? _hint;
+  String? get hint => _hint;
+
   /// Name used for searching and for "Thêm vào danh sách cân nhắc"; the user can
   /// switch it to one of the alternatives
   String? _selectedName;
@@ -98,10 +102,12 @@ class PhotoSearchViewModel extends ChangeNotifier {
   Future<void> identify(
     Uint8List bytes, {
     String mimeType = 'image/jpeg',
+    String? hint,
   }) async {
     final run = ++_run;
     _imageBytes = bytes;
     _mimeType = mimeType;
+    _hint = hint;
     _selectedName = null;
     _clearPrices();
     _state = const UiLoading();
@@ -117,7 +123,7 @@ class PhotoSearchViewModel extends ChangeNotifier {
 
     UiState<ItemRecognition> next;
     try {
-      final result = await aiService.identify(bytes, mimeType);
+      final result = await aiService.identify(bytes, mimeType, hint: hint);
       if (run != _run) return;
       next = result.isEmpty
           ? UiEmpty(
@@ -139,7 +145,46 @@ class PhotoSearchViewModel extends ChangeNotifier {
   /// Same photo again (after a network error)
   Future<void> retry() async {
     final bytes = _imageBytes;
-    if (bytes != null) await identify(bytes, mimeType: _mimeType);
+    if (bytes != null) await identify(bytes, mimeType: _mimeType, hint: _hint);
+  }
+
+  /// "Không đúng?": same photo again, with what the user says the item is
+  Future<void> identifyWithHint(String hint) async {
+    final bytes = _imageBytes;
+    final h = hint.trim();
+    if (bytes == null || h.isEmpty) return;
+    await identify(bytes, mimeType: _mimeType, hint: h);
+  }
+
+  /// Cheapest shop the AI price search found, if it ran
+  PriceOffer? get bestOffer {
+    final p = _priceState;
+    return p is UiSuccess<PriceSearchResult> ? p.data.cheapest : null;
+  }
+
+  /// Price prefilled in "Thêm vào danh sách cân nhắc": the cheapest shop found,
+  /// else the middle of the AI's estimate (rounded to 1.000 đ). The user can edit it.
+  int? get suggestedPriceVnd {
+    if (bestOffer case final offer?) return offer.priceVnd;
+    final s = _state;
+    if (s is! UiSuccess<ItemRecognition> || !s.data.hasPriceRange) return null;
+    final mid = (s.data.priceMinVnd! + s.data.priceMaxVnd!) / 2;
+    return (mid / 1000).round() * 1000;
+  }
+
+  /// Whether [title] (a wishlist item or purchase) looks like the searched
+  /// [query]: every word of the query appears in the title, ignoring case.
+  /// "Logitech MX Master 3S" matches "Chuột Logitech MX Master 3S màu đen".
+  static bool similarTitle(String query, String title) {
+    List<String> words(String t) => t
+        .toLowerCase()
+        .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    final q = words(query).where((w) => w.length >= 2).toList();
+    if (q.isEmpty) return false;
+    final t = words(title).toSet();
+    return q.every(t.contains);
   }
 
   void selectName(String name) {
@@ -218,6 +263,7 @@ class PhotoSearchViewModel extends ChangeNotifier {
   void discard() {
     _run++;
     _imageBytes = null;
+    _hint = null;
     _selectedName = null;
     _clearPrices();
     _state = const UiInitial();

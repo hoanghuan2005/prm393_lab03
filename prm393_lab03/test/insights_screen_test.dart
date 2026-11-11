@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,9 +15,11 @@ import 'package:prm393_lab03/services/ai_service.dart';
 import 'package:prm393_lab03/services/crashlytics_service.dart';
 import 'package:prm393_lab03/services/preferences_service.dart';
 import 'package:prm393_lab03/services/purchase_service.dart';
+import 'package:prm393_lab03/services/reflection_service.dart';
 import 'package:prm393_lab03/services/remote_config_service.dart';
 import 'package:prm393_lab03/viewmodels/insights_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/purchase_viewmodel.dart';
+import 'package:prm393_lab03/viewmodels/reflection_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -166,7 +169,10 @@ class _FakeGenerator implements AiService {
 void main() {
   late _FakeGenerator generator;
 
-  Future<InsightsViewModel> pumpInsights(WidgetTester tester) async {
+  Future<InsightsViewModel> pumpInsights(
+    WidgetTester tester, {
+    FakeFirebaseFirestore? db,
+  }) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -186,6 +192,14 @@ void main() {
       preferencesService: PreferencesService(),
       crashlyticsService: CrashlyticsService(),
     );
+    final reflectionVm =
+        ReflectionViewModel(
+            reflectionService: FirestoreReflectionService(
+              db ?? FakeFirebaseFirestore(),
+            ),
+          )
+          ..updateUid('user-a')
+          ..updateMonth(purchaseVm.selectedMonth);
     insightsVm.updateSources(
       purchases: _purchases,
       wishlistItems: const [],
@@ -197,11 +211,9 @@ void main() {
         providers: [
           ChangeNotifierProvider.value(value: purchaseVm),
           ChangeNotifierProvider.value(value: insightsVm),
+          ChangeNotifierProvider.value(value: reflectionVm),
         ],
-        child: MaterialApp(
-          theme: testAppTheme,
-          home: const InsightsScreen(),
-        ),
+        child: MaterialApp(theme: testAppTheme, home: const InsightsScreen()),
       ),
     );
     insightsVm.setVisible(true);
@@ -254,6 +266,35 @@ void main() {
     expect(vm.userAiEnabled, isFalse);
     expect(find.textContaining('Bạn đã tắt AI'), findsOneWidget);
     expect(await PreferencesService().getAiInsightEnabled(), isFalse);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('the goal set in last month\'s reflection is shown again (R-2)', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final db = FakeFirebaseFirestore();
+    // October is selected: the goal comes from September's reflection
+    await db.doc('users/user-a/reflections/2026-09').set({
+      'rating': 4,
+      'goal': 'Chờ 3 ngày trước mọi món trên 500k',
+    });
+    await pumpInsights(tester, db: db);
+
+    expect(find.text('Mục tiêu bạn đặt cho tháng 10'), findsOneWidget);
+    expect(find.text('Chờ 3 ngày trước mọi món trên 500k'), findsOneWidget);
+    expect(find.text('Sửa mục tiêu'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('no goal card when last month has no goal', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final db = FakeFirebaseFirestore();
+    await db.doc('users/user-a/reflections/2026-09').set({'rating': 3});
+    await pumpInsights(tester, db: db);
+
+    expect(find.byKey(const ValueKey('reflection-goal-card')), findsNothing);
     debugDefaultTargetPlatformOverride = null;
   });
 }

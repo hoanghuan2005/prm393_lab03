@@ -85,4 +85,8 @@ class FirestorePaths {
       user(uid).collection('reflections');
   DocumentReference<JsonMap> reflection(String uid, String monthKey) =>
       reflections(uid).doc(monthKey);
+
+  /// Metadata of PDF reports shared from the device (the files stay on the device)
+  CollectionReference<JsonMap> reports(String uid) =>
+      user(uid).collection('reports');
 }

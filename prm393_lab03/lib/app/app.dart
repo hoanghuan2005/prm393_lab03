@@ -18,6 +18,7 @@ import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
+import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 import '../widgets/states/loading_view.dart';
@@ -109,6 +110,11 @@ void openFromNotification(Map<String, dynamic> data) {
     case NotificationTarget.reviewDue:
       openReviewDueList();
     case NotificationTarget.reflection:
+      // A month-end reminder opens the month it is about
+      final month = NotificationRoute.monthOf(data);
+      if (month != null) {
+        context.read<PurchaseViewModel>().setSelectedMonth(month);
+      }
       appNavigatorKey.currentState?.pushNamed(AppRoutes.reflection);
     case NotificationTarget.none:
       break;

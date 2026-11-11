@@ -1,6 +1,6 @@
 # Mô hình dữ liệu Firestore
 
-Dữ liệu cá nhân nằm dưới `users/{uid}` và chỉ chủ tài khoản đọc/ghi; dữ liệu dùng chung (`announcements`, `saleEvents`, `sharedPrices`, `priceHistory`, `productGroups`, `extensionPairings`) nằm ở gốc. Quyền theo vai trò xem mục **Vai trò và quyền** ngay dưới; `firestore.rules` từ chối mọi đường dẫn không khai báo. Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
+Dữ liệu cá nhân nằm dưới `users/{uid}` và chỉ chủ tài khoản đọc/ghi; dữ liệu dùng chung (`announcements`, `saleEvents`, `saleSuggestions`, `sharedPrices`, `priceHistory`, `productGroups`, `extensionPairings`, `vouchers`, `shopeeVouchers`) nằm ở gốc. Quyền theo vai trò xem mục **Vai trò và quyền** ngay dưới; `firestore.rules` từ chối mọi đường dẫn không khai báo. Đường dẫn chỉ được viết trong `lib/services/firestore_paths.dart`. Model ở `lib/models/`. Tiền là `int` VND; "Ràng buộc (rules)" = điều `firestore.rules` kiểm tra khi ghi, "—" = rules không kiểm tra.
 
 ## Vai trò và quyền
 
@@ -9,12 +9,14 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | Collection | Create | Read | Update | Delete | Màn hình dùng |
 |:---|:---|:---|:---|:---|:---|
 | `users/{uid}` | Chủ tài khoản lần đầu đăng nhập, `role = user` | Chủ tài khoản; staff, admin | Chủ tài khoản (không đổi `role`); admin chỉ đổi `role` của người khác | Chủ tài khoản | Cá nhân; web danh sách người dùng |
-| `users/{uid}/purchases`, `wishlistItems` (+ `priceSnapshots`), `decisions`, `budgetGroups`, `budgets`, `reflections`, `ownedItems`, `feedback`, `extensionSessions` | Chủ tài khoản (một số: cả extension đã liên kết) | Chủ tài khoản (+ extension) | Chủ tài khoản; `priceSnapshots`, `decisions`, `feedback` không sửa | Chủ tài khoản | Các màn mobile; **staff không đọc được**; admin chỉ **đọc** `purchases`, `wishlistItems` (đếm cho web, không sửa/xoá) |
+| `users/{uid}/purchases`, `wishlistItems` (+ `priceSnapshots`), `decisions`, `budgetGroups`, `budgets`, `reflections`, `reports`, `ownedItems`, `feedback`, `extensionSessions` | Chủ tài khoản (một số: cả extension đã liên kết) | Chủ tài khoản (+ extension) | Chủ tài khoản; `priceSnapshots`, `decisions`, `feedback`, `reports` không sửa | Chủ tài khoản | Các màn mobile; **staff không đọc được**; admin chỉ **đọc** `purchases`, `wishlistItems` (đếm cho web, không sửa/xoá) |
 | `users/{uid}/inbox` | Staff, admin | Chủ tài khoản | Chủ tài khoản, chỉ `readAt` | Chủ tài khoản | Hộp thư mobile; web gửi tin riêng |
 | `announcements` | Staff, admin (`status = published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Hộp thư mobile; web form thông báo |
 | `saleEvents` | Staff, admin (`draft` hoặc `published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Lịch sale mobile; web quản lý đợt sale |
 | `saleSuggestions` | Người dùng (không ẩn danh), cho chính mình, `status = pending` | Người đề xuất; staff, admin | Staff, admin: `pending` → `approved` (cùng batch tạo `saleEvents`) hoặc `rejected` (kèm `reason`), một lần | Người đề xuất khi còn `pending` | Đề xuất sale mobile; web duyệt đề xuất |
-| `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard | — | — | Web tổng quan |
+| `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard. Rules không giới hạn được chỉ phép đếm, nên admin về lý thuyết **liệt kê được** document; web chỉ dùng `count()` / `sum()` (`dashboard_service.dart`), và admin là vai trò tin cậy cao nhất (đặt trên Console) | — | — | Web tổng quan |
+| `vouchers` | — (không client nào ghi, từ CR-09) | Mọi người đã đăng nhập | — | — | Thẻ voucher cũ trên Chi tiết món (dữ liệu mẫu, chờ D-3) |
+| `shopeeVouchers` | Staff, admin (`capturedBy` = chính mình), hoặc extension đã liên kết với tài khoản staff/admin | Staff, admin | Như create | Staff, admin | Web "Voucher Shopee"; **người dùng thường không có quyền nào** |
 | `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
 | `priceHistory/{key}` | Admin: dữ liệu mẫu (`isDemo = true`); tài khoản không ẩn danh: sản phẩm thật (`isDemo = false`) khi gửi giá đầu tiên | Mọi người đã đăng nhập | Admin: dữ liệu mẫu, và sửa mã/nhóm của sản phẩm thật; người dùng: chỉ điền trường đang trống | Admin, chỉ dữ liệu mẫu | Chi tiết món (Lịch sử giá, Cùng món ở shop khác), Giá tham khảo, Firebase Demo Area |
 | `priceHistory/{key}/reports` | Tài khoản không ẩn danh: giá của chính mình, id băm, không vào dữ liệu mẫu; admin: báo cáo `demo` | Mọi người đã đăng nhập | Như create | Admin, chỉ báo cáo `demo` | Như trên |
@@ -30,6 +32,8 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | `saleEvents.status` | Staff, admin | `draft` → `draft` · `published` · `archived`; `published` → `published` · `archived`; `archived` giữ nguyên |
 | `wishlistItems.status` | Chủ tài khoản | `considering` ↔ `purchased` (cần `purchaseId`) · `skipped` |
 | `extensionPairings.status` | Tài khoản không ẩn danh | `pending` → `approved` (của chính mình) · `rejected` |
+| `saleSuggestions.status` | Người dùng tạo; staff, admin duyệt | tạo `pending`; `pending` → `approved` (cùng batch tạo `saleEvents` `published` và ghi `inbox`) · `rejected` (kèm `reason`, ghi `inbox`); một lần. Người gửi xoá được khi còn `pending` |
+| `users/{uid}/inbox.readAt` | Chủ tài khoản | `null` → thời điểm đọc (chỉ trường này) |
 
 Kiểm thử: `firebase/tests/rules.test.mjs` chạy trên Firestore Emulator, mỗi vai trò có ít nhất một ca cho phép và một ca từ chối ở mỗi collection; kết quả ở `evidence/rules/firestore-rules-results.md`.
 
@@ -252,7 +256,7 @@ Không có trường nào khác (`keys().hasOnly`).
 | `createdBy` | string | ✓ | uid người đăng, không đổi |
 | `updatedAt` | timestamp | ✓ | server time mỗi lần ghi |
 
-Mobile phải truy vấn có `where('status', '==', 'published')`, nếu không rules từ chối cả truy vấn.
+Mobile phải truy vấn có `where('status', '==', 'published')`, nếu không rules từ chối cả truy vấn. Thông báo chung không có trạng thái đã đọc riêng cho từng người: app nhớ id đã đọc **trên máy** (`PreferencesService.readAnnouncements`, tối đa 200 id), còn tin riêng dùng `readAt` trong Firestore. Mobile đọc qua `packages/core` (`FirestoreAnnouncementService`, `FirestoreInboxService`) trong `InboxViewModel`.
 
 ## `saleEvents/{id}` – lịch sale · ghi bởi web admin
 
@@ -271,6 +275,8 @@ Mobile phải truy vấn có `where('status', '==', 'published')`, nếu không 
 
 Chuyển trạng thái: `draft` → `draft` · `published` · `archived`; `published` → `published` · `archived`; `archived` là cuối (không khôi phục, không sửa).
 
+Mobile (`DecisionSupportViewModel`) đọc bản `published` qua `packages/core` (`FirestoreSaleEventService.watchPublished`). Remote Config `sale_calendar` và lịch định kỳ (ngày đôi, 15, 25) chỉ là dự phòng: cùng một ngày thì đợt trên Firestore được dùng.
+
 ## `saleSuggestions/{id}` – đề xuất đợt sale · tạo trên app, duyệt trên web
 
 Luồng liên vai trò của Final Assignment: người dùng đề xuất một đợt sale trên app (`pending`) → staff duyệt hoặc từ chối kèm lý do trên web → app của người gửi cập nhật ngay (đề xuất của tôi + `inbox`, `kind = suggestion_reply`).
@@ -287,11 +293,35 @@ Luồng liên vai trò của Final Assignment: người dùng đề xuất một
 | `saleEventId` | string | khi `approved` | id `saleEvents` tạo trong cùng batch (`existsAfter`) |
 | `reviewedBy`, `reviewedAt` | string, timestamp | khi duyệt | uid staff đang ghi, server time |
 
-Duyệt là một batch: tạo `saleEvents` (`status = published`, `suggestionId`) + đổi đề xuất sang `approved` + ghi `users/{uid}/inbox`. Từ chối: đổi sang `rejected` kèm `reason` + ghi `inbox`. Code: `packages/core` (`FirestoreSaleSuggestionService`).
+Duyệt là một batch: tạo `saleEvents` (`status = published`, `suggestionId`) + đổi đề xuất sang `approved` + ghi `users/{uid}/inbox`. Từ chối: đổi sang `rejected` kèm `reason` + ghi `inbox`. Code: `packages/core` (`FirestoreSaleSuggestionService`), dùng chung cho màn "Báo đợt sale" trên mobile (`SaleSuggestionViewModel`) và hàng chờ duyệt trên web.
+
+Theo quyết định D-1 (a), người dùng chỉ **báo đợt sale sàn đã công bố**: `note` là nơi công bố (link hoặc mô tả), app bắt buộc nhập dù rules để tuỳ chọn; ngày từ hôm nay tới 12 tháng sau (code); cùng tên và ngày đang chờ duyệt thì không gửi lại.
 
 ## `reflections/{yyyy-MM}` – `Reflection` · ghi bởi `ReflectionService`, `DemoDataService`
 
-Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`.
+Id document khớp `^[0-9]{4}-[0-9]{2}$`. Trường: `rating` (int 1–5, bắt buộc – rules), `goal` (string?, ≤ 200 – code), `updatedAt`. `goal` của tháng M được hiện lại trên Góc nhìn tháng M+1 ("Mục tiêu bạn đặt cho tháng …").
+
+## `reports/{id}` – metadata báo cáo PDF · ghi bởi `ReportMetadataService` · **chỉ thêm, không sửa**
+
+File PDF tạo và chia sẻ trên máy, không tải lên (quyết định D7, gói Spark không có Cloud Storage); Firestore chỉ giữ các con số sau (đề Final mục 4). Ghi một lần sau mỗi lần mở bảng chia sẻ; ghi lỗi thì vẫn chia sẻ bình thường. Xoá cùng "Xoá toàn bộ dữ liệu".
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc (rules) |
+|:---|:---|:-:|:---|
+| `month` | string | ✓ | `yyyy-MM` |
+| `itemCount` | int | ✓ | 0–10 000: khoản mua + món đã quyết định trong báo cáo |
+| `sizeKb` | int | ✓ | 1–102 400, làm tròn lên |
+| `shared` | bool | ✓ | hệ điều hành đã nhận file để chia sẻ |
+| `createdAt` | timestamp | ✓ | server time |
+
+Không có trường nào khác (`keys().hasOnly`); không sửa được sau khi tạo.
+
+## `vouchers/{id}` – voucher mẫu cũ · **chỉ đọc**
+
+Mã tự đặt (không phải dữ liệu thật) do màn "Promotions" của web admin cũ ghi. Màn đó đã bị xoá (code review CR-09), nên rules không cho ghi nữa. App vẫn đọc cho thẻ voucher trên Chi tiết món; sẽ bỏ cùng thẻ theo quyết định D-3 (plan mục 4).
+
+## `shopeeVouchers/{id}` – voucher Shopee staff quét bằng extension
+
+Trường và ràng buộc: `validShopeeVoucher()` trong `firestore.rules` (`raw` ≤ 300, `kind`, `scope`, `sourceUrl` phải là `shopee.vn`, `capturedBy`, `lastSeenAt` = server time, các số tuỳ chọn có giới hạn). Chỉ staff/admin đọc; người dùng thường không thấy.
 
 ## Index tổng hợp (`firestore.indexes.json`)
 

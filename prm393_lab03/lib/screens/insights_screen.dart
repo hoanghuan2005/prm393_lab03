@@ -12,6 +12,7 @@ import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
+import '../viewmodels/reflection_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
 import '../widgets/insight_source_chip.dart';
 import '../widgets/month_picker_sheet.dart';
@@ -32,6 +33,7 @@ class InsightsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final insightsVm = context.watch<InsightsViewModel>();
     final purchaseVm = context.watch<PurchaseViewModel>();
+    final reflectionVm = context.watch<ReflectionViewModel>();
     final stats = insightsVm.stats;
     final report = insightsVm.report;
 
@@ -80,6 +82,17 @@ class InsightsScreen extends StatelessWidget {
               children: [
                 _buildMonthSelector(context, purchaseVm),
                 const SizedBox(height: AppDimens.space12),
+                if (reflectionVm.goalForMonth case final goal?) ...[
+                  _GoalCard(
+                    goal: goal,
+                    month: reflectionVm.month,
+                    onEdit: () {
+                      purchaseVm.setSelectedMonth(reflectionVm.previousMonth);
+                      Navigator.pushNamed(context, AppRoutes.reflection);
+                    },
+                  ),
+                  const SizedBox(height: AppDimens.space12),
+                ],
                 _buildAiStatusCard(context, insightsVm),
                 const SizedBox(height: AppDimens.space20),
                 if (stats == null || report == null || !stats.hasPurchases)
@@ -315,6 +328,72 @@ class InsightsScreen extends StatelessWidget {
       case InsightFallbackReason.aiFailed:
         return 'Chưa nhận được nhận xét hợp lệ từ AI. Đang hiện câu mẫu từ số liệu.';
     }
+  }
+}
+
+/// The goal the user wrote in last month's reflection, shown during this month
+class _GoalCard extends StatelessWidget {
+  final String goal;
+  final DateTime month;
+  final VoidCallback onEdit;
+
+  const _GoalCard({
+    required this.goal,
+    required this.month,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final semantic = AppSemanticColors.of(context);
+    return Container(
+      key: const ValueKey('reflection-goal-card'),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.space16,
+        AppDimens.space12,
+        AppDimens.space8,
+        AppDimens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: semantic.cardSurface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: semantic.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.flag_outlined, size: 18, color: semantic.emphasis),
+              const SizedBox(width: AppDimens.space8),
+              Expanded(
+                child: Text(
+                  'Mục tiêu bạn đặt cho tháng ${month.month}',
+                  style: AppTextStyles.titleMedium.themed(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.space8),
+          Padding(
+            padding: const EdgeInsets.only(right: AppDimens.space8),
+            child: Text(goal, style: AppTextStyles.bodyLarge.themed(context)),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                foregroundColor: semantic.emphasis,
+                minimumSize: const Size(48, 48),
+              ),
+              child: const Text('Sửa mục tiêu'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

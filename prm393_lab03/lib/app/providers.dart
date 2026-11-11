@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:why_i_buy_core/why_i_buy_core.dart'
+    as core
+    show
+        FirestoreAnnouncementService,
+        FirestoreInboxService,
+        FirestoreSaleEventService,
+        FirestoreSaleSuggestionService;
 
 import '../firebase/platform_support.dart';
 import '../services/ai_decision_service.dart';
@@ -28,6 +35,7 @@ import '../services/price_history_service.dart';
 import '../services/purchase_service.dart';
 import '../services/reflection_service.dart';
 import '../services/remote_config_service.dart';
+import '../services/report_metadata_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import '../services/review_reminder_service.dart';
@@ -41,6 +49,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/decision_support_viewmodel.dart';
 import '../viewmodels/extension_link_viewmodel.dart';
+import '../viewmodels/inbox_viewmodel.dart';
 import '../viewmodels/insights_viewmodel.dart';
 import '../viewmodels/item_suggestion_viewmodel.dart';
 import '../viewmodels/linked_accounts_viewmodel.dart';
@@ -50,6 +59,7 @@ import '../viewmodels/price_history_demo_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../viewmodels/reflection_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
+import '../viewmodels/sale_suggestion_viewmodel.dart';
 import '../viewmodels/same_product_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/shared_price_viewmodel.dart';
@@ -284,6 +294,7 @@ class AppProviders extends StatelessWidget {
             crashlyticsService: crashlyticsService,
             shareService: context.read<ReportShareService>(),
             analyticsService: context.read<AppAnalyticsService>(),
+            metadataService: FirestoreReportMetadataService(),
           ),
           update: (_, auth, purchaseVm, wishlistVm, vm) => vm!
             ..updateUid(auth.userId)
@@ -382,6 +393,7 @@ class AppProviders extends StatelessWidget {
             remoteConfigService: remoteConfigService,
             preferencesService: PreferencesService(),
             reminderService: reviewReminderService,
+            saleEventService: core.FirestoreSaleEventService(),
           ),
           update: (_, auth, purchaseVm, wishlistVm, budgetVm, profileVm, vm) =>
               vm!
@@ -414,6 +426,23 @@ class AppProviders extends StatelessWidget {
                 wishlistItems: wishlistVm.allItems,
                 ownedItems: profileVm.ownedItems,
               ),
+        ),
+        // Cross-role flow (packages/core, shared with the web admin):
+        // "Báo đợt sale" and Hộp thư
+        ChangeNotifierProxyProvider<AuthViewModel, SaleSuggestionViewModel>(
+          create: (_) => SaleSuggestionViewModel(
+            service: core.FirestoreSaleSuggestionService(),
+          ),
+          update: (_, auth, vm) =>
+              vm!..updateUser(auth.userId, isAnonymous: auth.isAnonymous),
+        ),
+        ChangeNotifierProxyProvider<AuthViewModel, InboxViewModel>(
+          create: (_) => InboxViewModel(
+            announcementService: core.FirestoreAnnouncementService(),
+            inboxService: core.FirestoreInboxService(),
+            preferencesService: PreferencesService(),
+          ),
+          update: (_, auth, vm) => vm!..updateUid(auth.userId),
         ),
         // Chrome extension linking: approval dialog and "Thiết bị đã liên kết"
         ChangeNotifierProxyProvider<AuthViewModel, ExtensionLinkViewModel>(

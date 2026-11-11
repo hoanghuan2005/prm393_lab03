@@ -27,6 +27,7 @@ import 'package:prm393_lab03/screens/extension_qr_scan_screen.dart';
 import 'package:prm393_lab03/screens/feedback_screen.dart';
 import 'package:prm393_lab03/screens/history_screen.dart';
 import 'package:prm393_lab03/screens/home_screen.dart';
+import 'package:prm393_lab03/screens/inbox_screen.dart';
 import 'package:prm393_lab03/screens/info_text_screen.dart';
 import 'package:prm393_lab03/screens/insights_screen.dart';
 import 'package:prm393_lab03/screens/item_detail_screen.dart';
@@ -44,6 +45,7 @@ import 'package:prm393_lab03/screens/purchase_detail_screen.dart';
 import 'package:prm393_lab03/screens/record_purchase_screen.dart';
 import 'package:prm393_lab03/screens/reminder_permission_screen.dart';
 import 'package:prm393_lab03/screens/sale_screens.dart';
+import 'package:prm393_lab03/screens/sale_suggestion_screen.dart';
 import 'package:prm393_lab03/screens/shopping_profile_screen.dart';
 import 'package:prm393_lab03/screens/wishlist_screen.dart';
 import 'package:prm393_lab03/services/ai_decision_service.dart';
@@ -67,6 +69,7 @@ import 'package:prm393_lab03/services/wishlist_service.dart';
 import 'package:prm393_lab03/viewmodels/auth_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/extension_link_viewmodel.dart';
+import 'package:prm393_lab03/viewmodels/inbox_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/insights_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/linked_accounts_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/photo_search_viewmodel.dart';
@@ -74,6 +77,7 @@ import 'package:prm393_lab03/viewmodels/pre_purchase_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/price_history_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/reflection_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/report_viewmodel.dart';
+import 'package:prm393_lab03/viewmodels/sale_suggestion_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/settings_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/shopping_profile_viewmodel.dart';
 import 'package:prm393_lab03/viewmodels/theme_viewmodel.dart';
@@ -83,6 +87,7 @@ import 'package:prm393_lab03/widgets/confirm_dialog.dart';
 import 'package:prm393_lab03/widgets/month_picker_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:why_i_buy_core/why_i_buy_core.dart' as core;
 
 import '../support/linked_auth_fakes.dart';
 import '../support/purchase_harness.dart';
@@ -321,6 +326,8 @@ class UiAuditHarness {
     'main_navigation': const MainNavigationScreen(),
     'compare_items': CompareItemsScreen(item: item),
     'sale_calendar': const SaleCalendarScreen(),
+    'sale_suggestion': const SaleSuggestionScreen(),
+    'inbox': const InboxScreen(),
     'sale_list': SaleListScreen(sale: sale),
     'sale_plan': SalePlanScreen(sale: sale),
     'email_verification': const EmailVerificationScreen(),
@@ -399,6 +406,34 @@ class UiAuditHarness {
         ? InMemoryPriceHistoryService.sample(now)
         : InMemoryPriceHistoryService(products: {}, reports: {});
     final price = PriceHistoryViewModel(service: priceService);
+    // Cross-role flow: long texts in every row, dates at both ends of the range
+    if (populated) {
+      for (var i = 0; i < 12; i++) {
+        await h.db.collection('announcements').add({
+          'title': auditLongName,
+          'body': '$auditLongName. $auditLongName.',
+          'status': 'published',
+          'createdAt': DateTime(2026, 11, 1 + i),
+        });
+        await h.db.collection('saleSuggestions').add({
+          'uid': PurchaseHarness.uid,
+          'name': 'Sale 12.12 dài bốn mươi ký tự cho kiểm',
+          'date': DateTime(2026, 12, 12),
+          'note': auditLongName,
+          'status': ['pending', 'approved', 'rejected'][i % 3],
+          'reason': auditLongName,
+          'createdAt': DateTime(2026, 11, 1 + i),
+        });
+      }
+    }
+    final inbox = InboxViewModel(
+      announcementService: core.FirestoreAnnouncementService(h.db),
+      inboxService: core.FirestoreInboxService(h.db),
+      preferencesService: PreferencesService(),
+    )..updateUid(PurchaseHarness.uid);
+    final suggestions = SaleSuggestionViewModel(
+      service: core.FirestoreSaleSuggestionService(h.db),
+    )..updateUser(PurchaseHarness.uid, isAnonymous: false);
     await price.openProduct(InMemoryPriceHistoryService.keys.first);
     await h.initialize();
     if (populated) {
@@ -455,6 +490,8 @@ class UiAuditHarness {
       prePurchase,
       photo,
       price,
+      inbox,
+      suggestions,
     ]);
     return h.app(
       MultiProvider(
@@ -475,6 +512,8 @@ class UiAuditHarness {
           ChangeNotifierProvider.value(value: prePurchase),
           ChangeNotifierProvider<PhotoSearchViewModel>.value(value: photo),
           ChangeNotifierProvider.value(value: price),
+          ChangeNotifierProvider.value(value: inbox),
+          ChangeNotifierProvider.value(value: suggestions),
         ],
         child: screens[screen]!,
       ),

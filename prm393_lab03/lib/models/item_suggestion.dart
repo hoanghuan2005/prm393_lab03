@@ -1,16 +1,36 @@
 import '../core/utils/vietnamese_text.dart';
 import 'budget_group.dart';
 
+final _asciiLetterOrDigit = RegExp(r'[a-z0-9]');
+final _spaces = RegExp(r'\s+');
+
 /// Lowercase, Vietnamese diacritics removed, punctuation turned into spaces:
 /// "Tai nghe Sony WH-1000XM5!" → "tai nghe sony wh 1000xm5"
 String normalizeTitle(String text) {
   final buffer = StringBuffer();
   for (final rune in removeVietnameseDiacritics(text.toLowerCase()).runes) {
     final char = String.fromCharCode(rune);
-    buffer.write(RegExp(r'[a-z0-9]').hasMatch(char) ? char : ' ');
+    buffer.write(_asciiLetterOrDigit.hasMatch(char) ? char : ' ');
   }
-  return buffer.toString().trim().replaceAll(RegExp(r'\s+'), ' ');
+  return buffer.toString().trim().replaceAll(_spaces, ' ');
 }
+
+/// Like [normalizeTitle] but tone marks are kept: "Kiểm tra!" → "kiểm tra"
+String _normalizeKeepingTones(String text) {
+  final buffer = StringBuffer();
+  for (final rune in text.toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    final isLetterOrDigit = _asciiLetterOrDigit.hasMatch(
+      removeVietnameseDiacritics(char),
+    );
+    buffer.write(isLetterOrDigit ? char : ' ');
+  }
+  return buffer.toString().trim().replaceAll(_spaces, ' ');
+}
+
+/// Letters typed as letter + combining mark cannot be compared with the keywords
+bool _hasCombiningMarks(String text) =>
+    text.runes.any((r) => r >= 0x0300 && r <= 0x036F);
 
 /// Words that only describe quantity or form, not what the item is
 final _stopWords = 'cai chiec bo doi mon do cho va voi cua loai size mau moi hang chinh san pham sp the'
@@ -25,28 +45,44 @@ Set<String> titleTokens(String title) => {
 
 bool _isNumber(String token) => RegExp(r'^\d+$').hasMatch(token);
 
-/// Keywords per default budget group, written without diacritics and separated by
-/// commas. A title takes the group of its longest matching phrase, so "kem chống nắng"
-/// is Làm đẹp, not Ăn uống.
+/// Keywords per default budget group, separated by commas. A title takes the group
+/// of its longest matching phrase, so "kem chống nắng" is Làm đẹp, not Ăn uống.
+///
+/// Keywords carry their tone marks: a title typed with tone marks is compared with
+/// them, so "kiểm tra" is not "trà" and "sơn tường" is not "son". A title typed
+/// without any tone mark is compared without them (see [guessBudgetGroup]).
 const Map<String, String> budgetGroupKeywords = {
-  'food': 'tra sua, ca phe, cafe, coffee, com, bun, pho, mi tom, banh mi, banh, pizza, ga ran, lau, do an, an vat, snack, nuoc ep, nuoc ngot, sinh to, tra, buffet, an trua, an toi, an sang, kem que, kem ly',
-  'fashion': 'ao, quan, vay, dam, giay, dep, tui, tui xach, balo, mu, non, that lung, khan, tat, vi da, ao khoac, hoodie, sneaker, jean, jeans, so mi, dong ho, kinh mat, trang suc',
-  'tech': 'tai nghe, dien thoai, iphone, samsung, xiaomi, laptop, may tinh, ban phim, chuot, man hinh, sac, cap sac, loa, dong ho thong minh, smartwatch, airpods, ipad, may tinh bang, op lung, usb, o cung, tay cam, camera, may anh, tablet, macbook, pin du phong, headphone, earbuds, router, phan mem, ung dung',
-  'beauty': 'son, kem duong, kem chong nang, sua rua mat, nuoc hoa, mat na, serum, toner, phan, mascara, trang diem, cat toc, lam toc, lam nail, nail, my pham, dau goi, sua tam, tay trang, nuoc tay trang, duong am',
-  'study': 'sach, giao trinh, khoa hoc, hoc phi, but, but bi, casio, may tinh casio, ielts, toeic, tieng anh, udemy, coursera, lop hoc, tai lieu, vo viet',
+  'food': 'trà sữa, cà phê, cafe, coffee, cơm, bún, phở, mì tôm, bánh mì, bánh, pizza, gà rán, lẩu, đồ ăn, ăn vặt, snack, nước ép, nước ngọt, sinh tố, trà, buffet, ăn trưa, ăn tối, ăn sáng, kem que, kem ly',
+  'fashion': 'áo, quần, váy, đầm, giày, dép, túi, túi xách, balo, mũ, nón, thắt lưng, khăn, tất, ví da, áo khoác, hoodie, sneaker, jean, jeans, sơ mi, đồng hồ, kính mát, trang sức',
+  'tech': 'tai nghe, điện thoại, iphone, samsung, xiaomi, laptop, máy tính, bàn phím, chuột, màn hình, sạc, cáp sạc, loa, đồng hồ thông minh, smartwatch, airpods, ipad, máy tính bảng, ốp lưng, usb, ổ cứng, tay cầm, camera, máy ảnh, tablet, macbook, pin dự phòng, headphone, earbuds, router, phần mềm, ứng dụng',
+  'beauty': 'son, kem dưỡng, kem chống nắng, sữa rửa mặt, nước hoa, mặt nạ, serum, toner, phấn, mascara, trang điểm, cắt tóc, làm tóc, làm nail, nail, mỹ phẩm, dầu gội, sữa tắm, tẩy trang, nước tẩy trang, dưỡng ẩm',
+  'study': 'sách, giáo trình, khoá học, khóa học, học phí, bút, bút bi, casio, máy tính casio, ielts, toeic, tiếng anh, udemy, coursera, lớp học, tài liệu, vở viết',
 };
 
-final Map<String, List<String>> _keywordPhrases = {
+final Map<String, List<String>> _tonedPhrases = {
   for (final e in budgetGroupKeywords.entries) e.key: e.value.split(', '),
 };
 
-/// Budget group guessed from keywords, or null when no keyword matches
+final Map<String, List<String>> _plainPhrases = {
+  for (final e in _tonedPhrases.entries)
+    e.key: e.value.map(normalizeTitle).toSet().toList(),
+};
+
+/// Budget group guessed from keywords, or null when no keyword matches.
+/// Only ever shown as a suggestion the user taps to accept.
 String? guessBudgetGroup(String title) {
-  final padded = ' ${normalizeTitle(title)} ';
+  final plain = normalizeTitle(title);
+  final toned = _hasCombiningMarks(title)
+      ? plain
+      : _normalizeKeepingTones(title);
+  // No tone mark at all ("tra sua"): fall back to comparing without them
+  final useTones = toned != plain;
+  final padded = ' ${useTones ? toned : plain} ';
+  final phrasesByGroup = useTones ? _tonedPhrases : _plainPhrases;
   String? best;
   var bestWords = 0;
   for (final group in defaultBudgetGroups) {
-    for (final phrase in _keywordPhrases[group.id] ?? const <String>[]) {
+    for (final phrase in phrasesByGroup[group.id] ?? const <String>[]) {
       final words = phrase.split(' ').length;
       if (words > bestWords && padded.contains(' $phrase ')) {
         best = group.id;

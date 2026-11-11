@@ -5,6 +5,7 @@ import '../models/purchase_item.dart';
 import '../models/wishlist_item.dart';
 import '../services/analytics_service.dart';
 import '../services/crashlytics_service.dart';
+import '../services/report_metadata_service.dart';
 import '../services/report_service.dart';
 import '../services/report_share_service.dart';
 import 'deferred_notify.dart';
@@ -19,6 +20,9 @@ class ReportViewModel extends ChangeNotifier
   final ReportService reportService;
   final ReportShareService shareService;
   final AppAnalyticsService analyticsService;
+
+  /// Saves each shared report's figures in Firestore (Final 4); the PDF stays on the device
+  final ReportMetadataService? metadataService;
   @override
   final CrashlyticsService? crashlyticsService;
 
@@ -38,6 +42,7 @@ class ReportViewModel extends ChangeNotifier
     required this.reportService,
     required this.shareService,
     required this.analyticsService,
+    this.metadataService,
     this.crashlyticsService,
   });
 
@@ -128,6 +133,7 @@ class ReportViewModel extends ChangeNotifier
     if (bytes == null) return false;
     try {
       final shared = await shareService.sharePdf(bytes, fileNameFor(month));
+      await _recordMetadata(month, bytes.length, shared: shared);
       if (!shared) {
         _fail('Chưa chia sẻ được báo cáo. Bấm "Thử lại".');
         return false;
@@ -142,6 +148,30 @@ class ReportViewModel extends ChangeNotifier
     } catch (e, stack) {
       _fail(messageFor(e, stack, reason: 'shareReportPdf'));
       return false;
+    }
+  }
+
+  /// A metadata write that fails never blocks the share: it is reported and skipped
+  Future<void> _recordMetadata(
+    DateTime month,
+    int sizeBytes, {
+    required bool shared,
+  }) async {
+    final uid = _uid;
+    final service = metadataService;
+    if (uid == null || service == null) return;
+    try {
+      await service.record(
+        uid,
+        ReportRecord(
+          month: monthKey(month),
+          itemCount: _itemCount,
+          sizeKb: ReportRecord.kbOf(sizeBytes),
+          shared: shared,
+        ),
+      );
+    } catch (e, stack) {
+      messageFor(e, stack, reason: 'recordReportMetadata');
     }
   }
 

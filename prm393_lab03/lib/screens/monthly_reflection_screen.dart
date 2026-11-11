@@ -49,6 +49,7 @@ class _MonthlyReflectionScreenState extends State<MonthlyReflectionScreen> {
         );
     _confirmingExit = false;
     if (!mounted || !discard) return;
+    context.read<ReflectionViewModel>().discardChanges();
     setState(() => _allowExit = true);
     await WidgetsBinding.instance.endOfFrame;
     if (mounted) Navigator.maybePop(context);
@@ -489,6 +490,14 @@ class _ReflectionFormState extends State<_ReflectionForm> {
           ),
         ),
         const SizedBox(height: AppDimens.space12),
+        // The rules need a rating: say why the button is off instead of a dead button
+        if (vm.rating == null) ...[
+          Text(
+            'Chọn mức độ hài lòng để lưu chiêm nghiệm.',
+            style: AppTextStyles.bodyMedium.themed(context),
+          ),
+          const SizedBox(height: AppDimens.space8),
+        ],
         AppButton(
           title: 'Lưu chiêm nghiệm',
           icon: Icons.check,

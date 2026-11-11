@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/inbox_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/wishlist_viewmodel.dart';
 
@@ -73,7 +74,9 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = settingsVm.notifications.length;
+    // Hộp thư (Firestore) is provided in the app; a screen tested alone may skip it
+    final inboxVm = context.watch<InboxViewModel?>();
+    final count = settingsVm.notifications.length + (inboxVm?.unreadCount ?? 0);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -86,7 +89,7 @@ class _NotificationButton extends StatelessWidget {
             size: 24,
           ),
           tooltip: 'Thông báo',
-          onPressed: () => _showNotifications(context),
+          onPressed: () => _showNotifications(context, inboxVm),
         ),
         if (count > 0)
           Positioned(
@@ -114,7 +117,7 @@ class _NotificationButton extends StatelessWidget {
     );
   }
 
-  void _showNotifications(BuildContext context) {
+  void _showNotifications(BuildContext context, InboxViewModel? inboxVm) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -137,6 +140,35 @@ class _NotificationButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppDimens.space12),
+              if (inboxVm != null) ...[
+                ListTile(
+                  key: const ValueKey('open-inbox'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: AppSemanticColors.of(context)
+                        .primaryContainer,
+                    child: Icon(
+                      Icons.mail_outline,
+                      color: AppSemanticColors.of(context).onPrimaryContainer,
+                    ),
+                  ),
+                  title: const Text(
+                    'Hộp thư',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    inboxVm.unreadCount == 0
+                        ? 'Thông báo của nhóm và tin trả lời cho bạn'
+                        : '${inboxVm.unreadCount} tin chưa đọc',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.pushNamed(context, AppRoutes.inbox);
+                  },
+                ),
+                const Divider(),
+              ],
               if (settingsVm.notifications.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppDimens.space24),

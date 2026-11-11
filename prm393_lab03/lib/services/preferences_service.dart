@@ -7,6 +7,11 @@ class PreferencesService {
   static const String _keyDailyReminderEnabled = 'daily_reminder_enabled';
   static const String _keyDailyReminderMinutes = 'daily_reminder_minutes';
   static const String _keyDailyReminderOffered = 'daily_reminder_offered';
+  static const String _keyReflectionReminder = 'reflection_reminder_enabled';
+  static const String _keyReadAnnouncements = 'read_announcements';
+
+  /// Announcement ids remembered as read; older ones are forgotten
+  static const int maxReadAnnouncements = 200;
   static const String _keySharePrices = 'share_prices_enabled';
   static const String _keySaleReminderLevel = 'sale_reminder_level';
   static const String _keyProductIdentityTried = 'product_identity_tried';
@@ -16,6 +21,13 @@ class PreferencesService {
 
   /// 21:00, the time shown on screen 05a
   static const int defaultDailyReminderMinutes = 21 * 60;
+
+  /// "Nhắc chiêm nghiệm" (Cá nhân): off by default, like the daily reminder
+  Future<bool> getReflectionReminderEnabled() =>
+      _read((p) => p.getBool(_keyReflectionReminder) ?? false, false);
+
+  Future<void> setReflectionReminderEnabled(bool enabled) =>
+      _write((p) => p.setBool(_keyReflectionReminder, enabled));
 
   /// Whether the user allows AI-written insights (spec 7.6: user can turn AI on/off). Defaults to on.
   Future<bool> getAiInsightEnabled() =>
@@ -77,6 +89,27 @@ class PreferencesService {
     final start = list.length - maxProductIdentityTried;
     return p.setStringList(
       _keyProductIdentityTried,
+      start > 0 ? list.sublist(start) : list,
+    );
+  });
+
+  /// Hộp thư: announcements are shared by every user, so whether this person has
+  /// read one is kept on the device (personal messages keep `readAt` in Firestore)
+  Future<Set<String>> getReadAnnouncements() => _read(
+    (p) => (p.getStringList(_keyReadAnnouncements) ?? const <String>[]).toSet(),
+    <String>{},
+  );
+
+  Future<void> addReadAnnouncement(String id) => _write((p) {
+    final list = [
+      for (final k
+          in p.getStringList(_keyReadAnnouncements) ?? const <String>[])
+        if (k != id) k,
+      id,
+    ];
+    final start = list.length - maxReadAnnouncements;
+    return p.setStringList(
+      _keyReadAnnouncements,
       start > 0 ? list.sublist(start) : list,
     );
   });

@@ -8,6 +8,7 @@ import '../firebase/platform_support.dart';
 import '../models/app_notification_item.dart';
 import '../models/budget_group.dart';
 import '../models/purchase_item.dart';
+import '../models/reflection.dart';
 import '../models/user_profile.dart';
 import '../services/crashlytics_service.dart';
 import '../services/data_export_service.dart';
@@ -107,6 +108,48 @@ class SettingsViewModel extends ChangeNotifier
         minute: dailyReminderMinute,
       );
     }
+  }
+
+  // ---------- "Nhắc chiêm nghiệm" at the end of each month ----------
+
+  bool _reflectionReminderEnabled = false;
+
+  bool get reflectionReminderEnabled => _reflectionReminderEnabled;
+
+  Future<void> _armReflectionReminders() async => reminderService
+      ?.scheduleReflectionReminders(reflectionReminderTimes(DateTime.now()));
+
+  Future<void> _loadReflectionReminder() async {
+    final prefs = preferencesService;
+    if (prefs == null) return;
+    _reflectionReminderEnabled = await prefs.getReflectionReminderEnabled();
+    notifyListeners();
+    // Only a few months are scheduled ahead: top them up on every start
+    if (_reflectionReminderEnabled && supportsDailyReminder) {
+      await _armReflectionReminders();
+    }
+  }
+
+  /// From the user's tap on the switch. false = permission denied.
+  Future<bool> enableReflectionReminder() async {
+    final reminders = reminderService;
+    final prefs = preferencesService;
+    if (!supportsDailyReminder || reminders == null || prefs == null) {
+      return false;
+    }
+    if (!await reminders.requestPermission()) return false;
+    await _armReflectionReminders();
+    await prefs.setReflectionReminderEnabled(true);
+    _reflectionReminderEnabled = true;
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> disableReflectionReminder() async {
+    await reminderService?.scheduleReflectionReminders(const []);
+    await preferencesService?.setReflectionReminderEnabled(false);
+    _reflectionReminderEnabled = false;
+    notifyListeners();
   }
 
   /// Screen 05a after the first saved purchase: only once per device, only where
@@ -258,6 +301,7 @@ class SettingsViewModel extends ChangeNotifier
 
   void _init() {
     unawaited(_loadDailyReminder());
+    unawaited(_loadReflectionReminder());
     if (PlatformSupport.supportsMessaging) {
       unawaited(
         notificationService.isPermissionGranted().then((granted) {

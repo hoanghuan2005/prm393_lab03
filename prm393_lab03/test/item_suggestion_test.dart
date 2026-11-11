@@ -188,6 +188,26 @@ void main() {
       expect(guessBudgetGroup('Sony'), isNull);
     });
 
+    test('a title typed with tone marks is matched with them (CR-06)', () {
+      // "tra" (kiểm tra) is not "trà", "lau" is not "lẩu", "sơn" is not "son"
+      expect(guessBudgetGroup('Kiểm tra sức khoẻ'), isNull);
+      expect(guessBudgetGroup('Cây lau nhà'), isNull);
+      expect(guessBudgetGroup('Sơn tường Dulux'), isNull);
+      expect(guessBudgetGroup('Trà đào'), 'food');
+      expect(guessBudgetGroup('Son môi 3CE'), 'beauty');
+      expect(guessBudgetGroup('Khóa học IELTS'), 'study');
+      expect(guessBudgetGroup('Khoá học Flutter'), 'study');
+      // English keywords still match inside a title with tone marks
+      expect(guessBudgetGroup('Ốp iPhone trong suốt'), 'tech');
+    });
+
+    test('a title without any tone mark is matched without them', () {
+      expect(guessBudgetGroup('tra sua tran chau'), 'food');
+      expect(guessBudgetGroup('ao khoac'), 'fashion');
+      // Letter + combining mark (decomposed text) falls back the same way
+      expect(guessBudgetGroup('Tra\u0300 sữa'), 'food');
+    });
+
     test('shared words decide how alike two titles are', () {
       Set<String> t(String s) => titleTokens(s);
       expect(

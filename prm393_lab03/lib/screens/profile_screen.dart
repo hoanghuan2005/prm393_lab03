@@ -161,6 +161,7 @@ class ProfileScreen extends StatelessWidget {
             _SettingsGroup(
               children: [
                 _DailyReminderTile(settingsVm: settingsVm),
+                _ReflectionReminderTile(settingsVm: settingsVm),
                 const _FloatingBubbleTile(),
               ],
             ),
@@ -886,6 +887,69 @@ class _DailyReminderTile extends StatelessWidget {
         child: Switch(
           key: const ValueKey('daily-reminder-switch'),
           value: supported && settingsVm.dailyReminderEnabled,
+          onChanged: supported ? (on) => _toggle(context, on) : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// "Nhắc chiêm nghiệm": 20:00 on the last day of each month (Lab 2 Flow 3)
+class _ReflectionReminderTile extends StatelessWidget {
+  final SettingsViewModel settingsVm;
+
+  const _ReflectionReminderTile({required this.settingsVm});
+
+  Future<void> _toggle(BuildContext context, bool on) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!on) {
+      await settingsVm.disableReflectionReminder();
+      return;
+    }
+    if (await settingsVm.enableReflectionReminder()) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Chưa được phép gửi thông báo. Bạn có thể bật lại trong cài đặt của máy.',
+        ),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Mở cài đặt',
+          onPressed: settingsVm.openNotificationSettings,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final supported = settingsVm.supportsDailyReminder;
+    return ListTile(
+      key: const ValueKey('reflection-reminder-tile'),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space16,
+        vertical: AppDimens.space4,
+      ),
+      title: Text(
+        'Nhắc chiêm nghiệm tháng',
+        style: AppTextStyles.titleMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurface),
+      ),
+      subtitle: Text(
+        supported
+            ? 'Lúc 20:00 ngày cuối tháng, mời bạn nhìn lại tháng và đặt mục tiêu.'
+            : 'Chỉ có trên ứng dụng Android.',
+        style: AppTextStyles.bodyMedium
+            .themed(context)
+            .copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      trailing: Semantics(
+        label: 'Nhắc chiêm nghiệm tháng',
+        child: Switch(
+          key: const ValueKey('reflection-reminder-switch'),
+          value: supported && settingsVm.reflectionReminderEnabled,
           onChanged: supported ? (on) => _toggle(context, on) : null,
         ),
       ),

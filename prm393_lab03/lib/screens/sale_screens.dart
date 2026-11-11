@@ -107,6 +107,19 @@ class SaleCalendarScreen extends StatelessWidget {
             '(ngày đôi, ngày 15, ngày 25). App không dự đoán giá.',
             style: AppTextStyles.bodyMedium.themed(context),
           ),
+          const SizedBox(height: AppDimens.space12),
+          // Cross-role flow: a user reports a sale a marketplace announced; staff
+          // check it on the web admin and publish it here for everyone
+          OutlinedButton.icon(
+            key: const ValueKey('report-sale'),
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.saleSuggestion),
+            icon: const Icon(Icons.campaign_outlined),
+            label: const Text('Báo đợt sale sàn đã công bố'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+          ),
           const SizedBox(height: AppDimens.space16),
           const _SaleReminderSetting(),
           const SizedBox(height: AppDimens.space16),

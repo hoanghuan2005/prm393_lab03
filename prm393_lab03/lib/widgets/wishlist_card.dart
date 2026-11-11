@@ -35,14 +35,13 @@ class WishlistCard extends StatelessWidget {
     final voucherService = context.watch<VoucherService?>();
     final bestVoucher = (item.latestPriceVnd != null && voucherService != null)
         ? voucherService.findBestVoucher(
+            item: item,
             priceVnd: item.latestPriceVnd!,
-            platform: (item.url ?? '').toLowerCase().contains('lazada')
-                ? 'Lazada'
-                : 'Shopee',
-            shopName: item.shopName,
+            now: DateTime.now(),
           )
         : null;
-    final priceAfterVoucher = (bestVoucher != null && item.latestPriceVnd != null)
+    final priceAfterVoucher =
+        (bestVoucher != null && item.latestPriceVnd != null)
         ? (item.latestPriceVnd! - bestVoucher.discountAmount)
         : null;
 
@@ -92,7 +91,8 @@ class WishlistCard extends StatelessWidget {
                                     .themed(context)
                                     .copyWith(
                                       color: priceAfterVoucher != null
-                                          ? AppSemanticColors.of(context).textSecondary
+                                          ? AppSemanticColors.of(context)
+                                                .textSecondary
                                           : AppColors.onPrimary,
                                       fontWeight: priceAfterVoucher != null
                                           ? FontWeight.w500
@@ -122,11 +122,14 @@ class WishlistCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 3),
                               Text(
-                                formatVnd(priceAfterVoucher > 0 ? priceAfterVoucher : 0),
+                                formatVnd(
+                                  priceAfterVoucher > 0 ? priceAfterVoucher : 0,
+                                ),
                                 style: AppTextStyles.titleMedium
                                     .themed(context)
                                     .copyWith(
-                                      color: AppSemanticColors.of(context).success,
+                                      color: AppSemanticColors.of(context)
+                                          .success,
                                       fontWeight: FontWeight.w800,
                                     ),
                               ),
@@ -169,10 +172,12 @@ class WishlistCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).error.withValues(alpha: 0.12),
+                          color: AppSemanticColors.of(context).error
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppSemanticColors.of(context).error.withValues(alpha: 0.3),
+                            color: AppSemanticColors.of(context).error
+                                .withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -200,10 +205,12 @@ class WishlistCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).success.withValues(alpha: 0.12),
+                          color: AppSemanticColors.of(context).success
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppSemanticColors.of(context).success.withValues(alpha: 0.3),
+                            color: AppSemanticColors.of(context).success
+                                .withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(

@@ -1,7 +1,11 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+
 import '../models/voucher.dart';
+import '../models/voucher_matcher.dart';
+import '../models/wishlist_item.dart';
 
 class VoucherService extends ChangeNotifier {
   final FirebaseFirestore _firestore;
@@ -10,7 +14,7 @@ class VoucherService extends ChangeNotifier {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
 
   VoucherService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance {
+    : _firestore = firestore ?? FirebaseFirestore.instance {
     _initFirestoreListener();
   }
 
@@ -21,20 +25,23 @@ class VoucherService extends ChangeNotifier {
       _subscription = _firestore
           .collection('vouchers')
           .snapshots()
-          .listen((snapshot) {
-        if (snapshot.docs.isNotEmpty) {
-          final live = snapshot.docs
-              .map((doc) => Voucher.fromFirestore(doc.data(), doc.id))
-              .where((v) => v.isActive)
-              .toList();
-          if (live.isNotEmpty) {
-            _vouchers = live;
-            notifyListeners();
-          }
-        }
-      }, onError: (e) {
-        debugPrint('VoucherService listener fallback to defaults: $e');
-      });
+          .listen(
+            (snapshot) {
+              if (snapshot.docs.isNotEmpty) {
+                final live = snapshot.docs
+                    .map((doc) => Voucher.fromFirestore(doc.data(), doc.id))
+                    .where((v) => v.isActive)
+                    .toList();
+                if (live.isNotEmpty) {
+                  _vouchers = live;
+                  notifyListeners();
+                }
+              }
+            },
+            onError: (e) {
+              debugPrint('VoucherService listener fallback to defaults: $e');
+            },
+          );
     } catch (e) {
       debugPrint('VoucherService init error: $e');
     }
@@ -42,47 +49,17 @@ class VoucherService extends ChangeNotifier {
 
   /// Tìm voucher tốt nhất (tiết kiệm nhiều tiền nhất) phù hợp với sản phẩm
   Voucher? findBestVoucher({
+    required WishlistItem item,
     required int priceVnd,
-    String? platform,
-    String? shopName,
-  }) {
-    final valid = _vouchers
-        .where((v) => v.canApplyTo(
-              priceVnd: priceVnd,
-              itemPlatform: platform,
-              itemShopName: shopName,
-            ))
-        .toList();
-    if (valid.isEmpty) return null;
-    // Ưu tiên voucher riêng của shop trước, sau đó sắp xếp theo số tiền giảm cao nhất
-    valid.sort((a, b) {
-      if (a.isShopVoucher && !b.isShopVoucher) return -1;
-      if (!a.isShopVoucher && b.isShopVoucher) return 1;
-      return b.discountAmount.compareTo(a.discountAmount);
-    });
-    return valid.first;
-  }
+    required DateTime now,
+  }) => VoucherMatcher.best(_vouchers, item, priceVnd, now);
 
   /// Lấy toàn bộ voucher có thể áp dụng cho sản phẩm này
   List<Voucher> getApplicableVouchers({
+    required WishlistItem item,
     required int priceVnd,
-    String? platform,
-    String? shopName,
-  }) {
-    final list = _vouchers
-        .where((v) => v.canApplyTo(
-              priceVnd: priceVnd,
-              itemPlatform: platform,
-              itemShopName: shopName,
-            ))
-        .toList();
-    list.sort((a, b) {
-      if (a.isShopVoucher && !b.isShopVoucher) return -1;
-      if (!a.isShopVoucher && b.isShopVoucher) return 1;
-      return b.discountAmount.compareTo(a.discountAmount);
-    });
-    return list;
-  }
+    required DateTime now,
+  }) => VoucherMatcher.applicable(_vouchers, item, priceVnd, now);
 
   @override
   void dispose() {

@@ -42,35 +42,4 @@ class Voucher {
       shopName: data['shopName']?.toString(),
     );
   }
-
-  /// Checks if this voucher can be applied to an item based on price, platform and shopName
-  bool canApplyTo({
-    required int priceVnd,
-    String? itemPlatform,
-    String? itemShopName,
-  }) {
-    if (!isActive) return false;
-    if (priceVnd < minOrder) return false;
-
-    // Platform check
-    if (platform != 'Tất cả' && itemPlatform != null && itemPlatform.trim().isNotEmpty) {
-      final p1 = platform.toLowerCase();
-      final p2 = itemPlatform.toLowerCase();
-      if (!p1.contains(p2) && !p2.contains(p1)) {
-        return false;
-      }
-    }
-
-    // Shop name check: if voucher belongs to a specific shop, item must match
-    if (isShopVoucher) {
-      if (itemShopName == null || itemShopName.trim().isEmpty) return false;
-      final s1 = shopName!.toLowerCase().trim();
-      final s2 = itemShopName.toLowerCase().trim();
-      if (!s1.contains(s2) && !s2.contains(s1)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }

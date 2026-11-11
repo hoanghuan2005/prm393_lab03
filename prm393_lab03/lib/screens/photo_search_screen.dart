@@ -1119,7 +1119,7 @@ class _AiPriceSearch extends StatelessWidget {
           'Nơi bán AI tìm được',
           style: AppTextStyles.labelLarge
               .themed(context)
-              .copyWith(color: AppColors.textSecondary),
+              .copyWith(color: AppSemanticColors.of(context).textSecondary),
         ),
         const SizedBox(height: AppDimens.space8),
         _ListCard(
@@ -1159,7 +1159,7 @@ class _AiPriceSearch extends StatelessWidget {
                 'Nguồn:',
                 style: AppTextStyles.caption
                     .themed(context)
-                    .copyWith(color: AppColors.textSecondary),
+                    .copyWith(color: AppSemanticColors.of(context).textSecondary),
               ),
               for (final s in data.sources.take(4))
                 InkWell(

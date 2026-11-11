@@ -104,26 +104,30 @@ class InsightsScreen extends StatelessWidget {
                       icon: Icons.lightbulb_outline_rounded,
                     ),
                   )
-                else ...[
+                else
                   for (final card in report.cards) ...[
                     _InsightCardView(card: card),
                     const SizedBox(height: AppDimens.space16),
                   ],
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.reflection),
-                    icon: const Icon(Icons.auto_stories_outlined, size: 18),
-                    label: const Text('Xem chiêm nghiệm tháng'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppSemanticColors.of(context).emphasis,
-                      minimumSize: const Size.fromHeight(48),
-                      side: BorderSide(color: theme.dividerColor),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppDimens.borderPill,
-                      ),
+                // Also for a month without purchases: the user may still have
+                // skipped items to look back on and a goal to set
+                if (stats == null || report == null || !stats.hasPurchases)
+                  const SizedBox(height: AppDimens.space24),
+                OutlinedButton.icon(
+                  key: const ValueKey('open-reflection'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.reflection),
+                  icon: const Icon(Icons.auto_stories_outlined, size: 18),
+                  label: const Text('Xem chiêm nghiệm tháng'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppSemanticColors.of(context).emphasis,
+                    minimumSize: const Size.fromHeight(48),
+                    side: BorderSide(color: theme.dividerColor),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppDimens.borderPill,
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),

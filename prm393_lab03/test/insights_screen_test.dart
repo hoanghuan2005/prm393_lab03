@@ -172,6 +172,7 @@ void main() {
   Future<InsightsViewModel> pumpInsights(
     WidgetTester tester, {
     FakeFirebaseFirestore? db,
+    DateTime? month,
   }) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(360, 800);
@@ -183,7 +184,7 @@ void main() {
     final purchaseVm =
         PurchaseViewModel(purchaseService: _FakePurchaseService())
           ..updateUid('user-a')
-          ..setSelectedMonth(DateTime(2026, 10));
+          ..setSelectedMonth(month ?? DateTime(2026, 10));
     final insightsVm = InsightsViewModel(
       aiInsightService: AiInsightService(generator: generator),
       remoteConfigService: RemoteConfigService(
@@ -284,6 +285,29 @@ void main() {
     expect(find.text('Mục tiêu bạn đặt cho tháng 10'), findsOneWidget);
     expect(find.text('Chờ 3 ngày trước mọi món trên 500k'), findsOneWidget);
     expect(find.text('Sửa mục tiêu'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('a month without purchases still opens the reflection', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    await pumpInsights(tester, month: DateTime(2026, 8));
+
+    expect(find.text('Chưa có khoản mua nào trong tháng'), findsOneWidget);
+    final open = find.byKey(const ValueKey('open-reflection'));
+    await tester.scrollUntilVisible(
+      open,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(open, findsOneWidget);
     expect(tester.takeException(), isNull);
     debugDefaultTargetPlatformOverride = null;
   });

@@ -393,9 +393,9 @@ service cloud.firestore {
 
 
 
-    // Old sample vouchers (plan mục 4, D-3). The web screen that wrote them was removed
-    // (code review CR-09), so no client writes here any more: read-only until D-3 decides
-    // whether the collection goes.
+    // Old sample vouchers (plan mục 4, D-3). The web screen that wrote them is kept in the
+    // repo but not wired into the admin app (code review CR-09), so nothing writes here:
+    // read-only until D-3 decides whether the collection goes.
     match /vouchers/{id} {
       allow read: if request.auth != null;
       allow write: if false;

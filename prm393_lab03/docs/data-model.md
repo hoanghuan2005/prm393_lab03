@@ -15,7 +15,7 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | `saleEvents` | Staff, admin (`draft` hoặc `published`) | Mọi người đã đăng nhập: bản `published`; staff: tất cả | Staff, admin | — (lưu trữ) | Lịch sale mobile; web quản lý đợt sale |
 | `saleSuggestions` | Người dùng (không ẩn danh), cho chính mình, `status = pending` | Người đề xuất; staff, admin | Staff, admin: `pending` → `approved` (cùng batch tạo `saleEvents`) hoặc `rejected` (kèm `reason`), một lần | Người đề xuất khi còn `pending` | Đề xuất sale mobile; web duyệt đề xuất |
 | `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard. Rules không giới hạn được chỉ phép đếm, nên admin về lý thuyết **liệt kê được** document; web chỉ dùng `count()` / `sum()` (`dashboard_service.dart`), và admin là vai trò tin cậy cao nhất (đặt trên Console) | — | — | Web tổng quan |
-| `vouchers` | — (không client nào ghi, từ CR-09) | Mọi người đã đăng nhập | — | — | Thẻ voucher cũ trên Chi tiết món (dữ liệu mẫu, chờ D-3) |
+| `vouchers` | — (không client nào ghi: màn cũ được giữ trong repo nhưng không nối vào app, CR-09) | Mọi người đã đăng nhập | — | — | Thẻ voucher cũ trên Chi tiết món (dữ liệu mẫu, chờ D-3) |
 | `shopeeVouchers` | Staff, admin (`capturedBy` = chính mình), hoặc extension đã liên kết với tài khoản staff/admin | Staff, admin | Như create | Staff, admin | Web "Voucher Shopee"; **người dùng thường không có quyền nào** |
 | `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
 | `priceHistory/{key}` | Admin: dữ liệu mẫu (`isDemo = true`); tài khoản không ẩn danh: sản phẩm thật (`isDemo = false`) khi gửi giá đầu tiên | Mọi người đã đăng nhập | Admin: dữ liệu mẫu, và sửa mã/nhóm của sản phẩm thật; người dùng: chỉ điền trường đang trống | Admin, chỉ dữ liệu mẫu | Chi tiết món (Lịch sử giá, Cùng món ở shop khác), Giá tham khảo, Firebase Demo Area |
@@ -317,7 +317,7 @@ Không có trường nào khác (`keys().hasOnly`); không sửa được sau kh
 
 ## `vouchers/{id}` – voucher mẫu cũ · **chỉ đọc**
 
-Mã tự đặt (không phải dữ liệu thật) do màn "Promotions" của web admin cũ ghi. Màn đó đã bị xoá (code review CR-09), nên rules không cho ghi nữa. App vẫn đọc cho thẻ voucher trên Chi tiết món; sẽ bỏ cùng thẻ theo quyết định D-3 (plan mục 4).
+Mã tự đặt (không phải dữ liệu thật) do màn "Promotions" của web admin cũ ghi. Màn đó vẫn giữ trong repo làm dự phòng nhưng không được nối vào app (code review CR-09), và rules không cho ghi nữa. App vẫn đọc cho thẻ voucher trên Chi tiết món; sẽ bỏ cùng thẻ theo quyết định D-3 (plan mục 4).
 
 ## `shopeeVouchers/{id}` – voucher Shopee staff quét bằng extension
 

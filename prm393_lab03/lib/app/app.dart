@@ -111,6 +111,23 @@ void openFromNotification(Map<String, dynamic> data) {
       openReviewDueList();
     case NotificationTarget.reflection:
       appNavigatorKey.currentState?.pushNamed(AppRoutes.reflection);
+    case NotificationTarget.itemDetail:
+      final itemId = data[NotificationRoute.itemIdKey] as String?;
+      if (itemId != null) {
+        final item = context
+            .read<WishlistViewModel>()
+            .allItems
+            .where((i) => i.id == itemId)
+            .firstOrNull;
+        if (item != null) {
+          appNavigatorKey.currentState?.pushNamed(
+            AppRoutes.itemDetail,
+            arguments: ItemDetailArgs(item),
+          );
+          break;
+        }
+      }
+      appNavigatorKey.currentState?.pushNamed(AppRoutes.wishlist);
     case NotificationTarget.none:
       break;
   }

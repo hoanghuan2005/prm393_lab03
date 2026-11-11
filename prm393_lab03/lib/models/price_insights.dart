@@ -85,6 +85,31 @@ class PriceInsights {
     return list.reduce((a, b) => b.amountVnd < a.amountVnd ? b : a);
   }
 
+  /// Kiểm tra xem giá hiện tại có phải là giá hời (giảm ≥ 10% so với giá lúc lưu hoặc trung bình)
+  bool get hasGoodDeal {
+    final last = latest, first = saved;
+    if (last == null || first == null) return false;
+    if (first.amountVnd <= 0) return false;
+    // Giá hiện tại rẻ hơn ít nhất 10% so với giá ban đầu lúc lưu món
+    final savedDiscount = (first.amountVnd - last.amountVnd) * 100 / first.amountVnd;
+    if (savedDiscount >= 10) return true;
+
+    // Hoặc giá hiện tại đang ở mức giá Flash Sale / Giảm sâu
+    final lowSale = lowestSale;
+    if (lowSale != null && last.amountVnd <= lowSale.amountVnd && first.amountVnd > last.amountVnd) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Mức tiết kiệm tính bằng VND nếu là giá hời
+  int get goodDealSavingsVnd {
+    final last = latest, first = saved;
+    if (last == null || first == null) return 0;
+    final diff = first.amountVnd - last.amountVnd;
+    return diff > 0 ? diff : 0;
+  }
+
   /// Lowest "Giá đang giảm" recorded (like SteamDB's historical low)
   PriceSnapshot? get lowestSale {
     final sales = history.where((s) => s.priceType == PriceType.sale).toList();

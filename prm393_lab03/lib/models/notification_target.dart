@@ -13,6 +13,9 @@ enum NotificationTarget {
   /// Chiêm nghiệm tháng
   reflection,
 
+  /// Món có giá hời hoặc giảm giá
+  itemDetail,
+
   /// Unknown type, or a sale reminder while `sale_reminder_enabled` is off: just open the app
   none,
 }
@@ -23,10 +26,12 @@ class NotificationRoute {
   static const String typeKey = 'type';
   static const String saleTypeKey = 'sale_type';
   static const String saleIdKey = 'sale_id';
+  static const String itemIdKey = 'item_id';
 
   static const String typeSale = 'sale';
   static const String typeReview = 'review';
   static const String typeReflection = 'reflection';
+  static const String typePriceDrop = 'price_drop';
 
   /// Values of the `sale_type` Analytics parameter (analytics-plan.md)
   static const List<String> saleTypes = ['double_day', 'mid_month', 'payday'];
@@ -40,6 +45,7 @@ class NotificationRoute {
     typeSale when saleRemindersEnabled => NotificationTarget.saleList,
     typeReview => NotificationTarget.reviewDue,
     typeReflection => NotificationTarget.reflection,
+    typePriceDrop => NotificationTarget.itemDetail,
     _ => NotificationTarget.none,
   };
 

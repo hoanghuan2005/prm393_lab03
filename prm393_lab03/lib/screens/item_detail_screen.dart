@@ -548,6 +548,50 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       MotiveChip(motive: item.displayMotive),
+                      Builder(
+                        builder: (context) {
+                          final insights = context
+                              .watch<DecisionSupportViewModel?>()
+                              ?.priceInsightsFor(item);
+                          final hasDeal = insights?.hasGoodDeal ?? false;
+                          final savings = insights?.goodDealSavingsVnd ?? 0;
+                          if (!hasDeal) return const SizedBox.shrink();
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppSemanticColors.of(context)
+                                  .error
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppSemanticColors.of(context)
+                                    .error
+                                    .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('🔥', style: TextStyle(fontSize: 12)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  savings > 0
+                                      ? 'Giá hời · Giảm ${formatVnd(savings)} so với lúc lưu'
+                                      : 'Giá hời',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppSemanticColors.of(context).error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                       if (item.isDemo) ...[const DemoDataBadge()],
                       if (item.shopName != null &&
                           item.shopName!.isNotEmpty) ...[

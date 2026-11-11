@@ -49,6 +49,24 @@ abstract final class SameProduct {
   static const int windowDays = 7;
   static const int maxOffers = 3;
 
+  /// Tìm ưu đãi có giá hời nhất từ các shop khác (nếu rẻ hơn món hiện tại ≥ 5%)
+  static SameProductOffer? findBestDeal(
+    List<SameProductOffer> offers,
+    int? currentPrice,
+  ) {
+    if (offers.isEmpty || currentPrice == null || currentPrice <= 0) return null;
+    final cheaper = offers.where((o) => o.priceVnd < currentPrice).toList();
+    if (cheaper.isEmpty) return null;
+    cheaper.sort((a, b) => a.priceVnd.compareTo(b.priceVnd));
+    final lowest = cheaper.first;
+    // Rẻ hơn ít nhất 5% hoặc từ 10.000đ
+    final saving = currentPrice - lowest.priceVnd;
+    if (saving >= 10000 || (saving * 100 / currentPrice) >= 5) {
+      return lowest;
+    }
+    return null;
+  }
+
   /// A report of [product] under [modelKey] is for [variantCode]. Without a variant
   /// code, only listings that have no variants at all match.
   static bool matchesVariant(

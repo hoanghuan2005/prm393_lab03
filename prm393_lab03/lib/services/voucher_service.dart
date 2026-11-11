@@ -41,18 +41,47 @@ class VoucherService extends ChangeNotifier {
   }
 
   /// Tìm voucher tốt nhất (tiết kiệm nhiều tiền nhất) phù hợp với sản phẩm
-  Voucher? findBestVoucher({required int priceVnd, String? platform}) {
-    final valid = _vouchers.where((v) => v.canApplyTo(priceVnd: priceVnd, itemPlatform: platform)).toList();
+  Voucher? findBestVoucher({
+    required int priceVnd,
+    String? platform,
+    String? shopName,
+  }) {
+    final valid = _vouchers
+        .where((v) => v.canApplyTo(
+              priceVnd: priceVnd,
+              itemPlatform: platform,
+              itemShopName: shopName,
+            ))
+        .toList();
     if (valid.isEmpty) return null;
-    valid.sort((a, b) => b.discountAmount.compareTo(a.discountAmount));
+    // Ưu tiên voucher riêng của shop trước, sau đó sắp xếp theo số tiền giảm cao nhất
+    valid.sort((a, b) {
+      if (a.isShopVoucher && !b.isShopVoucher) return -1;
+      if (!a.isShopVoucher && b.isShopVoucher) return 1;
+      return b.discountAmount.compareTo(a.discountAmount);
+    });
     return valid.first;
   }
 
   /// Lấy toàn bộ voucher có thể áp dụng cho sản phẩm này
-  List<Voucher> getApplicableVouchers({required int priceVnd, String? platform}) {
-    return _vouchers
-        .where((v) => v.canApplyTo(priceVnd: priceVnd, itemPlatform: platform))
+  List<Voucher> getApplicableVouchers({
+    required int priceVnd,
+    String? platform,
+    String? shopName,
+  }) {
+    final list = _vouchers
+        .where((v) => v.canApplyTo(
+              priceVnd: priceVnd,
+              itemPlatform: platform,
+              itemShopName: shopName,
+            ))
         .toList();
+    list.sort((a, b) {
+      if (a.isShopVoucher && !b.isShopVoucher) return -1;
+      if (!a.isShopVoucher && b.isShopVoucher) return 1;
+      return b.discountAmount.compareTo(a.discountAmount);
+    });
+    return list;
   }
 
   @override
@@ -121,6 +150,32 @@ class VoucherService extends ChangeNotifier {
       affiliateUrl: 'https://shopee.vn',
       isActive: true,
       category: 'Thời trang',
+    ),
+    const Voucher(
+      id: 'vouch_perseper_01',
+      code: 'PERSEPER15K',
+      title: 'Voucher Độc Quyền Shop Perseper Giảm 15K',
+      platform: 'Shopee',
+      discountAmount: 15000,
+      minOrder: 50000,
+      validUntil: '2026-11-30',
+      affiliateUrl: 'https://shopee.vn',
+      isActive: true,
+      category: 'Thời trang',
+      shopName: 'Perseper',
+    ),
+    const Voucher(
+      id: 'vouch_xmmn_01',
+      code: 'XMMN20K',
+      title: 'Voucher Tri Ân Khách Hàng Shop XMMN Giảm 20K',
+      platform: 'Shopee',
+      discountAmount: 20000,
+      minOrder: 100000,
+      validUntil: '2026-11-30',
+      affiliateUrl: 'https://shopee.vn',
+      isActive: true,
+      category: 'Thời trang',
+      shopName: 'XMMN',
     ),
   ];
 }

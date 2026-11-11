@@ -43,15 +43,24 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
 
     final platform = _detectPlatform(widget.item);
     final price = widget.item.latestPriceVnd ?? 0;
+    final shopName = widget.item.shopName;
 
-    // Get applicable vouchers for this price
+    // Get applicable vouchers for this price and shop
     final applicable = allVouchers
-        .where((v) => v.canApplyTo(priceVnd: price, itemPlatform: platform))
+        .where((v) => v.canApplyTo(
+              priceVnd: price,
+              itemPlatform: platform,
+              itemShopName: shopName,
+            ))
         .toList();
 
     Voucher? bestVoucher;
     if (applicable.isNotEmpty) {
-      applicable.sort((a, b) => b.discountAmount.compareTo(a.discountAmount));
+      applicable.sort((a, b) {
+        if (a.isShopVoucher && !b.isShopVoucher) return -1;
+        if (!a.isShopVoucher && b.isShopVoucher) return 1;
+        return b.discountAmount.compareTo(a.discountAmount);
+      });
       bestVoucher = applicable.first;
     }
 
@@ -61,7 +70,10 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
           .where(
             (v) =>
                 v.isActive &&
-                (v.platform == 'Tất cả' || v.platform == platform),
+                (v.platform == 'Tất cả' || v.platform == platform) &&
+                (!v.isShopVoucher ||
+                    (shopName != null &&
+                        v.shopName!.toLowerCase().contains(shopName.toLowerCase()))),
           )
           .toList();
       if (potential.isNotEmpty) {
@@ -180,6 +192,95 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
 
           // Main Voucher Showcase
           if (bestVoucher != null) ...[
+            // Banner gợi ý giá sau khi áp voucher
+            if (price > 0) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: AppDimens.space12),
+                padding: const EdgeInsets.all(AppDimens.space12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      brandColor.withValues(alpha: 0.12),
+                      AppSemanticColors.of(context).success.withValues(alpha: 0.1),
+                    ],
+                  ),
+                  borderRadius: AppDimens.borderMedium,
+                  border: Border.all(
+                    color: brandColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: brandColor,
+                      size: 22,
+                    ),
+                    const SizedBox(width: AppDimens.space8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Giá sau áp voucher:',
+                                style: AppTextStyles.caption.themed(context).copyWith(
+                                      color: AppSemanticColors.of(context).textSecondary,
+                                    ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                formatVnd(price),
+                                style: AppTextStyles.caption.themed(context).copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                      color: AppSemanticColors.of(context).textSecondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                formatVnd(
+                                  (price - bestVoucher.discountAmount) > 0
+                                      ? (price - bestVoucher.discountAmount)
+                                      : 0,
+                                ),
+                                style: AppTextStyles.titleMedium.themed(context).copyWith(
+                                      color: AppSemanticColors.of(context).success,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppSemanticColors.of(context).success,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Tiết kiệm ${formatVnd(bestVoucher.discountAmount)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             _buildVoucherRow(context, bestVoucher, brandColor),
           ] else if (nextTargetVoucher != null) ...[
             // Mẹo đạt điều kiện áp mã
@@ -288,6 +389,25 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                         ),
                       ),
                     ),
+                    if (voucher.isShopVoucher)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: brandColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Mã Shop: ${voucher.shopName}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: brandColor,
+                          ),
+                        ),
+                      ),
                     Text(
                       'Giảm ${formatVnd(voucher.discountAmount)}',
                       style: AppTextStyles.labelLarge

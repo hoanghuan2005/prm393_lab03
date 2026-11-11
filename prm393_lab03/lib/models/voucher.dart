@@ -9,6 +9,7 @@ class Voucher {
   final String affiliateUrl;
   final bool isActive;
   final String category;
+  final String? shopName; // Tên shop cụ thể (nếu là voucher riêng của shop)
 
   const Voucher({
     required this.id,
@@ -21,7 +22,10 @@ class Voucher {
     this.affiliateUrl = '',
     this.isActive = true,
     this.category = 'Tất cả',
+    this.shopName,
   });
+
+  bool get isShopVoucher => shopName != null && shopName!.trim().isNotEmpty;
 
   factory Voucher.fromFirestore(Map<String, dynamic> data, String id) {
     return Voucher(
@@ -35,13 +39,20 @@ class Voucher {
       affiliateUrl: data['affiliateUrl']?.toString() ?? '',
       isActive: data['isActive'] == true || data['isActive'] == null,
       category: data['category']?.toString() ?? 'Tất cả',
+      shopName: data['shopName']?.toString(),
     );
   }
 
-  /// Checks if this voucher can be applied to an item based on price and platform
-  bool canApplyTo({required int priceVnd, String? itemPlatform}) {
+  /// Checks if this voucher can be applied to an item based on price, platform and shopName
+  bool canApplyTo({
+    required int priceVnd,
+    String? itemPlatform,
+    String? itemShopName,
+  }) {
     if (!isActive) return false;
     if (priceVnd < minOrder) return false;
+
+    // Platform check
     if (platform != 'Tất cả' && itemPlatform != null && itemPlatform.trim().isNotEmpty) {
       final p1 = platform.toLowerCase();
       final p2 = itemPlatform.toLowerCase();
@@ -49,6 +60,17 @@ class Voucher {
         return false;
       }
     }
+
+    // Shop name check: if voucher belongs to a specific shop, item must match
+    if (isShopVoucher) {
+      if (itemShopName == null || itemShopName.trim().isEmpty) return false;
+      final s1 = shopName!.toLowerCase().trim();
+      final s2 = itemShopName.toLowerCase().trim();
+      if (!s1.contains(s2) && !s2.contains(s1)) {
+        return false;
+      }
+    }
+
     return true;
   }
 }

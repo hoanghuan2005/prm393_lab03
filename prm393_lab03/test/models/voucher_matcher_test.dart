@@ -23,6 +23,7 @@ Voucher _voucher(
   int minOrder = 0,
   String validUntil = '2026-12-31',
   String? shopName,
+  String category = 'Tất cả',
 }) => Voucher(
   id: code,
   code: code,
@@ -31,6 +32,7 @@ Voucher _voucher(
   minOrder: minOrder,
   validUntil: validUntil,
   shopName: shopName,
+  category: category,
 );
 
 // Same values as PERSEPER15K in VoucherService.defaultVouchers
@@ -227,6 +229,77 @@ void main() {
         ),
         isTrue,
       );
+    });
+  });
+
+  group('VoucherMatcher.canApply: đúng loại hàng', () {
+    // Sample codes: TECH1111 'Công nghệ' (đơn từ 500K, hạn 15/11),
+    // FASHION30K 'Thời trang' (đơn từ 100K, hạn 20/11); _now is 15/11
+    Voucher sample(String code) =>
+        VoucherService.defaultVouchers.firstWhere((v) => v.code == code);
+    final tech = sample('TECH1111');
+    final fashion = sample('FASHION30K');
+    final everyone = _voucher('ALL20', discount: 20000);
+
+    WishlistItem item(String title, String? groupId, int price) => WishlistItem(
+      id: title,
+      title: title,
+      productKey: 'shopee:1:2',
+      budgetGroupId: groupId,
+      latestPriceVnd: price,
+      createdAt: DateTime(2026, 11, 1),
+    );
+
+    test(
+      'áo khoác 550.000đ nhóm fashion: không áp TECH1111, áp FASHION30K',
+      () {
+        final jacket = item('Áo khoác', 'fashion', 550000);
+        expect(VoucherMatcher.canApply(tech, jacket, 550000, _now), isFalse);
+        expect(VoucherMatcher.canApply(fashion, jacket, 550000, _now), isTrue);
+      },
+    );
+
+    test('laptop nhóm tech: áp TECH1111', () {
+      final laptop = item('Laptop', 'tech', 15000000);
+      expect(VoucherMatcher.canApply(tech, laptop, 15000000, _now), isTrue);
+      expect(VoucherMatcher.canApply(fashion, laptop, 15000000, _now), isFalse);
+    });
+
+    test('món nhóm other hoặc chưa có nhóm: chỉ áp voucher Tất cả', () {
+      for (final groupId in ['other', null]) {
+        final codes = VoucherMatcher.applicable(
+          [tech, fashion, everyone],
+          item('Đồ lặt vặt', groupId, 600000),
+          600000,
+          _now,
+        ).map((v) => v.code);
+        expect(codes, ['ALL20'], reason: 'budgetGroupId $groupId');
+      }
+    });
+
+    test('category lạ: không áp', () {
+      final toys = _voucher('TOY10', category: 'Đồ chơi');
+      for (final groupId in ['food', 'tech', 'other', null]) {
+        expect(
+          VoucherMatcher.canApply(
+            toys,
+            item('Món', groupId, 200000),
+            200000,
+            _now,
+          ),
+          isFalse,
+        );
+      }
+    });
+
+    test('bảng ánh xạ đủ 5 loại', () {
+      expect(VoucherMatcher.categoryToBudgetGroup, {
+        'Ăn uống': 'food',
+        'Thời trang': 'fashion',
+        'Công nghệ': 'tech',
+        'Làm đẹp': 'beauty',
+        'Học tập': 'study',
+      });
     });
   });
 

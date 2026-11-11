@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'voucher.dart';
 import 'wishlist_item.dart';
 
@@ -11,6 +13,22 @@ class VoucherMatcher {
   static const Duration _vietnamOffset = Duration(hours: 7);
 
   static final RegExp _dateOnly = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
+
+  /// Voucher.category for vouchers that fit every item
+  static const String allCategories = 'Tất cả';
+
+  /// Voucher.category → the item's budgetGroupId it fits. Items in 'other' or
+  /// without a group only get [allCategories] vouchers.
+  static const Map<String, String> categoryToBudgetGroup = {
+    'Ăn uống': 'food',
+    'Thời trang': 'fashion',
+    'Công nghệ': 'tech',
+    'Làm đẹp': 'beauty',
+    'Học tập': 'study',
+  };
+
+  /// Unknown categories already logged, so each is logged once
+  static final Set<String> _loggedCategories = {};
 
   static bool canApply(
     Voucher v,
@@ -27,6 +45,7 @@ class VoucherMatcher {
     final endsAt = _endsAt(v.validUntil);
     if (endsAt == null || !now.toUtc().isBefore(endsAt)) return false;
     if (priceVnd < v.minOrder) return false;
+    if (!_categoryFits(v.category, item.budgetGroupId)) return false;
 
     // Shop name check (unchanged from the old Voucher.canApplyTo): a shop voucher
     // needs the item's shop to match
@@ -99,6 +118,20 @@ class VoucherMatcher {
             .toList()
           ..sort(_shopFirstThenBiggest);
     return list.isEmpty ? null : list.first;
+  }
+
+  /// [allCategories], or the category maps to the item's budget group.
+  /// An unknown category never fits.
+  static bool _categoryFits(String category, String? budgetGroupId) {
+    if (category == allCategories) return true;
+    final group = categoryToBudgetGroup[category];
+    if (group == null) {
+      if (_loggedCategories.add(category)) {
+        debugPrint('VoucherMatcher: unknown voucher category "$category"');
+      }
+      return false;
+    }
+    return group == budgetGroupId;
   }
 
   /// Midnight Vietnam time after the day `validUntil` (yyyy-MM-dd), as a UTC instant.

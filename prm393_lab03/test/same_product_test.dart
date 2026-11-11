@@ -24,6 +24,11 @@ const _b = 'shopee:3:30';
 const _c = 'shopee:4:40';
 const _d = 'shopee:5:50';
 
+/// "Now" of the sample reports and of SameProductViewModel: midday, so the two
+/// reports of "today" (20 and 10 minutes earlier) never fall on both sides of
+/// midnight, whatever time the tests run
+final _sampleNow = DateTime(2026, 11, 10, 12);
+
 PriceHistoryProduct _product(
   String key, {
   String shop = 'Shop',
@@ -235,13 +240,14 @@ void main() {
     late SameProductViewModel vm;
 
     setUp(() {
-      service = _Service.sample(DateTime.now());
+      service = _Service.sample(_sampleNow);
       hidden = _Hidden();
       analytics = _Analytics();
       vm = SameProductViewModel(
         service: service,
         hiddenService: hidden,
         analytics: analytics,
+        now: () => _sampleNow,
       )..updateUid('uid-me');
     });
 
@@ -348,13 +354,14 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      service = _Service.sample(DateTime.now());
+      service = _Service.sample(_sampleNow);
       hidden = _Hidden();
       analytics = _Analytics();
       vm = SameProductViewModel(
         service: service,
         hiddenService: hidden,
         analytics: analytics,
+        now: () => _sampleNow,
       )..updateUid('uid-me');
       addTearDown(vm.dispose);
       await tester.pumpWidget(

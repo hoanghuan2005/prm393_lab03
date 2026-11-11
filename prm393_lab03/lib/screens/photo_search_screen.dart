@@ -11,6 +11,7 @@ import '../models/item_recognition.dart';
 import '../models/price_offer.dart';
 import '../models/ui_state.dart';
 import '../services/analytics_events.dart';
+import '../services/cloudinary_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
@@ -41,6 +42,9 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
   static const double _maxSide = 1536;
 
   bool _cameraAvailable = false;
+
+  /// Uploading the photo before opening the add-item form
+  bool _savingPhoto = false;
 
   /// Kept so dispose can clear it without looking up an unmounted context
   late PhotoSearchViewModel _vm;
@@ -154,14 +158,30 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
       );
   }
 
-  void _addToWishlist(String name) {
+  Future<void> _addToWishlist(String name) async {
+    if (_savingPhoto) return;
     // The AI's name prefills the form; the user can still edit it there
-    context.read<PhotoSearchViewModel>().aiResultAccepted(
-      AiFeatures.photoSearch,
-    );
+    final vm = context.read<PhotoSearchViewModel>()
+      ..aiResultAccepted(AiFeatures.photoSearch);
+    // The taken photo goes to Cloudinary so the wishlist item keeps it;
+    // a failed upload still opens the form, just without the photo
+    String? imageUrl;
+    final bytes = vm.imageBytes;
+    if (bytes != null && CloudinaryService.isConfigured) {
+      setState(() => _savingPhoto = true);
+      try {
+        imageUrl = await CloudinaryService()
+            .uploadBytes(bytes, filename: 'photo_search.jpg')
+            .timeout(const Duration(seconds: 20));
+      } catch (e) {
+        debugPrint('PhotoSearch photo upload failed: $e');
+      }
+      if (!mounted) return;
+      setState(() => _savingPhoto = false);
+    }
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.wishlistAdd,
-      arguments: AddItemArgs(initialTitle: name),
+      arguments: AddItemArgs(initialTitle: name, initialImageUrl: imageUrl),
     );
   }
 
@@ -269,6 +289,7 @@ class _PhotoSearchScreenState extends State<PhotoSearchScreen> {
           AppButton(
             key: const ValueKey('photo-search-add'),
             title: 'Thêm vào danh sách cân nhắc',
+            isLoading: _savingPhoto,
             onPressed: () => _addToWishlist(vm.selectedName ?? data.name),
           ),
         ]),

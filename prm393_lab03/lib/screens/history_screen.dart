@@ -15,6 +15,7 @@ import '../viewmodels/budget_viewmodel.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/app_header_actions.dart';
 import '../widgets/month_picker_sheet.dart';
+import '../widgets/product_image.dart';
 import '../widgets/states/state_view.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -690,19 +691,26 @@ class HistoryScreen extends StatelessWidget {
             arguments: PurchaseDetailArgs(item),
           );
         },
-        leading: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: motivePalette.background,
-            borderRadius: AppDimens.borderMedium,
-          ),
-          child: Icon(
-            item.motive.icon,
-            size: 20,
-            color: motivePalette.foreground,
-          ),
-        ),
+        // Receipt / product photo when attached, otherwise the motive icon
+        leading: ProductImage.canShow(item.imageUrl)
+            ? ProductImage(
+                url: item.imageUrl,
+                size: 38,
+                borderRadius: AppDimens.borderMedium,
+              )
+            : Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: motivePalette.background,
+                  borderRadius: AppDimens.borderMedium,
+                ),
+                child: Icon(
+                  item.motive.icon,
+                  size: 20,
+                  color: motivePalette.foreground,
+                ),
+              ),
         title: Text(
           item.title,
           style: AppTextStyles.bodyLarge.withInheritedColor.copyWith(

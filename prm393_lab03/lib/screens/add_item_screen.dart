@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../app/routes.dart';
@@ -7,6 +8,7 @@ import '../core/formatters/money_format.dart';
 import '../core/validators/validators.dart';
 import '../models/buying_motive.dart';
 import '../models/wishlist_item.dart';
+import '../services/cloudinary_service.dart';
 import '../services/product_metadata_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -69,6 +71,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
   String? _shopName;
   String? _productDescription;
   bool _isLoadingMetadata = false;
+  bool _isUploadingPhoto = false;
+
+  /// True when _imageUrl is the user's own photo (Cloudinary), not a shared product image
+  bool _photoUploaded = false;
   late List<Object?> _initialDraft;
   bool _allowExit = false;
   bool _confirmingExit = false;
@@ -81,6 +87,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     _selectedMotive,
     _budgetGroupId,
     _priority,
+    _imageUrl,
   ];
   bool get _hasChanges => !listEquals(_initialDraft, _draft);
 
@@ -132,6 +139,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
         _priceController.text = formatVnd(price).replaceAll(' ₫', '');
       }
       _imageUrl = widget.initialImageUrl;
+      // A photo without a product link is the user's own (e.g. from "Chụp để tìm")
+      _photoUploaded = widget.initialUrl == null && _imageUrl != null;
       _shopName = widget.shopName;
       if (widget.shopName case final s?) {
         _shopController.text = s;
@@ -231,6 +240,75 @@ class _AddItemScreenState extends State<AddItemScreen> {
     super.dispose();
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    if (_isUploadingPhoto) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!CloudinaryService.isConfigured) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Chưa cấu hình Cloudinary.')),
+      );
+      return;
+    }
+    final XFile? file;
+    try {
+      file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+    } catch (e) {
+      debugPrint('Pick photo failed: $e');
+      return;
+    }
+    if (file == null || !mounted) return;
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final url = await CloudinaryService().uploadBytes(
+        await file.readAsBytes(),
+        filename: file.name,
+      );
+      if (!mounted) return;
+      setState(() {
+        _imageUrl = url;
+        _photoUploaded = true;
+      });
+    } catch (e) {
+      debugPrint('Cloudinary upload failed: $e');
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Chưa tải ảnh lên được. Vui lòng thử lại.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  /// Copies a shop image (e.g. Shopee CDN, which can expire) into Cloudinary before saving.
+  /// Falls back to the original link so a failed copy never blocks the save.
+  Future<String?> _persistImageUrl() async {
+    final url = _imageUrl?.trim();
+    final uri = url == null ? null : Uri.tryParse(url);
+    if (url == null ||
+        uri == null ||
+        !uri.hasScheme ||
+        !uri.scheme.startsWith('http') ||
+        uri.host == 'res.cloudinary.com' ||
+        !CloudinaryService.isConfigured) {
+      return _imageUrl;
+    }
+    try {
+      final copied = await CloudinaryService()
+          .uploadFromUrl(url)
+          .timeout(const Duration(seconds: 15));
+      _imageUrl = copied;
+      return copied;
+    } catch (e) {
+      debugPrint('Cloudinary copy failed, keeping original link: $e');
+      return url;
+    }
+  }
+
   Future<void> _handleSave() async {
     // Also reached from the SnackBar retry, possibly after leaving the screen
     if (!mounted || _isSaving) return;
@@ -241,6 +319,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
     setState(() => _isSaving = true);
     final wishlistVm = context.read<WishlistViewModel>();
+    final imageUrl = await _persistImageUrl();
+    if (!mounted) return;
 
     final url = _urlController.text.trim();
     final existing = widget.existing;
@@ -252,6 +332,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             motive: motive,
             budgetGroupId: _budgetGroupId,
             priority: _priority,
+            imageUrl: imageUrl,
           )
         : await wishlistVm.addItem(
             title: _titleController.text.trim(),
@@ -260,11 +341,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
             productUrl: url.isNotEmpty ? url : null,
             budgetGroupId: _budgetGroupId,
             priority: _priority,
-            imageUrl: _imageUrl,
+            imageUrl: imageUrl,
             shopName: _shopController.text.trim().isNotEmpty
                 ? _shopController.text.trim()
                 : _shopName,
-            saveChannel: widget.initialUrl != null || _imageUrl != null
+            saveChannel:
+                widget.initialUrl != null ||
+                    (_imageUrl != null && !_photoUploaded)
                 ? SaveChannel.share
                 : SaveChannel.manual,
           );
@@ -448,29 +531,33 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppDimens.space6,
-                                  vertical: AppDimens.space2,
+                              // Shopee tag only for shop images, not the user's own photo
+                              if (!_photoUploaded &&
+                                  widget.existing?.saveChannel !=
+                                      SaveChannel.manual)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppDimens.space6,
+                                    vertical: AppDimens.space2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppSemanticColors.of(context)
+                                        .shopeeBrand
+                                        .withValues(alpha: 0.12),
+                                    borderRadius: AppDimens.borderSmall,
+                                  ),
+                                  child: Text(
+                                    'Shopee',
+                                    style: AppTextStyles
+                                        .caption
+                                        .withInheritedColor
+                                        .copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppSemanticColors.of(context)
+                                              .shopeeBrand,
+                                        ),
+                                  ),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: AppSemanticColors.of(context)
-                                      .shopeeBrand
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: AppDimens.borderSmall,
-                                ),
-                                child: Text(
-                                  'Shopee',
-                                  style: AppTextStyles
-                                      .caption
-                                      .withInheritedColor
-                                      .copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppSemanticColors.of(context)
-                                            .shopeeBrand,
-                                      ),
-                                ),
-                              ),
                               ValueListenableBuilder<TextEditingValue>(
                                 valueListenable: _shopController,
                                 builder: (_, val, _) {
@@ -505,6 +592,32 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     ),
                   ),
                 ],
+                // Own photo upload (Cloudinary), for new and edited items
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: AppDimens.space16),
+                    child: OutlinedButton.icon(
+                      onPressed: _isUploadingPhoto || _isSaving
+                          ? null
+                          : _pickAndUploadPhoto,
+                      icon: _isUploadingPhoto
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(
+                        _isUploadingPhoto
+                            ? 'Đang tải ảnh...'
+                            : _imageUrl == null
+                            ? 'Thêm ảnh'
+                            : 'Đổi ảnh',
+                      ),
+                    ),
+                  ),
+                ),
                 // Product Title Input
                 AppTextField(
                   label: 'Tên sản phẩm *',

@@ -26,6 +26,9 @@ class PurchaseItem {
   /// The user chose "Bỏ qua" on the satisfaction question; it is not asked again
   final bool satisfactionSkipped;
 
+  /// Receipt or product photo (Cloudinary link); for a wishlist purchase, the item's photo
+  final String? imageUrl;
+
   const PurchaseItem({
     required this.id,
     required this.title,
@@ -40,6 +43,7 @@ class PurchaseItem {
     this.updatedAt,
     this.satisfaction,
     this.satisfactionSkipped = false,
+    this.imageUrl,
   });
 
   /// Asked once a purchase is a week old; very old purchases (e.g. imported or demo
@@ -78,6 +82,7 @@ class PurchaseItem {
         _ => null,
       },
       satisfactionSkipped: data['satisfactionSkipped'] == true,
+      imageUrl: readText(data['imageUrl']),
     );
   }
 
@@ -95,6 +100,7 @@ class PurchaseItem {
       if (updatedAt != null) 'updatedAt': toTimestamp(updatedAt),
       'satisfaction': satisfaction,
       'satisfactionSkipped': satisfactionSkipped,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -113,6 +119,8 @@ class PurchaseItem {
     DateTime? updatedAt,
     int? satisfaction,
     bool? satisfactionSkipped,
+    String? imageUrl,
+    bool clearImage = false,
   }) {
     return PurchaseItem(
       id: id ?? this.id,
@@ -128,6 +136,7 @@ class PurchaseItem {
       updatedAt: updatedAt ?? this.updatedAt,
       satisfaction: satisfaction ?? this.satisfaction,
       satisfactionSkipped: satisfactionSkipped ?? this.satisfactionSkipped,
+      imageUrl: clearImage ? null : imageUrl ?? this.imageUrl,
     );
   }
 
@@ -147,7 +156,8 @@ class PurchaseItem {
           other.createdAt == createdAt &&
           other.updatedAt == updatedAt &&
           other.satisfaction == satisfaction &&
-          other.satisfactionSkipped == satisfactionSkipped;
+          other.satisfactionSkipped == satisfactionSkipped &&
+          other.imageUrl == imageUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -164,5 +174,6 @@ class PurchaseItem {
     updatedAt,
     satisfaction,
     satisfactionSkipped,
+    imageUrl,
   );
 }

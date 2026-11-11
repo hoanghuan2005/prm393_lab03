@@ -48,23 +48,43 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
       now,
     );
     final Voucher? bestVoucher = applicable.isEmpty ? null : applicable.first;
+    // Free shipping is shown as one line with its code, never in the price banner
+    final freeship = VoucherMatcher.freeshipFor(
+      allVouchers,
+      widget.item,
+      price,
+      now,
+    );
 
     Voucher? nextTargetVoucher;
-    if (bestVoucher == null && allVouchers.isNotEmpty) {
-      // Vouchers that would apply once the order reaches their minimum.
-      // Without a price this only decides whether to show the "add a price" line.
-      final potential = allVouchers
-          .where(
-            (v) => VoucherMatcher.canApply(v, widget.item, v.minOrder, now),
-          )
-          .toList();
-      if (potential.isNotEmpty) {
-        potential.sort((a, b) => a.minOrder.compareTo(b.minOrder));
-        nextTargetVoucher = potential.first;
+    var addPriceToSee = false;
+    if (bestVoucher == null) {
+      if (price == null || price <= 0) {
+        // No price yet: show the "add a price" line when any voucher (discount
+        // or free shipping) could apply once the item has a price
+        addPriceToSee = allVouchers.any(
+          (v) => VoucherMatcher.canApply(v, widget.item, v.minOrder, now),
+        );
+      } else {
+        // Discount vouchers that would apply once the order reaches their minimum
+        final potential = allVouchers
+            .where(
+              (v) =>
+                  !v.isFreeship &&
+                  VoucherMatcher.canApply(v, widget.item, v.minOrder, now),
+            )
+            .toList();
+        if (potential.isNotEmpty) {
+          potential.sort((a, b) => a.minOrder.compareTo(b.minOrder));
+          nextTargetVoucher = potential.first;
+        }
       }
     }
 
-    if (bestVoucher == null && nextTargetVoucher == null) {
+    if (bestVoucher == null &&
+        nextTargetVoucher == null &&
+        freeship == null &&
+        !addPriceToSee) {
       return const SizedBox.shrink();
     }
     final cardBg = AppSemanticColors.of(context).cardSurface;
@@ -325,6 +345,28 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
             ),
           ],
 
+          if (freeship != null) ...[
+            if (bestVoucher != null || nextTargetVoucher != null)
+              const SizedBox(height: AppDimens.space8),
+            Row(
+              key: const ValueKey('voucher-freeship'),
+              children: [
+                Expanded(
+                  child: Text(
+                    'Có mã miễn phí vận chuyển: ${freeship.code}',
+                    style: AppTextStyles.caption
+                        .themed(context)
+                        .copyWith(
+                          color: AppSemanticColors.of(context).textSecondary,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: AppDimens.space8),
+                _buildSaveButton(context, freeship, brandColor),
+              ],
+            ),
+          ],
+
           // Expanded List for other vouchers
           if (_isExpanded && applicable.length > 1) ...[
             const SizedBox(height: AppDimens.space12),
@@ -455,58 +497,66 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
             ),
           ),
           const SizedBox(width: AppDimens.space8),
-          InkWell(
-            borderRadius: AppDimens.borderSmall,
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: voucher.code));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Đã sao chép mã ${voucher.code} để dùng trên ${voucher.platform}.',
-                    style: TextStyle(
-                      color: AppSemanticColors.of(context).onBrandButton,
-                    ),
-                  ),
-                  backgroundColor: brandColor,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: Container(
-              constraints: const BoxConstraints(
-                minWidth: AppDimens.minTouchTarget,
-                minHeight: AppDimens.minTouchTarget,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.space12,
-                vertical: AppDimens.space8,
-              ),
-              decoration: BoxDecoration(
-                color: brandColor,
-                borderRadius: AppDimens.borderSmall,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.copy_rounded,
-                    size: 14,
-                    color: AppSemanticColors.of(context).onBrandButton,
-                  ),
-                  const SizedBox(width: AppDimens.space4),
-                  Text(
-                    'Lưu mã',
-                    style: AppTextStyles.labelMedium.withInheritedColor
-                        .copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppSemanticColors.of(context).onBrandButton,
-                        ),
-                  ),
-                ],
+          _buildSaveButton(context, voucher, brandColor),
+        ],
+      ),
+    );
+  }
+
+  /// "Lưu mã": copies the code (discount and free-shipping vouchers alike)
+  Widget _buildSaveButton(
+    BuildContext context,
+    Voucher voucher,
+    Color brandColor,
+  ) {
+    return InkWell(
+      borderRadius: AppDimens.borderSmall,
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: voucher.code));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã sao chép mã ${voucher.code} để dùng trên ${voucher.platform}.',
+              style: TextStyle(
+                color: AppSemanticColors.of(context).onBrandButton,
               ),
             ),
+            backgroundColor: brandColor,
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
+        );
+      },
+      child: Container(
+        constraints: const BoxConstraints(
+          minWidth: AppDimens.minTouchTarget,
+          minHeight: AppDimens.minTouchTarget,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space12,
+          vertical: AppDimens.space8,
+        ),
+        decoration: BoxDecoration(
+          color: brandColor,
+          borderRadius: AppDimens.borderSmall,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.copy_rounded,
+              size: 14,
+              color: AppSemanticColors.of(context).onBrandButton,
+            ),
+            const SizedBox(width: AppDimens.space4),
+            Text(
+              'Lưu mã',
+              style: AppTextStyles.labelMedium.withInheritedColor.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppSemanticColors.of(context).onBrandButton,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

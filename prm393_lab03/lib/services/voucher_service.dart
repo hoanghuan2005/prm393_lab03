@@ -91,6 +91,7 @@ class VoucherService extends ChangeNotifier {
       affiliateUrl: 'https://shopee.vn/m/mien-phi-van-chuyen',
       isActive: true,
       category: 'Tất cả',
+      type: Voucher.typeFreeship,
     ),
     const Voucher(
       id: 'vouch_1111_03',

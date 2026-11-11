@@ -52,7 +52,9 @@ class VoucherMatcher {
     return true;
   }
 
-  /// Vouchers that apply, shop vouchers first, then the biggest discount.
+  /// Discount vouchers that apply, shop vouchers first, then the biggest discount.
+  /// Free-shipping vouchers never change the item's price, so they are left out
+  /// (see [hasFreeship]).
   /// Empty when the item has no price yet (null or ≤ 0): never treated as 0 ₫.
   static List<Voucher> applicable(
     List<Voucher> all,
@@ -61,13 +63,16 @@ class VoucherMatcher {
     DateTime now,
   ) {
     if (priceVnd == null || priceVnd <= 0) return [];
-    final list = all.where((v) => canApply(v, item, priceVnd, now)).toList();
-    list.sort((a, b) {
-      if (a.isShopVoucher && !b.isShopVoucher) return -1;
-      if (!a.isShopVoucher && b.isShopVoucher) return 1;
-      return b.discountAmount.compareTo(a.discountAmount);
-    });
-    return list;
+    return all
+        .where((v) => !v.isFreeship && canApply(v, item, priceVnd, now))
+        .toList()
+      ..sort(_shopFirstThenBiggest);
+  }
+
+  static int _shopFirstThenBiggest(Voucher a, Voucher b) {
+    if (a.isShopVoucher && !b.isShopVoucher) return -1;
+    if (!a.isShopVoucher && b.isShopVoucher) return 1;
+    return b.discountAmount.compareTo(a.discountAmount);
   }
 
   /// First of [applicable], or null when none applies or the item has no price
@@ -78,6 +83,32 @@ class VoucherMatcher {
     DateTime now,
   ) {
     final list = applicable(all, item, priceVnd, now);
+    return list.isEmpty ? null : list.first;
+  }
+
+  /// True when a free-shipping voucher passes [canApply] for this item.
+  /// False when the item has no price yet (null or ≤ 0).
+  static bool hasFreeship(
+    List<Voucher> all,
+    WishlistItem item,
+    int? priceVnd,
+    DateTime now,
+  ) => freeshipFor(all, item, priceVnd, now) != null;
+
+  /// The free-shipping voucher to show (shop vouchers first, then the biggest
+  /// amount), or null when none applies or the item has no price
+  static Voucher? freeshipFor(
+    List<Voucher> all,
+    WishlistItem item,
+    int? priceVnd,
+    DateTime now,
+  ) {
+    if (priceVnd == null || priceVnd <= 0) return null;
+    final list =
+        all
+            .where((v) => v.isFreeship && canApply(v, item, priceVnd, now))
+            .toList()
+          ..sort(_shopFirstThenBiggest);
     return list.isEmpty ? null : list.first;
   }
 

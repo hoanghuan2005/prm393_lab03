@@ -1,5 +1,6 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/formatters/money_format.dart';
 import 'package:prm393_lab03/models/voucher.dart';
@@ -146,6 +147,72 @@ void main() {
     });
   });
 
+  group('Mã miễn phí vận chuyển', () {
+    // The sample codes expire on 12/11/2026: check on 11/11/2026, 10:00 Vietnam time
+    final nov11 = DateTime.utc(2026, 11, 11, 3);
+    Voucher sample(String code) =>
+        VoucherService.defaultVouchers.firstWhere((v) => v.code == code);
+
+    test('FREESHIP0D trong danh sách mẫu là freeship', () {
+      expect(sample('FREESHIP0D').isFreeship, isTrue);
+      expect(sample('SHOPEE1111').isFreeship, isFalse);
+    });
+
+    test('món 89.000đ chỉ có FREESHIP0D: best null, hasFreeship true', () {
+      final all = [sample('FREESHIP0D')];
+      final item = _item(price: 89000);
+      expect(VoucherMatcher.best(all, item, 89000, nov11), isNull);
+      expect(VoucherMatcher.hasFreeship(all, item, 89000, nov11), isTrue);
+    });
+
+    test('món 300.000đ có SHOPEE1111 và FREESHIP0D: best là SHOPEE1111', () {
+      final all = [sample('FREESHIP0D'), sample('SHOPEE1111')];
+      final item = _item(price: 300000);
+      expect(VoucherMatcher.best(all, item, 300000, nov11)?.code, 'SHOPEE1111');
+      expect(
+        VoucherMatcher.applicable(all, item, 300000, nov11).map((v) => v.code),
+        ['SHOPEE1111'],
+      );
+      expect(VoucherMatcher.hasFreeship(all, item, 300000, nov11), isTrue);
+    });
+
+    test('hasFreeship false khi món chưa có giá', () {
+      final all = [sample('FREESHIP0D')];
+      for (final price in <int?>[null, 0]) {
+        expect(
+          VoucherMatcher.hasFreeship(all, _item(price: price), price, nov11),
+          isFalse,
+        );
+      }
+    });
+
+    test('đọc type từ Firestore, giá trị lạ là discount', () {
+      Voucher read(Object? type) =>
+          Voucher.fromFirestore({'code': 'X', 'type': ?type}, 'x');
+      expect(read('freeship').type, Voucher.typeFreeship);
+      expect(read('discount').type, Voucher.typeDiscount);
+      expect(read('abc').type, Voucher.typeDiscount);
+      expect(read(null).type, Voucher.typeDiscount);
+    });
+
+    test('dữ liệu cũ thiếu type: đoán từ code/title', () {
+      String typeOf(Map<String, dynamic> data) =>
+          Voucher.fromFirestore(data, 'x').type;
+      expect(typeOf({'code': 'FREESHIPXTRA'}), Voucher.typeFreeship);
+      expect(
+        typeOf({'title': 'Miễn phí vận chuyển 15K'}),
+        Voucher.typeFreeship,
+      );
+      expect(typeOf({'title': 'Free Ship đơn từ 0Đ'}), Voucher.typeFreeship);
+      expect(typeOf({'code': 'SALE50K'}), Voucher.typeDiscount);
+      // An explicit type is never guessed
+      expect(
+        typeOf({'code': 'FREESHIPXTRA', 'type': 'discount'}),
+        Voucher.typeDiscount,
+      );
+    });
+  });
+
   group('wishlist_card và voucher_suggestion_card', () {
     // Far-future dates: the widgets use the real DateTime.now()
     Future<VoucherService> service(List<Map<String, Object?>> vouchers) async {
@@ -162,6 +229,7 @@ void main() {
       int minOrder = 0,
       String validUntil = '2099-12-31',
       String? shopName,
+      String? type,
     }) => {
       'code': code,
       'title': 'Voucher $code',
@@ -171,6 +239,7 @@ void main() {
       'validUntil': validUntil,
       'isActive': true,
       'shopName': ?shopName,
+      'type': ?type,
     };
 
     final vouchers = [
@@ -294,6 +363,82 @@ void main() {
 
       expect(find.textContaining('Mã BIG50 cần thêm'), findsOneWidget);
       expect(find.text('Đủ điều kiện'), findsNothing);
+    });
+
+    testWidgets('mã freeship không vào giá, Chi tiết món chỉ hiện một dòng', (
+      tester,
+    ) async {
+      final vs = await service([doc('SHIP25', 25000, type: 'freeship')]);
+      addTearDown(vs.dispose);
+      await pumpBoth(tester, vs, _item(price: 89000));
+
+      // Thẻ món: giá không bị gạch, không có giá sau voucher
+      final price = tester.widget<Text>(inWishlistCard(formatVnd(89000)));
+      expect(price.style?.decoration, isNot(TextDecoration.lineThrough));
+      expect(find.text(formatVnd(89000 - 25000)), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(WishlistCard),
+          matching: find.textContaining('SHIP25'),
+        ),
+        findsNothing,
+      );
+      // Chi tiết món: không có khung giá, chỉ một dòng freeship kèm mã
+      expect(find.text('Giá sau áp voucher:'), findsNothing);
+      expect(find.text('Đủ điều kiện'), findsNothing);
+      expect(
+        inSuggestionCard('Có mã miễn phí vận chuyển: SHIP25'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('dòng freeship có nút Lưu mã sao chép đúng mã', (tester) async {
+      String? copied;
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      final vs = await service([
+        doc('MID30', 30000),
+        doc('SHIP25', 25000, type: 'freeship'),
+      ]);
+      addTearDown(vs.dispose);
+      await pumpBoth(tester, vs, _item(price: 89000));
+
+      // Two "Lưu mã" buttons: MID30 and the free-shipping line
+      expect(find.text('Lưu mã'), findsNWidgets(2));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('voucher-freeship')),
+          matching: find.text('Lưu mã'),
+        ),
+      );
+      await tester.pump();
+      expect(copied, 'SHIP25');
+      expect(
+        find.text('Đã sao chép mã SHIP25 để dùng trên Shopee.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('món chưa có giá, chỉ có mã freeship: vẫn hiện dòng Thêm giá', (
+      tester,
+    ) async {
+      final vs = await service([doc('SHIP25', 25000, type: 'freeship')]);
+      addTearDown(vs.dispose);
+      await pumpBoth(tester, vs, _item(price: null));
+
+      expect(
+        inSuggestionCard('Thêm giá của món để xem mã áp được'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('SHIP25'), findsNothing);
     });
 
     testWidgets(

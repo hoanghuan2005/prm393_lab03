@@ -35,7 +35,6 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
       // In case Provider is not mounted or during hot reload without full restart
     }
 
-    final platform = VoucherMatcher.platformOf(widget.item);
     // null when the item has no price yet: never treated as 0 ₫
     final price = widget.item.latestPriceVnd;
     final now = DateTime.now();
@@ -88,10 +87,8 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
       return const SizedBox.shrink();
     }
     final cardBg = AppSemanticColors.of(context).cardSurface;
-    final isShopee = platform == 'Shopee';
-    final brandColor = isShopee
-        ? AppSemanticColors.of(context).shopeeBrand
-        : AppSemanticColors.of(context).lazadaBrand;
+    // Vouchers are Shopee-only (VoucherMatcher.canApply)
+    final brandColor = AppSemanticColors.of(context).shopeeBrand;
 
     return Container(
       width: double.infinity,
@@ -139,7 +136,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                   runSpacing: AppDimens.space4,
                   children: [
                     Text(
-                      'Mã giảm giá $platform',
+                      'Mã giảm giá Shopee',
                       style: AppTextStyles.titleMedium
                           .themed(context)
                           .copyWith(
@@ -516,7 +513,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Đã sao chép mã ${voucher.code} để dùng trên ${voucher.platform}.',
+              'Đã sao chép mã ${voucher.code} để dùng trên Shopee.',
               style: TextStyle(
                 color: AppSemanticColors.of(context).onBrandButton,
               ),

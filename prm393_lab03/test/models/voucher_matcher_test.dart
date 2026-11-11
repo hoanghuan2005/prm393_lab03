@@ -23,12 +23,10 @@ Voucher _voucher(
   int minOrder = 0,
   String validUntil = '2026-12-31',
   String? shopName,
-  String platform = 'Shopee',
 }) => Voucher(
   id: code,
   code: code,
   title: 'Voucher $code',
-  platform: platform,
   discountAmount: discount,
   minOrder: minOrder,
   validUntil: validUntil,
@@ -55,6 +53,18 @@ WishlistItem _item({String? shopName = 'Perseper', int? price = 120000}) =>
       latestPriceVnd: price,
       createdAt: DateTime(2026, 11, 1),
     );
+
+/// The UI audit item, but saved from a Shopee product so vouchers can apply
+class _ShopeeAuditHarness extends UiAuditHarness {
+  _ShopeeAuditHarness() : super(true);
+
+  late final WishlistItem _shopeeItem = super.item.copyWith(
+    productKey: 'shopee:1:2',
+  );
+
+  @override
+  WishlistItem get item => _shopeeItem;
+}
 
 void main() {
   group('VoucherMatcher.canApply: hạn dùng', () {
@@ -145,6 +155,86 @@ void main() {
         expect(VoucherMatcher.best(vouchers, item, price, _now), isNull);
       }
     });
+  });
+
+  group('VoucherMatcher.canApply: chỉ món Shopee', () {
+    // Discount vouchers (shop and site-wide) that a 450.000đ Shopee item gets
+    final all = [
+      _voucher('BIG50', discount: 50000, minOrder: 100000),
+      _voucher('MID30', discount: 30000),
+      _perseper,
+    ];
+
+    WishlistItem item({String? productKey, String? url, bool isDemo = false}) =>
+        WishlistItem(
+          id: 'i',
+          title: 'Tai nghe',
+          url: url,
+          productKey: productKey,
+          shopName: 'Perseper',
+          latestPriceVnd: 450000,
+          isDemo: isDemo,
+          createdAt: DateTime(2026, 11, 1),
+        );
+
+    List<String> codes(WishlistItem i) => VoucherMatcher.applicable(
+      all,
+      i,
+      450000,
+      _now,
+    ).map((v) => v.code).toList();
+
+    test('món nhập tay (productKey null) 450.000đ: không áp mã nào', () {
+      expect(codes(item()), isEmpty);
+      expect(VoucherMatcher.best(all, item(), 450000, _now), isNull);
+    });
+
+    test('món có link Tiki/TikTok/Lazada: không áp', () {
+      expect(codes(item(url: 'https://tiki.vn/tai-nghe-p123.html')), isEmpty);
+      expect(
+        codes(item(url: 'https://www.tiktok.com/view/product/1729')),
+        isEmpty,
+      );
+      expect(codes(item(productKey: 'tiki:123')), isEmpty);
+      expect(codes(item(productKey: 'lazada:1:2')), isEmpty);
+      expect(codes(item(productKey: 'tiktok:shopee:1')), isEmpty);
+    });
+
+    test('món isDemo: không áp', () {
+      expect(codes(item(productKey: 'shopee:1:2', isDemo: true)), isEmpty);
+    });
+
+    test('món có productKey Shopee: áp như cũ', () {
+      expect(codes(item(productKey: 'shopee:1:2')), [
+        'PERSEPER15K',
+        'BIG50',
+        'MID30',
+      ]);
+    });
+
+    test('Voucher.fromFirestore bỏ qua field platform cũ', () {
+      final v = Voucher.fromFirestore({
+        'code': 'OLD',
+        'platform': 'Lazada',
+        'validUntil': '2026-12-31',
+      }, 'old');
+      expect(
+        VoucherMatcher.canApply(
+          v,
+          item(productKey: 'shopee:1:2'),
+          450000,
+          _now,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  test('danh sách mẫu không còn LAZADA1111', () {
+    expect(
+      VoucherService.defaultVouchers.map((v) => v.code),
+      isNot(contains('LAZADA1111')),
+    );
   });
 
   group('Mã miễn phí vận chuyển', () {
@@ -449,8 +539,8 @@ void main() {
         addTearDown(tester.view.reset);
         final vs = await service(vouchers);
         addTearDown(vs.dispose);
-        // Item: auditLongName, 999.999.999 ₫
-        final h = UiAuditHarness(true);
+        // Item: auditLongName, 999.999.999 ₫, saved from Shopee
+        final h = _ShopeeAuditHarness();
         final errors = <String>[];
         final original = FlutterError.onError;
         FlutterError.onError = (details) => errors.add(details.toString());

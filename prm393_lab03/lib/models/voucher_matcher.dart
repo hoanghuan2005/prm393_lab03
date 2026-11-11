@@ -12,32 +12,21 @@ class VoucherMatcher {
 
   static final RegExp _dateOnly = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
 
-  /// Platform used to match vouchers: Lazada when the link or shop name says so,
-  /// otherwise Shopee
-  static String platformOf(WishlistItem item) {
-    final url = (item.url ?? '').toLowerCase();
-    final shop = (item.shopName ?? '').toLowerCase();
-    if (url.contains('lazada') || shop.contains('lazada')) return 'Lazada';
-    return 'Shopee';
-  }
-
   static bool canApply(
     Voucher v,
     WishlistItem item,
     int priceVnd,
     DateTime now,
   ) {
+    // Shopee vouchers only fit items saved from a Shopee product
+    // (`shopee:<shopId>:<itemId>`); typed-in items and Tiki/TikTok/Lazada links
+    // have no such key. Demo items never get vouchers.
+    if (!(item.productKey?.startsWith('shopee:') ?? false)) return false;
+    if (item.isDemo) return false;
     if (!v.isActive) return false;
     final endsAt = _endsAt(v.validUntil);
     if (endsAt == null || !now.toUtc().isBefore(endsAt)) return false;
     if (priceVnd < v.minOrder) return false;
-
-    // Platform check (unchanged from the old Voucher.canApplyTo)
-    if (v.platform != 'Tất cả') {
-      final p1 = v.platform.toLowerCase();
-      final p2 = platformOf(item).toLowerCase();
-      if (!p1.contains(p2) && !p2.contains(p1)) return false;
-    }
 
     // Shop name check (unchanged from the old Voucher.canApplyTo): a shop voucher
     // needs the item's shop to match

@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
 
+import 'price_snapshot.dart';
 import 'voucher.dart';
 import 'wishlist_item.dart';
+
+/// The price vouchers are computed on: the latest list price, the lowest one for a
+/// range ([isRange]: show the price after voucher as "từ …")
+typedef ListPrice = ({int amountVnd, bool isRange});
 
 /// The one place that decides whether a voucher applies to a wishlist item.
 /// Pure: the caller passes `now` (DateTime.now() in the widget/ViewModel), so tests
@@ -29,6 +34,50 @@ class VoucherMatcher {
 
   /// Unknown categories already logged, so each is logged once
   static final Set<String> _loggedCategories = {};
+
+  /// Latest list price of [item] for voucher maths.
+  ///
+  /// [history] is the item's price snapshots (any order), e.g.
+  /// `DecisionSupportViewModel.priceInsightsFor(item)?.history`:
+  /// - Not loaded (null): null, the list price is not known yet.
+  /// - Loaded but empty (an item priced before snapshots existed):
+  ///   [WishlistItem.latestPriceVnd] as a single price when > 0.
+  /// - Otherwise "sau voucher" prices are skipped and a range gives its lowest
+  ///   price, isRange; only "sau voucher" prices: null.
+  static ListPrice? listPriceFor(
+    WishlistItem item, {
+    List<PriceSnapshot>? history,
+  }) {
+    if (history == null) return null;
+    if (history.isEmpty) {
+      final price = item.latestPriceVnd;
+      return price == null || price <= 0
+          ? null
+          : (amountVnd: price, isRange: false);
+    }
+    final listed =
+        history
+            .where(
+              (s) => s.priceType != PriceType.afterVoucher && s.amountVnd > 0,
+            )
+            .toList()
+          ..sort((a, b) => b.observedAt.compareTo(a.observedAt));
+    if (listed.isEmpty) return null;
+    final latest = listed.first;
+    final isRange = latest.priceType == PriceType.range;
+    return (
+      amountVnd: isRange
+          ? (latest.minVnd ?? latest.amountVnd)
+          : latest.amountVnd,
+      isRange: isRange,
+    );
+  }
+
+  /// Price after [voucher] on [listPriceVnd], never below 0
+  static int priceAfter(int listPriceVnd, Voucher voucher) {
+    final after = listPriceVnd - voucher.discountAmount;
+    return after < 0 ? 0 : after;
+  }
 
   static bool canApply(
     Voucher v,

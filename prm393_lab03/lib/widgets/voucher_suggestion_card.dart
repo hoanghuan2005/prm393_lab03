@@ -10,6 +10,7 @@ import '../services/voucher_service.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/decision_support_viewmodel.dart';
 
 class VoucherSuggestionCard extends StatefulWidget {
   final WishlistItem item;
@@ -35,8 +36,21 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
       // In case Provider is not mounted or during hot reload without full restart
     }
 
-    // null when the item has no price yet: never treated as 0 ₫
-    final price = widget.item.latestPriceVnd;
+    // Latest list price (never an "after voucher" price, lowest of a range);
+    // null when the item has no such price yet: never treated as 0 ₫
+    final decisions = Provider.of<DecisionSupportViewModel?>(context);
+    final history = decisions?.priceInsightsFor(widget.item)?.history;
+    // A priced item whose history is still loading (PriceHistoryPanel loads it):
+    // show nothing yet rather than "Thêm giá của món…"
+    if (history == null && (widget.item.latestPriceVnd ?? 0) > 0) {
+      return const SizedBox.shrink();
+    }
+    final listPrice = VoucherMatcher.listPriceFor(
+      widget.item,
+      history: history,
+    );
+    final price = listPrice?.amountVnd;
+    final afterVoucherPrefix = (listPrice?.isRange ?? false) ? 'từ ' : '';
     final now = DateTime.now();
 
     // Get applicable vouchers for this price and shop (none without a price)
@@ -262,11 +276,7 @@ class _VoucherSuggestionCardState extends State<VoucherSuggestionCard> {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
-                                formatVnd(
-                                  (price - bestVoucher.discountAmount) > 0
-                                      ? (price - bestVoucher.discountAmount)
-                                      : 0,
-                                ),
+                                '$afterVoucherPrefix${formatVnd(VoucherMatcher.priceAfter(price, bestVoucher))}',
                                 style: AppTextStyles.titleMedium
                                     .themed(context)
                                     .copyWith(

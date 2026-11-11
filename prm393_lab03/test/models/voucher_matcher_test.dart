@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prm393_lab03/core/formatters/money_format.dart';
+import 'package:prm393_lab03/models/price_insights.dart';
+import 'package:prm393_lab03/models/price_snapshot.dart';
 import 'package:prm393_lab03/models/voucher.dart';
 import 'package:prm393_lab03/models/voucher_matcher.dart';
 import 'package:prm393_lab03/models/wishlist_item.dart';
+import 'package:prm393_lab03/screens/item_detail_screen.dart';
 import 'package:prm393_lab03/services/voucher_service.dart';
+import 'package:prm393_lab03/viewmodels/decision_support_viewmodel.dart';
 import 'package:prm393_lab03/widgets/voucher_suggestion_card.dart';
 import 'package:prm393_lab03/widgets/wishlist_card.dart';
 import 'package:provider/provider.dart';
 
+import '../support/purchase_harness.dart';
 import '../support/test_theme.dart';
 import '../ui/ui_audit_harness.dart';
 
@@ -57,6 +62,23 @@ WishlistItem _item({String? shopName = 'Perseper', int? price = 120000}) =>
     );
 
 /// The UI audit item, but saved from a Shopee product so vouchers can apply
+/// Gives the cards a price history (null = not loaded yet); nothing else is used
+class _HistoryDecisions extends ChangeNotifier
+    implements DecisionSupportViewModel {
+  _HistoryDecisions(this.snapshots);
+
+  final List<PriceSnapshot>? snapshots;
+
+  @override
+  PriceInsights? priceInsightsFor(WishlistItem item) {
+    final list = snapshots;
+    return list == null ? null : PriceInsights(list, now: DateTime.now());
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _ShopeeAuditHarness extends UiAuditHarness {
   _ShopeeAuditHarness() : super(true);
 
@@ -310,6 +332,99 @@ void main() {
     );
   });
 
+  group('VoucherMatcher.listPriceFor / priceAfter', () {
+    PriceSnapshot snap(
+      int amount,
+      int day, {
+      PriceType type = PriceType.single,
+      int? min,
+      int? max,
+    }) => PriceSnapshot(
+      id: 's$day',
+      amountVnd: amount,
+      observedAt: DateTime(2026, 11, day),
+      priceType: type,
+      minVnd: min,
+      maxVnd: max,
+    );
+
+    test('mới nhất afterVoucher 95.000đ, niêm yết trước 110.000đ: tính trên '
+        '110.000đ', () {
+      final item = _item(price: 95000);
+      final history = [
+        snap(110000, 1),
+        snap(95000, 5, type: PriceType.afterVoucher),
+      ];
+      final list = VoucherMatcher.listPriceFor(item, history: history)!;
+      expect(list, (amountVnd: 110000, isRange: false));
+      // Đơn từ 100.000đ: áp trên 110.000đ, 95.000đ thì không
+      final v = _voucher('MIN100', discount: 20000, minOrder: 100000);
+      expect(VoucherMatcher.best([v], item, list.amountVnd, _now), v);
+      expect(VoucherMatcher.priceAfter(list.amountVnd, v), 90000);
+    });
+
+    test('chỉ có giá afterVoucher: null', () {
+      final history = [
+        snap(95000, 5, type: PriceType.afterVoucher),
+        snap(99000, 2, type: PriceType.afterVoucher),
+      ];
+      expect(
+        VoucherMatcher.listPriceFor(_item(price: 95000), history: history),
+        isNull,
+      );
+    });
+
+    test('khoảng giá 120.000–250.000đ: tính trên 120.000đ, isRange', () {
+      final history = [
+        snap(110000, 1),
+        snap(120000, 4, type: PriceType.range, min: 120000, max: 250000),
+      ];
+      expect(
+        VoucherMatcher.listPriceFor(_item(price: 120000), history: history),
+        (amountVnd: 120000, isRange: true),
+      );
+    });
+
+    test('voucher giảm lớn hơn giá: 0', () {
+      final big = _voucher('BIG80', discount: 80000);
+      expect(VoucherMatcher.priceAfter(50000, big), 0);
+    });
+
+    test('lịch sử rỗng + latestPriceVnd 120.000đ + món Shopee: giá niêm yết '
+        '120.000đ, có giá sau voucher', () {
+      final item = _item(price: 120000, shopName: null);
+      final list = VoucherMatcher.listPriceFor(item, history: const [])!;
+      expect(list, (amountVnd: 120000, isRange: false));
+      final v = _voucher('BIG50', discount: 50000, minOrder: 100000);
+      final best = VoucherMatcher.best([v], item, list.amountVnd, _now)!;
+      expect(VoucherMatcher.priceAfter(list.amountVnd, best), 70000);
+    });
+
+    test('lịch sử rỗng + latestPriceVnd null: null', () {
+      expect(
+        VoucherMatcher.listPriceFor(_item(price: null), history: const []),
+        isNull,
+      );
+    });
+
+    test('lịch sử chưa nạp: null', () {
+      expect(VoucherMatcher.listPriceFor(_item(price: 120000)), isNull);
+    });
+
+    test('món không có link (nhập tay): vẫn không có voucher (V2)', () {
+      final manual = WishlistItem(
+        id: 'manual',
+        title: 'Tai nghe',
+        latestPriceVnd: 120000,
+        createdAt: DateTime(2026, 11, 1),
+      );
+      final list = VoucherMatcher.listPriceFor(manual, history: const [])!;
+      expect(list.amountVnd, 120000);
+      final v = _voucher('BIG50', discount: 50000, minOrder: 100000);
+      expect(VoucherMatcher.best([v], manual, list.amountVnd, _now), isNull);
+    });
+  });
+
   group('Mã miễn phí vận chuyển', () {
     // The sample codes expire on 12/11/2026: check on 11/11/2026, 10:00 Vietnam time
     final nov11 = DateTime.utc(2026, 11, 11, 3);
@@ -415,11 +530,18 @@ void main() {
     Future<void> pumpBoth(
       WidgetTester tester,
       VoucherService vs,
-      WishlistItem item,
-    ) async {
+      WishlistItem item, {
+      DecisionSupportViewModel? decisions,
+    }) async {
+      // Default: price history loaded and empty, so the cards use latestPriceVnd
+      final vm = decisions ?? _HistoryDecisions(const []);
+      if (decisions == null) addTearDown(vm.dispose);
       await tester.pumpWidget(
-        ChangeNotifierProvider<VoucherService>.value(
-          value: vs,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<VoucherService>.value(value: vs),
+            ChangeNotifierProvider<DecisionSupportViewModel>.value(value: vm),
+          ],
           child: MaterialApp(
             theme: testAppTheme,
             home: Scaffold(
@@ -555,6 +677,103 @@ void main() {
       );
     });
 
+    group('thẻ món chỉ hiện giá sau voucher khi biết giá niêm yết', () {
+      // BIG50: giảm 50.000đ cho đơn từ 100.000đ; món 120.000đ
+      PriceSnapshot snap(int amount, int daysAgo, PriceType type) =>
+          PriceSnapshot(
+            id: 's$daysAgo',
+            amountVnd: amount,
+            observedAt: DateTime.now().subtract(Duration(days: daysAgo)),
+            priceType: type,
+          );
+
+      Future<void> pumpCard(
+        WidgetTester tester,
+        List<PriceSnapshot>? history,
+      ) async {
+        final vs = await service([doc('BIG50', 50000, minOrder: 100000)]);
+        addTearDown(vs.dispose);
+        final decisions = _HistoryDecisions(history);
+        addTearDown(decisions.dispose);
+        await pumpBoth(tester, vs, _item(price: 120000), decisions: decisions);
+      }
+
+      bool mainPriceStruck(WidgetTester tester) =>
+          tester
+              .widget<Text>(inWishlistCard(formatVnd(120000)))
+              .style
+              ?.decoration ==
+          TextDecoration.lineThrough;
+
+      testWidgets('lịch sử chưa nạp: không có giá sau voucher', (tester) async {
+        await pumpCard(tester, null);
+        expect(inWishlistCard(formatVnd(70000)), findsNothing);
+        expect(mainPriceStruck(tester), isFalse);
+        // Chi tiết món waits for the history too: no voucher, no "Thêm giá…"
+        expect(find.byType(VoucherSuggestionCard), findsOneWidget);
+        expect(find.textContaining('BIG50'), findsNothing);
+        expect(find.textContaining('Thêm giá của món'), findsNothing);
+      });
+
+      testWidgets('lịch sử đã nạp và rỗng: dùng latestPriceVnd ở cả hai chỗ', (
+        tester,
+      ) async {
+        await pumpCard(tester, const []);
+        expect(inWishlistCard(formatVnd(70000)), findsOneWidget);
+        expect(mainPriceStruck(tester), isTrue);
+        expect(inSuggestionCard(formatVnd(70000)), findsOneWidget);
+      });
+
+      testWidgets('đã nạp, giá mới nhất là giá niêm yết: có', (tester) async {
+        await pumpCard(tester, [
+          snap(120000, 0, PriceType.single),
+          snap(130000, 3, PriceType.single),
+        ]);
+        expect(inWishlistCard(formatVnd(70000)), findsOneWidget);
+        expect(mainPriceStruck(tester), isTrue);
+      });
+
+      testWidgets('đã nạp, chỉ có giá afterVoucher: không', (tester) async {
+        await pumpCard(tester, [snap(95000, 0, PriceType.afterVoucher)]);
+        expect(inWishlistCard(formatVnd(70000)), findsNothing);
+        expect(inWishlistCard(formatVnd(45000)), findsNothing);
+        expect(mainPriceStruck(tester), isFalse);
+      });
+
+      testWidgets('đã nạp, mới nhất afterVoucher nhưng có giá niêm yết trước '
+          'đó: tính trên giá niêm yết (như V6)', (tester) async {
+        await pumpCard(tester, [
+          snap(95000, 0, PriceType.afterVoucher),
+          snap(110000, 2, PriceType.single),
+        ]);
+        expect(inWishlistCard(formatVnd(110000 - 50000)), findsOneWidget);
+        expect(inWishlistCard(formatVnd(95000 - 50000)), findsNothing);
+      });
+    });
+
+    testWidgets('khoảng giá: giá sau voucher ghi "từ …" ở cả hai chỗ', (
+      tester,
+    ) async {
+      final vs = await service([doc('BIG50', 50000, minOrder: 100000)]);
+      addTearDown(vs.dispose);
+      final decisions = _HistoryDecisions([
+        PriceSnapshot(
+          id: 'range',
+          amountVnd: 120000,
+          observedAt: DateTime.now(),
+          priceType: PriceType.range,
+          minVnd: 120000,
+          maxVnd: 250000,
+        ),
+      ]);
+      addTearDown(decisions.dispose);
+      await pumpBoth(tester, vs, _item(price: 120000), decisions: decisions);
+
+      final after = 'từ ${formatVnd(120000 - 50000)}';
+      expect(inWishlistCard(after), findsOneWidget);
+      expect(inSuggestionCard(after), findsOneWidget);
+    });
+
     testWidgets('dòng freeship có nút Lưu mã sao chép đúng mã', (tester) async {
       String? copied;
       final messenger = tester.binding.defaultBinaryMessenger;
@@ -623,6 +842,14 @@ void main() {
             ChangeNotifierProvider<VoucherService>.value(value: vs, child: app),
           );
           await tester.pump(const Duration(milliseconds: 300));
+          // The harness's DecisionSupportViewModel has no signed-in user, so the
+          // price history never loads: sign in and load it as PriceHistoryPanel does
+          final decisions = Provider.of<DecisionSupportViewModel>(
+            tester.element(find.byType(ItemDetailScreen)),
+            listen: false,
+          )..updateUid(PurchaseHarness.uid);
+          await decisions.loadPriceHistory(h.item);
+          await tester.pump();
           await tester.scrollUntilVisible(
             find.text('Giá sau áp voucher:'),
             200,

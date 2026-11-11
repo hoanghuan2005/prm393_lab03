@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
+import '../models/voucher_matcher.dart';
 import '../models/wishlist_item.dart';
 import '../services/voucher_service.dart';
 import '../theme/app_colors.dart';
@@ -33,17 +34,24 @@ class WishlistCard extends StatelessWidget {
 
     // Check for voucher price suggestion
     final voucherService = context.watch<VoucherService?>();
-    final bestVoucher = (item.latestPriceVnd != null && voucherService != null)
+    // Latest list price, never an "after voucher" price; lowest of a range.
+    // Null until the price history is loaded: the card never loads it itself
+    // (no extra Firestore reads), so no voucher is shown before that.
+    final listPrice = VoucherMatcher.listPriceFor(
+      item,
+      history: insights?.history,
+    );
+    final bestVoucher = (listPrice != null && voucherService != null)
         ? voucherService.findBestVoucher(
             item: item,
-            priceVnd: item.latestPriceVnd!,
+            priceVnd: listPrice.amountVnd,
             now: DateTime.now(),
           )
         : null;
-    final priceAfterVoucher =
-        (bestVoucher != null && item.latestPriceVnd != null)
-        ? (item.latestPriceVnd! - bestVoucher.discountAmount)
+    final priceAfterVoucher = (bestVoucher != null && listPrice != null)
+        ? VoucherMatcher.priceAfter(listPrice.amountVnd, bestVoucher)
         : null;
+    final afterVoucherPrefix = (listPrice?.isRange ?? false) ? 'từ ' : '';
 
     return Semantics(
       button: true,
@@ -122,9 +130,7 @@ class WishlistCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 3),
                               Text(
-                                formatVnd(
-                                  priceAfterVoucher > 0 ? priceAfterVoucher : 0,
-                                ),
+                                '$afterVoucherPrefix${formatVnd(priceAfterVoucher)}',
                                 style: AppTextStyles.titleMedium
                                     .themed(context)
                                     .copyWith(

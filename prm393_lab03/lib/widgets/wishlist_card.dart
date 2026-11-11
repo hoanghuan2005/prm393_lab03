@@ -75,100 +75,112 @@ class WishlistCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (ProductImage.canShow(item.imageUrl)) ...[
-                      ProductImage(url: item.imageUrl),
-                      const SizedBox(width: AppDimens.space12),
-                    ],
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        // themed: the default styles are dark text, unreadable in dark mode
-                        style: AppTextStyles.titleMedium.themed(context),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    _buildThumbnail(context),
                     const SizedBox(width: AppDimens.space12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          formatVnd(item.latestPriceVnd),
-                          style: item.hasPrice
-                              ? AppTextStyles.titleMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: priceAfterVoucher != null
-                                          ? AppSemanticColors.of(context)
-                                                .textSecondary
-                                          : AppColors.onPrimary,
-                                      fontWeight: priceAfterVoucher != null
-                                          ? FontWeight.w500
-                                          : FontWeight.w700,
-                                      decoration: priceAfterVoucher != null
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    )
-                                    .themed(context)
-                              : AppTextStyles.labelMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: AppSemanticColors.of(context)
-                                          .textSecondary,
-                                    )
-                                    .themed(context),
-                        ),
-                        if (priceAfterVoucher != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            // themed: the default styles are dark text, unreadable in dark mode
+                            style: AppTextStyles.titleMedium.themed(context),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (item.variantLabel != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _metaLine(
+                              context,
+                              Icons.style_outlined,
+                              item.variantLabel!,
+                            ),
+                          ],
+                          if (item.shopName != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _metaLine(
+                              context,
+                              Icons.storefront_outlined,
+                              item.shopName!,
+                            ),
+                          ],
+                          const SizedBox(height: AppDimens.space8),
+                          // Price; with a voucher the list price is struck through
+                          // and the price after voucher shows next to it
+                          Wrap(
+                            spacing: AppDimens.space8,
+                            runSpacing: AppDimens.space4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 12,
-                                color: AppSemanticColors.of(context).success,
-                              ),
-                              const SizedBox(width: 3),
                               Text(
-                                '$afterVoucherPrefix${formatVnd(priceAfterVoucher)}',
-                                style: AppTextStyles.titleMedium
-                                    .themed(context)
-                                    .copyWith(
+                                formatVnd(item.latestPriceVnd),
+                                style: item.hasPrice
+                                    ? AppTextStyles.titleMedium
+                                          .themed(context)
+                                          .copyWith(
+                                            color: priceAfterVoucher != null
+                                                ? AppSemanticColors.of(context)
+                                                      .textSecondary
+                                                : AppColors.onPrimary,
+                                            fontWeight:
+                                                priceAfterVoucher != null
+                                                ? FontWeight.w500
+                                                : FontWeight.w700,
+                                            decoration:
+                                                priceAfterVoucher != null
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                          )
+                                          .themed(context)
+                                    : AppTextStyles.labelMedium
+                                          .themed(context)
+                                          .copyWith(
+                                            color: AppSemanticColors.of(context)
+                                                .textSecondary,
+                                            fontStyle: FontStyle.italic,
+                                          )
+                                          .themed(context),
+                              ),
+                              if (priceAfterVoucher != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_rounded,
+                                      size: 12,
                                       color: AppSemanticColors.of(context)
                                           .success,
-                                      fontWeight: FontWeight.w800,
                                     ),
-                              ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '$afterVoucherPrefix${formatVnd(priceAfterVoucher)}',
+                                      style: AppTextStyles.titleMedium
+                                          .themed(context)
+                                          .copyWith(
+                                            color: AppSemanticColors.of(context)
+                                                .success,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ],
                 ),
-                if (item.variantLabel != null) ...[
-                  const SizedBox(height: AppDimens.space4),
-                  Text(
-                    'Phân loại: ${item.variantLabel}',
-                    style: AppTextStyles.caption.themed(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (item.shopName != null) ...[
-                  const SizedBox(height: AppDimens.space4),
-                  Text(
-                    'Shop: ${item.shopName}',
-                    style: AppTextStyles.caption.themed(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                const SizedBox(height: AppDimens.space12),
+                Divider(
+                  height: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
+                ),
                 const SizedBox(height: AppDimens.space12),
                 Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  spacing: AppDimens.space12,
+                  spacing: AppDimens.space8,
                   runSpacing: AppDimens.space8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
                     if (hasDeal)
@@ -251,6 +263,49 @@ class WishlistCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  static const double _thumbSize = 84;
+
+  /// Framed product photo; a quiet bag icon keeps cards aligned when there is no photo
+  Widget _buildThumbnail(BuildContext context) {
+    final colors = AppSemanticColors.of(context);
+    return Container(
+      width: _thumbSize,
+      height: _thumbSize,
+      decoration: BoxDecoration(
+        color: colors.mutedSurface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: colors.cardBorder.withValues(alpha: 0.6)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: ProductImage.canShow(item.imageUrl)
+          ? ProductImage(url: item.imageUrl, size: _thumbSize)
+          : Icon(
+              Icons.shopping_bag_outlined,
+              size: 32,
+              color: colors.textSecondary,
+            ),
+    );
+  }
+
+  static Widget _metaLine(BuildContext context, IconData icon, String text) {
+    final color = AppSemanticColors.of(context).textSecondary;
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: AppDimens.space4),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.caption.themed(context).copyWith(color: color),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

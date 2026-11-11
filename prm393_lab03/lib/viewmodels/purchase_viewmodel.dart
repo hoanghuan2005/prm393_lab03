@@ -340,6 +340,7 @@ class PurchaseViewModel extends ChangeNotifier
     bool usedDiscountCode = false,
     WishlistItem? fromWishlist,
     String? requestId,
+    String? imageUrl,
   }) async {
     final trimmedNote = note?.trim();
     final purchase = PurchaseItem(
@@ -351,6 +352,7 @@ class PurchaseViewModel extends ChangeNotifier
       note: trimmedNote == null || trimmedNote.isEmpty ? null : trimmedNote,
       budgetGroupId: budgetGroupId,
       usedDiscountCode: usedDiscountCode,
+      imageUrl: imageUrl,
     );
     final saved = await _runWrite<PurchaseItem>((uid) async {
       _validate(purchase);
@@ -367,6 +369,7 @@ class PurchaseViewModel extends ChangeNotifier
           occurredAt: purchase.occurredAt,
           note: purchase.note,
           usedDiscountCode: purchase.usedDiscountCode,
+          imageUrl: purchase.imageUrl,
         ),
       );
     }, reason: 'addPurchase');
@@ -404,6 +407,7 @@ class PurchaseViewModel extends ChangeNotifier
     String? budgetGroupId,
     bool? usedDiscountCode,
     PurchaseItem? originalPurchase,
+    String? imageUrl,
   }) async {
     final index = _purchases.indexWhere((p) => p.id == id);
     final base = index != -1 ? _purchases[index] : originalPurchase;
@@ -424,6 +428,8 @@ class PurchaseViewModel extends ChangeNotifier
         clearNote: trimmedNote == null || trimmedNote.isEmpty,
         budgetGroupId: budgetGroupId,
         usedDiscountCode: usedDiscountCode,
+        imageUrl: imageUrl,
+        clearImage: imageUrl == null,
       );
       _validate(updated);
       await purchaseService.update(uid, updated);

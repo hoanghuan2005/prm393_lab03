@@ -66,14 +66,25 @@ Trả về JSON:
 - "priceMinVnd", "priceMaxVnd": khoảng giá hàng mới tại Việt Nam, chỉ chữ số (đơn vị đồng), rỗng nếu không ước lượng được
 - "confidence": "high" khi đọc được thương hiệu và model, "medium" khi chắc hãng hoặc dòng nhưng chưa chắc model, "low" khi chỉ biết loại đồ''';
 
+  /// What the user typed after a wrong guess ("tai nghe Sony"), added to [prompt]
+  @visibleForTesting
+  static String promptWithHint(String? hint) {
+    final h = _text(hint);
+    if (h == null) return prompt;
+    return '$prompt\n'
+        'Người dùng cho biết món đồ này là: "$h". Dùng gợi ý này để nhận diện, '
+        'nhưng vẫn đối chiếu với ảnh và chữ đọc được.';
+  }
+
   Future<ItemRecognition> identify(
     Uint8List imageBytes,
-    String mimeType,
-  ) async {
+    String mimeType, {
+    String? hint,
+  }) async {
     Future<String> ask(AiImageService service) => service
         .generateFromImage(
           systemInstruction: systemInstruction,
-          prompt: prompt,
+          prompt: promptWithHint(hint),
           imageBytes: imageBytes,
           mimeType: mimeType,
           fields: fields,

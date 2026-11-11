@@ -11,6 +11,7 @@ class PurchaseDraft {
   final DateTime? occurredAt;
   final String? note;
   final bool usedDiscountCode;
+  final String? imageUrl;
 
   const PurchaseDraft({
     this.title = '',
@@ -21,6 +22,7 @@ class PurchaseDraft {
     this.occurredAt,
     this.note,
     this.usedDiscountCode = false,
+    this.imageUrl,
   });
 
   factory PurchaseDraft.fromMap(Map<String, dynamic> data) {
@@ -36,6 +38,7 @@ class PurchaseDraft {
           : DateTime.tryParse(data['occurredAt']?.toString() ?? ''),
       note: data['note'] as String?,
       usedDiscountCode: data['usedDiscountCode'] == true,
+      imageUrl: data['imageUrl'] as String?,
     );
   }
 
@@ -48,6 +51,7 @@ class PurchaseDraft {
     'occurredAt': occurredAt?.toIso8601String(),
     'note': note,
     'usedDiscountCode': usedDiscountCode,
+    'imageUrl': imageUrl,
   };
 
   PurchaseDraft copyWith({
@@ -59,6 +63,7 @@ class PurchaseDraft {
     DateTime? occurredAt,
     String? note,
     bool? usedDiscountCode,
+    String? imageUrl,
   }) {
     return PurchaseDraft(
       title: title ?? this.title,
@@ -69,6 +74,7 @@ class PurchaseDraft {
       occurredAt: occurredAt ?? this.occurredAt,
       note: note ?? this.note,
       usedDiscountCode: usedDiscountCode ?? this.usedDiscountCode,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -83,7 +89,8 @@ class PurchaseDraft {
           other.fromWishlistId == fromWishlistId &&
           other.occurredAt == occurredAt &&
           other.note == note &&
-          other.usedDiscountCode == usedDiscountCode;
+          other.usedDiscountCode == usedDiscountCode &&
+          other.imageUrl == imageUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -95,5 +102,6 @@ class PurchaseDraft {
     occurredAt,
     note,
     usedDiscountCode,
+    imageUrl,
   );
 }

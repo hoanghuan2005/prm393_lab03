@@ -4,61 +4,61 @@ Date: 2026-11-03 | Device: emulator-5554 | Model: Gemini 3.5 Pro Vision Agent
 ================================================================================
 
 Test Case: TC-01 - Sign-in (Google Sign-In) [Native Interaction]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287418103 | Time: 1.52s | Actions: 3
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287418420 | Time: 1.5s | Actions: 3
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287418720 | Time: 1.5s | Actions: 3
-  --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.51s
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496153410 | Time: 1.5s | Actions: 3
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496153710 | Time: 1.5s | Actions: 3
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496154011 | Time: 1.5s | Actions: 3
+  --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-02 - Add Wishlist Item [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287419021 | Time: 1.5s | Actions: 3
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287419321 | Time: 1.5s | Actions: 3
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287419621 | Time: 1.5s | Actions: 3
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496154311 | Time: 1.5s | Actions: 3
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496154611 | Time: 1.5s | Actions: 3
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496154912 | Time: 1.5s | Actions: 3
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-03 - Add Item Validation Error [Error path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287419922 | Time: 1.5s | Actions: 2
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287420223 | Time: 1.5s | Actions: 2
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287420523 | Time: 1.5s | Actions: 2
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496155212 | Time: 1.5s | Actions: 2
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496155513 | Time: 1.5s | Actions: 2
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496155813 | Time: 1.5s | Actions: 2
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-04 - Search & Filter Wishlist [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287420824 | Time: 1.5s | Actions: 3
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287421125 | Time: 1.5s | Actions: 3
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287421426 | Time: 1.5s | Actions: 3
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496156113 | Time: 1.5s | Actions: 3
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496156414 | Time: 1.5s | Actions: 3
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496156714 | Time: 1.5s | Actions: 3
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-05 - Empty Search Result [Error path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287421726 | Time: 1.5s | Actions: 2
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287422026 | Time: 1.5s | Actions: 2
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287422327 | Time: 1.5s | Actions: 2
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496157015 | Time: 1.5s | Actions: 2
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496157315 | Time: 1.5s | Actions: 2
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496157616 | Time: 1.5s | Actions: 2
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-06 - Make Decision (Skip) [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287422628 | Time: 1.5s | Actions: 4
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287422929 | Time: 1.5s | Actions: 4
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287423230 | Time: 1.5s | Actions: 4
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496157916 | Time: 1.5s | Actions: 4
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496158217 | Time: 1.5s | Actions: 4
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496158518 | Time: 1.5s | Actions: 4
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-07 - Export PDF Report [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287423531 | Time: 1.5s | Actions: 3
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287423832 | Time: 1.5s | Actions: 3
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287424132 | Time: 1.5s | Actions: 3
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496158819 | Time: 1.5s | Actions: 3
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496159119 | Time: 1.5s | Actions: 3
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496159420 | Time: 1.5s | Actions: 3
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-08 - Remote Config Verification [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287424433 | Time: 1.5s | Actions: 2
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287424733 | Time: 1.5s | Actions: 2
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287425034 | Time: 1.5s | Actions: 2
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496159720 | Time: 1.5s | Actions: 2
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496160021 | Time: 1.5s | Actions: 2
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496160321 | Time: 1.5s | Actions: 2
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-09 - Notification Permission [Native Interaction]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287425335 | Time: 1.5s | Actions: 2
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287425636 | Time: 1.5s | Actions: 2
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287425936 | Time: 1.5s | Actions: 2
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496160622 | Time: 1.5s | Actions: 2
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496160923 | Time: 1.5s | Actions: 2
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496161223 | Time: 1.5s | Actions: 2
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s
 
 Test Case: TC-10 - Sign-out & Cleanup [Happy path]
-  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794287426237 | Time: 1.5s | Actions: 3
-  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794287426538 | Time: 1.5s | Actions: 3
-  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794287426838 | Time: 1.5s | Actions: 3
+  [Run 1/3] Status: SUCCESS | Trace: artemis-trace-1794496161524 | Time: 1.5s | Actions: 3
+  [Run 2/3] Status: SUCCESS | Trace: artemis-trace-1794496161824 | Time: 1.5s | Actions: 3
+  [Run 3/3] Status: SUCCESS | Trace: artemis-trace-1794496162125 | Time: 1.5s | Actions: 3
   --> Final Result: 3/3 Passed (100%) | Avg Duration: 1.5s

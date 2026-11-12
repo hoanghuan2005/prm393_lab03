@@ -82,9 +82,6 @@ class _SaleEventsScreenState extends State<SaleEventsScreen> {
     final vm = context.watch<SaleEventsViewModel>();
     return AdminPage(
       title: 'Sự kiện sale',
-      subtitle:
-          'Lịch sale người dùng thấy trong app. Nháp chỉ nhân viên thấy; '
-          'sự kiện không bị xoá mà được lưu trữ.',
       actions: [
         AppButton(
           title: 'Thêm sự kiện',

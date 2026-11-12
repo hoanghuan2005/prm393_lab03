@@ -139,10 +139,6 @@ class _ShopeeVouchersScreenState extends State<ShopeeVouchersScreen> {
     final vm = context.watch<ShopeeVouchersViewModel>();
     return AdminPage(
       title: 'Voucher Shopee',
-      subtitle:
-          'Voucher do Admin / Nhân viên cào bằng Chrome extension (bản Lab). '
-          'Đang có ${vm.totalCount} voucher từ ${vm.shopCount} shop; '
-          'cào lại cùng trang chỉ cập nhật, không tạo trùng.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

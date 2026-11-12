@@ -6,7 +6,7 @@
 
 | Test ID | Tên ca kiểm thử (Test Name) | Phân loại (Kind) | Số lần chạy | Đạt (Pass) | Tỷ lệ đạt (%) | Thời gian TB |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|
-| **TC-01** | Sign-in (Google Sign-In) | Native Interaction | 3 | 3 | **100%** | 1.51s |
+| **TC-01** | Sign-in (Google Sign-In) | Native Interaction | 3 | 3 | **100%** | 1.5s |
 | **TC-02** | Add Wishlist Item | Happy path | 3 | 3 | **100%** | 1.5s |
 | **TC-03** | Add Item Validation Error | Error path | 3 | 3 | **100%** | 1.5s |
 | **TC-04** | Search & Filter Wishlist | Happy path | 3 | 3 | **100%** | 1.5s |

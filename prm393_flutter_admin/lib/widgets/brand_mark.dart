@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:why_i_buy_core/why_i_buy_core.dart';
 
-/// The yellow "W" mark of the admin portal
+/// The official Why I Buy brand mark for the admin portal
 class BrandMark extends StatelessWidget {
   final double size;
+  final Color color;
 
-  const BrandMark({super.key, this.size = 44});
+  const BrandMark({
+    super.key,
+    this.size = 44,
+    this.color = AppColors.onPrimary,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(size * 0.28),
-      ),
-      child: Text(
-        'W',
-        style: AppTextStyles.headlineMedium.copyWith(
-          color: AppColors.onPrimary,
-          fontSize: size * 0.5,
-          fontWeight: FontWeight.w800,
-          height: 1,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          shape: BoxShape.circle,
         ),
+        child: Icon(Icons.spa_rounded, size: size * 0.58, color: color),
       ),
     );
   }

@@ -257,11 +257,10 @@ class _Sidebar extends StatelessWidget {
               ],
             ),
           ),
-          Divider(color: t.divider),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppDimens.space20,
-              AppDimens.space20,
+              AppDimens.space8,
               AppDimens.space20,
               AppDimens.space8,
             ),
@@ -445,7 +444,28 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final shell = context.watch<ShellViewModel>();
+    final dashVm = context.watch<DashboardViewModel>();
     final themeLabel = shell.isDark ? 'Chế độ sáng' : 'Chế độ tối';
+
+    void onRefresh() {
+      switch (shell.section) {
+        case AdminSection.dashboard:
+          dashVm.load();
+        case AdminSection.users:
+          context.read<UsersViewModel>().retry();
+        case AdminSection.saleEvents:
+          context.read<SaleEventsViewModel>().retry();
+        case AdminSection.reviews:
+          context.read<ReviewQueueViewModel>().retry();
+        case AdminSection.announcements:
+          context.read<AnnouncementsViewModel>().retry();
+        case AdminSection.vouchers:
+          context.read<ShopeeVouchersViewModel>().retry();
+        case AdminSection.assistant:
+          dashVm.load();
+      }
+    }
+
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
@@ -462,6 +482,28 @@ class _TopBar extends StatelessWidget {
               style: t.text(AppTextStyles.titleLarge),
             ),
           ),
+          if (compact)
+            IconButton(
+              tooltip: 'Làm mới',
+              onPressed: dashVm.isLoading ? null : onRefresh,
+              icon: dashVm.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+            )
+          else
+            AppButton(
+              title: 'Làm mới',
+              icon: Icons.refresh,
+              variant: AppButtonVariant.secondary,
+              width: 124,
+              isLoading: dashVm.isLoading,
+              onPressed: onRefresh,
+            ),
+          const SizedBox(width: AppDimens.space12),
           if (compact)
             IconButton(
               tooltip: themeLabel,
@@ -500,15 +542,6 @@ class _TopBar extends StatelessWidget {
                       style: AppTextStyles.labelLarge.copyWith(
                         color: AppColors.onPrimary,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.space8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 220),
-                    child: Text(
-                      account.label,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.text(AppTextStyles.labelLarge),
                     ),
                   ),
                   const SizedBox(width: AppDimens.space8),

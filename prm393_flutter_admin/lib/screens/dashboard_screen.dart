@@ -25,19 +25,6 @@ class DashboardScreen extends StatelessWidget {
     final vm = context.watch<DashboardViewModel>();
     return AdminPage(
       title: 'Tổng quan',
-      subtitle:
-          'Số liệu thật từ Firestore: đếm và cộng ngay trên máy chủ (count / sum), '
-          'không tải từng document về trình duyệt.',
-      actions: [
-        AppButton(
-          title: 'Làm mới',
-          icon: Icons.refresh,
-          variant: AppButtonVariant.secondary,
-          width: 140,
-          isLoading: vm.isLoading,
-          onPressed: vm.load,
-        ),
-      ],
       child: UiStateBuilder<DashboardStats>(
         state: vm.state,
         loadingMessage: 'Đang tính số liệu…',
@@ -150,14 +137,36 @@ class _DashboardBody extends StatelessWidget {
             const gap = AppDimens.space16;
             final w = constraints.maxWidth;
             final columns = w >= 1000 ? 4 : (w >= 640 ? 2 : 1);
-            final cardWidth = (w - gap * (columns - 1)) / columns;
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: [
-                for (final card in cards)
-                  SizedBox(width: cardWidth, child: card),
-              ],
+            final rows = <Widget>[];
+            for (var i = 0; i < cards.length; i += columns) {
+              final rowCards = cards.sublist(
+                i,
+                math.min(i + columns, cards.length),
+              );
+              rows.add(
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var j = 0; j < rowCards.length; j++) ...[
+                        if (j > 0) const SizedBox(width: gap),
+                        Expanded(child: rowCards[j]),
+                      ],
+                      for (var k = rowCards.length; k < columns; k++) ...[
+                        const SizedBox(width: gap),
+                        const Expanded(child: SizedBox()),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+              if (i + columns < cards.length) {
+                rows.add(const SizedBox(height: gap));
+              }
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rows,
             );
           },
         ),

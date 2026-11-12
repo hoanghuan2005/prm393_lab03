@@ -68,9 +68,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
     return AdminPage(
       title: 'Trợ lý AI',
-      subtitle:
-          'Gemini gợi ý câu hỏi tự vấn và lời nhắn cho người dùng. Chỉ gửi số liệu '
-          'tổng hợp, không gửi tên, email hay UID của ai.',
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppDimens.space32),
         children: [

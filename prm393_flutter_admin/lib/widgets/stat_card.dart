@@ -32,52 +32,62 @@ class StatCard extends StatelessWidget {
       label: [label, value, ?caption, ?chip].join('. '),
       child: ExcludeSemantics(
         child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimens.space20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        label.toUpperCase(),
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: t.textSecondary,
-                          letterSpacing: 0.4,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 180),
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimens.space20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              label.toUpperCase(),
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: t.textSecondary,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: iconBackground,
+                              borderRadius: AppDimens.borderMedium,
+                            ),
+                            child: Icon(icon, color: iconColor, size: 22),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppDimens.space12),
+                      Text(value, style: t.text(AppTextStyles.displayMedium)),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimens.space8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          caption ?? '',
+                          style: t.text(AppTextStyles.bodyMedium),
                         ),
                       ),
-                    ),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: iconBackground,
-                        borderRadius: AppDimens.borderMedium,
-                      ),
-                      child: Icon(icon, color: iconColor, size: 22),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppDimens.space12),
-                Text(value, style: t.text(AppTextStyles.displayMedium)),
-                const SizedBox(height: AppDimens.space4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        caption ?? '',
-                        style: t.text(AppTextStyles.bodyMedium),
-                      ),
-                    ),
-                    if (chip != null) ...[
-                      const SizedBox(width: AppDimens.space8),
-                      StatusBadge(label: chip!, tone: tone),
+                      if (chip != null) ...[
+                        const SizedBox(width: AppDimens.space8),
+                        StatusBadge(label: chip!, tone: tone),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

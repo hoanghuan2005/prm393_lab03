@@ -278,9 +278,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     }
     return AdminPage(
       title: 'Thông báo',
-      subtitle:
-          'Thông báo hiện ngay trong hộp thư của app: app lắng nghe Firestore, '
-          'không cần server.',
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 980) {

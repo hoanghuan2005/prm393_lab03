@@ -51,9 +51,6 @@ class ReviewQueueScreen extends StatelessWidget {
     final vm = context.watch<ReviewQueueViewModel>();
     return AdminPage(
       title: 'Duyệt đề xuất',
-      subtitle:
-          'Đợt sale người dùng đề xuất từ app. Duyệt sẽ đưa vào lịch sale; '
-          'cả hai lựa chọn đều báo ngay vào hộp thư của người gửi.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

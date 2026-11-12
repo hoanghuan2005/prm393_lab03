@@ -97,10 +97,6 @@ class _UsersScreenState extends State<UsersScreen> {
     final t = context.tokens;
     return AdminPage(
       title: 'Người dùng',
-      subtitle: vm.isAdmin
-          ? 'Hồ sơ người dùng, số món và khoản mua của từng người. Chỉ admin đổi '
-                'được vai trò, và không ai tự đổi vai trò của mình.'
-          : 'Hồ sơ người dùng. Số món và khoản mua chỉ admin xem được.',
       child: LayoutBuilder(
         builder: (context, constraints) {
           final filters = _filters(vm);

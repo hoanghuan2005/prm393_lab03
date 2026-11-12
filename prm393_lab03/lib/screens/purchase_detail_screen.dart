@@ -14,6 +14,7 @@ import '../theme/app_text_styles.dart';
 import '../theme/motive_colors.dart';
 import '../viewmodels/purchase_viewmodel.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/product_image.dart';
 import '../widgets/satisfaction_dialog.dart';
 import '../widgets/why_i_buy_logo.dart';
 
@@ -233,6 +234,28 @@ class PurchaseDetailScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: AppDimens.space8),
+
+          // Receipt / product photo (Cloudinary), when attached
+          if (ProductImage.canShow(item.imageUrl)) ...[
+            ClipRRect(
+              borderRadius: AppDimens.borderMedium,
+              child: Container(
+                width: double.infinity,
+                height: 200,
+                color: AppSemanticColors.of(context).mutedSurface,
+                child: Image.network(
+                  item.imageUrl!.trim(),
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.image_not_supported_outlined,
+                    color: AppSemanticColors.of(context).textSecondary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimens.space12),
+          ],
 
           // Title
           Text(

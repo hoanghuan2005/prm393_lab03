@@ -1,0 +1,5 @@
+# Store text files with LF in the repo; Git detects binaries (docx, pdf, png...) itself
+* text=auto
+
+# Generated pages that tests compare with the app source: LF on every machine
+*.html text eol=lf

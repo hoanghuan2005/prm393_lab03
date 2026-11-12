@@ -31,6 +31,7 @@ class _FakeVision implements AiImageService {
   Object? error;
   int calls = 0;
   String? lastMime;
+  String? lastPrompt;
 
   /// When set, the reply waits for this future (to test a newer photo winning)
   Future<void>? gate;
@@ -46,6 +47,7 @@ class _FakeVision implements AiImageService {
   }) async {
     calls++;
     lastMime = mimeType;
+    lastPrompt = prompt;
     final g = gate;
     if (g != null) await g;
     if (error != null) throw error!;
@@ -549,6 +551,89 @@ OFFER | Link giả | 990.000 | javascript:alert(1)
         AiPhotoSearchService.parse(keywordReply).confidence,
         RecognitionConfidence.high,
       );
+    });
+  });
+
+  group('Photo search improvements', () {
+    late _FakeVision ai;
+    late _FakeWeb web;
+
+    PhotoSearchViewModel build() => PhotoSearchViewModel(
+      aiService: AiPhotoSearchService(generator: ai),
+      priceSearchService: AiPriceSearchService(generator: web),
+      remoteConfigService: RemoteConfigService(
+        remoteConfig: _FakeRemoteConfig(),
+      ),
+      preferencesService: PreferencesService(),
+      platformSupportsAi: () => true,
+      platformSupportsPriceSearch: () => true,
+    );
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      ai = _FakeVision()..reply = _mouseReply;
+      web = _FakeWeb();
+    });
+
+    test('a hint is sent with the same photo and kept for retry', () async {
+      final vm = build();
+      await vm.identify(_photo, mimeType: 'image/png');
+      expect(ai.lastPrompt, AiPhotoSearchService.prompt);
+
+      await vm.identifyWithHint('  tai nghe Sony  ');
+      expect(ai.calls, 2);
+      expect(ai.lastMime, 'image/png');
+      expect(ai.lastPrompt, contains('"tai nghe Sony"'));
+      expect(vm.hint, 'tai nghe Sony');
+
+      ai.error = Exception('offline');
+      await vm.retry();
+      expect(ai.lastPrompt, contains('"tai nghe Sony"'));
+
+      vm.reset();
+      expect(vm.hint, isNull);
+    });
+
+    test('an empty hint does nothing', () async {
+      final vm = build();
+      await vm.identify(_photo);
+      await vm.identifyWithHint('   ');
+      expect(ai.calls, 1);
+    });
+
+    test(
+      'suggested price: cheapest shop, else middle of the estimate',
+      () async {
+        final vm = build();
+        expect(vm.suggestedPriceVnd, isNull);
+        await vm.identify(_photo);
+        // 1.990.000 – 2.490.000 → 2.240.000
+        expect(vm.suggestedPriceVnd, 2240000);
+        expect(vm.bestOffer, isNull);
+
+        web.reply = const GroundedText(
+          text: 'OFFER | B | 500.000 |\nOFFER | A | 450.000 |',
+        );
+        await vm.searchPrices();
+        expect(vm.suggestedPriceVnd, 450000);
+        expect(vm.bestOffer?.shop, 'A');
+      },
+    );
+
+    test('similarTitle needs every query word in the title', () {
+      bool m(String q, String t) => PhotoSearchViewModel.similarTitle(q, t);
+      expect(
+        m('Logitech MX Master 3S', 'Chuột Logitech MX Master 3S đen'),
+        isTrue,
+      );
+      expect(m('logitech mx master', 'LOGITECH MX-MASTER 3'), isTrue);
+      expect(
+        m('Logitech MX Master 3S', 'Chuột Logitech MX Anywhere 3'),
+        isFalse,
+      );
+      expect(m('bình giữ nhiệt', 'Bình giữ nhiệt Lock&Lock 500ml'), isTrue);
+      expect(m('bình giữ nhiệt', 'Bình nước nhựa'), isFalse);
+      expect(m('', 'Bất kỳ'), isFalse);
     });
   });
 }

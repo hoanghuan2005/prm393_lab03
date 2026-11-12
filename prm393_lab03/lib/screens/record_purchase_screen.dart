@@ -28,6 +28,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_dropdown_field.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/item_suggestions.dart';
+import '../widgets/photo_attach_field.dart';
 import '../widgets/why_i_buy_logo.dart';
 
 /// Shared Android/web form. Wishlist items are only changed by a successful save.
@@ -70,6 +71,10 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
   bool _isSaving = false;
   bool _didSave = false;
   String? _saveError;
+
+  /// Receipt/product photo; a wishlist purchase starts with the item's photo
+  String? _imageUrl;
+  bool _isUploadingPhoto = false;
   late final List<Object?> _initialDraft;
   bool _allowExit = false;
   bool _confirmingExit = false;
@@ -82,6 +87,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     _motive,
     _budgetGroupId,
     _usedDiscountCode,
+    _imageUrl,
   ];
   bool get _hasChanges => !listEquals(_initialDraft, _draft);
 
@@ -113,6 +119,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         purchase?.budgetGroupId ?? item?.budgetGroupId ?? BudgetGroup.otherId;
     _groupChosen = purchase != null || item?.budgetGroupId != null;
     _usedDiscountCode = purchase?.usedDiscountCode ?? false;
+    _imageUrl = purchase?.imageUrl ?? item?.imageUrl;
     _initialDraft = _draft;
     for (final controller in [
       _amountController,
@@ -247,6 +254,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         budgetGroupId: _budgetGroupId,
         usedDiscountCode: _usedDiscountCode,
         originalPurchase: original,
+        imageUrl: _imageUrl,
       );
       if (ok) {
         final note = _noteController.text.trim();
@@ -259,6 +267,8 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
           clearNote: note.isEmpty,
           budgetGroupId: _budgetGroupId,
           usedDiscountCode: _usedDiscountCode,
+          imageUrl: _imageUrl,
+          clearImage: _imageUrl == null,
         );
       }
     } else {
@@ -272,6 +282,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
         usedDiscountCode: _usedDiscountCode,
         fromWishlist: widget.wishlistItem,
         requestId: _requestId,
+        imageUrl: _imageUrl,
       );
     }
     if (!mounted) return;
@@ -345,7 +356,7 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
     final vm = context.watch<PurchaseViewModel>();
     final groups = _groups(context.watch<BudgetViewModel>());
     final activeSession = _sessionUid != null && vm.uid == _sessionUid;
-    final busy = _isSaving || _didSave || vm.isSaving;
+    final busy = _isSaving || _didSave || vm.isSaving || _isUploadingPhoto;
     return PopScope<PurchaseItem>(
       canPop: !busy && (_allowExit || (_step == 1 && !_hasChanges)),
       onPopInvokedWithResult: (didPop, _) {
@@ -668,6 +679,15 @@ class _RecordPurchaseScreenState extends State<RecordPurchaseScreen> {
               labelText: 'Ghi chú (không bắt buộc)',
               hintText: 'Điều bạn muốn ghi nhớ về khoản mua này',
             ),
+          ),
+          const SizedBox(height: AppDimens.space16),
+          PhotoAttachField(
+            label: 'Ảnh hoá đơn / sản phẩm (không bắt buộc)',
+            imageUrl: _imageUrl,
+            enabled: enabled,
+            onChanged: (url) => setState(() => _imageUrl = url),
+            onUploadingChanged: (value) =>
+                setState(() => _isUploadingPhoto = value),
           ),
         ],
       ),

@@ -389,6 +389,7 @@ class WishlistViewModel extends ChangeNotifier
     BuyingMotive? motive,
     String? budgetGroupId,
     int? priority,
+    String? imageUrl,
   }) {
     // Built field by field: copyWith cannot clear an optional value such as the link
     final updated = WishlistItem(
@@ -412,7 +413,7 @@ class WishlistViewModel extends ChangeNotifier
       productKey: item.productKey,
       variantLabel: item.variantLabel,
       modelId: item.modelId,
-      imageUrl: item.imageUrl,
+      imageUrl: imageUrl ?? item.imageUrl,
       buyIntentAt: item.buyIntentAt,
     );
     return _writeItem(

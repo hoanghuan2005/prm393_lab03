@@ -500,6 +500,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     runSpacing: AppDimens.space8,
                     children: [
                       Column(
+                        key: const ValueKey('item-price'),
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(

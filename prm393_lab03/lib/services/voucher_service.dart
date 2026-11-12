@@ -1,181 +1,91 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/voucher.dart';
 
+import '../models/voucher.dart';
+import '../models/voucher_matcher.dart';
+import '../models/wishlist_item.dart';
+
+/// Vouchers the team entered on the web admin (`vouchers`, decision D-3: real
+/// data only). There is no built-in sample list: until Firestore answers, and
+/// when the collection is empty, the app suggests no voucher.
 class VoucherService extends ChangeNotifier {
   final FirebaseFirestore _firestore;
 
-  List<Voucher> _vouchers = defaultVouchers;
+  List<Voucher> _vouchers = const [];
+  bool _loaded = false;
+  bool _isStale = false;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
 
   VoucherService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance {
+    : _firestore = firestore ?? FirebaseFirestore.instance {
     _initFirestoreListener();
   }
 
+  /// Active vouchers from Firestore (archived ones are left out)
   List<Voucher> get allVouchers => List.unmodifiable(_vouchers);
+
+  static const String sourceLoading = 'đang tải';
+  static const String sourceFirestore = 'firestore';
+
+  /// For testers (dev screen): [sourceLoading] until the first answer, then
+  /// [sourceFirestore]
+  String get source => _loaded ? sourceFirestore : sourceLoading;
+
+  /// The listener failed after data arrived: [allVouchers] is the last list
+  /// received (kept so the app still works offline), not live
+  bool get isStale => _isStale;
+
+  /// Number of vouchers in use
+  int get count => _vouchers.length;
 
   void _initFirestoreListener() {
     try {
       _subscription = _firestore
           .collection('vouchers')
           .snapshots()
-          .listen((snapshot) {
-        if (snapshot.docs.isNotEmpty) {
-          final live = snapshot.docs
-              .map((doc) => Voucher.fromFirestore(doc.data(), doc.id))
-              .where((v) => v.isActive)
-              .toList();
-          if (live.isNotEmpty) {
-            _vouchers = live;
-            notifyListeners();
-          }
-        }
-      }, onError: (e) {
-        debugPrint('VoucherService listener fallback to defaults: $e');
-      });
+          .listen(
+            (snapshot) {
+              // An empty collection empties the list: archived or deleted
+              // vouchers must disappear from the app
+              _vouchers = snapshot.docs
+                  .map((doc) => Voucher.fromFirestore(doc.data(), doc.id))
+                  .where((v) => v.isActive)
+                  .toList();
+              _loaded = true;
+              _isStale = false;
+              notifyListeners();
+            },
+            onError: (Object e) {
+              debugPrint('VoucherService listener error: $e');
+              _isStale = true;
+              notifyListeners();
+            },
+          );
     } catch (e) {
       debugPrint('VoucherService init error: $e');
     }
   }
 
-  /// Tìm voucher tốt nhất (tiết kiệm nhiều tiền nhất) phù hợp với sản phẩm
+  /// Best discount voucher for this item and list price (shop vouchers first,
+  /// then the biggest discount)
   Voucher? findBestVoucher({
+    required WishlistItem item,
     required int priceVnd,
-    String? platform,
-    String? shopName,
-  }) {
-    final valid = _vouchers
-        .where((v) => v.canApplyTo(
-              priceVnd: priceVnd,
-              itemPlatform: platform,
-              itemShopName: shopName,
-            ))
-        .toList();
-    if (valid.isEmpty) return null;
-    // Ưu tiên voucher riêng của shop trước, sau đó sắp xếp theo số tiền giảm cao nhất
-    valid.sort((a, b) {
-      if (a.isShopVoucher && !b.isShopVoucher) return -1;
-      if (!a.isShopVoucher && b.isShopVoucher) return 1;
-      return b.discountAmount.compareTo(a.discountAmount);
-    });
-    return valid.first;
-  }
+    required DateTime now,
+  }) => VoucherMatcher.best(_vouchers, item, priceVnd, now);
 
-  /// Lấy toàn bộ voucher có thể áp dụng cho sản phẩm này
+  /// Every discount voucher that applies to this item and list price
   List<Voucher> getApplicableVouchers({
+    required WishlistItem item,
     required int priceVnd,
-    String? platform,
-    String? shopName,
-  }) {
-    final list = _vouchers
-        .where((v) => v.canApplyTo(
-              priceVnd: priceVnd,
-              itemPlatform: platform,
-              itemShopName: shopName,
-            ))
-        .toList();
-    list.sort((a, b) {
-      if (a.isShopVoucher && !b.isShopVoucher) return -1;
-      if (!a.isShopVoucher && b.isShopVoucher) return 1;
-      return b.discountAmount.compareTo(a.discountAmount);
-    });
-    return list;
-  }
+    required DateTime now,
+  }) => VoucherMatcher.applicable(_vouchers, item, priceVnd, now);
 
   @override
   void dispose() {
     _subscription?.cancel();
     super.dispose();
   }
-
-  static final List<Voucher> defaultVouchers = [
-    const Voucher(
-      id: 'vouch_1111_01',
-      code: 'SHOPEE1111',
-      title: 'Shopee Siêu Sale 11.11 - Giảm 50K cho đơn từ 250K',
-      platform: 'Shopee',
-      discountAmount: 50000,
-      minOrder: 250000,
-      validUntil: '2026-11-12',
-      affiliateUrl: 'https://shopee.vn/m/11-11-sieu-sale',
-      isActive: true,
-      category: 'Tất cả',
-    ),
-    const Voucher(
-      id: 'vouch_1111_02',
-      code: 'FREESHIP0D',
-      title: 'Mã Miễn Phí Vận Chuyển Đơn Từ 0Đ Toàn Sàn',
-      platform: 'Shopee',
-      discountAmount: 25000,
-      minOrder: 0,
-      validUntil: '2026-11-12',
-      affiliateUrl: 'https://shopee.vn/m/mien-phi-van-chuyen',
-      isActive: true,
-      category: 'Tất cả',
-    ),
-    const Voucher(
-      id: 'vouch_1111_03',
-      code: 'TECH1111',
-      title: 'Voucher Công Nghệ & Điện Tử Giảm 100K đơn 500K',
-      platform: 'Shopee',
-      discountAmount: 100000,
-      minOrder: 500000,
-      validUntil: '2026-11-15',
-      affiliateUrl: 'https://shopee.vn/m/cong-nghe-giam-soc',
-      isActive: true,
-      category: 'Công nghệ',
-    ),
-    const Voucher(
-      id: 'vouch_laz_01',
-      code: 'LAZADA1111',
-      title: 'Lazada 11.11 Triệu Deal - Giảm 40K đơn 200K',
-      platform: 'Lazada',
-      discountAmount: 40000,
-      minOrder: 200000,
-      validUntil: '2026-11-13',
-      affiliateUrl: 'https://www.lazada.vn',
-      isActive: true,
-      category: 'Tất cả',
-    ),
-    const Voucher(
-      id: 'vouch_fashion_01',
-      code: 'FASHION30K',
-      title: 'Voucher Thời Trang Nam Nữ Giảm 30K',
-      platform: 'Shopee',
-      discountAmount: 30000,
-      minOrder: 100000,
-      validUntil: '2026-11-20',
-      affiliateUrl: 'https://shopee.vn',
-      isActive: true,
-      category: 'Thời trang',
-    ),
-    const Voucher(
-      id: 'vouch_perseper_01',
-      code: 'PERSEPER15K',
-      title: 'Voucher Độc Quyền Shop Perseper Giảm 15K',
-      platform: 'Shopee',
-      discountAmount: 15000,
-      minOrder: 50000,
-      validUntil: '2026-11-30',
-      affiliateUrl: 'https://shopee.vn',
-      isActive: true,
-      category: 'Thời trang',
-      shopName: 'Perseper',
-    ),
-    const Voucher(
-      id: 'vouch_xmmn_01',
-      code: 'XMMN20K',
-      title: 'Voucher Tri Ân Khách Hàng Shop XMMN Giảm 20K',
-      platform: 'Shopee',
-      discountAmount: 20000,
-      minOrder: 100000,
-      validUntil: '2026-11-30',
-      affiliateUrl: 'https://shopee.vn',
-      isActive: true,
-      category: 'Thời trang',
-      shopName: 'XMMN',
-    ),
-  ];
 }

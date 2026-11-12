@@ -266,8 +266,19 @@ void main() {
       await tester.pumpAndSettle();
       expect((await item())['latestPriceVnd'], 350000);
       await _deliverFirestore(tester);
-      expect(find.text('350.000 ₫'), findsOneWidget);
-      expect(find.textContaining('Giá ghi ngày'), findsOneWidget);
+      // The item's own price line (the voucher card repeats the price elsewhere)
+      final priceLine = find.byKey(const ValueKey('item-price'));
+      expect(
+        find.descendant(of: priceLine, matching: find.text('350.000 ₫')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: priceLine,
+          matching: find.textContaining('Giá ghi ngày'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('delete asks for confirmation and leaves the screen after deleting', (

@@ -40,6 +40,9 @@ class AdminApp extends StatelessWidget {
         Provider<ShopeeVoucherService>(
           create: (_) => FirestoreShopeeVoucherService(),
         ),
+        Provider<VoucherRecordService>(
+          create: (_) => FirestoreVoucherRecordService(),
+        ),
         Provider<AdminAiService>(create: (_) => AdminAiService()),
         Provider<PushService>(
           create: (c) => HttpPushService(c.read<AdminAuthService>()),

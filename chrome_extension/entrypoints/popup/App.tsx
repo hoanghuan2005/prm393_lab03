@@ -19,6 +19,7 @@ import { hhmm, reminderTime, whenText } from '../../features/reminders/schedule'
 import { TITLE_MAX, clampTitle, fmtDayMonth, fmtProductRating, fmtShopRating, fmtVnd, parseVnd, toRatingCount, toShopStar, toStar } from '../../lib/format';
 import { kv } from '../../lib/kv';
 import { IS_FIREBASE, IS_LAB } from '../../lib/env';
+import { copyImageToCloudinary } from '../../lib/cloudinary';
 import { readPage, type PageRead } from '../../features/ex10/reader';
 import { VoucherPanel } from '../../components/VoucherPanel';
 import { AdminVoucherBar } from '../../components/AdminVoucherBar';
@@ -192,7 +193,9 @@ export default function App() {
       originalUrl: draft.link.originalUrl, url: draft.link.url, productKey: draft.link.productKey, title: draft.title, variantLabel: draft.variant, shopName: draft.shopName,
       productRating: draft.productRating, productRatingCount: draft.productRatingCount, shopRating: draft.shopRating,
       vouchers: keepVouchers && showVouchers ? page!.voucherTexts : undefined,
-      imageUrl: draft.imageUrl, budgetGroupId: draft.group, motive: draft.motive, saleEvent: flashEvent(),
+      // Ảnh lưu bản sao trên Cloudinary (chỉ với dữ liệu thật) để không mất khi Shopee đổi link
+      imageUrl: draft.imageUrl && IS_FIREBASE ? await copyImageToCloudinary(draft.imageUrl) : draft.imageUrl,
+      budgetGroupId: draft.group, motive: draft.motive, saleEvent: flashEvent(),
       price: prices[0] ?? null,
     });
     if (duplicate) { setExisting(item); setBusy(false); setScreen('ext6'); return; }

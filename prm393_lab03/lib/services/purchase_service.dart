@@ -226,6 +226,7 @@ class FirestorePurchaseService implements PurchaseService {
       note: draft.note,
       usedDiscountCode: draft.usedDiscountCode,
       createdAt: now,
+      imageUrl: draft.imageUrl,
     );
     _validate(purchase);
     final decision = Decision(

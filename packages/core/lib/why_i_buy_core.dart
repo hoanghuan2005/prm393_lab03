@@ -25,6 +25,7 @@ export 'src/models/inbox_message.dart';
 export 'src/models/sale_event.dart';
 export 'src/models/sale_suggestion.dart';
 export 'src/models/ui_state.dart';
+export 'src/models/voucher_record.dart';
 
 // Firestore services
 export 'src/services/announcement_service.dart';
@@ -34,3 +35,4 @@ export 'src/services/role_service.dart';
 export 'src/services/sale_event_service.dart';
 export 'src/services/sale_suggestion_service.dart';
 export 'src/services/shared_paths.dart';
+export 'src/services/voucher_record_service.dart';

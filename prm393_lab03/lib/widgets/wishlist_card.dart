@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../core/formatters/date_format.dart';
 import '../core/formatters/money_format.dart';
 import '../models/buying_motive.dart';
+import '../models/voucher.dart';
+import '../models/voucher_matcher.dart';
 import '../models/wishlist_item.dart';
 import '../services/voucher_service.dart';
 import '../theme/app_colors.dart';
@@ -33,17 +35,24 @@ class WishlistCard extends StatelessWidget {
 
     // Check for voucher price suggestion
     final voucherService = context.watch<VoucherService?>();
-    final bestVoucher = (item.latestPriceVnd != null && voucherService != null)
+    // V8: the list price stays the card's main price; a voucher that applies only
+    // adds a small "Có mã …" line. V6c: the saved latest price is a list price
+    // (never "sau voucher"), so the card needs no price history of its own.
+    final listPrice = VoucherMatcher.cardListPrice(
+      item,
+      history: insights?.history,
+    );
+    final bestVoucher = (listPrice != null && voucherService != null)
         ? voucherService.findBestVoucher(
-            priceVnd: item.latestPriceVnd!,
-            platform: (item.url ?? '').toLowerCase().contains('lazada')
-                ? 'Lazada'
-                : 'Shopee',
-            shopName: item.shopName,
+            item: item,
+            priceVnd: listPrice.amountVnd,
+            now: DateTime.now(),
           )
         : null;
-    final priceAfterVoucher = (bestVoucher != null && item.latestPriceVnd != null)
-        ? (item.latestPriceVnd! - bestVoucher.discountAmount)
+    // "Thấp hơn lúc lưu N%": compared with the price recorded when saving
+    final savedPrice = insights?.saved?.amountVnd;
+    final dealPercent = (hasDeal && savedPrice != null && savedPrice > 0)
+        ? (dealSavings * 100 / savedPrice).round()
         : null;
 
     return Semantics(
@@ -68,166 +77,77 @@ class WishlistCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (ProductImage.canShow(item.imageUrl)) ...[
-                      ProductImage(url: item.imageUrl),
-                      const SizedBox(width: AppDimens.space12),
-                    ],
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        // themed: the default styles are dark text, unreadable in dark mode
-                        style: AppTextStyles.titleMedium.themed(context),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    _buildThumbnail(context),
                     const SizedBox(width: AppDimens.space12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          formatVnd(item.latestPriceVnd),
-                          style: item.hasPrice
-                              ? AppTextStyles.titleMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: priceAfterVoucher != null
-                                          ? AppSemanticColors.of(context).textSecondary
-                                          : AppColors.onPrimary,
-                                      fontWeight: priceAfterVoucher != null
-                                          ? FontWeight.w500
-                                          : FontWeight.w700,
-                                      decoration: priceAfterVoucher != null
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    )
-                                    .themed(context)
-                              : AppTextStyles.labelMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: AppSemanticColors.of(context)
-                                          .textSecondary,
-                                    )
-                                    .themed(context),
-                        ),
-                        if (priceAfterVoucher != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 12,
-                                color: AppSemanticColors.of(context).success,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                formatVnd(priceAfterVoucher > 0 ? priceAfterVoucher : 0),
-                                style: AppTextStyles.titleMedium
-                                    .themed(context)
-                                    .copyWith(
-                                      color: AppSemanticColors.of(context).success,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                            ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            // themed: the default styles are dark text, unreadable in dark mode
+                            style: AppTextStyles.titleMedium.themed(context),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          if (item.variantLabel != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _metaLine(
+                              context,
+                              Icons.style_outlined,
+                              item.variantLabel!,
+                            ),
+                          ],
+                          if (item.shopName != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _metaLine(
+                              context,
+                              Icons.storefront_outlined,
+                              item.shopName!,
+                            ),
+                          ],
+                          const SizedBox(height: AppDimens.space8),
+                          Text(
+                            formatVnd(item.latestPriceVnd),
+                            key: const ValueKey('card-price'),
+                            style: item.hasPrice
+                                ? AppTextStyles.titleMedium
+                                      .copyWith(
+                                        color: AppColors.onPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      )
+                                      .themed(context)
+                                : AppTextStyles.labelMedium
+                                      .themed(context)
+                                      .copyWith(
+                                        color: AppSemanticColors.of(
+                                          context,
+                                        ).textSecondary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                          ),
+                          if (bestVoucher != null) ...[
+                            const SizedBox(height: AppDimens.space4),
+                            _voucherLine(context, bestVoucher),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ],
                 ),
-                if (item.variantLabel != null) ...[
-                  const SizedBox(height: AppDimens.space4),
-                  Text(
-                    'Phân loại: ${item.variantLabel}',
-                    style: AppTextStyles.caption.themed(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (item.shopName != null) ...[
-                  const SizedBox(height: AppDimens.space4),
-                  Text(
-                    'Shop: ${item.shopName}',
-                    style: AppTextStyles.caption.themed(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                const SizedBox(height: AppDimens.space12),
+                Divider(
+                  height: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
+                ),
                 const SizedBox(height: AppDimens.space12),
                 Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  spacing: AppDimens.space12,
+                  spacing: AppDimens.space8,
                   runSpacing: AppDimens.space8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     MotiveChip(motive: item.displayMotive, isCompact: true),
-                    if (hasDeal)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).error.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppSemanticColors.of(context).error.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥', style: TextStyle(fontSize: 12)),
-                            const SizedBox(width: 4),
-                            Text(
-                              dealSavings > 0
-                                  ? 'Giá hời · Tiết kiệm ${formatVnd(dealSavings)}'
-                                  : 'Giá hời',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppSemanticColors.of(context).error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (bestVoucher != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppSemanticColors.of(context).success.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppSemanticColors.of(context).success.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_offer_rounded,
-                              size: 11,
-                              color: AppSemanticColors.of(context).success,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              bestVoucher.isShopVoucher
-                                  ? 'Voucher Shop -${formatVnd(bestVoucher.discountAmount)}'
-                                  : 'Mã ${bestVoucher.code} -${formatVnd(bestVoucher.discountAmount)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppSemanticColors.of(context).success,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    if (hasDeal) _lowerThanSavedBadge(context, dealPercent, dealSavings),
                     if (item.isDemo) const DemoDataBadge(),
                     if (item.isFromExtension) fromExtensionChip(context),
                     _buildStatusBadge(context),
@@ -238,6 +158,103 @@ class WishlistCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// "Có mã −15.000 ₫ · đơn từ 50.000 ₫": a voucher that applies, in the quiet
+  /// secondary style; the list price above stays the main price (V8)
+  Widget _voucherLine(BuildContext context, Voucher voucher) {
+    final color = AppSemanticColors.of(context).textSecondary;
+    final owner = voucher.isShopVoucher ? 'Có mã của shop' : 'Có mã';
+    final minOrder = voucher.minOrder > 0
+        ? ' · đơn từ ${formatVnd(voucher.minOrder)}'
+        : '';
+    return Row(
+      key: const ValueKey('card-voucher-line'),
+      children: [
+        Icon(Icons.local_offer_outlined, size: 14, color: color),
+        const SizedBox(width: AppDimens.space4),
+        Expanded(
+          child: Text(
+            '$owner −${formatVnd(voucher.discountAmount)}$minOrder',
+            style: AppTextStyles.caption.themed(context).copyWith(color: color),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Neutral observation, never "giá hời" / "tiết kiệm" (no red, no emoji)
+  Widget _lowerThanSavedBadge(BuildContext context, int? percent, int savings) {
+    final colors = AppSemanticColors.of(context);
+    final amount = savings > 0 ? formatVnd(savings) : null;
+    return Container(
+      key: const ValueKey('card-lower-than-saved'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.space8,
+        vertical: AppDimens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: colors.mutedSurface,
+        borderRadius: AppDimens.borderPill,
+        border: Border.all(color: colors.divider),
+      ),
+      child: Text(
+        percent != null && amount != null
+            ? 'Thấp hơn lúc lưu $percent% (−$amount)'
+            : 'Thấp hơn lúc lưu',
+        style: AppTextStyles.caption
+            .themed(context)
+            .copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
+  }
+
+  static const double _thumbSize = 84;
+
+  /// Framed product photo; a quiet bag icon keeps cards aligned when there is no photo
+  Widget _buildThumbnail(BuildContext context) {
+    final colors = AppSemanticColors.of(context);
+    return Container(
+      width: _thumbSize,
+      height: _thumbSize,
+      decoration: BoxDecoration(
+        color: colors.mutedSurface,
+        borderRadius: AppDimens.borderMedium,
+        border: Border.all(color: colors.cardBorder.withValues(alpha: 0.6)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: ProductImage.canShow(item.imageUrl)
+          ? ProductImage(url: item.imageUrl, size: _thumbSize)
+          : Icon(
+              Icons.shopping_bag_outlined,
+              size: 32,
+              color: colors.textSecondary,
+            ),
+    );
+  }
+
+  static Widget _metaLine(BuildContext context, IconData icon, String text) {
+    final color = AppSemanticColors.of(context).textSecondary;
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: AppDimens.space4),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.caption.themed(context).copyWith(color: color),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

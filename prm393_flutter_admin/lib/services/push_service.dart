@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'admin_auth_service.dart';
@@ -25,7 +26,11 @@ abstract class PushService {
 }
 
 class HttpPushService implements PushService {
-  static const String baseUrl = String.fromEnvironment('PUSH_API_BASE_URL');
+  // Debug runs default to the local spring-boot-push server
+  static const String baseUrl = String.fromEnvironment(
+    'PUSH_API_BASE_URL',
+    defaultValue: kDebugMode ? 'http://localhost:8080' : '',
+  );
 
   final AdminAuthService _auth;
   final http.Client _client;

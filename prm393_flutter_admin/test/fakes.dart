@@ -135,6 +135,25 @@ class FakeInboxService implements InboxService {
   }) async => sent.add((toUid, title, body));
 }
 
+class FakeCrashReportService implements CrashReportService {
+  final controller = StreamController<List<CrashReport>>.broadcast();
+  final Map<String, bool> resolved = {};
+  Object? failWrites;
+
+  @override
+  Stream<List<CrashReport>> watchRecent({int limit = 200}) => controller.stream;
+
+  @override
+  Future<void> setResolved(
+    String id,
+    bool resolved, {
+    required String byUid,
+  }) async {
+    if (failWrites != null) throw failWrites!;
+    this.resolved[id] = resolved;
+  }
+}
+
 class FakeVoucherRecordService implements VoucherRecordService {
   final controller = StreamController<List<VoucherRecord>>.broadcast();
   final List<VoucherDraft> created = [];

@@ -55,6 +55,7 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'users/alice/wishlistItems/w1/priceSnapshots/s0'), { amountVnd: 1, observedAt: now() });
   await setDoc(doc(db, 'vouchers/v1'), { ...voucher('sam'), updatedAt: now() });
   await setDoc(doc(db, 'vouchers/legacy'), { code: 'SHOPEE50K', title: 'Mẫu cũ', platform: 'Shopee', discountAmount: 50000, isActive: true });
+  await setDoc(doc(db, 'crashes/c1'), { ...crash('alice', 'c1'), createdAt: now() });
   await setDoc(doc(db, 'shopeeVouchers/sv1'), { ...shopeeVoucher('sam'), lastSeenAt: now() });
   await setDoc(doc(db, 'announcements/a-pub'), announcement('sam', 'published', now()));
   await setDoc(doc(db, 'announcements/a-old'), announcement('sam', 'archived', now()));
@@ -110,6 +111,16 @@ function voucher(by, extra = {}) {
     isActive: true, updatedAt: serverTimestamp(), updatedBy: by, ...extra,
   };
 }
+/** A crash report as the app writes it (CrashlyticsService.logCrashToFirestore) */
+function crash(by, id, extra = {}) {
+  return {
+    id, feature: 'ProfileDemo (Forced Crash)', errorCode: 'FATAL_TEST_CRASH', errorMessage: 'Crash thử',
+    stackTrace: '#0 main (package:app/main.dart:1)', severity: 'fatal', affectedUsers: 1, occurrences: 1,
+    lastOccurred: '2026-11-13 08:00:00', appVersion: '1.0.0+1', platform: 'android', userId: by,
+    isResolved: false, createdAt: serverTimestamp(), ...extra,
+  };
+}
+const resolve = (resolved, by) => ({ isResolved: resolved, resolvedAt: serverTimestamp(), resolvedBy: by });
 /** Metadata of a PDF report shared from the device (R-4) */
 function pdfReport(extra = {}) {
   return { month: '2026-11', itemCount: 12, sizeKb: 48, shared: true, createdAt: serverTimestamp(), ...extra };
@@ -460,6 +471,29 @@ add('vouchers', 'staff', 'reactivate a legacy voucher without fixing it', false,
 add('vouchers', 'staff', 'delete a voucher', false, () => deleteDoc(doc(sam, 'vouchers/v1')));
 add('vouchers', 'admin', 'edit a voucher', true, () => setDoc(doc(ada, 'vouchers/v1'), voucher('ada', { discountAmount: 30000 })));
 add('vouchers', 'admin', 'delete a voucher', false, () => deleteDoc(doc(ada, 'vouchers/v1')));
+
+// crashes: the app writes its own reports; staff read and resolve them on the web admin
+add('crashes', 'user', 'report my own crash', true, () => setDoc(doc(alice, 'crashes/u1'), crash('alice', 'u1')));
+add('crashes', 'user', 'report with a stack trace of 15 000 characters', true, () => setDoc(doc(alice, 'crashes/u2'), crash('alice', 'u2', { stackTrace: 'x'.repeat(15000) })));
+add('crashes', 'user', 'report in the name of someone else', false, () => setDoc(doc(alice, 'crashes/u3'), crash('bob', 'u3')));
+add('crashes', 'user', 'report that is already resolved', false, () => setDoc(doc(alice, 'crashes/u4'), crash('alice', 'u4', { isResolved: true })));
+add('crashes', 'user', 'report with an unknown severity', false, () => setDoc(doc(alice, 'crashes/u5'), crash('alice', 'u5', { severity: 'boom' })));
+add('crashes', 'user', 'report with a 600-character message', false, () => setDoc(doc(alice, 'crashes/u6'), crash('alice', 'u6', { errorMessage: 'm'.repeat(600) })));
+add('crashes', 'user', 'report with an extra field', false, () => setDoc(doc(alice, 'crashes/u7'), crash('alice', 'u7', { email: 'a@b.c' })));
+add('crashes', 'user', 'report whose id differs from the document id', false, () => setDoc(doc(alice, 'crashes/u8'), crash('alice', 'other')));
+add('crashes', 'user', 'read a report', false, () => getDoc(doc(alice, 'crashes/c1')));
+add('crashes', 'user', 'mark a report resolved', false, () => updateDoc(doc(alice, 'crashes/c1'), resolve(true, 'alice')));
+add('crashes', 'guest', 'report my own crash', true, () => setDoc(doc(guest, 'crashes/g1'), crash('guest-1', 'g1')));
+add('crashes', 'signed out', 'report a crash', false, () => setDoc(doc(nobody, 'crashes/n1'), crash('nobody', 'n1')));
+add('crashes', 'staff', 'read a report', true, () => getDoc(doc(sam, 'crashes/c1')));
+add('crashes', 'staff', 'list the newest reports', true, () => getDocs(query(collection(sam, 'crashes'))));
+add('crashes', 'staff', 'mark a report resolved', true, () => updateDoc(doc(sam, 'crashes/c1'), resolve(true, 'sam')));
+add('crashes', 'staff', 'mark resolved in the name of someone else', false, () => updateDoc(doc(sam, 'crashes/c1'), resolve(true, 'ada')));
+add('crashes', 'staff', 'rewrite the error message', false, () => updateDoc(doc(sam, 'crashes/c1'), { errorMessage: 'đã sửa', ...resolve(true, 'sam') }));
+add('crashes', 'staff', 'delete a report', false, () => deleteDoc(doc(sam, 'crashes/c1')));
+add('crashes', 'admin', 'read a report', true, () => getDoc(doc(ada, 'crashes/c1')));
+add('crashes', 'admin', 'open a report again', true, () => updateDoc(doc(ada, 'crashes/c1'), resolve(false, 'ada')));
+add('crashes', 'admin', 'delete a report', false, () => deleteDoc(doc(ada, 'crashes/c1')));
 
 // shopeeVouchers: captured by staff with the extension; users never read them
 add('shopeeVouchers', 'user', 'read', false, () => getDoc(doc(alice, 'shopeeVouchers/sv1')));

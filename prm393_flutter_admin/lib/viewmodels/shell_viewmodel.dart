@@ -10,6 +10,7 @@ enum AdminSection {
   announcements('Thông báo', Icons.campaign_outlined, Icons.campaign),
   codes('Mã giảm giá', Icons.sell_outlined, Icons.sell),
   vouchers('Voucher Shopee', Icons.local_offer_outlined, Icons.local_offer),
+  crashes('Sự cố', Icons.bug_report_outlined, Icons.bug_report),
   assistant('Trợ lý AI', Icons.auto_awesome_outlined, Icons.auto_awesome);
 
   final String label;

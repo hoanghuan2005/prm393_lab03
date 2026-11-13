@@ -421,7 +421,6 @@ class SettingsViewModel extends ChangeNotifier
         errorMessage: 'Simulated non-fatal exception for Lab 3 validation (UID: $userId)',
         stackTrace: stack.toString(),
         severity: 'warning',
-        userId: userId,
       );
 
       await reminderService?.showImmediateNotification(
@@ -446,7 +445,6 @@ class SettingsViewModel extends ChangeNotifier
       errorMessage: 'Kích hoạt thử nghiệm Crash thật từ Profile Demo (UID: $effectiveUid)',
       stackTrace: StackTrace.current.toString(),
       severity: 'fatal',
-      userId: effectiveUid,
     );
     await Future.delayed(const Duration(milliseconds: 600));
     crashlyticsService.forceCrashForTesting();

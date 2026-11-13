@@ -16,6 +16,7 @@ Vai trò nằm ở `users/{uid}.role`. **Admin đầu tiên được đặt trê
 | `saleSuggestions` | Người dùng (không ẩn danh), cho chính mình, `status = pending` | Người đề xuất; staff, admin | Staff, admin: `pending` → `approved` (cùng batch tạo `saleEvents`) hoặc `rejected` (kèm `reason`), một lần | Người đề xuất khi còn `pending` | Đề xuất sale mobile; web duyệt đề xuất |
 | `/{path=**}/wishlistItems`, `/{path=**}/purchases` (collection group) | — | Admin: truy vấn `count` / `sum` cho dashboard. Rules không giới hạn được chỉ phép đếm, nên admin về lý thuyết **liệt kê được** document; web chỉ dùng `count()` / `sum()` (`dashboard_service.dart`), và admin là vai trò tin cậy cao nhất (đặt trên Console) | — | — | Web tổng quan |
 | `vouchers` | Staff, admin (form "Mã giảm giá" trên web) | Mọi người đã đăng nhập | Staff, admin; mã của màn cũ chỉ được lưu trữ | — (lưu trữ: `isActive = false`) | Dòng "Có mã …" trên thẻ món, thẻ "Mã giảm giá Shopee" ở Chi tiết món; web "Mã giảm giá" |
+| `crashes` | Mọi tài khoản đã đăng nhập, báo cáo của chính mình (`userId` = uid) | Staff, admin | Staff, admin: chỉ `isResolved`, `resolvedAt`, `resolvedBy` | — | Web "Sự cố"; app ghi khi gặp lỗi chưa bắt được hoặc từ khu trình diễn Crashlytics |
 | `shopeeVouchers` | Staff, admin (`capturedBy` = chính mình), hoặc extension đã liên kết với tài khoản staff/admin | Staff, admin | Như create | Staff, admin | Web "Voucher Shopee"; **người dùng thường không có quyền nào** |
 | `sharedPrices/{key}/reports` | Tài khoản không ẩn danh, id băm của chính mình | Mọi người đã đăng nhập | Như create | Người tạo | Chi tiết món |
 | `priceHistory/{key}` | Admin: dữ liệu mẫu (`isDemo = true`); tài khoản không ẩn danh: sản phẩm thật (`isDemo = false`) khi gửi giá đầu tiên | Mọi người đã đăng nhập | Admin: dữ liệu mẫu, và sửa mã/nhóm của sản phẩm thật; người dùng: chỉ điền trường đang trống | Admin, chỉ dữ liệu mẫu | Chi tiết món (Lịch sử giá, Cùng món ở shop khác), Giá tham khảo, Firebase Demo Area |
@@ -335,6 +336,29 @@ Quyết định D-3 (12/11/2026): chỉ dùng **mã thật** nhân viên nhập 
 | `updatedAt`, `updatedBy` | timestamp, string | ✓ | server time, uid người ghi |
 
 Không có trường nào khác. Không xoá. Tài liệu do màn "Promotions" cũ để lại (có `platform`, `affiliateUrl`…) chỉ được **lưu trữ**, hoặc mở form sửa và lưu lại cho đúng dạng.
+
+## `crashes/{id}` – báo cáo sự cố hiện trên web admin (`FirestoreCrashReportService`, `packages/core`)
+
+Yêu cầu của thầy: admin thấy sự cố ngay trên web, không phải mở Firebase Console. App ghi một tài liệu cho mỗi lỗi **chưa được bắt** (`FlutterError.onError`, `PlatformDispatcher.onError`) và cho các nút trong khu trình diễn Crashlytics (`CrashlyticsService.logCrashToFirestore`). Web admin mục "Sự cố" đọc trực tiếp (snapshot), lọc Chưa xử lý / Đã xử lý, mở từng báo cáo để xem thông điệp và stack trace, đánh dấu đã xử lý hoặc mở lại. Crashlytics vẫn là nơi xem chi tiết kỹ thuật.
+
+| Trường | Kiểu | Ràng buộc (rules) |
+|:---|:---|:---|
+| `id` | string | trùng id tài liệu |
+| `feature` | string | 1–100 ký tự (màn hình hoặc nguồn lỗi) |
+| `errorCode` | string | 1–60 ký tự |
+| `errorMessage` | string | 1–500 ký tự |
+| `stackTrace` | string | ≤ 20.000 ký tự (app cắt còn 6.000) |
+| `severity` | string | `fatal` · `error` · `warning` |
+| `affectedUsers`, `occurrences` | int | luôn 1 |
+| `lastOccurred`, `appVersion`, `platform` | string | 1–30 ký tự |
+| `userId` | string | bằng uid đang đăng nhập (không ghi hộ người khác) |
+| `isResolved` | bool | `false` khi tạo |
+| `createdAt` | timestamp | server time |
+| `resolvedAt`, `resolvedBy` | timestamp, string | staff/admin ghi khi đánh dấu; uid của chính họ |
+
+Bảo vệ: người dùng chỉ **tạo**, không đọc được báo cáo (kể cả của mình); không ai sửa nội dung; không xoá. App ghi tối đa 10 báo cáo mỗi lần chạy và bỏ qua lỗi trùng (cùng nguồn, cùng loại lỗi) để một lỗi lặp lại mỗi khung hình không làm đầy collection. `errorCode` và `errorMessage` của lỗi chưa bắt chỉ chứa loại lỗi (`describeError`), không chứa nội dung có thể mang email hay dữ liệu người dùng.
+
+**Giới hạn:** crash native làm app chết ngay nên không ghi kịp được lên Firestore. Riêng nút "Kích hoạt thử nghiệm Crash thật" ghi báo cáo trước khi crash. Crash native thật chỉ thấy trên Crashlytics.
 
 ## `shopeeVouchers/{id}` – voucher Shopee staff quét bằng extension
 

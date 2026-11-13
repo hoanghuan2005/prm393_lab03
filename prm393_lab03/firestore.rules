@@ -425,6 +425,31 @@ service cloud.firestore {
           && d().updatedAt == request.time && d().updatedBy == request.auth.uid));
       allow delete: if false;
     }
+    // Báo cáo sự cố: the app writes one per uncaught error (and from the Crashlytics demo
+    // buttons), staff read them live on the web admin and mark them resolved. Nobody edits
+    // a report's content and nothing is deleted; the stack trace is capped, not required.
+    function validCrash(id) {
+      return d().keys().hasOnly(['id', 'feature', 'errorCode', 'errorMessage', 'stackTrace', 'severity',
+                                 'affectedUsers', 'occurrences', 'lastOccurred', 'appVersion', 'platform',
+                                 'userId', 'isResolved', 'createdAt'])
+        && d().id == id
+        && text(d().feature, 100) && text(d().errorCode, 60) && text(d().errorMessage, 500)
+        && d().stackTrace is string && d().stackTrace.size() <= 20000
+        && d().severity in ['fatal', 'error', 'warning']
+        && d().affectedUsers == 1 && d().occurrences == 1
+        && text(d().lastOccurred, 30) && text(d().appVersion, 30) && text(d().platform, 30)
+        && d().userId == request.auth.uid
+        && d().isResolved == false && d().createdAt == request.time;
+    }
+    match /crashes/{id} {
+      allow read: if isStaff();
+      allow create: if request.auth != null && validCrash(id);
+      allow update: if isStaff()
+        && d().diff(resource.data).affectedKeys().hasOnly(['isResolved', 'resolvedAt', 'resolvedBy'])
+        && d().isResolved is bool
+        && d().resolvedAt == request.time && d().resolvedBy == request.auth.uid;
+      allow delete: if false;
+    }
     // Đề xuất đợt sale (cross-role flow): a user proposes a sale on the app (pending);
     // staff approve it (the same batch publishes the saleEvent and writes the user's
     // inbox) or reject it with a reason. Only pending → approved | rejected, once.

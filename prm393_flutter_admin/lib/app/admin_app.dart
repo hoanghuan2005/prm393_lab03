@@ -43,6 +43,9 @@ class AdminApp extends StatelessWidget {
         Provider<VoucherRecordService>(
           create: (_) => FirestoreVoucherRecordService(),
         ),
+        Provider<CrashReportService>(
+          create: (_) => FirestoreCrashReportService(),
+        ),
         Provider<AdminAiService>(create: (_) => AdminAiService()),
         Provider<PushService>(
           create: (c) => HttpPushService(c.read<AdminAuthService>()),

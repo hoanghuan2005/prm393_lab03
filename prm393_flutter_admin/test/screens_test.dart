@@ -27,6 +27,7 @@ void main() {
   late FakeUserDirectory directory;
   late FakeShopeeVoucherService vouchers;
   late FakeVoucherRecordService codes;
+  late FakeCrashReportService crashes;
   late FakeAuthService auth;
   late ShellViewModel shell;
 
@@ -38,6 +39,7 @@ void main() {
       ..activity['u1'] = const UserActivity(wishlistItems: 3, purchases: 1);
     vouchers = FakeShopeeVoucherService();
     codes = FakeVoucherRecordService();
+    crashes = FakeCrashReportService();
     auth = FakeAuthService();
     shell = ShellViewModel();
   });
@@ -58,6 +60,7 @@ void main() {
       Provider<PushService>.value(value: FakePushService(isConfigured: true)),
       Provider<ShopeeVoucherService>.value(value: vouchers),
       Provider<VoucherRecordService>.value(value: codes),
+      Provider<CrashReportService>.value(value: crashes),
       ChangeNotifierProvider(
         create: (_) => AuthViewModel(auth, FakeRoleService({})),
       ),
@@ -124,6 +127,20 @@ void main() {
         displayName: 'Nguyễn Hoàng Huân với một cái tên rất dài để thử tràn',
         email: 'huan.nguyen.hoang.rat.dai@example.com',
         createdAt: DateTime(2026, 11, 5, 9),
+      ),
+    ]);
+    crashes.controller.add([
+      CrashReport(
+        id: 'k1',
+        feature: 'Màn hình Hồ sơ với một cái tên rất dài để thử tràn trên màn hẹp',
+        errorCode: 'FATAL_TEST_CRASH',
+        errorMessage: 'Crash thử ' * 20,
+        stackTrace: '#0 main (package:app/main.dart:1)\n' * 30,
+        severity: CrashSeverity.fatal,
+        userId: 'uSnhdwvYnrS93fhLcg1goXXoTMI1',
+        platform: 'android',
+        appVersion: '1.0.0+1',
+        createdAt: DateTime(2026, 11, 13, 8, 30),
       ),
     ]);
     codes.controller.add([
@@ -194,6 +211,7 @@ void main() {
     AdminSection.announcements: 'Lịch sale tháng 12 đã cập nhật',
     AdminSection.codes: 'SHOPEE50KDAIDETHUTRAN',
     AdminSection.vouchers: 'Giảm 10% tối đa 50.000 ₫',
+    AdminSection.crashes: 'FATAL_TEST_CRASH',
     AdminSection.assistant: 'Tạo Gợi Ý Thông Minh',
   };
 

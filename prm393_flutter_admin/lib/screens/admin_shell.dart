@@ -12,6 +12,7 @@ import '../utils/tokens.dart';
 import '../viewmodels/ai_assistant_viewmodel.dart';
 import '../viewmodels/announcements_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/crash_reports_viewmodel.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../viewmodels/review_queue_viewmodel.dart';
 import '../viewmodels/sale_events_viewmodel.dart';
@@ -22,6 +23,7 @@ import '../viewmodels/vouchers_admin_viewmodel.dart';
 import '../widgets/brand_mark.dart';
 import 'ai_assistant_screen.dart';
 import 'announcements_screen.dart';
+import 'crashes_screen.dart';
 import 'dashboard_screen.dart';
 import 'review_queue_screen.dart';
 import 'sale_events_screen.dart';
@@ -86,6 +88,12 @@ class AdminShell extends StatelessWidget {
               ShopeeVouchersViewModel(c.read<ShopeeVoucherService>()),
         ),
         ChangeNotifierProvider(
+          create: (c) => CrashReportsViewModel(
+            c.read<CrashReportService>(),
+            byUid: account.uid,
+          ),
+        ),
+        ChangeNotifierProvider(
           create: (c) => AiAssistantViewModel(
             c.read<AdminAiService>(),
             c.read<DashboardViewModel>().aiMetrics,
@@ -111,6 +119,7 @@ class _ShellBody extends StatelessWidget {
     AdminSection.announcements: AnnouncementsScreen(),
     AdminSection.codes: VouchersAdminScreen(),
     AdminSection.vouchers: ShopeeVouchersScreen(),
+    AdminSection.crashes: CrashesScreen(),
     AdminSection.assistant: AiAssistantScreen(),
   };
 
@@ -470,6 +479,10 @@ class _TopBar extends StatelessWidget {
           context.read<AnnouncementsViewModel>().retry();
         case AdminSection.vouchers:
           context.read<ShopeeVouchersViewModel>().retry();
+        case AdminSection.crashes:
+          context.read<CrashReportsViewModel>().retry();
+        case AdminSection.codes:
+          context.read<VouchersAdminViewModel>().retry();
         case AdminSection.assistant:
           dashVm.load();
       }

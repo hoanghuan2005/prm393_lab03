@@ -30,4 +30,8 @@ class SharedPaths {
   /// Real Shopee vouchers entered on the web admin; the app reads active ones
   CollectionReference<JsonMap> vouchers() => db.collection('vouchers');
   DocumentReference<JsonMap> voucher(String id) => vouchers().doc(id);
+
+  /// Crash reports written by the app, read and resolved on the web admin
+  CollectionReference<JsonMap> crashes() => db.collection('crashes');
+  DocumentReference<JsonMap> crash(String id) => crashes().doc(id);
 }

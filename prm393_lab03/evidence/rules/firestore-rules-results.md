@@ -1,7 +1,7 @@
 # Firestore Security Rules – kết quả chạy trên Emulator
 
-Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-11T21:49:11.770Z.
-Tổng: 310 ca · Qua: 310 · Lỗi: 0.
+Sinh tự động bởi `firebase/tests/rules.test.mjs` lúc 2026-11-13T02:19:38.469Z.
+Tổng: 331 ca · Qua: 331 · Lỗi: 0.
 Mỗi vai trò (user, staff, admin) có ít nhất 1 ca cho phép và 1 ca từ chối ở mỗi collection.
 Ngoại lệ có chủ đích: `shopeeVouchers|user` chỉ có ca từ chối (vouchers captured by staff; users never read or write them).
 
@@ -307,13 +307,34 @@ Ngoại lệ có chủ đích: `shopeeVouchers|user` chỉ có ca từ chối (v
 | R-298 | vouchers | staff | delete a voucher | Denied | Pass |
 | R-299 | vouchers | admin | edit a voucher | Allowed | Pass |
 | R-300 | vouchers | admin | delete a voucher | Denied | Pass |
-| R-301 | shopeeVouchers | user | read | Denied | Pass |
-| R-302 | shopeeVouchers | user | capture a voucher | Denied | Pass |
-| R-303 | shopeeVouchers | staff | read | Allowed | Pass |
-| R-304 | shopeeVouchers | staff | capture a voucher as self | Allowed | Pass |
-| R-305 | shopeeVouchers | staff | capture in the name of another account | Denied | Pass |
-| R-306 | shopeeVouchers | admin | read | Allowed | Pass |
-| R-307 | shopeeVouchers | admin | source outside shopee.vn | Denied | Pass |
-| R-308 | shopeeVouchers | guest | capture without a linked staff account | Denied | Pass |
-| R-309 | (collection group) purchases | user | count every purchase | Denied | Pass |
-| R-310 | (collection group) purchases | admin | list the documents (not only count) | Allowed | Pass |
+| R-301 | crashes | user | report my own crash | Allowed | Pass |
+| R-302 | crashes | user | report with a stack trace of 15 000 characters | Allowed | Pass |
+| R-303 | crashes | user | report in the name of someone else | Denied | Pass |
+| R-304 | crashes | user | report that is already resolved | Denied | Pass |
+| R-305 | crashes | user | report with an unknown severity | Denied | Pass |
+| R-306 | crashes | user | report with a 600-character message | Denied | Pass |
+| R-307 | crashes | user | report with an extra field | Denied | Pass |
+| R-308 | crashes | user | report whose id differs from the document id | Denied | Pass |
+| R-309 | crashes | user | read a report | Denied | Pass |
+| R-310 | crashes | user | mark a report resolved | Denied | Pass |
+| R-311 | crashes | guest | report my own crash | Allowed | Pass |
+| R-312 | crashes | signed out | report a crash | Denied | Pass |
+| R-313 | crashes | staff | read a report | Allowed | Pass |
+| R-314 | crashes | staff | list the newest reports | Allowed | Pass |
+| R-315 | crashes | staff | mark a report resolved | Allowed | Pass |
+| R-316 | crashes | staff | mark resolved in the name of someone else | Denied | Pass |
+| R-317 | crashes | staff | rewrite the error message | Denied | Pass |
+| R-318 | crashes | staff | delete a report | Denied | Pass |
+| R-319 | crashes | admin | read a report | Allowed | Pass |
+| R-320 | crashes | admin | open a report again | Allowed | Pass |
+| R-321 | crashes | admin | delete a report | Denied | Pass |
+| R-322 | shopeeVouchers | user | read | Denied | Pass |
+| R-323 | shopeeVouchers | user | capture a voucher | Denied | Pass |
+| R-324 | shopeeVouchers | staff | read | Allowed | Pass |
+| R-325 | shopeeVouchers | staff | capture a voucher as self | Allowed | Pass |
+| R-326 | shopeeVouchers | staff | capture in the name of another account | Denied | Pass |
+| R-327 | shopeeVouchers | admin | read | Allowed | Pass |
+| R-328 | shopeeVouchers | admin | source outside shopee.vn | Denied | Pass |
+| R-329 | shopeeVouchers | guest | capture without a linked staff account | Denied | Pass |
+| R-330 | (collection group) purchases | user | count every purchase | Denied | Pass |
+| R-331 | (collection group) purchases | admin | list the documents (not only count) | Allowed | Pass |

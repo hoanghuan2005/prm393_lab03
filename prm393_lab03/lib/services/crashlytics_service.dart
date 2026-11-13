@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -25,11 +27,47 @@ class CrashlyticsService {
     FlutterError.onError = (details) {
       FlutterError.dumpErrorToConsole(details);
       _crashlytics.recordFlutterFatalError(details);
+      _reportToAdmin(
+        'Flutter framework',
+        details.exception,
+        details.stack,
+        'error',
+      );
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       _crashlytics.recordError(error, stack, fatal: true);
+      _reportToAdmin('Uncaught async error', error, stack, 'fatal');
       return true;
     };
+  }
+
+  /// Reports sent to the web admin this session: capped and de-duplicated so an
+  /// error that repeats every frame cannot flood the `crashes` collection
+  static const int maxAdminReportsPerSession = 10;
+  final Set<String> _adminReported = {};
+
+  /// Type and code only (describeError), never the message: it can carry user data
+  void _reportToAdmin(
+    String feature,
+    Object error,
+    StackTrace? stack,
+    String severity,
+  ) {
+    final code = describeError(error);
+    final signature = '$feature|$code';
+    if (_adminReported.length >= maxAdminReportsPerSession ||
+        !_adminReported.add(signature)) {
+      return;
+    }
+    unawaited(
+      logCrashToFirestore(
+        feature: feature,
+        errorCode: code,
+        errorMessage: code,
+        stackTrace: stack?.toString(),
+        severity: severity,
+      ),
+    );
   }
 
   /// Custom key holding the route the user was on when an error happened
@@ -107,16 +145,19 @@ class CrashlyticsService {
     _crashlytics.crash();
   }
 
-  /// Log a crash or error event to Firestore so Admin Web dashboard can monitor it in real time
+  /// Log a crash or error event to Firestore so Admin Web dashboard can monitor it in real time.
+  /// Reports carry the signed-in uid (firestore.rules require it); nothing is written when
+  /// nobody is signed in. Long texts are cut to the limits of the rules.
   Future<void> logCrashToFirestore({
     required String feature,
     required String errorCode,
     required String errorMessage,
     String? stackTrace,
     String severity = 'fatal',
-    String? userId,
   }) async {
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
       final now = DateTime.now();
       String twoDigits(int n) => n.toString().padLeft(2, '0');
       final dateStr =
@@ -126,17 +167,17 @@ class CrashlyticsService {
       final docRef = FirebaseFirestore.instance.collection('crashes').doc();
       await docRef.set({
         'id': docRef.id,
-        'feature': feature,
-        'errorCode': errorCode,
-        'errorMessage': errorMessage,
-        'stackTrace': stackTrace ?? '',
+        'feature': _cut(feature, 100),
+        'errorCode': _cut(errorCode, 60),
+        'errorMessage': _cut(errorMessage, 500),
+        'stackTrace': _cut(stackTrace ?? '', 6000),
         'severity': severity,
         'affectedUsers': 1,
         'occurrences': 1,
         'lastOccurred': dateStr,
-        'appVersion': '1.0.0+3',
+        'appVersion': '1.0.0+1',
         'platform': defaultTargetPlatform.name,
-        'userId': userId ?? 'anonymous',
+        'userId': uid,
         'isResolved': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -146,6 +187,9 @@ class CrashlyticsService {
     }
   }
 }
+
+String _cut(String text, int max) =>
+    text.length <= max ? text : text.substring(0, max);
 
 class _ScreenKeyObserver extends NavigatorObserver {
   final CrashlyticsService _service;

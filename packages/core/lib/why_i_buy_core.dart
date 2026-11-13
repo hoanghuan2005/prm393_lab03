@@ -20,6 +20,7 @@ export 'src/widgets/states/ui_state_builder.dart';
 // Models
 export 'src/models/announcement.dart';
 export 'src/models/app_role.dart';
+export 'src/models/crash_report.dart';
 export 'src/models/firestore_fields.dart';
 export 'src/models/inbox_message.dart';
 export 'src/models/sale_event.dart';
@@ -29,6 +30,7 @@ export 'src/models/voucher_record.dart';
 
 // Firestore services
 export 'src/services/announcement_service.dart';
+export 'src/services/crash_report_service.dart';
 export 'src/services/firestore_errors.dart';
 export 'src/services/inbox_service.dart';
 export 'src/services/role_service.dart';
